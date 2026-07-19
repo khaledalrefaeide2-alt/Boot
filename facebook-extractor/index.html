@@ -113,6 +113,15 @@
     transition: background .2s, transform .15s;
   }
   .icon-btn:hover { background: rgba(255,255,255,.22); transform: translateY(-1px); }
+  .nav-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid rgba(255,255,255,.3); border-radius: 999px;
+    background: rgba(255,255,255,.1); color: #fff;
+    padding: 10px 20px; font-size: .85rem; font-weight: 700;
+    text-decoration: none; backdrop-filter: blur(6px);
+    transition: background .2s;
+  }
+  .nav-link:hover { background: rgba(255,255,255,.22); }
 
   .hero {
     position: relative; z-index: 2;
@@ -433,7 +442,10 @@
         <p>مستخرج منشورات فيسبوك عبر Apify</p>
       </div>
     </div>
-    <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري">🌙</button>
+    <div style="display:flex;align-items:center;gap:10px">
+      <a class="nav-link" href="monitor.html">📡 الرصد التلقائي</a>
+      <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري">🌙</button>
+    </div>
   </nav>
 
   <div class="hero">
