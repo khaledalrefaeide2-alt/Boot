@@ -541,6 +541,17 @@
     <div class="alert alert-error" id="formError"></div>
   </section>
 
+  <!-- Local database -->
+  <section class="panel">
+    <div class="panel-title"><span class="num">3</span> قاعدة البيانات المحلية <small style="font-weight:400;color:var(--text-2);font-size:.8rem">(اختياري)</small></div>
+    <div style="display:flex;gap:10px;flex-wrap:wrap">
+      <input class="input" type="url" id="dbUrl" dir="ltr" placeholder="http://localhost:3300" value="http://localhost:3300" style="flex:1 1 260px">
+      <button class="btn btn-ghost btn-sm" id="dbCheckBtn">🔌 فحص الاتصال</button>
+    </div>
+    <div class="hint" id="dbStatus">⚪ غير متصلة — شغّل الخادم المحلي ثم اضغط «فحص الاتصال»</div>
+    <div class="hint">لتشغيل قاعدة البيانات على جهازك: افتح مجلد <strong>local-server</strong> وشغّل <strong>تشغيل-قاعدة-البيانات.bat</strong> (ويندوز) أو <strong>run.sh</strong> (ماك/لينكس). عند الاتصال تُحفظ نتائج كل استخراج تلقائياً في ملف SQLite دائم على جهازك.</div>
+  </section>
+
   <!-- Status -->
   <section class="panel" id="statusPanel">
     <div class="status-row">
@@ -569,6 +580,7 @@
       </div>
       <button class="btn btn-ghost btn-sm" id="exportJsonBtn">⬇️ JSON</button>
       <button class="btn btn-ghost btn-sm" id="exportCsvBtn">⬇️ CSV</button>
+      <button class="btn btn-ghost btn-sm" id="saveDbBtn">💾 حفظ في قاعدة البيانات</button>
     </div>
 
     <div class="posts-grid" id="postsGrid"></div>
@@ -784,6 +796,8 @@ async function startExtraction() {
       true
     );
     renderResults();
+    // Auto-archive every extraction into the local database when connected
+    saveToDb(allPosts, 'extract', true);
   } catch (err) {
     spinner.style.display = 'none';
     $('abortBtn').style.display = 'none';
@@ -974,6 +988,64 @@ $('exportCsvBtn').onclick = () => {
   download('﻿' + [header.join(','), ...rows].join('\r\n'), 'facebook-posts.csv', 'text/csv;charset=utf-8');
   showToast('⬇️ تم تنزيل ملف CSV');
 };
+/* =============== Local database =============== */
+const DB_URL_STORAGE = 'fbx_db_url';
+let dbUrl = localStorage.getItem(DB_URL_STORAGE) || '';
+let dbOnline = false;
+
+function dbSetStatus(msg) { $('dbStatus').textContent = msg; }
+function postKey(p) {
+  return p.key || p.url || `${p.author}|${p.ts || ''}|${(p.text || '').slice(0, 80)}`;
+}
+
+async function dbCheck(silent) {
+  const url = ($('dbUrl').value || '').trim().replace(/\/+$/, '');
+  if (!url) return;
+  dbSetStatus('⏳ جارٍ فحص الاتصال...');
+  try {
+    const r = await fetch(url + '/api/health', { signal: AbortSignal.timeout(4000) });
+    const d = await r.json();
+    if (!d.ok) throw new Error();
+    dbOnline = true;
+    dbUrl = url;
+    localStorage.setItem(DB_URL_STORAGE, url);
+    dbSetStatus(`🟢 متصلة — ${d.total} منشور محفوظ في قاعدة البيانات`);
+    if (!silent) showToast('✅ تم الاتصال بقاعدة البيانات المحلية');
+  } catch (_) {
+    dbOnline = false;
+    dbSetStatus('🔴 غير متصلة — تأكد أن الخادم المحلي يعمل ثم اضغط «فحص الاتصال»');
+    if (!silent) showToast('⚠️ تعذر الاتصال بقاعدة البيانات');
+  }
+}
+$('dbCheckBtn').onclick = () => dbCheck(false);
+if (dbUrl) { $('dbUrl').value = dbUrl; dbCheck(true); }
+
+async function saveToDb(posts, source, silent) {
+  if (!posts.length) return;
+  if (!dbOnline) { if (!silent) showToast('⚠️ قاعدة البيانات غير متصلة — افحص الاتصال أولاً'); return; }
+  try {
+    const payload = posts.map(p => ({
+      key: postKey(p), text: p.text, url: p.url, ts: p.ts,
+      author: p.author, avatar: p.avatar, media: p.media,
+      likes: p.likes, comments: p.comments, shares: p.shares, source
+    }));
+    const r = await fetch(dbUrl + '/api/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ posts: payload })
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || '');
+    dbSetStatus(`🟢 متصلة — ${d.total} منشور محفوظ في قاعدة البيانات`);
+    showToast(`💾 حُفظ ${d.saved} منشور في قاعدة البيانات`);
+  } catch (_) {
+    dbOnline = false;
+    dbSetStatus('🔴 انقطع الاتصال بقاعدة البيانات — أعد فحص الاتصال');
+    if (!silent) showToast('⚠️ فشل الحفظ في قاعدة البيانات');
+  }
+}
+$('saveDbBtn').onclick = () => saveToDb(getVisiblePosts(), 'extract', false);
+
 function csvCell(v) {
   const s = String(v ?? '');
   return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;

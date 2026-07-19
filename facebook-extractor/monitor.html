@@ -388,6 +388,17 @@
     </div>
   </section>
 
+  <!-- Local database -->
+  <section class="panel">
+    <div class="panel-title"><span class="num">2</span> قاعدة البيانات المحلية <small style="font-weight:400;color:var(--text-2);font-size:.8rem">(اختياري)</small></div>
+    <div class="add-row">
+      <input class="input" type="url" id="dbUrl" dir="ltr" placeholder="http://localhost:3300" value="http://localhost:3300">
+      <button class="btn btn-ghost btn-sm" id="dbCheckBtn">🔌 فحص الاتصال</button>
+    </div>
+    <div class="hint" id="dbStatus">⚪ غير متصلة — شغّل الخادم المحلي ثم اضغط «فحص الاتصال»</div>
+    <div class="hint">عند الاتصال، يُحفظ كل منشور جديد ترصده الدورات تلقائياً في ملف SQLite دائم على جهازك (مجلد <strong>local-server</strong>).</div>
+  </section>
+
   <!-- Control band -->
   <section class="control-band">
     <div class="pulse-dot" id="pulseDot"></div>
@@ -638,6 +649,8 @@ async function runCycle(manual) {
       (added ? `${added} منشور جديد ✨` : 'لا جديد');
     if (added) showToast(`✨ ${added} منشور جديد`);
     renderFeed();
+    // Archive this cycle's new posts into the local database when connected
+    if (added) saveToDb(feed.filter(p => freshKeys.has(p.key)), 'monitor');
   } catch (err) {
     $('monitorError').textContent = err.message || String(err);
     $('monitorError').style.display = 'block';
@@ -767,11 +780,63 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
+/* =============== Local database =============== */
+const DB_URL_STORAGE = 'fbx_db_url';
+let dbUrl = localStorage.getItem(DB_URL_STORAGE) || '';
+let dbOnline = false;
+
+function dbSetStatus(msg) { $('dbStatus').textContent = msg; }
+
+async function dbCheck(silent) {
+  const url = ($('dbUrl').value || '').trim().replace(/\/+$/, '');
+  if (!url) return;
+  dbSetStatus('⏳ جارٍ فحص الاتصال...');
+  try {
+    const r = await fetch(url + '/api/health', { signal: AbortSignal.timeout(4000) });
+    const d = await r.json();
+    if (!d.ok) throw new Error();
+    dbOnline = true;
+    dbUrl = url;
+    localStorage.setItem(DB_URL_STORAGE, url);
+    dbSetStatus(`🟢 متصلة — ${d.total} منشور محفوظ في قاعدة البيانات`);
+    if (!silent) showToast('✅ تم الاتصال بقاعدة البيانات المحلية');
+  } catch (_) {
+    dbOnline = false;
+    dbSetStatus('🔴 غير متصلة — تأكد أن الخادم المحلي يعمل ثم اضغط «فحص الاتصال»');
+    if (!silent) showToast('⚠️ تعذر الاتصال بقاعدة البيانات');
+  }
+}
+$('dbCheckBtn').onclick = () => dbCheck(false);
+
+async function saveToDb(posts, source) {
+  if (!dbOnline || !posts.length) return;
+  try {
+    const payload = posts.map(p => ({
+      key: p.key, text: p.text, url: p.url, ts: p.ts,
+      author: p.author, avatar: p.avatar, media: p.media,
+      likes: p.likes, comments: p.comments, shares: p.shares, source
+    }));
+    const r = await fetch(dbUrl + '/api/posts', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ posts: payload })
+    });
+    const d = await r.json();
+    if (!d.ok) throw new Error(d.error || '');
+    dbSetStatus(`🟢 متصلة — ${d.total} منشور محفوظ في قاعدة البيانات`);
+    showToast(`💾 حُفظ ${d.saved} منشور في قاعدة البيانات`);
+  } catch (_) {
+    dbOnline = false;
+    dbSetStatus('🔴 انقطع الاتصال بقاعدة البيانات — أعد فحص الاتصال');
+  }
+}
+
 /* =============== Boot =============== */
 renderChips();
 renderFeed();
 refreshKeyUi();
 refreshControlUi();
+if (dbUrl) { $('dbUrl').value = dbUrl; dbCheck(true); }
 if (lastRunAt) {
   $('miniStatus').textContent = `آخر رصد: ${new Date(lastRunAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}`;
 }
