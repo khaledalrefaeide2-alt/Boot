@@ -323,8 +323,9 @@
 
     <div class="grid grid-4" style="margin-top:18px">
       <div>
-        <label class="field-label" for="postsLimit">عدد المنشورات</label>
+        <label class="field-label" for="postsLimit">عدد المنشورات <small>(لكل صفحة)</small></label>
         <input class="input" type="number" id="postsLimit" min="1" max="1000" value="20">
+        <div class="hint">🛡️ يُفرض هذا العدد كسقف فوترة إلزامي على Apify — لن تُحاسَب على أكثر منه</div>
       </div>
       <div>
         <label class="field-label" for="dateFrom">من تاريخ <small>(اختياري)</small></label>
@@ -521,9 +522,14 @@ async function startExtraction() {
   setStatus('جارٍ بدء عملية الاستخراج...', 'الاتصال بخوادم Apify');
   statusPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
+  // Hard billing cap enforced by the Apify platform itself: the run is stopped
+  // and never charges for more than maxItems dataset items, regardless of how
+  // many the scraper crawls. resultsLimit alone is only approximate.
+  const maxItems = limit * urls.length;
+
   try {
     // 1) Start the actor run
-    const startRes = await fetch(`${API_BASE}/acts/${ACTOR_ID}/runs?token=${encodeURIComponent(token)}`, {
+    const startRes = await fetch(`${API_BASE}/acts/${ACTOR_ID}/runs?token=${encodeURIComponent(token)}&maxItems=${maxItems}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(input)
@@ -549,7 +555,9 @@ async function startExtraction() {
       datasetId = d.defaultDatasetId;
     }
     if (aborted) return;
-    if (status !== 'SUCCEEDED') {
+    // When the maxItems billing cap is hit, the platform stops the run itself —
+    // that can surface as ABORTED even though results were collected normally.
+    if (status !== 'SUCCEEDED' && status !== 'ABORTED') {
       throw new Error(`انتهى التشغيل بحالة "${status}". تحقق من رصيدك في Apify أو من صحة الروابط.`);
     }
 
@@ -559,7 +567,11 @@ async function startExtraction() {
     const itemsRes = await fetch(`${API_BASE}/datasets/${datasetId}/items?clean=true&format=json&token=${encodeURIComponent(token)}`);
     if (!itemsRes.ok) throw await apiError(itemsRes);
     const items = await itemsRes.json();
+    if (status === 'ABORTED' && !items.length) {
+      throw new Error('توقف التشغيل قبل جمع أي نتائج. تحقق من رصيدك في Apify أو من صحة الروابط.');
+    }
 
+    const scrapedCount = items.length;
     allPosts = items.map(normalizePost).filter(p => p.text || p.url);
     // Client-side date filter as a safety net on top of the actor's own filter
     if (validDate(from)) {
@@ -574,7 +586,14 @@ async function startExtraction() {
     progressBar.style.width = '100%';
     spinner.style.display = 'none';
     $('abortBtn').style.display = 'none';
-    setStatus(`✅ اكتمل الاستخراج — ${allPosts.length} منشور`, 'يمكنك البحث والفرز والتصدير من الأسفل', true);
+    const hidden = scrapedCount - allPosts.length;
+    setStatus(
+      `✅ اكتمل الاستخراج — ${allPosts.length} منشور`,
+      hidden > 0
+        ? `استُخرج ${scrapedCount} منشوراً من Apify، أُخفي ${hidden} منها لوقوعها خارج الفترة الزمنية المحددة`
+        : 'يمكنك البحث والفرز والتصدير من الأسفل',
+      true
+    );
     renderResults();
   } catch (err) {
     spinner.style.display = 'none';
