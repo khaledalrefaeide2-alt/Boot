@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FB Extractor — مستخرج منشورات فيسبوك</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f4f6fb;
+    --surface: #ffffff;
+    --surface-2: #f0f3f9;
+    --text: #1a2233;
+    --text-2: #5a6478;
+    --border: #e3e8f2;
+    --primary: #1877f2;
+    --primary-dark: #0f5cc7;
+    --primary-soft: #e7f0fe;
+    --success: #16a34a;
+    --danger: #dc2626;
+    --warning: #d97706;
+    --shadow: 0 1px 3px rgba(16, 24, 40, .06), 0 8px 24px rgba(16, 24, 40, .06);
+    --shadow-lg: 0 12px 40px rgba(16, 24, 40, .12);
+    --radius: 16px;
+  }
+  [data-theme="dark"] {
+    --bg: #0d1220;
+    --surface: #161d2f;
+    --surface-2: #1d2640;
+    --text: #eef2fa;
+    --text-2: #96a0b8;
+    --border: #27314d;
+    --primary: #3b8bff;
+    --primary-dark: #1877f2;
+    --primary-soft: #17253f;
+    --shadow: 0 1px 3px rgba(0, 0, 0, .3), 0 8px 24px rgba(0, 0, 0, .3);
+    --shadow-lg: 0 12px 40px rgba(0, 0, 0, .5);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background .3s, color .3s;
+  }
+
+  /* ===== Header ===== */
+  header {
+    background: linear-gradient(135deg, #1877f2 0%, #0a4fb5 60%, #083a85 100%);
+    color: #fff;
+    padding: 0 24px;
+  }
+  .header-inner {
+    max-width: 1200px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 0;
+  }
+  .brand { display: flex; align-items: center; gap: 12px; }
+  .brand-logo {
+    width: 46px; height: 46px; border-radius: 13px;
+    background: rgba(255,255,255,.16);
+    backdrop-filter: blur(6px);
+    display: grid; place-items: center;
+    font-size: 24px;
+  }
+  .brand h1 { font-size: 1.25rem; font-weight: 900; letter-spacing: -.3px; }
+  .brand p { font-size: .78rem; opacity: .85; }
+  .header-actions { display: flex; gap: 10px; align-items: center; }
+  .icon-btn {
+    width: 42px; height: 42px; border-radius: 12px; border: none; cursor: pointer;
+    background: rgba(255,255,255,.14); color: #fff; font-size: 18px;
+    display: grid; place-items: center;
+    transition: background .2s, transform .15s;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,.26); transform: translateY(-1px); }
+
+  .hero {
+    max-width: 1200px; margin: 0 auto;
+    padding: 26px 0 56px; text-align: center;
+  }
+  .hero h2 { font-size: clamp(1.5rem, 3.4vw, 2.3rem); font-weight: 900; margin-bottom: 10px; }
+  .hero p { opacity: .88; max-width: 620px; margin: 0 auto; font-size: .98rem; line-height: 1.9; }
+
+  /* ===== Layout ===== */
+  main { max-width: 1200px; margin: -34px auto 60px; padding: 0 24px; }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    padding: 28px;
+    margin-bottom: 26px;
+    transition: background .3s, border-color .3s;
+  }
+  .panel-title {
+    display: flex; align-items: center; gap: 10px;
+    font-size: 1.05rem; font-weight: 700; margin-bottom: 20px;
+  }
+  .panel-title .num {
+    width: 30px; height: 30px; border-radius: 9px; flex: none;
+    background: var(--primary-soft); color: var(--primary);
+    display: grid; place-items: center; font-size: .85rem; font-weight: 900;
+  }
+
+  .grid { display: grid; gap: 18px; }
+  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .grid-4 { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
+
+  label.field-label {
+    display: block; font-size: .85rem; font-weight: 700;
+    margin-bottom: 8px; color: var(--text);
+  }
+  label.field-label small { font-weight: 400; color: var(--text-2); }
+  .input, select.input {
+    width: 100%; padding: 12px 14px;
+    border: 1.5px solid var(--border); border-radius: 12px;
+    background: var(--surface-2); color: var(--text);
+    font-family: inherit; font-size: .93rem;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 4px var(--primary-soft); }
+  textarea.input { resize: vertical; min-height: 84px; line-height: 1.8; }
+  .input-wrap { position: relative; }
+  .input-wrap .toggle-eye {
+    position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+    border: none; background: none; cursor: pointer; font-size: 16px; color: var(--text-2);
+  }
+  .hint { font-size: .78rem; color: var(--text-2); margin-top: 7px; line-height: 1.7; }
+  .hint a { color: var(--primary); text-decoration: none; font-weight: 700; }
+
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+    padding: 13px 26px; border: none; border-radius: 12px; cursor: pointer;
+    font-family: inherit; font-size: .95rem; font-weight: 700;
+    transition: transform .15s, box-shadow .2s, background .2s, opacity .2s;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; box-shadow: 0 6px 18px rgba(24, 119, 242, .35);
+  }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(24, 119, 242, .45); }
+  .btn-primary:disabled { opacity: .55; cursor: not-allowed; transform: none; }
+  .btn-ghost {
+    background: var(--surface-2); color: var(--text);
+    border: 1.5px solid var(--border);
+  }
+  .btn-ghost:hover { border-color: var(--primary); color: var(--primary); }
+  .btn-danger-ghost { background: transparent; border: 1.5px solid var(--danger); color: var(--danger); }
+  .btn-sm { padding: 9px 16px; font-size: .85rem; border-radius: 10px; }
+
+  .actions-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
+
+  /* ===== Status ===== */
+  #statusPanel { display: none; }
+  .status-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+  .spinner {
+    width: 26px; height: 26px; flex: none;
+    border: 3px solid var(--primary-soft); border-top-color: var(--primary);
+    border-radius: 50%; animation: spin .8s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .status-text { font-weight: 700; }
+  .status-sub { font-size: .82rem; color: var(--text-2); }
+  .progress-track {
+    height: 8px; border-radius: 99px; background: var(--surface-2);
+    overflow: hidden; margin-top: 16px;
+  }
+  .progress-bar {
+    height: 100%; width: 15%; border-radius: 99px;
+    background: linear-gradient(90deg, var(--primary), #6db3ff);
+    transition: width .6s ease;
+  }
+  .alert {
+    border-radius: 12px; padding: 14px 16px; font-size: .9rem; line-height: 1.8;
+    margin-top: 14px; display: none;
+  }
+  .alert-error { background: rgba(220, 38, 38, .1); color: var(--danger); border: 1px solid rgba(220, 38, 38, .3); }
+
+  /* ===== Stats ===== */
+  #resultsSection { display: none; }
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 16px; margin-bottom: 26px; }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 18px 20px;
+    box-shadow: var(--shadow);
+    display: flex; align-items: center; gap: 14px;
+  }
+  .stat-icon {
+    width: 46px; height: 46px; border-radius: 13px; flex: none;
+    display: grid; place-items: center; font-size: 21px;
+  }
+  .stat-value { font-size: 1.35rem; font-weight: 900; line-height: 1.2; }
+  .stat-label { font-size: .78rem; color: var(--text-2); font-weight: 600; }
+
+  /* ===== Toolbar ===== */
+  .toolbar {
+    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+    margin-bottom: 22px;
+  }
+  .toolbar .search-wrap { position: relative; flex: 1 1 240px; }
+  .toolbar .search-wrap input { padding-right: 40px; }
+  .toolbar .search-wrap::before {
+    content: '🔍'; position: absolute; right: 13px; top: 50%;
+    transform: translateY(-50%); font-size: 14px; pointer-events: none;
+  }
+  .view-toggle { display: flex; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 12px; overflow: hidden; }
+  .view-toggle button {
+    border: none; background: none; padding: 10px 14px; cursor: pointer;
+    color: var(--text-2); font-size: 16px; transition: background .2s, color .2s;
+  }
+  .view-toggle button.active { background: var(--primary); color: #fff; }
+
+  /* ===== Posts ===== */
+  .posts-grid { display: grid; gap: 20px; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+  .posts-grid.list-view { grid-template-columns: 1fr; }
+  .post-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    display: flex; flex-direction: column; overflow: hidden;
+    transition: transform .2s, box-shadow .25s;
+    animation: fadeUp .45s ease both;
+  }
+  .post-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-lg); }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
+  .post-head { display: flex; align-items: center; gap: 12px; padding: 16px 18px 0; }
+  .avatar {
+    width: 44px; height: 44px; border-radius: 50%; flex: none; object-fit: cover;
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    color: #fff; display: grid; place-items: center; font-weight: 900; font-size: 1.05rem;
+  }
+  .post-author { font-weight: 700; font-size: .93rem; }
+  .post-date { font-size: .76rem; color: var(--text-2); }
+  .post-body { padding: 14px 18px; flex: 1; }
+  .post-text { font-size: .9rem; line-height: 1.95; color: var(--text); white-space: pre-wrap; word-break: break-word; }
+  .post-text.clamped { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
+  .read-more { border: none; background: none; color: var(--primary); font-family: inherit; font-weight: 700; font-size: .82rem; cursor: pointer; padding: 6px 0 0; }
+  .post-media { width: 100%; max-height: 260px; object-fit: cover; display: block; background: var(--surface-2); }
+  .post-foot {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 18px; border-top: 1px solid var(--border);
+    background: var(--surface-2);
+  }
+  .reactions { display: flex; gap: 14px; font-size: .8rem; color: var(--text-2); font-weight: 700; }
+  .reactions span { display: inline-flex; align-items: center; gap: 5px; }
+  .post-link { font-size: .8rem; font-weight: 700; color: var(--primary); text-decoration: none; }
+  .post-link:hover { text-decoration: underline; }
+
+  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-2); }
+  .empty-state .big { font-size: 52px; margin-bottom: 14px; }
+
+  footer { text-align: center; padding: 26px; color: var(--text-2); font-size: .82rem; }
+
+  .toast {
+    position: fixed; bottom: 26px; right: 50%; transform: translate(50%, 20px);
+    background: var(--text); color: var(--bg);
+    padding: 12px 22px; border-radius: 12px; font-size: .88rem; font-weight: 700;
+    opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s;
+    z-index: 99; box-shadow: var(--shadow-lg);
+  }
+  .toast.show { opacity: 1; transform: translate(50%, 0); }
+
+  @media (max-width: 640px) {
+    .panel { padding: 20px; }
+    .hero { padding-bottom: 46px; }
+    .actions-row .btn { flex: 1; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="brand">
+      <div class="brand-logo">📘</div>
+      <div>
+        <h1>FB Extractor</h1>
+        <p>مستخرج منشورات فيسبوك عبر Apify</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري">🌙</button>
+    </div>
+  </div>
+  <div class="hero">
+    <h2>استخرج منشورات أي صفحة فيسبوك بضغطة زر</h2>
+    <p>أدخل مفتاح Apify الخاص بك، حدّد الصفحة والفترة الزمنية وعدد المنشورات، واحصل على النتائج بعرض عصري مع إمكانية التصدير إلى JSON أو CSV.</p>
+  </div>
+</header>
+
+<main>
+
+  <!-- API Key -->
+  <section class="panel">
+    <div class="panel-title"><span class="num">1</span> مفتاح Apify API</div>
+    <div class="grid grid-2">
+      <div>
+        <label class="field-label" for="apiKey">المفتاح <small>(يُحفظ محلياً في متصفحك فقط)</small></label>
+        <div class="input-wrap">
+          <input class="input" type="password" id="apiKey" placeholder="apify_api_XXXXXXXXXXXX" autocomplete="off" style="padding-left:42px">
+          <button class="toggle-eye" id="eyeBtn" title="إظهار / إخفاء">👁️</button>
+        </div>
+        <div class="hint">احصل على مفتاحك من <a href="https://console.apify.com/settings/integrations" target="_blank" rel="noopener">لوحة تحكم Apify ← Integrations</a></div>
+      </div>
+      <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
+        <button class="btn btn-ghost btn-sm" id="saveKeyBtn">💾 حفظ المفتاح</button>
+        <button class="btn btn-danger-ghost btn-sm" id="clearKeyBtn">🗑️ مسح المفتاح</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Search form -->
+  <section class="panel">
+    <div class="panel-title"><span class="num">2</span> إعدادات الاستخراج والفلاتر</div>
+
+    <label class="field-label" for="pageUrls">روابط صفحات فيسبوك <small>(رابط واحد في كل سطر)</small></label>
+    <textarea class="input" id="pageUrls" placeholder="https://www.facebook.com/nasa&#10;https://www.facebook.com/bbcnews"></textarea>
+
+    <div class="grid grid-4" style="margin-top:18px">
+      <div>
+        <label class="field-label" for="postsLimit">عدد المنشورات</label>
+        <input class="input" type="number" id="postsLimit" min="1" max="1000" value="20">
+      </div>
+      <div>
+        <label class="field-label" for="dateFrom">من تاريخ <small>(اختياري)</small></label>
+        <input class="input" type="date" id="dateFrom">
+      </div>
+      <div>
+        <label class="field-label" for="dateTo">إلى تاريخ <small>(اختياري)</small></label>
+        <input class="input" type="date" id="dateTo">
+      </div>
+      <div>
+        <label class="field-label" for="sortSelect">ترتيب النتائج</label>
+        <select class="input" id="sortSelect">
+          <option value="newest">الأحدث أولاً</option>
+          <option value="oldest">الأقدم أولاً</option>
+          <option value="likes">الأكثر إعجاباً</option>
+          <option value="comments">الأكثر تعليقاً</option>
+          <option value="shares">الأكثر مشاركة</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="actions-row">
+      <button class="btn btn-primary" id="runBtn">🚀 بدء الاستخراج</button>
+      <button class="btn btn-ghost" id="resetBtn">↺ إعادة تعيين</button>
+    </div>
+    <div class="alert alert-error" id="formError"></div>
+  </section>
+
+  <!-- Status -->
+  <section class="panel" id="statusPanel">
+    <div class="status-row">
+      <div class="spinner" id="spinner"></div>
+      <div>
+        <div class="status-text" id="statusText">جارٍ تشغيل عملية الاستخراج...</div>
+        <div class="status-sub" id="statusSub">قد تستغرق العملية من ثوانٍ إلى دقائق حسب عدد المنشورات</div>
+      </div>
+      <button class="btn btn-danger-ghost btn-sm" id="abortBtn" style="margin-inline-start:auto">⛔ إيقاف</button>
+    </div>
+    <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
+    <div class="alert alert-error" id="runError"></div>
+  </section>
+
+  <!-- Results -->
+  <section id="resultsSection">
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <div class="toolbar">
+      <div class="search-wrap">
+        <input class="input" type="search" id="searchInput" placeholder="ابحث داخل النتائج...">
+      </div>
+      <div class="view-toggle">
+        <button id="gridViewBtn" class="active" title="عرض شبكي">▦</button>
+        <button id="listViewBtn" title="عرض قائمة">☰</button>
+      </div>
+      <button class="btn btn-ghost btn-sm" id="exportJsonBtn">⬇️ JSON</button>
+      <button class="btn btn-ghost btn-sm" id="exportCsvBtn">⬇️ CSV</button>
+    </div>
+
+    <div class="posts-grid" id="postsGrid"></div>
+    <div class="empty-state" id="emptyState" style="display:none">
+      <div class="big">🔎</div>
+      <p>لا توجد نتائج مطابقة لبحثك</p>
+    </div>
+  </section>
+
+</main>
+
+<footer>FB Extractor — يعمل عبر <strong>Apify Facebook Posts Scraper</strong> · مفتاحك لا يغادر متصفحك إلا نحو Apify مباشرة</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+/* =============== Constants =============== */
+const ACTOR_ID = 'apify~facebook-posts-scraper';
+const API_BASE = 'https://api.apify.com/v2';
+const KEY_STORAGE = 'fbx_apify_key';
+const THEME_STORAGE = 'fbx_theme';
+
+/* =============== Elements =============== */
+const $ = id => document.getElementById(id);
+const apiKeyInput = $('apiKey'), pageUrlsInput = $('pageUrls'),
+      postsLimitInput = $('postsLimit'), dateFromInput = $('dateFrom'), dateToInput = $('dateTo'),
+      sortSelect = $('sortSelect'), runBtn = $('runBtn'),
+      statusPanel = $('statusPanel'), statusText = $('statusText'), statusSub = $('statusSub'),
+      progressBar = $('progressBar'), runError = $('runError'), formError = $('formError'),
+      resultsSection = $('resultsSection'), postsGrid = $('postsGrid'),
+      statsGrid = $('statsGrid'), searchInput = $('searchInput'), emptyState = $('emptyState'),
+      spinner = $('spinner'), toast = $('toast');
+
+let allPosts = [];
+let aborted = false;
+let currentRunId = null;
+
+/* =============== Theme =============== */
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  $('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙';
+}
+applyTheme(localStorage.getItem(THEME_STORAGE) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+$('themeBtn').onclick = () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem(THEME_STORAGE, next);
+  applyTheme(next);
+};
+
+/* =============== API key handling =============== */
+apiKeyInput.value = localStorage.getItem(KEY_STORAGE) || '';
+$('eyeBtn').onclick = () => {
+  apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password';
+};
+$('saveKeyBtn').onclick = () => {
+  if (!apiKeyInput.value.trim()) return showToast('أدخل المفتاح أولاً');
+  localStorage.setItem(KEY_STORAGE, apiKeyInput.value.trim());
+  showToast('✅ تم حفظ المفتاح في المتصفح');
+};
+$('clearKeyBtn').onclick = () => {
+  localStorage.removeItem(KEY_STORAGE);
+  apiKeyInput.value = '';
+  showToast('🗑️ تم مسح المفتاح');
+};
+
+function showToast(msg) {
+  toast.textContent = msg;
+  toast.classList.add('show');
+  clearTimeout(toast._t);
+  toast._t = setTimeout(() => toast.classList.remove('show'), 2600);
+}
+
+/* =============== Form =============== */
+$('resetBtn').onclick = () => {
+  pageUrlsInput.value = '';
+  postsLimitInput.value = 20;
+  dateFromInput.value = '';
+  dateToInput.value = '';
+  formError.style.display = 'none';
+};
+
+function showFormError(msg) {
+  formError.textContent = msg;
+  formError.style.display = 'block';
+  formError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+/* =============== Run flow =============== */
+runBtn.onclick = startExtraction;
+$('abortBtn').onclick = async () => {
+  aborted = true;
+  if (currentRunId) {
+    try {
+      await fetch(`${API_BASE}/actor-runs/${currentRunId}/abort?token=${encodeURIComponent(getToken())}`, { method: 'POST' });
+    } catch (_) {}
+  }
+  setStatus('تم إيقاف العملية', 'يمكنك بدء عملية جديدة في أي وقت', true);
+};
+
+function getToken() { return apiKeyInput.value.trim(); }
+
+function validDate(v) { return v && !isNaN(new Date(v).getTime()); }
+
+async function startExtraction() {
+  formError.style.display = 'none';
+  runError.style.display = 'none';
+
+  const token = getToken();
+  if (!token) return showFormError('⚠️ أدخل مفتاح Apify API أولاً.');
+
+  const urls = pageUrlsInput.value.split('\n').map(u => u.trim()).filter(Boolean);
+  if (!urls.length) return showFormError('⚠️ أدخل رابط صفحة فيسبوك واحدة على الأقل.');
+  const badUrl = urls.find(u => !/^https?:\/\/(www\.|m\.|web\.)?facebook\.com\//i.test(u));
+  if (badUrl) return showFormError(`⚠️ الرابط التالي ليس رابط فيسبوك صالحاً: ${badUrl}`);
+
+  const limit = Math.max(1, Math.min(1000, parseInt(postsLimitInput.value, 10) || 20));
+  const from = dateFromInput.value, to = dateToInput.value;
+  if (validDate(from) && validDate(to) && new Date(from) > new Date(to)) {
+    return showFormError('⚠️ تاريخ البداية يجب أن يكون قبل تاريخ النهاية.');
+  }
+
+  const input = {
+    startUrls: urls.map(url => ({ url })),
+    resultsLimit: limit
+  };
+  if (validDate(from)) input.onlyPostsNewerThan = from;
+  if (validDate(to)) input.onlyPostsOlderThan = to;
+
+  aborted = false;
+  currentRunId = null;
+  runBtn.disabled = true;
+  statusPanel.style.display = 'block';
+  resultsSection.style.display = 'none';
+  spinner.style.display = 'block';
+  $('abortBtn').style.display = 'inline-flex';
+  progressBar.style.width = '10%';
+  setStatus('جارٍ بدء عملية الاستخراج...', 'الاتصال بخوادم Apify');
+  statusPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+  try {
+    // 1) Start the actor run
+    const startRes = await fetch(`${API_BASE}/acts/${ACTOR_ID}/runs?token=${encodeURIComponent(token)}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input)
+    });
+    if (!startRes.ok) throw await apiError(startRes);
+    const run = (await startRes.json()).data;
+    currentRunId = run.id;
+
+    // 2) Poll until finished
+    progressBar.style.width = '25%';
+    setStatus('جارٍ استخراج المنشورات...', 'قد تستغرق العملية عدة دقائق حسب حجم الطلب');
+    let status = run.status, datasetId = run.defaultDatasetId, elapsed = 0;
+    while (['READY', 'RUNNING'].includes(status)) {
+      if (aborted) return;
+      await sleep(4000);
+      elapsed += 4;
+      progressBar.style.width = Math.min(85, 25 + elapsed * 1.2) + '%';
+      statusSub.textContent = `مضى ${elapsed} ثانية · الحالة: قيد التشغيل`;
+      const st = await fetch(`${API_BASE}/actor-runs/${currentRunId}?token=${encodeURIComponent(token)}`);
+      if (!st.ok) throw await apiError(st);
+      const d = (await st.json()).data;
+      status = d.status;
+      datasetId = d.defaultDatasetId;
+    }
+    if (aborted) return;
+    if (status !== 'SUCCEEDED') {
+      throw new Error(`انتهى التشغيل بحالة "${status}". تحقق من رصيدك في Apify أو من صحة الروابط.`);
+    }
+
+    // 3) Fetch dataset items
+    progressBar.style.width = '92%';
+    setStatus('جارٍ تحميل النتائج...', 'قراءة البيانات المستخرجة');
+    const itemsRes = await fetch(`${API_BASE}/datasets/${datasetId}/items?clean=true&format=json&token=${encodeURIComponent(token)}`);
+    if (!itemsRes.ok) throw await apiError(itemsRes);
+    const items = await itemsRes.json();
+
+    allPosts = items.map(normalizePost).filter(p => p.text || p.url);
+    // Client-side date filter as a safety net on top of the actor's own filter
+    if (validDate(from)) {
+      const f = new Date(from).getTime();
+      allPosts = allPosts.filter(p => !p.ts || p.ts >= f);
+    }
+    if (validDate(to)) {
+      const t = new Date(to).getTime() + 86399999; // include the whole end day
+      allPosts = allPosts.filter(p => !p.ts || p.ts <= t);
+    }
+
+    progressBar.style.width = '100%';
+    spinner.style.display = 'none';
+    $('abortBtn').style.display = 'none';
+    setStatus(`✅ اكتمل الاستخراج — ${allPosts.length} منشور`, 'يمكنك البحث والفرز والتصدير من الأسفل', true);
+    renderResults();
+  } catch (err) {
+    spinner.style.display = 'none';
+    $('abortBtn').style.display = 'none';
+    setStatus('❌ فشلت العملية', '', true);
+    runError.textContent = err.message || String(err);
+    runError.style.display = 'block';
+  } finally {
+    runBtn.disabled = false;
+  }
+}
+
+async function apiError(res) {
+  let msg = `خطأ من Apify (HTTP ${res.status})`;
+  try {
+    const body = await res.json();
+    if (body?.error?.message) msg += `: ${body.error.message}`;
+  } catch (_) {}
+  if (res.status === 401) msg = '🔑 مفتاح API غير صحيح أو منتهي. تحقق من المفتاح في لوحة تحكم Apify.';
+  if (res.status === 402) msg = '💳 رصيد حساب Apify غير كافٍ لتشغيل هذه العملية.';
+  return new Error(msg);
+}
+
+function setStatus(main, sub, done) {
+  statusText.textContent = main;
+  statusSub.textContent = sub || '';
+  if (done) spinner.style.display = 'none';
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* =============== Normalization =============== */
+function normalizePost(raw) {
+  const text = raw.text || raw.message || raw.postText || '';
+  const url = raw.url || raw.postUrl || raw.topLevelUrl || '';
+  const timeVal = raw.time || raw.date || raw.publishedTime || raw.timestamp || null;
+  let ts = null;
+  if (typeof timeVal === 'number') ts = timeVal > 1e12 ? timeVal : timeVal * 1000;
+  else if (timeVal) { const d = new Date(timeVal); if (!isNaN(d)) ts = d.getTime(); }
+  const author = raw.user?.name || raw.pageName || raw.author || raw.user?.id || 'صفحة فيسبوك';
+  const avatar = raw.user?.profilePic || raw.pageProfilePic || '';
+  let media = '';
+  if (Array.isArray(raw.media) && raw.media.length) {
+    const m = raw.media.find(x => x?.thumbnail || x?.photo_image?.uri || x?.image?.uri || (typeof x?.url === 'string' && /\.(jpg|jpeg|png|webp)/i.test(x.url)));
+    media = m?.thumbnail || m?.photo_image?.uri || m?.image?.uri || m?.url || '';
+  }
+  return {
+    text, url, ts,
+    date: ts ? new Date(ts) : null,
+    author, avatar, media,
+    likes: num(raw.likes ?? raw.likesCount ?? raw.reactions ?? raw.reactionsCount),
+    comments: num(raw.comments ?? raw.commentsCount),
+    shares: num(raw.shares ?? raw.sharesCount),
+    raw
+  };
+}
+function num(v) {
+  if (typeof v === 'number') return v;
+  if (typeof v === 'string') { const n = parseInt(v.replace(/[^\d]/g, ''), 10); return isNaN(n) ? 0 : n; }
+  return 0;
+}
+
+/* =============== Rendering =============== */
+function renderResults() {
+  resultsSection.style.display = 'block';
+  renderStats();
+  renderPosts();
+  resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderStats() {
+  const total = allPosts.length;
+  const likes = allPosts.reduce((s, p) => s + p.likes, 0);
+  const comments = allPosts.reduce((s, p) => s + p.comments, 0);
+  const shares = allPosts.reduce((s, p) => s + p.shares, 0);
+  const cards = [
+    ['📝', 'إجمالي المنشورات', total, '#1877f2'],
+    ['👍', 'إجمالي الإعجابات', likes, '#16a34a'],
+    ['💬', 'إجمالي التعليقات', comments, '#d97706'],
+    ['🔁', 'إجمالي المشاركات', shares, '#9333ea']
+  ];
+  statsGrid.innerHTML = cards.map(([icon, label, val, color]) => `
+    <div class="stat-card">
+      <div class="stat-icon" style="background:${color}1a">${icon}</div>
+      <div>
+        <div class="stat-value">${fmtNum(val)}</div>
+        <div class="stat-label">${label}</div>
+      </div>
+    </div>`).join('');
+}
+
+function getVisiblePosts() {
+  const q = searchInput.value.trim().toLowerCase();
+  let posts = allPosts.filter(p =>
+    !q || p.text.toLowerCase().includes(q) || p.author.toLowerCase().includes(q)
+  );
+  const sort = sortSelect.value;
+  posts = posts.slice().sort((a, b) => {
+    if (sort === 'newest') return (b.ts || 0) - (a.ts || 0);
+    if (sort === 'oldest') return (a.ts || 0) - (b.ts || 0);
+    if (sort === 'likes') return b.likes - a.likes;
+    if (sort === 'comments') return b.comments - a.comments;
+    if (sort === 'shares') return b.shares - a.shares;
+    return 0;
+  });
+  return posts;
+}
+
+function renderPosts() {
+  const posts = getVisiblePosts();
+  emptyState.style.display = posts.length ? 'none' : 'block';
+  postsGrid.innerHTML = posts.map((p, i) => {
+    const dateStr = p.date
+      ? p.date.toLocaleDateString('ar', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
+      : 'تاريخ غير معروف';
+    const initial = escapeHtml((p.author || '?').charAt(0));
+    const avatar = p.avatar
+      ? `<img class="avatar" src="${escapeAttr(p.avatar)}" alt="" onerror="this.outerHTML='<div class=avatar>${initial}</div>'">`
+      : `<div class="avatar">${initial}</div>`;
+    const media = p.media ? `<img class="post-media" loading="lazy" src="${escapeAttr(p.media)}" alt="" onerror="this.remove()">` : '';
+    const longText = p.text.length > 320;
+    return `
+    <article class="post-card" style="animation-delay:${Math.min(i * 40, 400)}ms">
+      <div class="post-head">
+        ${avatar}
+        <div>
+          <div class="post-author">${escapeHtml(p.author)}</div>
+          <div class="post-date">🕓 ${dateStr}</div>
+        </div>
+      </div>
+      <div class="post-body">
+        <div class="post-text ${longText ? 'clamped' : ''}" id="txt-${i}">${escapeHtml(p.text) || '<em style="color:var(--text-2)">— منشور بدون نص —</em>'}</div>
+        ${longText ? `<button class="read-more" data-target="txt-${i}">عرض المزيد ▾</button>` : ''}
+      </div>
+      ${media}
+      <div class="post-foot">
+        <div class="reactions">
+          <span>👍 ${fmtNum(p.likes)}</span>
+          <span>💬 ${fmtNum(p.comments)}</span>
+          <span>🔁 ${fmtNum(p.shares)}</span>
+        </div>
+        ${p.url ? `<a class="post-link" href="${escapeAttr(p.url)}" target="_blank" rel="noopener">فتح المنشور ↗</a>` : ''}
+      </div>
+    </article>`;
+  }).join('');
+
+  postsGrid.querySelectorAll('.read-more').forEach(btn => {
+    btn.onclick = () => {
+      const el = document.getElementById(btn.dataset.target);
+      const clamped = el.classList.toggle('clamped');
+      btn.textContent = clamped ? 'عرض المزيد ▾' : 'عرض أقل ▴';
+    };
+  });
+}
+
+function fmtNum(n) {
+  if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
+  if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
+  return String(n);
+}
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+function escapeAttr(s) { return escapeHtml(s); }
+
+/* =============== Toolbar events =============== */
+searchInput.addEventListener('input', renderPosts);
+sortSelect.addEventListener('change', () => { if (allPosts.length) renderPosts(); });
+$('gridViewBtn').onclick = () => setView(false);
+$('listViewBtn').onclick = () => setView(true);
+function setView(list) {
+  postsGrid.classList.toggle('list-view', list);
+  $('gridViewBtn').classList.toggle('active', !list);
+  $('listViewBtn').classList.toggle('active', list);
+}
+
+/* =============== Export =============== */
+$('exportJsonBtn').onclick = () => {
+  const posts = getVisiblePosts().map(p => p.raw);
+  download(JSON.stringify(posts, null, 2), 'facebook-posts.json', 'application/json');
+  showToast('⬇️ تم تنزيل ملف JSON');
+};
+$('exportCsvBtn').onclick = () => {
+  const posts = getVisiblePosts();
+  const header = ['author', 'date', 'text', 'likes', 'comments', 'shares', 'url'];
+  const rows = posts.map(p => [
+    p.author, p.date ? p.date.toISOString() : '', p.text,
+    p.likes, p.comments, p.shares, p.url
+  ].map(csvCell).join(','));
+  // BOM so Excel opens Arabic text correctly
+  download('﻿' + [header.join(','), ...rows].join('\r\n'), 'facebook-posts.csv', 'text/csv;charset=utf-8');
+  showToast('⬇️ تم تنزيل ملف CSV');
+};
+function csvCell(v) {
+  const s = String(v ?? '');
+  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+}
+function download(content, filename, type) {
+  const blob = new Blob([content], { type });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = filename;
+  a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
+}
+</script>
+</body>
+</html>
