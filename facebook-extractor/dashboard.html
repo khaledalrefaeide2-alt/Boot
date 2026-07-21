@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>لوحة الرصد التفاعلية — FB Extractor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #edeee1;
+    --surface: #faf8ef;
+    --surface-2: #f0eddd;
+    --text: #22372e;
+    --text-2: #6d7c6e;
+    --border: #dcdcc6;
+
+    --green-950: #122c23;
+    --green-900: #16382c;
+    --green-700: #23553f;
+    --green-500: #47775a;
+    --sage: #8fae70;
+    --sage-soft: #dfe8cf;
+    --brown-700: #55402f;
+    --tan: #d9b58a;
+    --cream: #f0dcc0;
+    --gold: #e8c9a0;
+    --danger: #b3422f;
+    --primary-soft: #e3ecdd;
+
+    /* chart roles (single-hue green series; identity by labels/filters) */
+    --c-surface: #faf8ef;
+    --c-text: #22372e;
+    --c-text-2: #6d7c6e;
+    --c-muted: #8b9a8b;
+    --c-grid: #e3e6d5;
+    --c-accent: #2c6a51;
+    --c-accent-2: #47775a;
+    --c-fill-top: rgba(44, 106, 81, .30);
+    --c-fill-bot: rgba(44, 106, 81, .02);
+
+    --shadow: 0 2px 6px rgba(34, 55, 46, .07), 0 14px 34px rgba(34, 55, 46, .10);
+    --shadow-lg: 0 24px 60px rgba(18, 44, 35, .22);
+    --radius: 24px;
+  }
+  [data-theme="dark"] {
+    --bg: #0f1a14;
+    --surface: #17251d;
+    --surface-2: #1e2f25;
+    --text: #e9efe2;
+    --text-2: #96a894;
+    --border: #2a3b2f;
+    --primary-soft: #21382b;
+    --sage-soft: #23392a;
+    --cream: #d9bd97;
+
+    --c-surface: #17251d;
+    --c-text: #e9efe2;
+    --c-text-2: #96a894;
+    --c-muted: #6f7f70;
+    --c-grid: #24352a;
+    --c-accent: #7ec69a;
+    --c-accent-2: #5f9376;
+    --c-fill-top: rgba(126, 198, 154, .28);
+    --c-fill-bot: rgba(126, 198, 154, .02);
+
+    --shadow: 0 2px 6px rgba(0, 0, 0, .35), 0 14px 34px rgba(0, 0, 0, .35);
+    --shadow-lg: 0 24px 60px rgba(0, 0, 0, .55);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+    background:
+      radial-gradient(1100px 500px at 90% -100px, rgba(143, 174, 112, .14), transparent 60%),
+      var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background .3s, color .3s;
+  }
+
+  /* ============ Hero ============ */
+  .hero-wrap {
+    position: relative; overflow: hidden; color: #f3efe2;
+    background:
+      radial-gradient(900px 460px at 12% -60px, rgba(232, 201, 160, .16), transparent 55%),
+      radial-gradient(1200px 700px at 105% 115%, rgba(20, 60, 46, .9), transparent 60%),
+      linear-gradient(160deg, #2c6a51 0%, #1d4b3a 48%, #143427 100%);
+    border-bottom-left-radius: 46px; border-bottom-right-radius: 46px;
+    box-shadow: var(--shadow-lg);
+  }
+  .leaves { position: absolute; inset-inline-start: -40px; top: -50px; width: 240px; height: 240px; pointer-events: none; opacity: .9; }
+  .nav {
+    position: relative; z-index: 2; max-width: 1220px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    padding: 22px 28px 0;
+  }
+  .brand { display: flex; align-items: center; gap: 13px; }
+  .brand a { color: inherit; text-decoration: none; display: flex; align-items: center; gap: 13px; }
+  .brand-logo {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: linear-gradient(145deg, var(--gold), #caa06f); color: #3d2c1d;
+    display: grid; place-items: center; font-size: 24px; box-shadow: 0 8px 22px rgba(0, 0, 0, .28);
+  }
+  .brand h1 { font-size: 1.3rem; font-weight: 900; letter-spacing: -.3px; }
+  .brand p { font-size: .78rem; opacity: .82; }
+  .nav-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .nav-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid rgba(255,255,255,.3); border-radius: 999px;
+    background: rgba(255,255,255,.1); color: #fff;
+    padding: 10px 18px; font-size: .82rem; font-weight: 700;
+    text-decoration: none; backdrop-filter: blur(6px); cursor: pointer;
+    transition: background .2s;
+  }
+  .nav-link:hover { background: rgba(255,255,255,.22); }
+  .icon-btn {
+    width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); cursor: pointer;
+    background: rgba(255,255,255,.1); color: #fff; font-size: 18px; display: grid; place-items: center;
+    backdrop-filter: blur(6px); transition: background .2s, transform .15s;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,.22); transform: translateY(-1px); }
+  .hero { position: relative; z-index: 2; max-width: 1220px; margin: 0 auto; padding: 40px 28px 92px; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(232, 201, 160, .16); border: 1px solid rgba(232, 201, 160, .4); color: var(--gold);
+    border-radius: 999px; padding: 7px 18px; font-size: .8rem; font-weight: 700; margin-bottom: 16px;
+  }
+  .hero h2 { font-size: clamp(1.6rem, 3.8vw, 2.4rem); font-weight: 900; line-height: 1.5; }
+  .hero h2 em { font-style: normal; color: var(--gold); }
+  .hero p { margin-top: 12px; max-width: 640px; opacity: .85; line-height: 2; font-size: .95rem; }
+
+  /* ============ Layout ============ */
+  main { max-width: 1220px; margin: 0 auto; padding: 0 28px 70px; }
+  .panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 28px; margin-top: 26px; transition: background .3s, border-color .3s;
+  }
+  .panel-title { display: flex; align-items: center; gap: 12px; font-size: 1.05rem; font-weight: 900; margin-bottom: 18px; }
+  .panel-title .num {
+    width: 34px; height: 34px; border-radius: 50%; flex: none;
+    background: linear-gradient(145deg, var(--green-500), var(--green-700)); color: #f3efe2;
+    display: grid; place-items: center; font-size: .88rem; font-weight: 900; box-shadow: 0 6px 14px rgba(35, 85, 63, .35);
+  }
+  .row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .input {
+    width: 100%; padding: 12px 15px; border: 1.5px solid var(--border); border-radius: 15px;
+    background: var(--surface-2); color: var(--text); font-family: inherit; font-size: .92rem;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .input:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 0 4px var(--primary-soft); }
+  .hint { font-size: .78rem; color: var(--text-2); margin-top: 8px; line-height: 1.7; }
+  .hint a { color: var(--green-700); text-decoration: none; font-weight: 700; }
+  [data-theme="dark"] .hint a { color: var(--sage); }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+    padding: 12px 26px; border: none; border-radius: 999px; cursor: pointer;
+    font-family: inherit; font-size: .92rem; font-weight: 900;
+    transition: transform .15s, box-shadow .2s, background .2s, opacity .2s;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn-primary { background: linear-gradient(145deg, var(--green-500), var(--green-900)); color: #f3efe2; box-shadow: 0 10px 24px rgba(22, 56, 44, .38); }
+  .btn-primary:hover { transform: translateY(-2px); }
+  .btn-ghost { background: var(--surface-2); color: var(--text); border: 1.5px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--green-500); }
+  .btn-danger-ghost { background: transparent; border: 1.5px solid var(--danger); color: var(--danger); }
+  .btn-sm { padding: 9px 18px; font-size: .83rem; }
+
+  /* chips */
+  .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 14px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 9px; background: var(--sage-soft);
+    border: 1px solid var(--border); border-radius: 999px; padding: 8px 15px; font-size: .82rem; font-weight: 700;
+  }
+  .chip .chip-url { direction: ltr; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 300px; }
+  .chip button { border: none; background: var(--danger); color: #fff; width: 20px; height: 20px; border-radius: 50%; cursor: pointer; font-size: 11px; display: grid; place-items: center; flex: none; }
+  .no-platforms { font-size: .85rem; color: var(--text-2); margin-top: 12px; }
+  #keyRow, #dbRow { margin-top: 12px; }
+
+  /* ============ Control band ============ */
+  .control-band {
+    margin-top: 26px; background: linear-gradient(160deg, #1e4a3b, #14352a);
+    border-radius: 28px; box-shadow: var(--shadow-lg); padding: 26px; color: #e9efe2;
+    display: flex; align-items: center; gap: 20px; flex-wrap: wrap;
+  }
+  .pulse-dot { width: 14px; height: 14px; border-radius: 50%; flex: none; background: #8b8f86; }
+  .pulse-dot.on { background: #7ee08a; animation: pulse 1.8s infinite; }
+  @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(126, 224, 138, .55); } 70% { box-shadow: 0 0 0 14px rgba(126, 224, 138, 0); } 100% { box-shadow: 0 0 0 0 rgba(126, 224, 138, 0); } }
+  .control-info { flex: 1 1 220px; }
+  .control-info h3 { font-size: 1.02rem; font-weight: 900; }
+  .control-info p { font-size: .79rem; opacity: .78; line-height: 1.9; }
+  .interval-select {
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.25); color: #fff;
+    border-radius: 12px; padding: 8px 12px; font-family: inherit; font-size: .82rem; font-weight: 700;
+  }
+  .interval-select option { color: #14352a; }
+  .countdown {
+    font-size: 1.5rem; font-weight: 900; letter-spacing: 1px; direction: ltr;
+    background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2);
+    border-radius: 16px; padding: 9px 20px; font-variant-numeric: tabular-nums;
+  }
+  .btn-cream { background: linear-gradient(145deg, #f0dcc0, #dfb98b); color: #3d2c1d; box-shadow: 0 12px 26px rgba(0, 0, 0, .3); }
+  .btn-cream:hover { transform: translateY(-2px); }
+  .btn-stop { background: linear-gradient(145deg, #c65b46, #96331f); color: #fff; }
+  .mini-status { width: 100%; font-size: .8rem; opacity: .82; display: flex; align-items: center; gap: 9px; }
+  .mini-spinner { width: 15px; height: 15px; flex: none; border: 2.5px solid rgba(255,255,255,.25); border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; display: none; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .band-alert { border-radius: 14px; padding: 12px 16px; font-size: .86rem; line-height: 1.8; margin-top: 14px; display: none; width: 100%; background: rgba(179, 66, 47, .18); color: #ffd9d0; border: 1px solid rgba(255, 150, 130, .35); }
+
+  /* ============ Dashboard ============ */
+  #dashboard { display: none; }
+
+  /* filter row */
+  .filters { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 30px 0 6px; }
+  .filter-group { display: flex; gap: 7px; flex-wrap: wrap; align-items: center; }
+  .filter-label { font-size: .76rem; font-weight: 700; color: var(--text-2); margin-inline-end: 2px; }
+  .pill {
+    border: 1.5px solid var(--border); background: var(--surface); color: var(--text);
+    border-radius: 999px; padding: 8px 16px; font-family: inherit; font-size: .82rem; font-weight: 700; cursor: pointer;
+    transition: all .18s; white-space: nowrap;
+  }
+  .pill:hover { border-color: var(--green-500); }
+  .pill.active { background: var(--green-700); border-color: var(--green-700); color: #f3efe2; }
+  .filters .spacer { flex: 1; }
+
+  /* stat tiles */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin: 20px 0; }
+  .stat-tile {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 20px;
+    padding: 20px 22px; box-shadow: var(--shadow);
+  }
+  .stat-tile .k { font-size: .78rem; font-weight: 700; color: var(--text-2); display: flex; align-items: center; gap: 7px; }
+  .stat-tile .v { font-size: 1.9rem; font-weight: 900; line-height: 1.3; margin-top: 6px; }
+  .stat-tile .v.small { font-size: 1.15rem; }
+  .stat-tile .sub { font-size: .74rem; color: var(--text-2); }
+
+  /* chart cards */
+  .charts-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 20px; margin-bottom: 6px; }
+  @media (max-width: 860px) { .charts-grid { grid-template-columns: 1fr; } }
+  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); padding: 22px 22px 16px; }
+  .chart-card h4 { font-size: .98rem; font-weight: 900; display: flex; align-items: center; gap: 9px; }
+  .chart-card .chart-sub { font-size: .76rem; color: var(--text-2); margin-top: 3px; margin-bottom: 10px; }
+  .chart-holder { position: relative; width: 100%; }
+  .chart-holder svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .chart-empty { text-align: center; color: var(--text-2); font-size: .85rem; padding: 40px 10px; }
+  .chart-tooltip {
+    position: absolute; pointer-events: none; z-index: 5; opacity: 0; transition: opacity .12s;
+    background: var(--green-950); color: #f3efe2; border-radius: 12px; padding: 9px 13px;
+    font-size: .8rem; box-shadow: 0 8px 22px rgba(0,0,0,.3); white-space: nowrap; transform: translate(-50%, -120%);
+  }
+  .chart-tooltip .tt-v { font-weight: 900; font-size: .95rem; }
+  .chart-tooltip .tt-k { opacity: .8; font-size: .74rem; }
+  svg text.num { direction: ltr; unicode-bidi: plaintext; }
+
+  /* feed */
+  .feed-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 30px 0 16px; }
+  .feed-head h3 { font-size: 1.12rem; font-weight: 900; display: flex; align-items: center; gap: 10px; }
+  .feed-count { background: var(--green-700); color: #f3efe2; border-radius: 999px; padding: 3px 13px; font-size: .8rem; font-weight: 900; }
+  .feed-head .spacer { flex: 1; }
+  .feed-head .search-wrap { position: relative; flex: 1 1 220px; max-width: 320px; }
+  .feed-head .search-wrap input { padding-right: 40px; }
+  .feed-head .search-wrap::before { content: '🔍'; position: absolute; right: 14px; top: 50%; transform: translateY(-50%); font-size: 13px; pointer-events: none; }
+  .feed-head select.input { width: auto; }
+  .feed { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(340px, 1fr)); }
+  .post-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow); overflow: hidden; display: flex; flex-direction: column; animation: fadeUp .4s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+  .post-card.fresh { border-color: var(--sage); box-shadow: 0 0 0 3px var(--sage-soft), var(--shadow); }
+  .post-head { display: flex; align-items: center; gap: 12px; padding: 16px 18px 0; }
+  .avatar { width: 44px; height: 44px; border-radius: 50%; flex: none; object-fit: cover; background: linear-gradient(145deg, var(--green-500), var(--green-900)); color: #f3efe2; display: grid; place-items: center; font-weight: 900; }
+  .post-author { font-weight: 900; font-size: .9rem; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .badge-new { background: linear-gradient(145deg, var(--sage), #5f8348); color: #fff; border-radius: 999px; padding: 1px 10px; font-size: .66rem; font-weight: 900; }
+  .post-date { font-size: .74rem; color: var(--text-2); }
+  .post-body { padding: 12px 18px; flex: 1; }
+  .post-text { font-size: .89rem; line-height: 1.9; white-space: pre-wrap; word-break: break-word; }
+  .post-text.clamped { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+  .read-more { border: none; background: none; color: var(--green-700); font-family: inherit; font-weight: 900; font-size: .8rem; cursor: pointer; padding: 6px 0 0; }
+  [data-theme="dark"] .read-more { color: var(--sage); }
+  .post-foot { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap; padding: 12px 18px; border-top: 1px solid var(--border); background: var(--sage-soft); }
+  .reactions { display: flex; gap: 13px; font-size: .79rem; font-weight: 700; opacity: .85; }
+  .post-link { font-size: .79rem; font-weight: 900; color: var(--green-700); text-decoration: none; }
+  [data-theme="dark"] .post-link { color: var(--sage); }
+  .post-link:hover { text-decoration: underline; }
+  .empty-state { text-align: center; padding: 56px 20px; color: var(--text-2); }
+  .empty-state .big { font-size: 50px; margin-bottom: 12px; }
+
+  footer { text-align: center; padding: 30px 20px 36px; color: var(--text-2); font-size: .82rem; }
+  .toast { position: fixed; bottom: 26px; right: 50%; transform: translate(50%, 20px); background: var(--green-900); color: #f3efe2; padding: 13px 26px; border-radius: 999px; font-size: .88rem; font-weight: 700; opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s; z-index: 99; box-shadow: var(--shadow-lg); }
+  .toast.show { opacity: 1; transform: translate(50%, 0); }
+
+  @media (max-width: 720px) {
+    .panel, .control-band { padding: 20px; }
+    .hero { padding: 34px 22px 80px; }
+    .countdown { font-size: 1.2rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="hero-wrap">
+  <svg class="leaves" viewBox="0 0 300 300" aria-hidden="true">
+    <g transform="translate(70 40) rotate(35)"><path d="M0 90 Q 8 8 78 0 Q 86 74 22 96 Q 8 100 0 90 Z" fill="#8fae70"/><path d="M4 88 Q 40 44 74 6" stroke="#5f8348" stroke-width="3" fill="none"/></g>
+    <g transform="translate(150 120) rotate(20)"><path d="M0 66 Q 6 6 58 0 Q 64 54 16 71 Q 6 74 0 66 Z" fill="#d9b58a"/></g>
+  </svg>
+  <nav class="nav">
+    <div class="brand">
+      <a href="index.html">
+        <div class="brand-logo">🍃</div>
+        <div><h1>FB Extractor</h1><p>لوحة الرصد التفاعلية</p></div>
+      </a>
+    </div>
+    <div class="nav-actions">
+      <a class="nav-link" href="index.html">🔍 الاستخراج اليدوي</a>
+      <a class="nav-link" href="monitor.html">📋 عرض القائمة</a>
+      <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري">🌙</button>
+    </div>
+  </nav>
+  <div class="hero">
+    <span class="hero-badge">📊 رصد مباشر وتحليل تفاعلي</span>
+    <h2>لوحة رصد <em>منصاتك الرسمية</em> على فيسبوك</h2>
+    <p>أضف صفحاتك الرسمية واربط مفتاح Apify، وسترصد اللوحة منشوراتها دورياً وتعرض النشاط والتفاعل في رسوم بيانية تفاعلية مع تصفية حية حسب المنصة والفترة الزمنية.</p>
+  </div>
+</div>
+
+<main>
+
+  <!-- Setup -->
+  <section class="panel">
+    <div class="panel-title"><span class="num">1</span> الإعداد — المنصات والمفتاح</div>
+    <div class="row">
+      <input class="input" type="url" id="newPageUrl" placeholder="https://www.facebook.com/mypage" dir="ltr" style="flex:1 1 280px">
+      <button class="btn btn-primary btn-sm" id="addPageBtn">➕ إضافة منصة</button>
+    </div>
+    <div class="hint">أضف روابط صفحاتك الرسمية — تُحفظ في متصفحك وتُشارَك مع صفحة عرض القائمة.</div>
+    <div class="chips" id="platformChips"></div>
+    <div class="no-platforms" id="noPlatforms">لم تضف أي منصة بعد.</div>
+
+    <div class="hint" id="keyHint" style="display:none">⚠️ لا يوجد مفتاح Apify محفوظ — أدخله هنا:</div>
+    <div class="row" id="keyRow" style="display:none">
+      <input class="input" type="password" id="apiKeyInline" placeholder="apify_api_XXXXXXXXXXXX" dir="ltr" style="flex:1 1 280px">
+      <button class="btn btn-ghost btn-sm" id="saveKeyInlineBtn">💾 حفظ المفتاح</button>
+    </div>
+    <div class="hint" style="margin-top:14px">
+      🗄️ قاعدة البيانات المحلية (اختياري):
+      <span id="dbStatusInline">غير متصلة</span>
+    </div>
+    <div class="row" id="dbRow">
+      <input class="input" type="url" id="dbUrl" dir="ltr" placeholder="http://localhost:3300" value="http://localhost:3300" style="flex:1 1 240px">
+      <button class="btn btn-ghost btn-sm" id="dbCheckBtn">🔌 فحص الاتصال</button>
+    </div>
+  </section>
+
+  <!-- Control band -->
+  <section class="control-band">
+    <div class="pulse-dot" id="pulseDot"></div>
+    <div class="control-info">
+      <h3 id="monitorTitle">الرصد متوقف</h3>
+      <p>يرصد <strong>منشورين</strong> لكل منصة كل دورة · بسقف فوترة إلزامي على Apify</p>
+    </div>
+    <select class="interval-select" id="intervalSelect" title="مدة الدورة">
+      <option value="15">كل 15 دقيقة</option>
+      <option value="30" selected>كل 30 دقيقة</option>
+      <option value="60">كل ساعة</option>
+      <option value="180">كل 3 ساعات</option>
+    </select>
+    <div class="countdown" id="countdown">--:--</div>
+    <button class="btn btn-cream" id="toggleBtn">▶️ بدء الرصد</button>
+    <button class="btn btn-ghost btn-sm" id="runNowBtn" style="border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff">⚡ رصد فوري</button>
+    <div class="mini-status">
+      <div class="mini-spinner" id="miniSpinner"></div>
+      <span id="miniStatus">آخر رصد: لم يتم بعد</span>
+    </div>
+    <div class="band-alert" id="bandAlert"></div>
+  </section>
+
+  <!-- Dashboard -->
+  <section id="dashboard">
+    <div class="filters">
+      <div class="filter-group" id="platformFilter">
+        <span class="filter-label">المنصة:</span>
+        <!-- pills injected -->
+      </div>
+      <div class="spacer"></div>
+      <div class="filter-group" id="rangeFilter">
+        <span class="filter-label">الفترة:</span>
+        <button class="pill" data-range="7">7 أيام</button>
+        <button class="pill active" data-range="30">30 يوم</button>
+        <button class="pill" data-range="90">90 يوم</button>
+        <button class="pill" data-range="0">الكل</button>
+      </div>
+    </div>
+
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h4>📈 نشاط النشر عبر الزمن</h4>
+        <div class="chart-sub">عدد المنشورات المرصودة يومياً</div>
+        <div class="chart-holder" id="timeHolder"></div>
+      </div>
+      <div class="chart-card">
+        <h4>🏆 التفاعل حسب المنصة</h4>
+        <div class="chart-sub">إجمالي (إعجابات + تعليقات + مشاركات)</div>
+        <div class="chart-holder" id="platHolder"></div>
+      </div>
+    </div>
+
+    <div class="feed-head">
+      <h3>📰 المنشورات <span class="feed-count" id="feedCount">0</span></h3>
+      <div class="search-wrap"><input class="input" type="search" id="searchInput" placeholder="ابحث في المنشورات..."></div>
+      <select class="input" id="sortSelect">
+        <option value="newest">الأحدث أولاً</option>
+        <option value="oldest">الأقدم أولاً</option>
+        <option value="engage">الأكثر تفاعلاً</option>
+      </select>
+      <div class="spacer"></div>
+      <button class="btn btn-ghost btn-sm" id="exportBtn">⬇️ تصدير JSON</button>
+      <button class="btn btn-danger-ghost btn-sm" id="clearBtn">🗑️ مسح السجل</button>
+    </div>
+    <div class="feed" id="feed"></div>
+    <div class="empty-state" id="feedEmpty" style="display:none"><div class="big">🔎</div><p>لا منشورات ضمن هذه التصفية</p></div>
+  </section>
+
+  <div class="empty-state" id="bootEmpty">
+    <div class="big">📊</div>
+    <p>أضف منصاتك الرسمية ومفتاح Apify، ثم اضغط «بدء الرصد» لتظهر لوحة التحليل التفاعلية هنا.</p>
+  </div>
+
+</main>
+
+<footer>FB Extractor — لوحة الرصد التفاعلية · الإصدار 2.0 🍃</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+
+/* =============== Constants (shared storage with monitor.html) =============== */
+const ACTOR_ID = 'apify~facebook-posts-scraper';
+const API_BASE = 'https://api.apify.com/v2';
+const KEY_STORAGE = 'fbx_apify_key';
+const THEME_STORAGE = 'fbx_theme';
+const PAGES_STORAGE = 'fbx_monitor_pages';
+const FEED_STORAGE = 'fbx_monitor_feed';
+const ON_STORAGE = 'fbx_monitor_on';
+const LAST_STORAGE = 'fbx_monitor_last';
+const INTERVAL_STORAGE = 'fbx_monitor_interval';
+const DB_URL_STORAGE = 'fbx_db_url';
+
+const POSTS_PER_PAGE = 2;
+const FEED_CAP = 800;
+
+const $ = id => document.getElementById(id);
+const toast = $('toast');
+
+/* =============== Theme =============== */
+function applyTheme(t) {
+  document.documentElement.dataset.theme = t;
+  $('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙';
+}
+applyTheme(localStorage.getItem(THEME_STORAGE) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+$('themeBtn').onclick = () => {
+  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
+  localStorage.setItem(THEME_STORAGE, next);
+  applyTheme(next);
+  if (feed.length) renderDashboard();
+};
+function showToast(msg) { toast.textContent = msg; toast.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => toast.classList.remove('show'), 2600); }
+
+/* =============== State =============== */
+let pages = load(PAGES_STORAGE, []);
+let feed = load(FEED_STORAGE, []);
+let monitorOn = localStorage.getItem(ON_STORAGE) === '1';
+let lastRunAt = parseInt(localStorage.getItem(LAST_STORAGE), 10) || 0;
+let intervalMin = parseInt(localStorage.getItem(INTERVAL_STORAGE), 10) || 30;
+let cycleRunning = false;
+let freshKeys = new Set();
+
+let filterPlatform = 'all';   // author name or 'all'
+let filterRange = 30;         // days, 0 = all
+let searchQ = '';
+let sortMode = 'newest';
+
+function load(k, fb) { try { const v = JSON.parse(localStorage.getItem(k)); return Array.isArray(v) ? v : fb; } catch (_) { return fb; } }
+function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+function getToken() { return (localStorage.getItem(KEY_STORAGE) || '').trim(); }
+
+/* =============== API key inline =============== */
+function refreshKeyUi() {
+  const missing = !getToken();
+  $('keyHint').style.display = missing ? 'block' : 'none';
+  $('keyRow').style.display = missing ? 'flex' : 'none';
+}
+$('saveKeyInlineBtn').onclick = () => {
+  const v = $('apiKeyInline').value.trim();
+  if (!v) return showToast('أدخل المفتاح أولاً');
+  localStorage.setItem(KEY_STORAGE, v); refreshKeyUi(); showToast('✅ تم حفظ المفتاح');
+};
+
+/* =============== Platforms =============== */
+$('addPageBtn').onclick = addPage;
+$('newPageUrl').addEventListener('keydown', e => { if (e.key === 'Enter') addPage(); });
+function addPage() {
+  const url = $('newPageUrl').value.trim();
+  if (!url) return;
+  if (!/^https?:\/\/(www\.|m\.|web\.)?facebook\.com\//i.test(url)) return showToast('⚠️ أدخل رابط صفحة فيسبوك صالحاً');
+  if (pages.includes(url)) return showToast('هذه المنصة مضافة مسبقاً');
+  pages.push(url); save(PAGES_STORAGE, pages); $('newPageUrl').value = '';
+  renderChips(); showToast('✅ تمت إضافة المنصة');
+}
+function removePage(i) { pages.splice(i, 1); save(PAGES_STORAGE, pages); renderChips(); }
+function renderChips() {
+  const box = $('platformChips');
+  box.innerHTML = pages.map((u, i) => `<span class="chip"><span class="chip-url" title="${esc(u)}">${esc(u.replace(/^https?:\/\/(www\.)?/, ''))}</span><button data-i="${i}" title="حذف">✕</button></span>`).join('');
+  box.querySelectorAll('button').forEach(b => b.onclick = () => removePage(+b.dataset.i));
+  $('noPlatforms').style.display = pages.length ? 'none' : 'block';
+}
+
+/* =============== Monitor engine =============== */
+$('intervalSelect').value = String(intervalMin);
+$('intervalSelect').onchange = () => { intervalMin = parseInt($('intervalSelect').value, 10); localStorage.setItem(INTERVAL_STORAGE, String(intervalMin)); };
+function intervalMs() { return intervalMin * 60 * 1000; }
+
+$('toggleBtn').onclick = () => (monitorOn ? stopMonitor() : startMonitor());
+$('runNowBtn').onclick = () => runCycle(true);
+
+function startMonitor() {
+  if (!getToken()) { refreshKeyUi(); return showToast('⚠️ احفظ مفتاح Apify أولاً'); }
+  if (!pages.length) return showToast('⚠️ أضف منصة واحدة على الأقل');
+  monitorOn = true; localStorage.setItem(ON_STORAGE, '1'); refreshControlUi();
+  if (Date.now() - lastRunAt >= intervalMs()) runCycle();
+  showToast('📡 بدأ الرصد الدوري');
+}
+function stopMonitor() { monitorOn = false; localStorage.setItem(ON_STORAGE, '0'); refreshControlUi(); showToast('⏹️ توقف الرصد'); }
+function refreshControlUi() {
+  $('pulseDot').classList.toggle('on', monitorOn);
+  $('monitorTitle').textContent = monitorOn ? 'الرصد نشط الآن' : 'الرصد متوقف';
+  $('toggleBtn').textContent = monitorOn ? '⏸️ إيقاف الرصد' : '▶️ بدء الرصد';
+  $('toggleBtn').classList.toggle('btn-stop', monitorOn);
+  $('toggleBtn').classList.toggle('btn-cream', !monitorOn);
+}
+function tick() {
+  if (monitorOn && !cycleRunning) {
+    const remaining = lastRunAt + intervalMs() - Date.now();
+    if (remaining <= 0) runCycle();
+    else { const m = Math.floor(remaining / 60000), s = Math.floor((remaining % 60000) / 1000); $('countdown').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; }
+  } else if (!monitorOn) $('countdown').textContent = '--:--';
+  setTimeout(tick, 1000);
+}
+
+async function runCycle(manual) {
+  if (cycleRunning) return;
+  const token = getToken();
+  if (!token) { refreshKeyUi(); return showToast('⚠️ احفظ مفتاح Apify أولاً'); }
+  if (!pages.length) return showToast('⚠️ أضف منصة واحدة على الأقل');
+  cycleRunning = true;
+  $('bandAlert').style.display = 'none';
+  $('miniSpinner').style.display = 'block';
+  $('countdown').textContent = '📡';
+  $('miniStatus').textContent = manual ? 'رصد فوري قيد التنفيذ...' : 'دورة رصد قيد التنفيذ...';
+  try {
+    const input = { startUrls: pages.map(url => ({ url })), resultsLimit: POSTS_PER_PAGE };
+    const maxItems = POSTS_PER_PAGE * pages.length;
+    const startRes = await fetch(`${API_BASE}/acts/${ACTOR_ID}/runs?token=${encodeURIComponent(token)}&maxItems=${maxItems}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input)
+    });
+    if (!startRes.ok) throw await apiError(startRes);
+    const run = (await startRes.json()).data;
+    let status = run.status, datasetId = run.defaultDatasetId;
+    while (['READY', 'RUNNING'].includes(status)) {
+      await sleep(4000);
+      const st = await fetch(`${API_BASE}/actor-runs/${run.id}?token=${encodeURIComponent(token)}`);
+      if (!st.ok) throw await apiError(st);
+      const d = (await st.json()).data; status = d.status; datasetId = d.defaultDatasetId;
+    }
+    if (status !== 'SUCCEEDED' && status !== 'ABORTED') throw new Error(`انتهى التشغيل بحالة "${status}". تحقق من الرصيد أو الروابط.`);
+    const itemsRes = await fetch(`${API_BASE}/datasets/${datasetId}/items?clean=true&format=json&token=${encodeURIComponent(token)}`);
+    if (!itemsRes.ok) throw await apiError(itemsRes);
+    const items = await itemsRes.json();
+
+    const existing = new Set(feed.map(p => p.key));
+    freshKeys = new Set();
+    let added = 0;
+    for (const raw of items) {
+      const p = normalizePost(raw);
+      if (!p.text && !p.url) continue;
+      if (existing.has(p.key)) continue;
+      existing.add(p.key); p.seenAt = Date.now();
+      feed.push(p); freshKeys.add(p.key); added++;
+    }
+    feed.sort((a, b) => (b.ts || b.seenAt || 0) - (a.ts || a.seenAt || 0));
+    if (feed.length > FEED_CAP) feed = feed.slice(0, FEED_CAP);
+    save(FEED_STORAGE, feed);
+    lastRunAt = Date.now(); localStorage.setItem(LAST_STORAGE, String(lastRunAt));
+    $('miniStatus').textContent = `آخر رصد: ${new Date(lastRunAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })} · ` + (added ? `${added} منشور جديد ✨` : 'لا جديد');
+    if (added) { showToast(`✨ ${added} منشور جديد`); saveToDb(feed.filter(p => freshKeys.has(p.key)), 'monitor'); }
+    showDashboard();
+    renderDashboard();
+  } catch (err) {
+    $('bandAlert').textContent = err.message || String(err);
+    $('bandAlert').style.display = 'block';
+    $('miniStatus').textContent = 'فشلت الدورة — ستُعاد المحاولة لاحقاً';
+    lastRunAt = Date.now(); localStorage.setItem(LAST_STORAGE, String(lastRunAt));
+  } finally { cycleRunning = false; $('miniSpinner').style.display = 'none'; }
+}
+
+async function apiError(res) {
+  let msg = `خطأ من Apify (HTTP ${res.status})`;
+  try { const b = await res.json(); if (b?.error?.message) msg += `: ${b.error.message}`; } catch (_) {}
+  if (res.status === 401) msg = '🔑 مفتاح API غير صحيح أو منتهي.';
+  if (res.status === 402) msg = '💳 رصيد حساب Apify غير كافٍ.';
+  return new Error(msg);
+}
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* =============== Normalization =============== */
+function normalizePost(raw) {
+  const text = raw.text || raw.message || raw.postText || '';
+  const url = raw.url || raw.postUrl || raw.topLevelUrl || '';
+  const timeVal = raw.time || raw.date || raw.publishedTime || raw.timestamp || null;
+  let ts = null;
+  if (typeof timeVal === 'number') ts = timeVal > 1e12 ? timeVal : timeVal * 1000;
+  else if (timeVal) { const d = new Date(timeVal); if (!isNaN(d)) ts = d.getTime(); }
+  const author = raw.user?.name || raw.pageName || raw.author || raw.user?.id || 'صفحة فيسبوك';
+  const avatar = raw.user?.profilePic || raw.pageProfilePic || '';
+  let media = '';
+  if (Array.isArray(raw.media) && raw.media.length) {
+    const m = raw.media.find(x => x?.thumbnail || x?.photo_image?.uri || x?.image?.uri);
+    media = m?.thumbnail || m?.photo_image?.uri || m?.image?.uri || '';
+  }
+  const key = url || `${author}|${ts || ''}|${text.slice(0, 80)}`;
+  return { key, text, url, ts, author, avatar, media,
+    likes: num(raw.likes ?? raw.likesCount ?? raw.reactions ?? raw.reactionsCount),
+    comments: num(raw.comments ?? raw.commentsCount), shares: num(raw.shares ?? raw.sharesCount) };
+}
+function num(v) { if (typeof v === 'number') return v; if (typeof v === 'string') { const n = parseInt(v.replace(/[^\d]/g, ''), 10); return isNaN(n) ? 0 : n; } return 0; }
+function engagement(p) { return (p.likes || 0) + (p.comments || 0) + (p.shares || 0); }
+
+/* =============== Dashboard visibility =============== */
+function showDashboard() { $('dashboard').style.display = 'block'; $('bootEmpty').style.display = 'none'; }
+
+/* =============== Filtering =============== */
+function platformKey(p) { return p.author || 'غير معروف'; }
+function platformList() { return [...new Set(feed.map(platformKey))]; }
+function inRange(p) {
+  if (!filterRange) return true;
+  const t = p.ts || p.seenAt || 0;
+  return t >= Date.now() - filterRange * 86400000;
+}
+function filteredPosts() {
+  return feed.filter(p =>
+    (filterPlatform === 'all' || platformKey(p) === filterPlatform) &&
+    inRange(p) &&
+    (!searchQ || (p.text || '').toLowerCase().includes(searchQ) || platformKey(p).toLowerCase().includes(searchQ))
+  );
+}
+
+/* =============== Render dashboard =============== */
+function renderDashboard() {
+  renderPlatformFilter();
+  const posts = filteredPosts();
+  renderStats(posts);
+  renderTimeChart(posts);
+  renderPlatformChart();
+  renderFeed(posts);
+}
+
+function renderPlatformFilter() {
+  const box = $('platformFilter');
+  const plats = platformList();
+  const pills = ['<span class="filter-label">المنصة:</span>',
+    `<button class="pill ${filterPlatform === 'all' ? 'active' : ''}" data-plat="all">كل المنصات</button>`,
+    ...plats.map(pl => `<button class="pill ${filterPlatform === pl ? 'active' : ''}" data-plat="${esc(pl)}">${esc(pl)}</button>`)
+  ];
+  box.innerHTML = pills.join('');
+  box.querySelectorAll('.pill').forEach(b => b.onclick = () => { filterPlatform = b.dataset.plat; renderDashboard(); });
+}
+
+function renderStats(posts) {
+  const total = posts.length;
+  const eng = posts.reduce((s, p) => s + engagement(p), 0);
+  const avg = total ? Math.round(eng / total) : 0;
+  // most active platform within current range (ignores platform filter for this stat)
+  const byPlat = {};
+  feed.filter(inRange).forEach(p => { byPlat[platformKey(p)] = (byPlat[platformKey(p)] || 0) + 1; });
+  let topPlat = '—', topN = 0;
+  for (const [k, v] of Object.entries(byPlat)) if (v > topN) { topN = v; topPlat = k; }
+  const lastStr = lastRunAt ? new Date(lastRunAt).toLocaleString('ar', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+  const tiles = [
+    ['📝 المنشورات', fmtNum(total), `منصات: ${platformList().length}`],
+    ['💫 إجمالي التفاعل', fmtNum(eng), 'إعجابات + تعليقات + مشاركات'],
+    ['📊 متوسط التفاعل', fmtNum(avg), 'لكل منشور'],
+    ['🏆 الأنشط', `<span class="v small">${esc(topPlat)}</span>`, `${fmtNum(topN)} منشور`, true],
+    ['🕓 آخر رصد', `<span class="v small">${lastStr}</span>`, monitorOn ? 'الرصد نشط' : 'الرصد متوقف', true]
+  ];
+  $('statsGrid').innerHTML = tiles.map(t =>
+    `<div class="stat-tile"><div class="k">${t[0]}</div>${t[3] ? t[1] : `<div class="v">${t[1]}</div>`}<div class="sub">${t[2]}</div></div>`
+  ).join('');
+}
+
+/* ---- time chart: posts per day (single-hue area + crosshair tooltip) ---- */
+function renderTimeChart(posts) {
+  const holder = $('timeHolder');
+  if (!posts.length) { holder.innerHTML = '<div class="chart-empty">لا بيانات ضمن هذه التصفية</div>'; return; }
+  const days = filterRange || 30;
+  const spanDays = Math.min(Math.max(days, 7), 90);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const buckets = [];
+  for (let i = spanDays - 1; i >= 0; i--) { const d = new Date(today); d.setDate(d.getDate() - i); buckets.push({ d, n: 0 }); }
+  const idx = new Map(buckets.map((b, i) => [b.d.getTime(), i]));
+  posts.forEach(p => { const t = p.ts || p.seenAt; if (!t) return; const d = new Date(t); d.setHours(0, 0, 0, 0); const i = idx.get(d.getTime()); if (i != null) buckets[i].n++; });
+
+  const W = 640, H = 240, padL = 34, padR = 14, padT = 16, padB = 30;
+  const maxN = Math.max(1, ...buckets.map(b => b.n));
+  const n = buckets.length;
+  const x = i => padL + (n === 1 ? (W - padL - padR) / 2 : i * (W - padL - padR) / (n - 1));
+  const y = v => padT + (1 - v / maxN) * (H - padT - padB);
+
+  const ticks = 3;
+  let grid = '';
+  for (let g = 0; g <= ticks; g++) {
+    const val = Math.round(maxN * g / ticks), yy = y(val);
+    grid += `<line x1="${padL}" y1="${yy}" x2="${W - padR}" y2="${yy}" stroke="var(--c-grid)" stroke-width="1"/>`;
+    grid += `<text class="num" x="${padL - 6}" y="${yy + 4}" text-anchor="end" font-size="11" fill="var(--c-muted)">${val}</text>`;
+  }
+  const linePts = buckets.map((b, i) => `${x(i)},${y(b.n)}`).join(' ');
+  const areaPts = `${x(0)},${y(0)} ${linePts} ${x(n - 1)},${y(0)}`;
+  // x labels: ~5 evenly spaced
+  let xlabels = '';
+  const step = Math.max(1, Math.round(n / 5));
+  for (let i = 0; i < n; i += step) {
+    xlabels += `<text class="num" x="${x(i)}" y="${H - padB + 18}" text-anchor="middle" font-size="10.5" fill="var(--c-muted)">${buckets[i].d.toLocaleDateString('ar', { day: 'numeric', month: 'short' })}</text>`;
+  }
+  const dots = buckets.map((b, i) => `<circle cx="${x(i)}" cy="${y(b.n)}" r="0" fill="var(--c-accent)"/>`).join('');
+
+  holder.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="نشاط النشر عبر الزمن">
+      <defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="var(--c-fill-top)"/><stop offset="1" stop-color="var(--c-fill-bot)"/>
+      </linearGradient></defs>
+      ${grid}
+      <polygon points="${areaPts}" fill="url(#areaGrad)"/>
+      <polyline points="${linePts}" fill="none" stroke="var(--c-accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots}
+      ${xlabels}
+      <line id="tcCross" x1="0" y1="${padT}" x2="0" y2="${H - padB}" stroke="var(--c-accent-2)" stroke-width="1" stroke-dasharray="4 3" opacity="0"/>
+      <circle id="tcDot" r="4.5" fill="var(--c-accent)" stroke="var(--c-surface)" stroke-width="2" opacity="0"/>
+      <rect x="${padL}" y="${padT}" width="${W - padL - padR}" height="${H - padT - padB}" fill="transparent" id="tcHit"/>
+    </svg>
+    <div class="chart-tooltip" id="tcTip"></div>`;
+
+  const svg = holder.querySelector('svg'), tip = $('tcTip'), cross = $('tcCross'), dot = $('tcDot'), hit = $('tcHit');
+  function move(ev) {
+    const pt = svgPoint(svg, ev);
+    let i = Math.round((pt.x - padL) / ((W - padL - padR) / Math.max(1, n - 1)));
+    i = Math.max(0, Math.min(n - 1, i));
+    const b = buckets[i], cx = x(i), cy = y(b.n);
+    cross.setAttribute('x1', cx); cross.setAttribute('x2', cx); cross.setAttribute('opacity', '.7');
+    dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('opacity', '1');
+    const rect = holder.getBoundingClientRect();
+    tip.style.left = (cx / W * rect.width) + 'px';
+    tip.style.top = (cy / H * rect.height) + 'px';
+    tip.style.opacity = '1';
+    tip.innerHTML = `<div class="tt-v">${b.n} منشور</div><div class="tt-k">${b.d.toLocaleDateString('ar', { weekday: 'long', day: 'numeric', month: 'long' })}</div>`;
+  }
+  function leave() { tip.style.opacity = '0'; cross.setAttribute('opacity', '0'); dot.setAttribute('opacity', '0'); }
+  hit.addEventListener('pointermove', move);
+  hit.addEventListener('pointerdown', move);
+  hit.addEventListener('pointerleave', leave);
+}
+
+/* ---- platform chart: horizontal single-hue bars, per-bar hover ---- */
+function renderPlatformChart() {
+  const holder = $('platHolder');
+  const inR = feed.filter(inRange);
+  const map = {};
+  inR.forEach(p => { const k = platformKey(p); (map[k] = map[k] || { eng: 0, n: 0 }); map[k].eng += engagement(p); map[k].n++; });
+  let rows = Object.entries(map).map(([k, v]) => ({ k, eng: v.eng, n: v.n })).sort((a, b) => b.eng - a.eng).slice(0, 8);
+  if (!rows.length) { holder.innerHTML = '<div class="chart-empty">لا بيانات ضمن هذه التصفية</div>'; return; }
+
+  // RTL layout: platform name on the right, bar grows leftward, value at the bar's left end.
+  const W = 460, rowH = 40, padT = 8, padB = 8, padL = 10, padR = 12;
+  const H = padT + padB + rows.length * rowH;
+  const labelW = 118, valW = 42;
+  const trackRight = W - padR - labelW;     // bars live left of the labels
+  const trackLeft = padL + valW;            // reserve room for the value at the far left
+  const barMax = trackRight - trackLeft;
+  const maxE = Math.max(1, ...rows.map(r => r.eng));
+
+  let bars = '';
+  rows.forEach((r, i) => {
+    const yy = padT + i * rowH, bh = 18, by = yy + (rowH - bh) / 2;
+    const bw = Math.max(3, r.eng / maxE * barMax);
+    const bx = trackRight - bw;             // right-anchored bar
+    const active = filterPlatform === r.k;
+    bars += `<g class="pbar" data-k="${esc(r.k)}" style="cursor:pointer">
+      <text x="${W - padR}" y="${by + bh / 2 + 4}" text-anchor="end" font-size="12" font-weight="700" fill="var(--c-text)">${esc(clip(r.k, 14))}</text>
+      <rect x="${trackLeft}" y="${by}" width="${barMax}" height="${bh}" rx="9" fill="var(--c-grid)" opacity=".5"/>
+      <rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="9" fill="var(--c-accent)" opacity="${active ? 1 : .85}"/>
+      <text class="num" x="${bx - 6}" y="${by + bh / 2 + 4}" text-anchor="end" font-size="11.5" font-weight="700" fill="var(--c-text-2)">${fmtNum(r.eng)}</text>
+      <rect x="${padL}" y="${yy}" width="${W - padL - padR}" height="${rowH}" fill="transparent"/>
+    </g>`;
+  });
+  holder.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="التفاعل حسب المنصة">${bars}</svg><div class="chart-tooltip" id="pbTip"></div>`;
+  const tip = $('pbTip');
+  holder.querySelectorAll('.pbar').forEach(g => {
+    const r = rows.find(x => x.k === g.dataset.k);
+    g.addEventListener('pointermove', ev => {
+      const rect = holder.getBoundingClientRect();
+      tip.style.left = (ev.clientX - rect.left) + 'px';
+      tip.style.top = (ev.clientY - rect.top) + 'px';
+      tip.style.opacity = '1';
+      tip.innerHTML = `<div class="tt-v">${fmtNum(r.eng)} تفاعل</div><div class="tt-k">${esc(r.k)} · ${r.n} منشور</div>`;
+    });
+    g.addEventListener('pointerleave', () => tip.style.opacity = '0');
+    g.addEventListener('click', () => { filterPlatform = filterPlatform === r.k ? 'all' : r.k; renderDashboard(); });
+  });
+}
+
+function svgPoint(svg, ev) {
+  const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+  const ctm = svg.getScreenCTM(); return ctm ? pt.matrixTransform(ctm.inverse()) : { x: 0, y: 0 };
+}
+
+/* =============== Feed =============== */
+function renderFeed(posts) {
+  let list = posts.slice();
+  list.sort((a, b) => {
+    if (sortMode === 'oldest') return (a.ts || a.seenAt || 0) - (b.ts || b.seenAt || 0);
+    if (sortMode === 'engage') return engagement(b) - engagement(a);
+    return (b.ts || b.seenAt || 0) - (a.ts || a.seenAt || 0);
+  });
+  $('feedCount').textContent = list.length;
+  $('feedEmpty').style.display = list.length ? 'none' : 'block';
+  $('feed').innerHTML = list.map((p, i) => {
+    const dateStr = p.ts ? new Date(p.ts).toLocaleDateString('ar', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'تاريخ غير معروف';
+    const initial = esc((platformKey(p)).charAt(0));
+    const avatar = p.avatar ? `<img class="avatar" src="${esc(p.avatar)}" alt="" onerror="this.outerHTML='<div class=avatar>${initial}</div>'">` : `<div class="avatar">${initial}</div>`;
+    const longText = (p.text || '').length > 260;
+    const fresh = freshKeys.has(p.key);
+    return `<article class="post-card ${fresh ? 'fresh' : ''}" style="animation-delay:${Math.min(i * 25, 300)}ms">
+      <div class="post-head">${avatar}<div><div class="post-author">${esc(platformKey(p))} ${fresh ? '<span class="badge-new">جديد</span>' : ''}</div><div class="post-date">🕓 ${dateStr}</div></div></div>
+      <div class="post-body"><div class="post-text ${longText ? 'clamped' : ''}" id="dtxt-${i}">${esc(p.text) || '<em style="color:var(--text-2)">— منشور بدون نص —</em>'}</div>${longText ? `<button class="read-more" data-target="dtxt-${i}">عرض المزيد ▾</button>` : ''}</div>
+      <div class="post-foot"><div class="reactions"><span>👍 ${fmtNum(p.likes)}</span><span>💬 ${fmtNum(p.comments)}</span><span>🔁 ${fmtNum(p.shares)}</span></div>${p.url ? `<a class="post-link" href="${esc(p.url)}" target="_blank" rel="noopener">فتح ↗</a>` : ''}</div>
+    </article>`;
+  }).join('');
+  $('feed').querySelectorAll('.read-more').forEach(btn => btn.onclick = () => {
+    const el = $(btn.dataset.target); const c = el.classList.toggle('clamped');
+    btn.textContent = c ? 'عرض المزيد ▾' : 'عرض أقل ▴';
+  });
+}
+
+/* filters wiring */
+$('rangeFilter').querySelectorAll('.pill').forEach(b => b.onclick = () => {
+  $('rangeFilter').querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); filterRange = parseInt(b.dataset.range, 10); renderDashboard();
+});
+$('searchInput').addEventListener('input', e => { searchQ = e.target.value.trim().toLowerCase(); renderDashboard(); });
+$('sortSelect').addEventListener('change', e => { sortMode = e.target.value; renderDashboard(); });
+
+$('clearBtn').onclick = () => {
+  if (!feed.length) return;
+  if (!confirm('سيتم مسح جميع المنشورات المرصودة من المتصفح. متابعة؟')) return;
+  feed = []; freshKeys = new Set(); save(FEED_STORAGE, feed);
+  $('dashboard').style.display = 'none'; $('bootEmpty').style.display = 'block';
+  showToast('🗑️ تم مسح السجل');
+};
+$('exportBtn').onclick = () => {
+  const list = filteredPosts();
+  if (!list.length) return showToast('لا بيانات للتصدير');
+  const blob = new Blob([JSON.stringify(list, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'dashboard-posts.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000); showToast('⬇️ تم التصدير');
+};
+
+/* =============== Local database =============== */
+let dbUrl = localStorage.getItem(DB_URL_STORAGE) || '';
+let dbOnline = false;
+async function dbCheck(silent) {
+  const url = ($('dbUrl').value || '').trim().replace(/\/+$/, '');
+  if (!url) return;
+  $('dbStatusInline').textContent = '⏳ جارٍ الفحص...';
+  try {
+    const r = await fetch(url + '/api/health', { signal: AbortSignal.timeout(4000) });
+    const d = await r.json(); if (!d.ok) throw new Error();
+    dbOnline = true; dbUrl = url; localStorage.setItem(DB_URL_STORAGE, url);
+    $('dbStatusInline').textContent = `🟢 متصلة — ${d.total} منشور محفوظ`;
+    if (!silent) showToast('✅ تم الاتصال بقاعدة البيانات');
+  } catch (_) {
+    dbOnline = false; $('dbStatusInline').textContent = '🔴 غير متصلة';
+    if (!silent) showToast('⚠️ تعذر الاتصال بقاعدة البيانات');
+  }
+}
+$('dbCheckBtn').onclick = () => dbCheck(false);
+async function saveToDb(posts, source) {
+  if (!dbOnline || !posts.length) return;
+  try {
+    const payload = posts.map(p => ({ key: p.key, text: p.text, url: p.url, ts: p.ts, author: p.author, avatar: p.avatar, media: p.media, likes: p.likes, comments: p.comments, shares: p.shares, source }));
+    const r = await fetch(dbUrl + '/api/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ posts: payload }) });
+    const d = await r.json(); if (!d.ok) throw new Error();
+    $('dbStatusInline').textContent = `🟢 متصلة — ${d.total} منشور محفوظ`;
+  } catch (_) { dbOnline = false; $('dbStatusInline').textContent = '🔴 انقطع الاتصال'; }
+}
+
+/* =============== Utils =============== */
+function fmtNum(n) { if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M'; if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K'; return String(n); }
+function clip(s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+/* =============== Boot =============== */
+renderChips();
+refreshKeyUi();
+refreshControlUi();
+$('intervalSelect').value = String(intervalMin);
+if (dbUrl) { $('dbUrl').value = dbUrl; dbCheck(true); }
+if (lastRunAt) $('miniStatus').textContent = `آخر رصد: ${new Date(lastRunAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}`;
+if (feed.length) { showDashboard(); renderDashboard(); }
+tick();
+</script>
+</body>
+</html>
