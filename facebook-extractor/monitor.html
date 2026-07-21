@@ -324,6 +324,29 @@
   }
   .toast.show { opacity: 1; transform: translate(50%, 0); }
 
+  /* ================= Analysis summary ================= */
+  .asum-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; }
+  .asum-card {
+    border-radius: 18px; padding: 18px 16px; text-align: center;
+    color: #f6f2e7; box-shadow: 0 12px 26px rgba(18, 44, 35, .18); position: relative; overflow: hidden;
+  }
+  .asum-card .v { font-size: 1.5rem; font-weight: 900; line-height: 1.1; }
+  .asum-card .l { font-size: .76rem; font-weight: 700; opacity: .9; margin-top: 4px; }
+  .asum-card.pos { background: linear-gradient(155deg, #8fae70, #4f7c3f); }
+  .asum-card.neg { background: linear-gradient(155deg, #c65b46, #8f2f1c); }
+  .asum-card.neu { background: linear-gradient(155deg, #6d7c6e, #46514a); }
+  .asum-card.flag { background: linear-gradient(155deg, #e0a94b, #b57a1f); color: #3d2c1d; }
+  .asum-card.esc { background: linear-gradient(155deg, #8f1f1f, #5c1212); }
+  .asum-card.sev { background: linear-gradient(155deg, #2c6a51, #16382c); }
+  .asum-filters { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 18px; }
+  .asum-pill {
+    border: 1.5px solid var(--border); background: var(--surface-2); color: var(--text);
+    border-radius: 999px; padding: 8px 16px; font-family: inherit; font-size: .82rem; font-weight: 800;
+    cursor: pointer; transition: all .15s;
+  }
+  .asum-pill:hover { border-color: var(--green-500); }
+  .asum-pill.active { background: var(--green-700); color: #f3efe2; border-color: var(--green-700); }
+
   @media (max-width: 720px) {
     .panel, .control-band { padding: 22px; }
     .hero { padding: 36px 24px 80px; }
@@ -364,7 +387,7 @@
   <div class="hero">
     <span class="hero-badge">📡 رصد مباشر</span>
     <h2>الرصد التلقائي <em>لمنصاتك الإعلامية</em></h2>
-    <p>أضف صفحاتك مرة واحدة، وسيرصد الموقع آخر منشورين من كل صفحة تلقائياً كل نصف ساعة، ويعرضها من الأحدث إلى الأقدم مع تمييز الجديد. يعمل الرصد ما دامت هذه الصفحة مفتوحة في المتصفح.</p>
+    <p>أضف صفحاتك مرة واحدة، وسيستخرج الموقع منشوراً واحداً من كل صفحة تلقائياً كل نصف ساعة، ثم يحلّله ويصنّفه فوراً (المشاعر · النية · المجال · شدة المخالفة · التوصية) ويعرضه من الأحدث إلى الأقدم مع تمييز الجديد. يعمل الرصد ما دامت هذه الصفحة مفتوحة في المتصفح.</p>
   </div>
 </div>
 
@@ -405,7 +428,7 @@
     <div class="pulse-dot" id="pulseDot"></div>
     <div class="control-info">
       <h3 id="monitorTitle">الرصد متوقف</h3>
-      <p>كل <strong>30 دقيقة</strong> · <strong>منشوران</strong> لكل منصة · بسقف فوترة إلزامي على Apify</p>
+      <p>كل <strong>30 دقيقة</strong> · <strong>منشور واحد</strong> لكل منصة · تحليل وتصنيف تلقائي · بسقف فوترة إلزامي على Apify</p>
     </div>
     <div class="countdown" id="countdown">--:--</div>
     <button class="btn btn-cream" id="toggleBtn">▶️ بدء الرصد</button>
@@ -417,9 +440,16 @@
     <div class="alert" id="monitorError"></div>
   </section>
 
+  <!-- Analysis summary -->
+  <section class="panel" id="analysisSummary" style="display:none">
+    <div class="panel-title"><span class="num">🧠</span> ملخّص التحليل والتصنيف</div>
+    <div class="asum-grid" id="asumGrid"></div>
+    <div class="asum-filters" id="asumFilters"></div>
+  </section>
+
   <!-- Feed -->
   <div class="feed-head">
-    <h3>📰 آخر المنشورات المرصودة <span class="feed-count" id="feedCount">0</span></h3>
+    <h3>📰 آخر المنشورات المرصودة والمحلّلة <span class="feed-count" id="feedCount">0</span></h3>
     <div class="spacer"></div>
     <button class="btn btn-ghost btn-sm" id="exportFeedBtn">⬇️ تصدير JSON</button>
     <button class="btn btn-danger-ghost btn-sm" id="clearFeedBtn">🗑️ مسح السجل</button>
@@ -432,11 +462,13 @@
 
 </main>
 
-<footer>FB Extractor — صفحة الرصد التلقائي · الإصدار 2.0 🍃</footer>
+<footer>FB Extractor — صفحة الرصد التلقائي والتحليل · الإصدار 3.0 🍃</footer>
 <div class="toast" id="toast"></div>
 
+<script src="analyzer.js"></script>
 <script>
 'use strict';
+FBXAnalyzer.injectStyles();
 
 /* =============== Constants =============== */
 const ACTOR_ID = 'apify~facebook-posts-scraper';
@@ -449,7 +481,7 @@ const ON_STORAGE = 'fbx_monitor_on';
 const LAST_STORAGE = 'fbx_monitor_last';
 
 const INTERVAL_MS = 30 * 60 * 1000;  // every 30 minutes
-const POSTS_PER_PAGE = 2;            // two posts per platform per cycle
+const POSTS_PER_PAGE = 1;            // one post per platform per cycle
 const FEED_CAP = 600;                // keep the newest N posts in storage
 
 /* =============== Elements =============== */
@@ -650,6 +682,7 @@ async function runCycle(manual) {
       (added ? `${added} منشور جديد ✨` : 'لا جديد');
     if (added) showToast(`✨ ${added} منشور جديد`);
     renderFeed();
+    renderSummary();
     // Archive this cycle's new posts into the local database when connected
     if (added) saveToDb(feed.filter(p => freshKeys.has(p.key)), 'monitor');
   } catch (err) {
@@ -693,12 +726,19 @@ function normalizePost(raw) {
     media = m?.thumbnail || m?.photo_image?.uri || m?.image?.uri || m?.url || '';
   }
   const key = url || `${author}|${ts || ''}|${text.slice(0, 80)}`;
-  return {
+  const p = {
     key, text, url, ts, author, avatar, media,
     likes: num(raw.likes ?? raw.likesCount ?? raw.reactions ?? raw.reactionsCount),
     comments: num(raw.comments ?? raw.commentsCount),
     shares: num(raw.shares ?? raw.sharesCount)
   };
+  p.analysis = FBXAnalyzer.analyze(p);   // تحليل وتصنيف فوري
+  return p;
+}
+// ضمان وجود تحليل لكل منشور محمّل من التخزين (لتوافق النسخ القديمة)
+function ensureAnalysis(p) {
+  if (!p.analysis) p.analysis = FBXAnalyzer.analyze(p);
+  return p;
 }
 function num(v) {
   if (typeof v === 'number') return v;
@@ -706,11 +746,54 @@ function num(v) {
   return 0;
 }
 
+/* =============== Analysis summary + filter =============== */
+let activeFilter = 'all';   // all | POSITIVE | NEGATIVE | NEUTRAL | flagged
+
+function renderSummary() {
+  const analyses = feed.map(p => ensureAnalysis(p).analysis);
+  const box = $('analysisSummary');
+  if (!feed.length) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  const g = FBXAnalyzer.aggregate(analyses);
+  $('asumGrid').innerHTML = [
+    ['sev', '⚖️', g.avgSeverity + '/10', 'متوسط شدة المخالفة'],
+    ['pos', '🟢', g.positive, 'إيجابي'],
+    ['neg', '🔴', g.negative, 'سلبي'],
+    ['neu', '⚪', g.neutral, 'محايد'],
+    ['flag', '🚩', g.flagged, 'منشورات مرفوعة العلم'],
+    ['esc', '🚨', g.actions.ESCALATE + g.actions.REMOVE, 'يتطلب إزالة/تصعيد']
+  ].map(([cls, icon, v, l]) => `
+    <div class="asum-card ${cls}"><div class="v">${icon} ${v}</div><div class="l">${l}</div></div>`).join('');
+
+  const filters = [
+    ['all', 'الكل', g.total],
+    ['NEGATIVE', '🔴 سلبي', g.negative],
+    ['flagged', '🚩 مرفوع العلم', g.flagged],
+    ['POSITIVE', '🟢 إيجابي', g.positive],
+    ['NEUTRAL', '⚪ محايد', g.neutral]
+  ];
+  $('asumFilters').innerHTML = filters.map(([id, label, n]) =>
+    `<button class="asum-pill ${activeFilter === id ? 'active' : ''}" data-f="${id}">${label} (${n})</button>`).join('');
+  $('asumFilters').querySelectorAll('.asum-pill').forEach(b => b.onclick = () => {
+    activeFilter = b.dataset.f;
+    renderSummary();
+    renderFeed();
+  });
+}
+
+function passesFilter(a) {
+  if (activeFilter === 'all') return true;
+  if (activeFilter === 'flagged') return a.flagged;
+  return a.sentiment === activeFilter;
+}
+
 /* =============== Feed rendering =============== */
 function renderFeed() {
   $('feedCount').textContent = feed.length;
   $('feedEmpty').style.display = feed.length ? 'none' : 'block';
-  $('feed').innerHTML = feed.map((p, i) => {
+  const visible = feed.map((p, i) => ({ p: ensureAnalysis(p), i })).filter(({ p }) => passesFilter(p.analysis));
+  $('feed').innerHTML = visible.map(({ p, i }) => {
+    const a = p.analysis;
     const dateStr = p.ts
       ? new Date(p.ts).toLocaleDateString('ar', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
       : 'تاريخ غير معروف';
@@ -732,6 +815,9 @@ function renderFeed() {
       <div class="post-body">
         <div class="post-text ${longText ? 'clamped' : ''}" id="ftxt-${i}">${esc(p.text) || '<em style="color:var(--text-2)">— منشور بدون نص —</em>'}</div>
         ${longText ? `<button class="read-more" data-target="ftxt-${i}">عرض المزيد ▾</button>` : ''}
+        ${FBXAnalyzer.badges(a)}
+        <button class="fbx-toggle" data-panel="fpan-${i}">🧠 عرض التحليل الكامل ▾</button>
+        <div id="fpan-${i}" style="display:none">${FBXAnalyzer.panel(a)}</div>
       </div>
       <div class="post-foot">
         <div class="reactions">
@@ -750,6 +836,14 @@ function renderFeed() {
       btn.textContent = clamped ? 'عرض المزيد ▾' : 'عرض أقل ▴';
     };
   });
+  $('feed').querySelectorAll('.fbx-toggle').forEach(btn => {
+    btn.onclick = () => {
+      const el = document.getElementById(btn.dataset.panel);
+      const open = el.style.display === 'none';
+      el.style.display = open ? 'block' : 'none';
+      btn.textContent = open ? '🧠 إخفاء التحليل ▴' : '🧠 عرض التحليل الكامل ▾';
+    };
+  });
 }
 
 $('clearFeedBtn').onclick = () => {
@@ -759,6 +853,7 @@ $('clearFeedBtn').onclick = () => {
   freshKeys = new Set();
   save(FEED_STORAGE, feed);
   renderFeed();
+  renderSummary();
   showToast('🗑️ تم مسح السجل');
 };
 $('exportFeedBtn').onclick = () => {
@@ -812,11 +907,17 @@ $('dbCheckBtn').onclick = () => dbCheck(false);
 async function saveToDb(posts, source) {
   if (!dbOnline || !posts.length) return;
   try {
-    const payload = posts.map(p => ({
-      key: p.key, text: p.text, url: p.url, ts: p.ts,
-      author: p.author, avatar: p.avatar, media: p.media,
-      likes: p.likes, comments: p.comments, shares: p.shares, source
-    }));
+    const payload = posts.map(p => {
+      const a = ensureAnalysis(p).analysis;
+      return {
+        key: p.key, text: p.text, url: p.url, ts: p.ts,
+        author: p.author, avatar: p.avatar, media: p.media,
+        likes: p.likes, comments: p.comments, shares: p.shares, source,
+        sentiment: a.sentiment, emotion: a.emotionLabel, intent: a.intentLabel,
+        domain: a.domainLabel, severity: a.severity, action: a.action,
+        flagged: a.flagged ? 1 : 0, analysis: JSON.stringify(a)
+      };
+    });
     const r = await fetch(dbUrl + '/api/posts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -835,6 +936,7 @@ async function saveToDb(posts, source) {
 /* =============== Boot =============== */
 renderChips();
 renderFeed();
+renderSummary();
 refreshKeyUi();
 refreshControlUi();
 if (dbUrl) { $('dbUrl').value = dbUrl; dbCheck(true); }

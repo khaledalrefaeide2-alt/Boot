@@ -22,29 +22,54 @@ const DB_PATH = path.join(__dirname, 'fbx-posts.db');
 const db = new DatabaseSync(DB_PATH);
 db.exec(`
   CREATE TABLE IF NOT EXISTS posts (
-    key      TEXT PRIMARY KEY,
-    text     TEXT,
-    url      TEXT,
-    ts       INTEGER,
-    author   TEXT,
-    avatar   TEXT,
-    media    TEXT,
-    likes    INTEGER DEFAULT 0,
-    comments INTEGER DEFAULT 0,
-    shares   INTEGER DEFAULT 0,
-    source   TEXT,
-    saved_at INTEGER
+    key       TEXT PRIMARY KEY,
+    text      TEXT,
+    url       TEXT,
+    ts        INTEGER,
+    author    TEXT,
+    avatar    TEXT,
+    media     TEXT,
+    likes     INTEGER DEFAULT 0,
+    comments  INTEGER DEFAULT 0,
+    shares    INTEGER DEFAULT 0,
+    source    TEXT,
+    sentiment TEXT,
+    emotion   TEXT,
+    intent    TEXT,
+    domain    TEXT,
+    severity  INTEGER DEFAULT 0,
+    action    TEXT,
+    flagged   INTEGER DEFAULT 0,
+    analysis  TEXT,
+    saved_at  INTEGER
   );
   CREATE INDEX IF NOT EXISTS idx_posts_ts ON posts (ts DESC);
 `);
 
+// ترقية غير مدمّرة للجداول القديمة: أضف الأعمدة الناقصة إن وُجد جدول سابق
+for (const col of [
+  ['sentiment', 'TEXT'], ['emotion', 'TEXT'], ['intent', 'TEXT'], ['domain', 'TEXT'],
+  ['severity', 'INTEGER DEFAULT 0'], ['action', 'TEXT'], ['flagged', 'INTEGER DEFAULT 0'], ['analysis', 'TEXT']
+]) {
+  try { db.exec(`ALTER TABLE posts ADD COLUMN ${col[0]} ${col[1]}`); } catch (_) { /* موجود مسبقاً */ }
+}
+
 const upsert = db.prepare(`
-  INSERT INTO posts (key, text, url, ts, author, avatar, media, likes, comments, shares, source, saved_at)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO posts (key, text, url, ts, author, avatar, media, likes, comments, shares, source,
+                     sentiment, emotion, intent, domain, severity, action, flagged, analysis, saved_at)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
   ON CONFLICT(key) DO UPDATE SET
     likes = excluded.likes,
     comments = excluded.comments,
-    shares = excluded.shares
+    shares = excluded.shares,
+    sentiment = excluded.sentiment,
+    emotion = excluded.emotion,
+    intent = excluded.intent,
+    domain = excluded.domain,
+    severity = excluded.severity,
+    action = excluded.action,
+    flagged = excluded.flagged,
+    analysis = excluded.analysis
 `);
 const countStmt = db.prepare('SELECT COUNT(*) AS n FROM posts');
 
@@ -104,6 +129,14 @@ const server = http.createServer(async (req, res) => {
           Number(p.comments) || 0,
           Number(p.shares) || 0,
           String(p.source || ''),
+          String(p.sentiment || ''),
+          String(p.emotion || ''),
+          String(p.intent || ''),
+          String(p.domain || ''),
+          Number(p.severity) || 0,
+          String(p.action || ''),
+          Number(p.flagged) ? 1 : 0,
+          String(p.analysis || ''),
           Date.now()
         );
         saved++;

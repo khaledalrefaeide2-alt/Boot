@@ -429,11 +429,13 @@
 
 </main>
 
-<footer>FB Extractor — لوحة الرصد التفاعلية · الإصدار 2.0 🍃</footer>
+<footer>FB Extractor — لوحة الرصد والتحليل التفاعلية · الإصدار 3.0 🍃</footer>
 <div class="toast" id="toast"></div>
 
+<script src="analyzer.js"></script>
 <script>
 'use strict';
+FBXAnalyzer.injectStyles();
 
 /* =============== Constants (shared storage with monitor.html) =============== */
 const ACTOR_ID = 'apify~facebook-posts-scraper';
@@ -447,7 +449,7 @@ const LAST_STORAGE = 'fbx_monitor_last';
 const INTERVAL_STORAGE = 'fbx_monitor_interval';
 const DB_URL_STORAGE = 'fbx_db_url';
 
-const POSTS_PER_PAGE = 2;
+const POSTS_PER_PAGE = 1;
 const FEED_CAP = 800;
 
 const $ = id => document.getElementById(id);
@@ -629,10 +631,13 @@ function normalizePost(raw) {
     media = m?.thumbnail || m?.photo_image?.uri || m?.image?.uri || '';
   }
   const key = url || `${author}|${ts || ''}|${text.slice(0, 80)}`;
-  return { key, text, url, ts, author, avatar, media,
+  const p = { key, text, url, ts, author, avatar, media,
     likes: num(raw.likes ?? raw.likesCount ?? raw.reactions ?? raw.reactionsCount),
     comments: num(raw.comments ?? raw.commentsCount), shares: num(raw.shares ?? raw.sharesCount) };
+  p.analysis = FBXAnalyzer.analyze(p);
+  return p;
 }
+function ensureAnalysis(p) { if (!p.analysis) p.analysis = FBXAnalyzer.analyze(p); return p; }
 function num(v) { if (typeof v === 'number') return v; if (typeof v === 'string') { const n = parseInt(v.replace(/[^\d]/g, ''), 10); return isNaN(n) ? 0 : n; } return 0; }
 function engagement(p) { return (p.likes || 0) + (p.comments || 0) + (p.shares || 0); }
 
@@ -686,10 +691,13 @@ function renderStats(posts) {
   let topPlat = '—', topN = 0;
   for (const [k, v] of Object.entries(byPlat)) if (v > topN) { topN = v; topPlat = k; }
   const lastStr = lastRunAt ? new Date(lastRunAt).toLocaleString('ar', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+  const g = FBXAnalyzer.aggregate(posts.map(p => ensureAnalysis(p).analysis));
   const tiles = [
     ['📝 المنشورات', fmtNum(total), `منصات: ${platformList().length}`],
-    ['💫 إجمالي التفاعل', fmtNum(eng), 'إعجابات + تعليقات + مشاركات'],
-    ['📊 متوسط التفاعل', fmtNum(avg), 'لكل منشور'],
+    ['🟢 إيجابي', fmtNum(g.positive), `سلبي: ${g.negative} · محايد: ${g.neutral}`],
+    ['🚩 مرفوع العلم', fmtNum(g.flagged), `إزالة/تصعيد: ${g.actions.REMOVE + g.actions.ESCALATE}`],
+    ['⚖️ متوسط الشدة', `${g.avgSeverity}/10`, 'شدة المخالفة'],
+    ['💫 إجمالي التفاعل', fmtNum(eng), `متوسط: ${fmtNum(avg)}/منشور`],
     ['🏆 الأنشط', `<span class="v small">${esc(topPlat)}</span>`, `${fmtNum(topN)} منشور`, true],
     ['🕓 آخر رصد', `<span class="v small">${lastStr}</span>`, monitorOn ? 'الرصد نشط' : 'الرصد متوقف', true]
   ];
@@ -833,6 +841,7 @@ function renderFeed(posts) {
   $('feedCount').textContent = list.length;
   $('feedEmpty').style.display = list.length ? 'none' : 'block';
   $('feed').innerHTML = list.map((p, i) => {
+    const a = ensureAnalysis(p).analysis;
     const dateStr = p.ts ? new Date(p.ts).toLocaleDateString('ar', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'تاريخ غير معروف';
     const initial = esc((platformKey(p)).charAt(0));
     const avatar = p.avatar ? `<img class="avatar" src="${esc(p.avatar)}" alt="" onerror="this.outerHTML='<div class=avatar>${initial}</div>'">` : `<div class="avatar">${initial}</div>`;
@@ -840,13 +849,19 @@ function renderFeed(posts) {
     const fresh = freshKeys.has(p.key);
     return `<article class="post-card ${fresh ? 'fresh' : ''}" style="animation-delay:${Math.min(i * 25, 300)}ms">
       <div class="post-head">${avatar}<div><div class="post-author">${esc(platformKey(p))} ${fresh ? '<span class="badge-new">جديد</span>' : ''}</div><div class="post-date">🕓 ${dateStr}</div></div></div>
-      <div class="post-body"><div class="post-text ${longText ? 'clamped' : ''}" id="dtxt-${i}">${esc(p.text) || '<em style="color:var(--text-2)">— منشور بدون نص —</em>'}</div>${longText ? `<button class="read-more" data-target="dtxt-${i}">عرض المزيد ▾</button>` : ''}</div>
+      <div class="post-body"><div class="post-text ${longText ? 'clamped' : ''}" id="dtxt-${i}">${esc(p.text) || '<em style="color:var(--text-2)">— منشور بدون نص —</em>'}</div>${longText ? `<button class="read-more" data-target="dtxt-${i}">عرض المزيد ▾</button>` : ''}
+      ${FBXAnalyzer.badges(a)}<button class="fbx-toggle" data-panel="dpan-${i}">🧠 عرض التحليل الكامل ▾</button><div id="dpan-${i}" style="display:none">${FBXAnalyzer.panel(a)}</div></div>
       <div class="post-foot"><div class="reactions"><span>👍 ${fmtNum(p.likes)}</span><span>💬 ${fmtNum(p.comments)}</span><span>🔁 ${fmtNum(p.shares)}</span></div>${p.url ? `<a class="post-link" href="${esc(p.url)}" target="_blank" rel="noopener">فتح ↗</a>` : ''}</div>
     </article>`;
   }).join('');
   $('feed').querySelectorAll('.read-more').forEach(btn => btn.onclick = () => {
     const el = $(btn.dataset.target); const c = el.classList.toggle('clamped');
     btn.textContent = c ? 'عرض المزيد ▾' : 'عرض أقل ▴';
+  });
+  $('feed').querySelectorAll('.fbx-toggle').forEach(btn => btn.onclick = () => {
+    const el = $(btn.dataset.panel); const open = el.style.display === 'none';
+    el.style.display = open ? 'block' : 'none';
+    btn.textContent = open ? '🧠 إخفاء التحليل ▴' : '🧠 عرض التحليل الكامل ▾';
   });
 }
 
@@ -895,7 +910,7 @@ $('dbCheckBtn').onclick = () => dbCheck(false);
 async function saveToDb(posts, source) {
   if (!dbOnline || !posts.length) return;
   try {
-    const payload = posts.map(p => ({ key: p.key, text: p.text, url: p.url, ts: p.ts, author: p.author, avatar: p.avatar, media: p.media, likes: p.likes, comments: p.comments, shares: p.shares, source }));
+    const payload = posts.map(p => { const a = ensureAnalysis(p).analysis; return { key: p.key, text: p.text, url: p.url, ts: p.ts, author: p.author, avatar: p.avatar, media: p.media, likes: p.likes, comments: p.comments, shares: p.shares, source, sentiment: a.sentiment, emotion: a.emotionLabel, intent: a.intentLabel, domain: a.domainLabel, severity: a.severity, action: a.action, flagged: a.flagged ? 1 : 0, analysis: JSON.stringify(a) }; });
     const r = await fetch(dbUrl + '/api/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ posts: payload }) });
     const d = await r.json(); if (!d.ok) throw new Error();
     $('dbStatusInline').textContent = `🟢 متصلة — ${d.total} منشور محفوظ`;

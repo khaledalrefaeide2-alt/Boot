@@ -592,11 +592,13 @@
 
 </main>
 
-<footer>FB Extractor — يعمل عبر <strong>Apify Facebook Posts Scraper</strong> · مفتاحك لا يغادر متصفحك إلا نحو Apify مباشرة · الإصدار 2.0 🍃</footer>
+<footer>FB Extractor — يعمل عبر <strong>Apify Facebook Posts Scraper</strong> · تحليل وتصنيف محلي · مفتاحك لا يغادر متصفحك إلا نحو Apify مباشرة · الإصدار 3.0 🍃</footer>
 <div class="toast" id="toast"></div>
 
+<script src="analyzer.js"></script>
 <script>
 'use strict';
+FBXAnalyzer.injectStyles();
 
 /* =============== Constants =============== */
 const ACTOR_ID = 'apify~facebook-posts-scraper';
@@ -843,7 +845,7 @@ function normalizePost(raw) {
     const m = raw.media.find(x => x?.thumbnail || x?.photo_image?.uri || x?.image?.uri || (typeof x?.url === 'string' && /\.(jpg|jpeg|png|webp)/i.test(x.url)));
     media = m?.thumbnail || m?.photo_image?.uri || m?.image?.uri || m?.url || '';
   }
-  return {
+  const p = {
     text, url, ts,
     date: ts ? new Date(ts) : null,
     author, avatar, media,
@@ -852,6 +854,8 @@ function normalizePost(raw) {
     shares: num(raw.shares ?? raw.sharesCount),
     raw
   };
+  p.analysis = FBXAnalyzer.analyze(p);   // تحليل وتصنيف فوري
+  return p;
 }
 function num(v) {
   if (typeof v === 'number') return v;
@@ -872,16 +876,19 @@ function renderStats() {
   const likes = allPosts.reduce((s, p) => s + p.likes, 0);
   const comments = allPosts.reduce((s, p) => s + p.comments, 0);
   const shares = allPosts.reduce((s, p) => s + p.shares, 0);
+  const g = FBXAnalyzer.aggregate(allPosts.map(p => p.analysis));
   const cards = [
     ['📝', 'إجمالي المنشورات', total, 'c1'],
-    ['👍', 'إجمالي الإعجابات', likes, 'c2'],
-    ['💬', 'إجمالي التعليقات', comments, 'c3'],
-    ['🔁', 'إجمالي المشاركات', shares, 'c4']
+    ['🟢', 'إيجابي', g.positive, 'c1'],
+    ['🔴', 'سلبي', g.negative, 'c2'],
+    ['🚩', 'مرفوع العلم', g.flagged, 'c3'],
+    ['⚖️', 'متوسط الشدة', g.avgSeverity + '/10', 'c4'],
+    ['🚨', 'إزالة/تصعيد', g.actions.REMOVE + g.actions.ESCALATE, 'c2']
   ];
   statsGrid.innerHTML = cards.map(([icon, label, val, cls]) => `
     <div class="stat-card ${cls}">
       <div class="stat-icon">${icon}</div>
-      <div class="stat-value">${fmtNum(val)}</div>
+      <div class="stat-value">${typeof val === 'number' ? fmtNum(val) : val}</div>
       <div class="stat-label">${label}</div>
     </div>`).join('');
 }
@@ -928,6 +935,9 @@ function renderPosts() {
       <div class="post-body">
         <div class="post-text ${longText ? 'clamped' : ''}" id="txt-${i}">${escapeHtml(p.text) || '<em style="color:var(--text-2)">— منشور بدون نص —</em>'}</div>
         ${longText ? `<button class="read-more" data-target="txt-${i}">عرض المزيد ▾</button>` : ''}
+        ${FBXAnalyzer.badges(p.analysis)}
+        <button class="fbx-toggle" data-panel="pan-${i}">🧠 عرض التحليل الكامل ▾</button>
+        <div id="pan-${i}" style="display:none">${FBXAnalyzer.panel(p.analysis)}</div>
       </div>
       ${media}
       <div class="post-foot">
@@ -946,6 +956,14 @@ function renderPosts() {
       const el = document.getElementById(btn.dataset.target);
       const clamped = el.classList.toggle('clamped');
       btn.textContent = clamped ? 'عرض المزيد ▾' : 'عرض أقل ▴';
+    };
+  });
+  postsGrid.querySelectorAll('.fbx-toggle').forEach(btn => {
+    btn.onclick = () => {
+      const el = document.getElementById(btn.dataset.panel);
+      const open = el.style.display === 'none';
+      el.style.display = open ? 'block' : 'none';
+      btn.textContent = open ? '🧠 إخفاء التحليل ▴' : '🧠 عرض التحليل الكامل ▾';
     };
   });
 }
@@ -1024,11 +1042,17 @@ async function saveToDb(posts, source, silent) {
   if (!posts.length) return;
   if (!dbOnline) { if (!silent) showToast('⚠️ قاعدة البيانات غير متصلة — افحص الاتصال أولاً'); return; }
   try {
-    const payload = posts.map(p => ({
-      key: postKey(p), text: p.text, url: p.url, ts: p.ts,
-      author: p.author, avatar: p.avatar, media: p.media,
-      likes: p.likes, comments: p.comments, shares: p.shares, source
-    }));
+    const payload = posts.map(p => {
+      const a = p.analysis || FBXAnalyzer.analyze(p);
+      return {
+        key: postKey(p), text: p.text, url: p.url, ts: p.ts,
+        author: p.author, avatar: p.avatar, media: p.media,
+        likes: p.likes, comments: p.comments, shares: p.shares, source,
+        sentiment: a.sentiment, emotion: a.emotionLabel, intent: a.intentLabel,
+        domain: a.domainLabel, severity: a.severity, action: a.action,
+        flagged: a.flagged ? 1 : 0, analysis: JSON.stringify(a)
+      };
+    });
     const r = await fetch(dbUrl + '/api/posts', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
