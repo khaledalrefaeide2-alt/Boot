@@ -557,6 +557,7 @@
         <button id="gridViewBtn" class="active" title="عرض شبكي">▦</button>
         <button id="listViewBtn" title="عرض قائمة">☰</button>
       </div>
+      <button class="btn btn-primary btn-sm" id="exportExcelBtn">📊 Excel</button>
       <button class="btn btn-ghost btn-sm" id="exportJsonBtn">⬇️ JSON</button>
       <button class="btn btn-ghost btn-sm" id="exportCsvBtn">⬇️ CSV</button>
       <button class="btn btn-ghost btn-sm" id="saveDbBtn">💾 حفظ في قاعدة البيانات</button>
@@ -571,13 +572,16 @@
 
 </main>
 
-<footer>FB Extractor — استخراج وتحليل وتصنيف منشورات فيسبوك · تحليل محلي بالكامل · مفتاحك لا يغادر متصفحك · الإصدار 3.0 🍃</footer>
+<footer>FB Extractor — استخراج وتحليل وتصنيف منشورات فيسبوك · صور وفيديو · تصدير Excel · تحليل محلي بالكامل · الإصدار 3.1 🍃</footer>
 <div class="toast" id="toast"></div>
 
 <script src="analyzer.js"></script>
+<script src="media.js"></script>
+<script src="xlsx-export.js"></script>
 <script>
 'use strict';
 FBXAnalyzer.injectStyles();
+FBXMedia.injectStyles();
 
 /* =============== Constants =============== */
 const ACTOR_ID = 'apify~facebook-posts-scraper';
@@ -809,18 +813,19 @@ function normalizePost(raw) {
   else if (timeVal) { const d = new Date(timeVal); if (!isNaN(d)) ts = d.getTime(); }
   const author = raw.user?.name || raw.pageName || raw.author || raw.user?.id || 'صفحة فيسبوك';
   const avatar = raw.user?.profilePic || raw.pageProfilePic || '';
-  let media = '';
-  if (Array.isArray(raw.media) && raw.media.length) {
-    const m = raw.media.find(x => x?.thumbnail || x?.photo_image?.uri || x?.image?.uri || (typeof x?.url === 'string' && /\.(jpg|jpeg|png|webp)/i.test(x.url)));
-    media = m?.thumbnail || m?.photo_image?.uri || m?.image?.uri || m?.url || '';
-  }
+  const mediaList = FBXMedia.extract(raw);
+  const firstImg = mediaList.find(m => m.type === 'image');
+  const media = firstImg ? firstImg.src : (mediaList[0]?.thumb || '');
   const p = {
     text, url, ts,
     date: ts ? new Date(ts) : null,
-    author, avatar, media,
+    author, avatar, media, mediaList,
     likes: num(raw.likes ?? raw.likesCount ?? raw.reactions ?? raw.reactionsCount),
     comments: num(raw.comments ?? raw.commentsCount),
     shares: num(raw.shares ?? raw.sharesCount),
+    views: num(raw.viewsCount ?? raw.videoViewCount ?? raw.views ?? 0),
+    postId: raw.postId || raw.id || raw.post_id || '',
+    pageUrl: raw.pageUrl || raw.user?.profileUrl || '',
     raw
   };
   p.analysis = FBXAnalyzer.analyze(p);   // تحليل وتصنيف فوري
@@ -890,7 +895,6 @@ function renderPosts() {
     const avatar = p.avatar
       ? `<img class="avatar" src="${escapeAttr(p.avatar)}" alt="" onerror="this.outerHTML='<div class=avatar>${initial}</div>'">`
       : `<div class="avatar">${initial}</div>`;
-    const media = p.media ? `<img class="post-media" loading="lazy" src="${escapeAttr(p.media)}" alt="" onerror="this.remove()">` : '';
     const longText = p.text.length > 320;
     return `
     <article class="post-card" style="animation-delay:${Math.min(i * 40, 400)}ms">
@@ -904,16 +908,17 @@ function renderPosts() {
       <div class="post-body">
         <div class="post-text ${longText ? 'clamped' : ''}" id="txt-${i}">${escapeHtml(p.text) || '<em style="color:var(--text-2)">— منشور بدون نص —</em>'}</div>
         ${longText ? `<button class="read-more" data-target="txt-${i}">عرض المزيد ▾</button>` : ''}
+        ${FBXMedia.galleryHtml(p)}
         ${FBXAnalyzer.badges(p.analysis)}
         <button class="fbx-toggle" data-panel="pan-${i}">🧠 عرض التحليل الكامل ▾</button>
         <div id="pan-${i}" style="display:none">${FBXAnalyzer.panel(p.analysis)}</div>
       </div>
-      ${media}
       <div class="post-foot">
         <div class="reactions">
           <span>👍 ${fmtNum(p.likes)}</span>
           <span>💬 ${fmtNum(p.comments)}</span>
           <span>🔁 ${fmtNum(p.shares)}</span>
+          ${p.views ? `<span>👁️ ${fmtNum(p.views)}</span>` : ''}
         </div>
         ${p.url ? `<a class="post-link" href="${escapeAttr(p.url)}" target="_blank" rel="noopener">فتح المنشور ↗</a>` : ''}
       </div>
@@ -963,6 +968,12 @@ $('exportJsonBtn').onclick = () => {
   const posts = getVisiblePosts().map(p => p.raw);
   download(JSON.stringify(posts, null, 2), 'facebook-posts.json', 'application/json');
   showToast('⬇️ تم تنزيل ملف JSON');
+};
+$('exportExcelBtn').onclick = () => {
+  const posts = getVisiblePosts();
+  if (!posts.length) return showToast('لا نتائج للتصدير');
+  const n = FBXExcel.exportPosts('', posts);
+  showToast(`📊 تم تصدير ${n} منشوراً إلى Excel`);
 };
 $('exportCsvBtn').onclick = () => {
   const posts = getVisiblePosts();

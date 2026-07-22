@@ -146,6 +146,64 @@
     setTimeout(() => URL.revokeObjectURL(a.href), 4000);
   }
 
-  global.FBXExcel = { download, build };
+  /* ===== High-level: export analyzed posts with a rich, organized schema ===== */
+  function exportPosts(filename, posts, sheetName) {
+    const columns = [
+      { header: '#', width: 5, type: 'number' },
+      { header: 'الصفحة / الكاتب', width: 26, type: 'text' },
+      { header: 'نص المنشور', width: 70, type: 'text' },
+      { header: 'التاريخ والوقت', width: 22, type: 'text' },
+      { header: 'إعجابات', width: 11, type: 'number' },
+      { header: 'تعليقات', width: 11, type: 'number' },
+      { header: 'مشاركات', width: 11, type: 'number' },
+      { header: 'مشاهدات', width: 12, type: 'number' },
+      { header: 'عدد الصور', width: 10, type: 'number' },
+      { header: 'عدد الفيديوهات', width: 12, type: 'number' },
+      { header: 'روابط الصور', width: 45, type: 'text' },
+      { header: 'روابط الفيديوهات', width: 45, type: 'text' },
+      { header: 'رابط المنشور', width: 45, type: 'text' },
+      { header: 'رابط الصفحة', width: 40, type: 'text' },
+      { header: 'معرّف المنشور', width: 22, type: 'text' },
+      { header: 'المشاعر الأساسية', width: 14, type: 'text' },
+      { header: 'المشاعر الدقيقة', width: 16, type: 'text' },
+      { header: 'النية', width: 16, type: 'text' },
+      { header: 'المجال', width: 16, type: 'text' },
+      { header: 'شدة المخالفة (1-10)', width: 12, type: 'number' },
+      { header: 'مستوى الشدة', width: 12, type: 'text' },
+      { header: 'الإجراء المقترح', width: 16, type: 'text' },
+      { header: 'مرفوع العلم', width: 10, type: 'text' },
+      { header: 'السياسات/القوانين المخالَفة', width: 50, type: 'text' },
+      { header: 'التوصية الإجرائية', width: 60, type: 'text' },
+      { header: 'النبرة', width: 20, type: 'text' },
+      { header: 'سخرية', width: 8, type: 'text' },
+      { header: 'نوع الحساب', width: 22, type: 'text' },
+      { header: 'مؤشر المصداقية', width: 26, type: 'text' },
+      { header: 'إجمالي التفاعل', width: 12, type: 'number' }
+    ];
+    const dt = ts => ts ? new Date(ts).toLocaleString('ar', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+    const rows = posts.map((p, idx) => {
+      const a = p.analysis || {};
+      const ml = Array.isArray(p.mediaList) ? p.mediaList : [];
+      const imgs = ml.filter(m => m.type === 'image').map(m => m.src || m.thumb).filter(Boolean);
+      const vids = ml.filter(m => m.type === 'video').map(m => m.src || m.thumb).filter(Boolean);
+      const ts = p.ts || (p.date ? +new Date(p.date) : 0);
+      return [
+        idx + 1, p.author || '', p.text || '', dt(ts),
+        p.likes || 0, p.comments || 0, p.shares || 0, p.views || 0,
+        imgs.length, vids.length, imgs.join('\n'), vids.join('\n'),
+        p.url || '', p.pageUrl || '', p.postId || '',
+        a.sentimentLabel || '', a.emotionLabel || '', a.intentLabel || '', a.domainLabel || '',
+        a.severity || 0, a.severityName || '', a.actionLabel || '',
+        a.flagged ? 'نعم' : 'لا', (a.flags || []).join(' | '), a.recommendation || '',
+        a.tone || '', a.sarcasm ? 'نعم' : 'لا',
+        a.source?.type || '', a.source?.credibility || '', a.source?.engagement || 0
+      ];
+    });
+    const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+    download(filename || `منشورات-فيسبوك-${stamp}.xlsx`, columns, rows, sheetName || 'المنشورات المحلَّلة');
+    return rows.length;
+  }
+
+  global.FBXExcel = { download, build, exportPosts };
 
 })(typeof window !== 'undefined' ? window : this);

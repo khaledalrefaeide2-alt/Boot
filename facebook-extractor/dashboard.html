@@ -405,6 +405,7 @@
         <option value="engage">الأكثر تفاعلاً</option>
       </select>
       <div class="spacer"></div>
+      <button class="btn btn-primary btn-sm" id="exportExcelBtn">📊 تصدير Excel</button>
       <button class="btn btn-ghost btn-sm" id="exportBtn">⬇️ تصدير JSON</button>
       <button class="btn btn-danger-ghost btn-sm" id="clearBtn">🗑️ مسح السجل</button>
     </div>
@@ -419,13 +420,16 @@
 
 </main>
 
-<footer>FB Extractor — لوحة الرصد والتحليل التفاعلية · الإصدار 3.0 🍃</footer>
+<footer>FB Extractor — لوحة الرصد والتحليل التفاعلية · صور وفيديو · تصدير Excel · الإصدار 3.1 🍃</footer>
 <div class="toast" id="toast"></div>
 
 <script src="analyzer.js"></script>
+<script src="media.js"></script>
+<script src="xlsx-export.js"></script>
 <script>
 'use strict';
 FBXAnalyzer.injectStyles();
+FBXMedia.injectStyles();
 
 /* =============== Constants (shared storage with monitor.html) =============== */
 const ACTOR_ID = 'apify~facebook-posts-scraper';
@@ -614,9 +618,15 @@ function normalizePost(raw) {
     media = m?.thumbnail || m?.photo_image?.uri || m?.image?.uri || '';
   }
   const key = url || `${author}|${ts || ''}|${text.slice(0, 80)}`;
-  const p = { key, text, url, ts, author, avatar, media,
+  const mediaList = FBXMedia.extract(raw);
+  const firstImg = mediaList.find(m => m.type === 'image');
+  const mediaBest = firstImg ? firstImg.src : (mediaList[0]?.thumb || media);
+  const p = { key, text, url, ts, author, avatar, media: mediaBest, mediaList,
     likes: num(raw.likes ?? raw.likesCount ?? raw.reactions ?? raw.reactionsCount),
-    comments: num(raw.comments ?? raw.commentsCount), shares: num(raw.shares ?? raw.sharesCount) };
+    comments: num(raw.comments ?? raw.commentsCount), shares: num(raw.shares ?? raw.sharesCount),
+    views: num(raw.viewsCount ?? raw.videoViewCount ?? raw.views ?? 0),
+    postId: raw.postId || raw.id || raw.post_id || '',
+    pageUrl: raw.pageUrl || raw.user?.profileUrl || '', raw };
   p.analysis = FBXAnalyzer.analyze(p);
   return p;
 }
@@ -833,8 +843,9 @@ function renderFeed(posts) {
     return `<article class="post-card ${fresh ? 'fresh' : ''}" style="animation-delay:${Math.min(i * 25, 300)}ms">
       <div class="post-head">${avatar}<div><div class="post-author">${esc(platformKey(p))} ${fresh ? '<span class="badge-new">جديد</span>' : ''}</div><div class="post-date">🕓 ${dateStr}</div></div></div>
       <div class="post-body"><div class="post-text ${longText ? 'clamped' : ''}" id="dtxt-${i}">${esc(p.text) || '<em style="color:var(--text-2)">— منشور بدون نص —</em>'}</div>${longText ? `<button class="read-more" data-target="dtxt-${i}">عرض المزيد ▾</button>` : ''}
+      ${FBXMedia.galleryHtml(p)}
       ${FBXAnalyzer.badges(a)}<button class="fbx-toggle" data-panel="dpan-${i}">🧠 عرض التحليل الكامل ▾</button><div id="dpan-${i}" style="display:none">${FBXAnalyzer.panel(a)}</div></div>
-      <div class="post-foot"><div class="reactions"><span>👍 ${fmtNum(p.likes)}</span><span>💬 ${fmtNum(p.comments)}</span><span>🔁 ${fmtNum(p.shares)}</span></div>${p.url ? `<a class="post-link" href="${esc(p.url)}" target="_blank" rel="noopener">فتح ↗</a>` : ''}</div>
+      <div class="post-foot"><div class="reactions"><span>👍 ${fmtNum(p.likes)}</span><span>💬 ${fmtNum(p.comments)}</span><span>🔁 ${fmtNum(p.shares)}</span>${p.views ? `<span>👁️ ${fmtNum(p.views)}</span>` : ''}</div>${p.url ? `<a class="post-link" href="${esc(p.url)}" target="_blank" rel="noopener">فتح ↗</a>` : ''}</div>
     </article>`;
   }).join('');
   $('feed').querySelectorAll('.read-more').forEach(btn => btn.onclick = () => {
@@ -862,6 +873,13 @@ $('clearBtn').onclick = () => {
   feed = []; freshKeys = new Set(); save(FEED_STORAGE, feed);
   $('dashboard').style.display = 'none'; $('bootEmpty').style.display = 'block';
   showToast('🗑️ تم مسح السجل');
+};
+$('exportExcelBtn').onclick = () => {
+  const list = filteredPosts();
+  if (!list.length) return showToast('لا بيانات للتصدير');
+  list.forEach(ensureAnalysis);
+  const n = FBXExcel.exportPosts('', list);
+  showToast(`📊 تم تصدير ${n} منشوراً إلى Excel`);
 };
 $('exportBtn').onclick = () => {
   const list = filteredPosts();
