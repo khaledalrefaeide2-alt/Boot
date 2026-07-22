@@ -473,6 +473,7 @@
   // لوحة التحليل الكاملة (قابلة للطي)
   function panel(a) {
     if (!a) return '';
+    a = Object.assign({ flags: [], reasons: [], source: {} }, a);
     const flagsHtml = a.flags.length
       ? `<ul class="fbx-flags">${a.flags.map(f => `<li>🚩 ${esc(f)}</li>`).join('')}</ul>`
       : '<div class="fbx-noflag">✅ لا مخالفات مرصودة</div>';

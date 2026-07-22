@@ -347,6 +347,32 @@
   .asum-pill:hover { border-color: var(--green-500); }
   .asum-pill.active { background: var(--green-700); color: #f3efe2; border-color: var(--green-700); }
 
+  /* ================= Media gallery ================= */
+  .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 12px 0 4px; }
+  .media-grid.one { grid-template-columns: 1fr; }
+  .media-item {
+    position: relative; display: block; border-radius: 14px; overflow: hidden;
+    background: var(--surface-2); border: 1px solid var(--border); text-decoration: none;
+    aspect-ratio: 16 / 10;
+  }
+  .media-grid.one .media-item { aspect-ratio: auto; max-height: 440px; }
+  .media-el { width: 100%; height: 100%; object-fit: cover; display: block; background: #000; }
+  .media-grid.one .media-el { max-height: 440px; object-fit: contain; }
+  video.media-el { object-fit: contain; }
+  .media-blank { display: grid; place-items: center; color: var(--text-2); font-weight: 800; aspect-ratio: 16/10; }
+  .media-tag {
+    position: absolute; inset-block-end: 6px; inset-inline-start: 6px;
+    background: rgba(18, 44, 35, .78); color: #f3efe2; font-size: .68rem; font-weight: 800;
+    padding: 3px 9px; border-radius: 999px; backdrop-filter: blur(4px);
+  }
+  .media-play {
+    position: absolute; inset: 0; margin: auto; width: 54px; height: 54px;
+    display: grid; place-items: center; font-size: 22px; color: #fff;
+    background: rgba(18, 44, 35, .55); border: 2px solid rgba(255,255,255,.8); border-radius: 50%;
+    pointer-events: none;
+  }
+  .media-video-link:hover .media-play { background: rgba(22, 56, 44, .8); }
+
   @media (max-width: 720px) {
     .panel, .control-band { padding: 22px; }
     .hero { padding: 36px 24px 80px; }
@@ -438,6 +464,7 @@
   <div class="feed-head">
     <h3>📰 آخر المنشورات المرصودة والمحلّلة <span class="feed-count" id="feedCount">0</span></h3>
     <div class="spacer"></div>
+    <button class="btn btn-primary btn-sm" id="exportExcelBtn">📊 تصدير Excel</button>
     <button class="btn btn-ghost btn-sm" id="exportFeedBtn">⬇️ تصدير JSON</button>
     <button class="btn btn-danger-ghost btn-sm" id="clearFeedBtn">🗑️ مسح السجل</button>
   </div>
@@ -449,10 +476,11 @@
 
 </main>
 
-<footer>FB Extractor — صفحة الرصد التلقائي والتحليل · الإصدار 3.0 🍃</footer>
+<footer>FB Extractor — صفحة الرصد التلقائي والتحليل · بيانات كاملة · صور وفيديو · تصدير Excel · الإصدار 3.1 🍃</footer>
 <div class="toast" id="toast"></div>
 
 <script src="analyzer.js"></script>
+<script src="xlsx-export.js"></script>
 <script>
 'use strict';
 FBXAnalyzer.injectStyles();
@@ -508,6 +536,22 @@ function load(k, fallback) {
   catch (_) { return fallback; }
 }
 function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+// حفظ السجل مع الاحتفاظ بكامل البيانات، ومعالجة تجاوز سعة التخزين
+// بإسقاط النسخة الخام التدريجية من الأقدم عند الحاجة فقط.
+function saveFeed() {
+  try { localStorage.setItem(FEED_STORAGE, JSON.stringify(feed)); return; }
+  catch (e) {
+    for (let i = feed.length - 1; i >= 0; i--) {
+      if (feed[i].raw) { delete feed[i].raw; }
+      try { localStorage.setItem(FEED_STORAGE, JSON.stringify(feed)); return; } catch (_) {}
+    }
+    // كحل أخير: قلّص عدد المنشورات المحفوظة
+    while (feed.length > 50) {
+      feed = feed.slice(0, Math.floor(feed.length * 0.8));
+      try { localStorage.setItem(FEED_STORAGE, JSON.stringify(feed)); return; } catch (_) {}
+    }
+  }
+}
 function getToken() { return (localStorage.getItem(KEY_STORAGE) || '').trim(); }
 
 /* =============== API key (managed from settings.html) =============== */
@@ -651,7 +695,7 @@ async function runCycle(manual) {
     // newest first, capped
     feed.sort((a, b) => (b.ts || b.seenAt || 0) - (a.ts || a.seenAt || 0));
     if (feed.length > FEED_CAP) feed = feed.slice(0, FEED_CAP);
-    save(FEED_STORAGE, feed);
+    saveFeed();
 
     lastRunAt = Date.now();
     localStorage.setItem(LAST_STORAGE, String(lastRunAt));
@@ -688,27 +732,69 @@ async function apiError(res) {
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
-/* =============== Normalization =============== */
+/* =============== Media extraction (images + videos) =============== */
+const isImgUrl = u => typeof u === 'string' && /\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(u);
+const isVidUrl = u => typeof u === 'string' && /\.(mp4|webm|mov|m3u8)(\?|$)/i.test(u);
+
+// يستخرج قائمة الوسائط من عنصر خام: [{type:'image'|'video', src, thumb}]
+function extractMedia(raw) {
+  const out = [];
+  const seen = new Set();
+  const push = (type, src, thumb) => {
+    src = src || ''; thumb = thumb || '';
+    const kk = type + '|' + (src || thumb);
+    if ((!src && !thumb) || seen.has(kk)) return;
+    seen.add(kk);
+    out.push({ type, src, thumb });
+  };
+  const arrays = [raw.media, raw.attachments, raw.images, raw.photos, raw.videos].filter(Array.isArray);
+  for (const arr of arrays) {
+    for (const m of arr) {
+      if (!m) continue;
+      if (typeof m === 'string') { isVidUrl(m) ? push('video', m, '') : push('image', '', m); continue; }
+      const tn = String(m.__typename || m.type || m.mediaType || '').toLowerCase();
+      const thumb = m.thumbnail || m.thumbnailUrl || m.photo_image?.uri || m.image?.uri || m.preview || '';
+      const vids = m.videoUrl || m.video_url || m.video?.uri || m.playableUrl || m.playable_url ||
+                   (isVidUrl(m.url) ? m.url : '') || (isVidUrl(m.src) ? m.src : '');
+      const imgs = m.photo_image?.uri || m.image?.uri || (isImgUrl(m.url) ? m.url : '') ||
+                   (isImgUrl(m.src) ? m.src : '') || m.thumbnail || '';
+      if (tn.includes('video') || vids) push('video', vids, thumb || imgs);
+      else if (imgs || thumb) push('image', imgs || thumb, '');
+      else if (m.url) push('image', '', m.url);
+    }
+  }
+  // حقول علوية للفيديو المباشر
+  const topVid = raw.videoUrl || raw.video_url || raw.video?.uri || (isVidUrl(raw.url) ? raw.url : '');
+  if (topVid) push('video', topVid, raw.thumbnail || raw.previewImage || '');
+  return out;
+}
+
+/* =============== Normalization (keeps ALL raw data) =============== */
 function normalizePost(raw) {
-  const text = raw.text || raw.message || raw.postText || '';
-  const url = raw.url || raw.postUrl || raw.topLevelUrl || '';
-  const timeVal = raw.time || raw.date || raw.publishedTime || raw.timestamp || null;
+  const text = raw.text || raw.message || raw.postText || raw.caption || '';
+  const url = raw.url || raw.postUrl || raw.topLevelUrl || raw.link || '';
+  const timeVal = raw.time || raw.date || raw.publishedTime || raw.timestamp || raw.publish_time || null;
   let ts = null;
   if (typeof timeVal === 'number') ts = timeVal > 1e12 ? timeVal : timeVal * 1000;
   else if (timeVal) { const d = new Date(timeVal); if (!isNaN(d)) ts = d.getTime(); }
   const author = raw.user?.name || raw.pageName || raw.author || raw.user?.id || 'صفحة فيسبوك';
-  const avatar = raw.user?.profilePic || raw.pageProfilePic || '';
-  let media = '';
-  if (Array.isArray(raw.media) && raw.media.length) {
-    const m = raw.media.find(x => x?.thumbnail || x?.photo_image?.uri || x?.image?.uri || (typeof x?.url === 'string' && /\.(jpg|jpeg|png|webp)/i.test(x.url)));
-    media = m?.thumbnail || m?.photo_image?.uri || m?.image?.uri || m?.url || '';
-  }
+  const avatar = raw.user?.profilePic || raw.pageProfilePic || raw.user?.profilePicture || '';
+
+  const mediaList = extractMedia(raw);
+  const firstImg = mediaList.find(m => m.type === 'image');
+  const media = firstImg ? firstImg.src : (mediaList[0]?.thumb || '');
+
   const key = url || `${author}|${ts || ''}|${text.slice(0, 80)}`;
   const p = {
-    key, text, url, ts, author, avatar, media,
+    key, text, url, ts, author, avatar, media, mediaList,
     likes: num(raw.likes ?? raw.likesCount ?? raw.reactions ?? raw.reactionsCount),
     comments: num(raw.comments ?? raw.commentsCount),
-    shares: num(raw.shares ?? raw.sharesCount)
+    shares: num(raw.shares ?? raw.sharesCount),
+    views: num(raw.viewsCount ?? raw.videoViewCount ?? raw.views ?? 0),
+    postId: raw.postId || raw.id || raw.post_id || '',
+    pageName: raw.pageName || raw.user?.name || '',
+    pageUrl: raw.pageUrl || raw.user?.profileUrl || raw.user?.profileUrl || '',
+    raw   // الاحتفاظ بكامل البيانات التي جلبتها الأداة
   };
   p.analysis = FBXAnalyzer.analyze(p);   // تحليل وتصنيف فوري
   return p;
@@ -765,6 +851,37 @@ function passesFilter(a) {
   return a.sentiment === activeFilter;
 }
 
+/* =============== Media gallery (images + videos) =============== */
+function mediaHtml(p) {
+  let list = Array.isArray(p.mediaList) ? p.mediaList : [];
+  if (!list.length && p.media) list = [{ type: 'image', src: p.media, thumb: '' }];
+  if (!list.length) return '';
+  const items = list.slice(0, 8).map(m => {
+    if (m.type === 'video') {
+      if (m.src) {
+        return `<div class="media-item">
+          <video class="media-el" controls preload="metadata" ${m.thumb ? `poster="${esc(m.thumb)}"` : ''} src="${esc(m.src)}"></video>
+          <span class="media-tag">🎬 فيديو</span>
+        </div>`;
+      }
+      // فيديو بلا رابط مباشر: صورة مصغّرة تفتح المنشور
+      const th = m.thumb || p.media || '';
+      return `<a class="media-item media-video-link" href="${esc(p.url || '#')}" target="_blank" rel="noopener">
+        ${th ? `<img class="media-el" loading="lazy" src="${esc(th)}" alt="" onerror="this.remove()">` : '<div class="media-el media-blank">فيديو</div>'}
+        <span class="media-play">▶</span><span class="media-tag">🎬 فيديو — افتح المنشور</span>
+      </a>`;
+    }
+    const src = m.src || m.thumb;
+    if (!src) return '';
+    return `<a class="media-item" href="${esc(src)}" target="_blank" rel="noopener">
+      <img class="media-el" loading="lazy" src="${esc(src)}" alt="" onerror="this.closest('.media-item').remove()">
+      <span class="media-tag">🖼️ صورة</span>
+    </a>`;
+  }).join('');
+  const cls = list.length === 1 ? 'media-grid one' : 'media-grid';
+  return `<div class="${cls}">${items}</div>`;
+}
+
 /* =============== Feed rendering =============== */
 function renderFeed() {
   $('feedCount').textContent = feed.length;
@@ -793,6 +910,7 @@ function renderFeed() {
       <div class="post-body">
         <div class="post-text ${longText ? 'clamped' : ''}" id="ftxt-${i}">${esc(p.text) || '<em style="color:var(--text-2)">— منشور بدون نص —</em>'}</div>
         ${longText ? `<button class="read-more" data-target="ftxt-${i}">عرض المزيد ▾</button>` : ''}
+        ${mediaHtml(p)}
         ${FBXAnalyzer.badges(a)}
         <button class="fbx-toggle" data-panel="fpan-${i}">🧠 عرض التحليل الكامل ▾</button>
         <div id="fpan-${i}" style="display:none">${FBXAnalyzer.panel(a)}</div>
@@ -802,6 +920,7 @@ function renderFeed() {
           <span>👍 ${fmtNum(p.likes)}</span>
           <span>💬 ${fmtNum(p.comments)}</span>
           <span>🔁 ${fmtNum(p.shares)}</span>
+          ${p.views ? `<span>👁️ ${fmtNum(p.views)}</span>` : ''}
         </div>
         ${p.url ? `<a class="post-link" href="${esc(p.url)}" target="_blank" rel="noopener">فتح المنشور ↗</a>` : ''}
       </div>
@@ -829,7 +948,7 @@ $('clearFeedBtn').onclick = () => {
   if (!confirm('سيتم مسح جميع المنشورات المرصودة من سجل المتصفح. متابعة؟')) return;
   feed = [];
   freshKeys = new Set();
-  save(FEED_STORAGE, feed);
+  saveFeed();
   renderFeed();
   renderSummary();
   showToast('🗑️ تم مسح السجل');
@@ -843,6 +962,73 @@ $('exportFeedBtn').onclick = () => {
   a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 3000);
   showToast('⬇️ تم تنزيل السجل');
+};
+
+/* =============== Excel export (organized columns) =============== */
+$('exportExcelBtn').onclick = () => {
+  if (!feed.length) return showToast('السجل فارغ — لا بيانات للتصدير');
+  const columns = [
+    { header: '#', width: 5, type: 'number' },
+    { header: 'الصفحة / الكاتب', width: 26, type: 'text' },
+    { header: 'نص المنشور', width: 70, type: 'text' },
+    { header: 'التاريخ والوقت', width: 22, type: 'text' },
+    { header: 'إعجابات', width: 11, type: 'number' },
+    { header: 'تعليقات', width: 11, type: 'number' },
+    { header: 'مشاركات', width: 11, type: 'number' },
+    { header: 'مشاهدات', width: 12, type: 'number' },
+    { header: 'عدد الصور', width: 10, type: 'number' },
+    { header: 'عدد الفيديوهات', width: 12, type: 'number' },
+    { header: 'روابط الصور', width: 45, type: 'text' },
+    { header: 'روابط الفيديوهات', width: 45, type: 'text' },
+    { header: 'رابط المنشور', width: 45, type: 'text' },
+    { header: 'رابط الصفحة', width: 40, type: 'text' },
+    { header: 'معرّف المنشور', width: 22, type: 'text' },
+    { header: 'المشاعر الأساسية', width: 14, type: 'text' },
+    { header: 'المشاعر الدقيقة', width: 16, type: 'text' },
+    { header: 'النية', width: 16, type: 'text' },
+    { header: 'المجال', width: 16, type: 'text' },
+    { header: 'شدة المخالفة (1-10)', width: 12, type: 'number' },
+    { header: 'مستوى الشدة', width: 12, type: 'text' },
+    { header: 'الإجراء المقترح', width: 16, type: 'text' },
+    { header: 'مرفوع العلم', width: 10, type: 'text' },
+    { header: 'السياسات/القوانين المخالَفة', width: 50, type: 'text' },
+    { header: 'التوصية الإجرائية', width: 60, type: 'text' },
+    { header: 'النبرة', width: 20, type: 'text' },
+    { header: 'سخرية', width: 8, type: 'text' },
+    { header: 'نوع الحساب', width: 22, type: 'text' },
+    { header: 'مؤشر المصداقية', width: 26, type: 'text' },
+    { header: 'إجمالي التفاعل', width: 12, type: 'number' },
+    { header: 'وقت الرصد', width: 22, type: 'text' }
+  ];
+  const dt = ts => ts ? new Date(ts).toLocaleString('ar', { year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+  const rows = feed.map((p, idx) => {
+    ensureAnalysis(p);
+    const a = p.analysis;
+    const ml = Array.isArray(p.mediaList) ? p.mediaList : [];
+    const imgs = ml.filter(m => m.type === 'image').map(m => m.src || m.thumb).filter(Boolean);
+    const vids = ml.filter(m => m.type === 'video').map(m => m.src || m.thumb).filter(Boolean);
+    return [
+      idx + 1,
+      p.author || '',
+      p.text || '',
+      dt(p.ts),
+      p.likes || 0, p.comments || 0, p.shares || 0, p.views || 0,
+      imgs.length, vids.length,
+      imgs.join('\n'), vids.join('\n'),
+      p.url || '', p.pageUrl || '', p.postId || '',
+      a.sentimentLabel, a.emotionLabel, a.intentLabel, a.domainLabel,
+      a.severity, a.severityName, a.actionLabel,
+      a.flagged ? 'نعم' : 'لا',
+      (a.flags || []).join(' | '),
+      a.recommendation,
+      a.tone, a.sarcasm ? 'نعم' : 'لا',
+      a.source?.type || '', a.source?.credibility || '', a.source?.engagement || 0,
+      dt(p.seenAt)
+    ];
+  });
+  const stamp = new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-');
+  FBXExcel.download(`منشورات-فيسبوك-${stamp}.xlsx`, columns, rows, 'المنشورات المحلَّلة');
+  showToast(`📊 تم تصدير ${rows.length} منشوراً إلى Excel`);
 };
 
 function fmtNum(n) {
