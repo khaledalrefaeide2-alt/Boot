@@ -1,2 +1,24 @@
 facebook-extractor/local-server/fbx-posts.db
+
+# Dependencies
 node_modules/
+**/node_modules/
+
+# Build output
+server/dist/
+web/.next/
+web/out/
+
+# Local database + backups
+server/data/
+
+# Env files
+**/.env
+!**/.env.example
+
+# Logs & misc
+*.log
+.DS_Store
+
+# TS build cache
+*.tsbuildinfo
