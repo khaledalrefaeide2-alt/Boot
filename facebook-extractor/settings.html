@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الإعدادات — FB Extractor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #edeee1; --surface: #faf8ef; --surface-2: #f0eddd;
+    --text: #22372e; --text-2: #6d7c6e; --border: #dcdcc6;
+    --green-950: #122c23; --green-900: #16382c; --green-700: #23553f; --green-500: #47775a;
+    --sage: #8fae70; --sage-soft: #dfe8cf; --gold: #e8c9a0;
+    --primary-soft: #e3ecdd; --danger: #b3422f;
+    --shadow: 0 2px 6px rgba(34, 55, 46, .07), 0 14px 34px rgba(34, 55, 46, .10);
+    --shadow-lg: 0 24px 60px rgba(18, 44, 35, .22); --radius: 24px;
+  }
+  [data-theme="dark"] {
+    --bg: #0f1a14; --surface: #17251d; --surface-2: #1e2f25;
+    --text: #e9efe2; --text-2: #96a894; --border: #2a3b2f;
+    --primary-soft: #21382b; --sage-soft: #23392a;
+    --shadow: 0 2px 6px rgba(0,0,0,.35), 0 14px 34px rgba(0,0,0,.35);
+    --shadow-lg: 0 24px 60px rgba(0,0,0,.55);
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
+    background: radial-gradient(1100px 500px at 90% -100px, rgba(143,174,112,.14), transparent 60%), var(--bg);
+    color: var(--text); min-height: 100vh; transition: background .3s, color .3s;
+  }
+  .hero-wrap {
+    position: relative; overflow: hidden; color: #f3efe2;
+    background:
+      radial-gradient(900px 460px at 12% -60px, rgba(232,201,160,.16), transparent 55%),
+      radial-gradient(1200px 700px at 105% 115%, rgba(20,60,46,.9), transparent 60%),
+      linear-gradient(160deg, #2c6a51 0%, #1d4b3a 48%, #143427 100%);
+    border-bottom-left-radius: 46px; border-bottom-right-radius: 46px; box-shadow: var(--shadow-lg);
+  }
+  .nav {
+    position: relative; z-index: 2; max-width: 1160px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+    padding: 22px 28px 0;
+  }
+  .brand { display: flex; align-items: center; gap: 13px; }
+  .brand a { color: inherit; text-decoration: none; display: flex; align-items: center; gap: 13px; }
+  .brand-logo {
+    width: 50px; height: 50px; border-radius: 50%;
+    background: linear-gradient(145deg, var(--gold), #caa06f); color: #3d2c1d;
+    display: grid; place-items: center; font-size: 24px; box-shadow: 0 8px 22px rgba(0,0,0,.28);
+  }
+  .brand h1 { font-size: 1.3rem; font-weight: 900; letter-spacing: -.3px; }
+  .brand p { font-size: .78rem; opacity: .82; }
+  .nav-actions { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+  .nav-link {
+    display: inline-flex; align-items: center; gap: 8px;
+    border: 1px solid rgba(255,255,255,.3); border-radius: 999px;
+    background: rgba(255,255,255,.1); color: #fff; padding: 10px 18px; font-size: .82rem; font-weight: 700;
+    text-decoration: none; backdrop-filter: blur(6px); transition: background .2s;
+  }
+  .nav-link:hover, .nav-link.active { background: rgba(255,255,255,.24); }
+  .icon-btn {
+    width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); cursor: pointer;
+    background: rgba(255,255,255,.1); color: #fff; font-size: 18px; display: grid; place-items: center;
+    backdrop-filter: blur(6px); transition: background .2s, transform .15s;
+  }
+  .icon-btn:hover { background: rgba(255,255,255,.22); transform: translateY(-1px); }
+  .hero { position: relative; z-index: 2; max-width: 1160px; margin: 0 auto; padding: 40px 28px 76px; }
+  .hero-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(232,201,160,.16); border: 1px solid rgba(232,201,160,.4); color: var(--gold);
+    border-radius: 999px; padding: 7px 18px; font-size: .8rem; font-weight: 700; margin-bottom: 16px;
+  }
+  .hero h2 { font-size: clamp(1.6rem, 3.8vw, 2.3rem); font-weight: 900; line-height: 1.5; }
+  .hero p { margin-top: 12px; max-width: 620px; opacity: .85; line-height: 2; font-size: .95rem; }
+
+  main { max-width: 900px; margin: 0 auto; padding: 0 28px 70px; }
+  .panel {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow); padding: 30px; margin-top: 28px; transition: background .3s, border-color .3s;
+  }
+  .panel-title { display: flex; align-items: center; gap: 12px; font-size: 1.08rem; font-weight: 900; margin-bottom: 8px; }
+  .panel-title .num {
+    width: 40px; height: 40px; border-radius: 50%; flex: none;
+    background: linear-gradient(145deg, var(--green-500), var(--green-700)); color: #f3efe2;
+    display: grid; place-items: center; font-size: 1.1rem; box-shadow: 0 6px 14px rgba(35,85,63,.35);
+  }
+  .panel-sub { font-size: .84rem; color: var(--text-2); margin-bottom: 20px; line-height: 1.8; }
+  label.field-label { display: block; font-size: .86rem; font-weight: 700; margin-bottom: 8px; }
+  label.field-label small { font-weight: 400; color: var(--text-2); }
+  .input-wrap { position: relative; }
+  .input {
+    width: 100%; padding: 13px 16px; border: 1.5px solid var(--border); border-radius: 16px;
+    background: var(--surface-2); color: var(--text); font-family: inherit; font-size: .93rem;
+    transition: border-color .2s, box-shadow .2s;
+  }
+  .input:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 0 4px var(--primary-soft); }
+  .input-wrap .toggle-eye {
+    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
+    border: none; background: none; cursor: pointer; font-size: 16px; color: var(--text-2);
+  }
+  .hint { font-size: .78rem; color: var(--text-2); margin-top: 8px; line-height: 1.8; }
+  .btn {
+    display: inline-flex; align-items: center; justify-content: center; gap: 9px;
+    padding: 12px 26px; border: none; border-radius: 999px; cursor: pointer;
+    font-family: inherit; font-size: .9rem; font-weight: 900;
+    transition: transform .15s, box-shadow .2s, background .2s, opacity .2s;
+  }
+  .btn:active { transform: scale(.98); }
+  .btn-primary { background: linear-gradient(145deg, var(--green-500), var(--green-900)); color: #f3efe2; box-shadow: 0 10px 24px rgba(22,56,44,.38); }
+  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(22,56,44,.48); }
+  .btn-ghost { background: var(--surface-2); color: var(--text); border: 1.5px solid var(--border); }
+  .btn-ghost:hover { border-color: var(--green-500); color: var(--green-700); }
+  [data-theme="dark"] .btn-ghost:hover { color: var(--sage); }
+  .btn-danger-ghost { background: transparent; border: 1.5px solid var(--danger); color: var(--danger); }
+  .btn-sm { padding: 10px 18px; font-size: .82rem; }
+  .actions-row { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 16px; }
+  .status-line {
+    margin-top: 14px; font-size: .84rem; font-weight: 700; padding: 11px 16px; border-radius: 14px;
+    background: var(--surface-2); border: 1px solid var(--border); display: none;
+  }
+  .status-line.show { display: block; }
+  .status-ok { color: var(--green-700); } [data-theme="dark"] .status-ok { color: var(--sage); }
+  .status-err { color: var(--danger); }
+  footer { text-align: center; padding: 30px 20px 36px; color: var(--text-2); font-size: .82rem; }
+  .toast {
+    position: fixed; bottom: 26px; right: 50%; transform: translate(50%, 20px);
+    background: var(--green-900); color: #f3efe2; padding: 13px 26px; border-radius: 999px;
+    font-size: .88rem; font-weight: 700; opacity: 0; pointer-events: none;
+    transition: opacity .3s, transform .3s; z-index: 99; box-shadow: var(--shadow-lg);
+  }
+  .toast.show { opacity: 1; transform: translate(50%, 0); }
+  @media (max-width: 720px) { .panel { padding: 22px; } .hero { padding: 32px 22px 70px; } }
+</style>
+</head>
+<body>
+
+<div class="hero-wrap">
+  <nav class="nav">
+    <div class="brand">
+      <a href="index.html">
+        <div class="brand-logo">🍃</div>
+        <div>
+          <h1>FB Extractor</h1>
+          <p>مستخرج وتحليل منشورات فيسبوك</p>
+        </div>
+      </a>
+    </div>
+    <div class="nav-actions">
+      <a class="nav-link" href="index.html">🔍 الاستخراج</a>
+      <a class="nav-link" href="monitor.html">📡 الرصد التلقائي</a>
+      <a class="nav-link" href="dashboard.html">📊 لوحة الرصد</a>
+      <a class="nav-link active" href="settings.html">⚙️ الإعدادات</a>
+      <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري">🌙</button>
+    </div>
+  </nav>
+  <div class="hero">
+    <span class="hero-badge">⚙️ مركز الإعدادات</span>
+    <h2>إعدادات الموقع</h2>
+    <p>من هنا تضبط مفتاح واجهة الاستخراج وقاعدة البيانات المحلية مرة واحدة، وتُطبَّق تلقائياً على جميع صفحات الموقع (الاستخراج، الرصد التلقائي، لوحة الرصد).</p>
+  </div>
+</div>
+
+<main>
+
+  <!-- API key -->
+  <section class="panel">
+    <div class="panel-title"><span class="num">🔑</span> مفتاح واجهة الاستخراج (API)</div>
+    <div class="panel-sub">المفتاح الذي يستخدمه الموقع لاستخراج المنشورات. يُحفظ محلياً في متصفحك فقط ولا يُشارَك مع أي جهة أخرى.</div>
+
+    <label class="field-label" for="apiKey">المفتاح <small>(محفوظ محلياً في هذا المتصفح)</small></label>
+    <div class="input-wrap">
+      <input class="input" type="password" id="apiKey" placeholder="أدخل مفتاح الاستخراج هنا" autocomplete="off" dir="ltr" style="padding-left:42px">
+      <button class="toggle-eye" id="eyeBtn" title="إظهار / إخفاء">👁️</button>
+    </div>
+    <div class="actions-row">
+      <button class="btn btn-primary btn-sm" id="saveKeyBtn">💾 حفظ المفتاح</button>
+      <button class="btn btn-ghost btn-sm" id="checkKeyBtn">🔌 فحص المفتاح</button>
+      <button class="btn btn-danger-ghost btn-sm" id="clearKeyBtn">🗑️ مسح المفتاح</button>
+    </div>
+    <div class="status-line" id="keyStatus"></div>
+  </section>
+
+  <!-- Local database -->
+  <section class="panel">
+    <div class="panel-title"><span class="num">🗄️</span> قاعدة البيانات المحلية <small style="font-weight:400;color:var(--text-2);font-size:.8rem">(اختياري)</small></div>
+    <div class="panel-sub">عند تشغيل خادم قاعدة البيانات على جهازك، تُحفظ كل المنشورات المستخرجة والمحلَّلة تلقائياً في ملف SQLite دائم على حاسوبك بدون تكرار.</div>
+
+    <label class="field-label" for="dbUrl">عنوان الخادم المحلي</label>
+    <div class="actions-row" style="margin-top:0">
+      <input class="input" type="url" id="dbUrl" dir="ltr" placeholder="http://localhost:3300" value="http://localhost:3300" style="flex:1 1 260px">
+      <button class="btn btn-ghost btn-sm" id="dbCheckBtn">🔌 فحص الاتصال</button>
+    </div>
+    <div class="status-line" id="dbStatus"></div>
+    <div class="hint">لتشغيل قاعدة البيانات: افتح مجلد <strong>local-server</strong> وشغّل <strong>تشغيل-قاعدة-البيانات.bat</strong> (ويندوز) أو <strong>run.sh</strong> (ماك/لينكس)، ثم اضغط «فحص الاتصال».</div>
+  </section>
+
+</main>
+
+<footer>FB Extractor — مركز الإعدادات · تحليل وتصنيف محلي · بياناتك لا تغادر متصفحك · الإصدار 3.0 🍃</footer>
+<div class="toast" id="toast"></div>
+
+<script>
+'use strict';
+const KEY_STORAGE = 'fbx_apify_key';
+const DB_URL_STORAGE = 'fbx_db_url';
+const THEME_STORAGE = 'fbx_theme';
+const API_BASE = 'https://api.apify.com/v2';
+const $ = id => document.getElementById(id);
+const toast = $('toast');
+
+/* Theme */
+function applyTheme(t) { document.documentElement.dataset.theme = t; $('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙'; }
+applyTheme(localStorage.getItem(THEME_STORAGE) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
+$('themeBtn').onclick = () => { const n = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; localStorage.setItem(THEME_STORAGE, n); applyTheme(n); };
+
+function showToast(msg) { toast.textContent = msg; toast.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => toast.classList.remove('show'), 2600); }
+function setStatus(el, msg, ok) { el.textContent = msg; el.classList.add('show'); el.classList.toggle('status-ok', !!ok); el.classList.toggle('status-err', ok === false); }
+
+/* ===== API key ===== */
+$('apiKey').value = localStorage.getItem(KEY_STORAGE) || '';
+if ($('apiKey').value) setStatus($('keyStatus'), '🟢 يوجد مفتاح محفوظ في هذا المتصفح.', true);
+$('eyeBtn').onclick = () => { const i = $('apiKey'); i.type = i.type === 'password' ? 'text' : 'password'; };
+$('saveKeyBtn').onclick = () => {
+  const v = $('apiKey').value.trim();
+  if (!v) return showToast('أدخل المفتاح أولاً');
+  localStorage.setItem(KEY_STORAGE, v);
+  setStatus($('keyStatus'), '✅ تم حفظ المفتاح. سيُستخدم في كل صفحات الموقع.', true);
+  showToast('✅ تم حفظ المفتاح');
+};
+$('clearKeyBtn').onclick = () => {
+  localStorage.removeItem(KEY_STORAGE); $('apiKey').value = '';
+  setStatus($('keyStatus'), '🗑️ تم مسح المفتاح.', false);
+  showToast('🗑️ تم مسح المفتاح');
+};
+$('checkKeyBtn').onclick = async () => {
+  const v = $('apiKey').value.trim();
+  if (!v) return showToast('أدخل المفتاح أولاً');
+  setStatus($('keyStatus'), '⏳ جارٍ فحص المفتاح...', null);
+  try {
+    const r = await fetch(`${API_BASE}/users/me?token=${encodeURIComponent(v)}`, { signal: AbortSignal.timeout(8000) });
+    if (r.status === 401) { setStatus($('keyStatus'), '🔴 المفتاح غير صحيح أو منتهي الصلاحية.', false); return; }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json();
+    const name = d?.data?.username || d?.data?.email || 'مستخدم';
+    localStorage.setItem(KEY_STORAGE, v);
+    setStatus($('keyStatus'), `🟢 المفتاح صالح — الحساب: ${name}. تم الحفظ.`, true);
+    showToast('✅ المفتاح صالح');
+  } catch (e) {
+    setStatus($('keyStatus'), '⚠️ تعذّر فحص المفتاح (قد يكون بسبب الاتصال). حُفظ المفتاح على أي حال.', false);
+    localStorage.setItem(KEY_STORAGE, v);
+  }
+};
+
+/* ===== Local database ===== */
+$('dbUrl').value = localStorage.getItem(DB_URL_STORAGE) || 'http://localhost:3300';
+$('dbCheckBtn').onclick = async () => {
+  const url = ($('dbUrl').value || '').trim().replace(/\/+$/, '');
+  if (!url) return;
+  setStatus($('dbStatus'), '⏳ جارٍ فحص الاتصال...', null);
+  try {
+    const r = await fetch(url + '/api/health', { signal: AbortSignal.timeout(4000) });
+    const d = await r.json();
+    if (!d.ok) throw new Error();
+    localStorage.setItem(DB_URL_STORAGE, url);
+    setStatus($('dbStatus'), `🟢 متصلة — ${d.total} منشور محفوظ في قاعدة البيانات. تم حفظ العنوان.`, true);
+    showToast('✅ تم الاتصال بقاعدة البيانات');
+  } catch (_) {
+    setStatus($('dbStatus'), '🔴 غير متصلة — تأكد أن الخادم المحلي يعمل ثم أعد الفحص.', false);
+    showToast('⚠️ تعذر الاتصال بقاعدة البيانات');
+  }
+};
+</script>
+</body>
+</html>

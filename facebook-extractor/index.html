@@ -439,19 +439,21 @@
       <div class="brand-logo">🍃</div>
       <div>
         <h1>FB Extractor</h1>
-        <p>مستخرج منشورات فيسبوك عبر Apify</p>
+        <p>مستخرج وتحليل منشورات فيسبوك</p>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px">
+    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <a class="nav-link" href="monitor.html">📡 الرصد التلقائي</a>
       <a class="nav-link" href="dashboard.html">📊 لوحة الرصد</a>
+      <a class="nav-link" href="settings.html">⚙️ الإعدادات</a>
       <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري">🌙</button>
     </div>
   </nav>
 
   <div class="hero">
-    <span class="hero-badge">✦ مدعوم بمنصة Apify</span>
+    <span class="hero-badge">✦ استخراج · تحليل · تصنيف</span>
     <h2>استخرج منشورات أي صفحة فيسبوك <em>بضغطة زر</em> وبتحكم كامل</h2>
-    <p>اربط مفتاح Apify الخاص بك، حدّد الفترة الزمنية وعدد المنشورات بسقف فوترة مضمون، واحصل على النتائج بعرض عصري أنيق مع التصدير إلى JSON أو CSV.</p>
+    <p>اضبط مفتاحك من صفحة الإعدادات مرة واحدة، حدّد الفترة الزمنية وعدد المنشورات بسقف مضمون، واحصل على النتائج محلّلة ومصنّفة بعرض عصري أنيق مع التصدير إلى JSON أو CSV.</p>
     <button class="hero-cta" id="heroCta">ابدأ الاستخراج الآن ↓</button>
   </div>
 </div>
@@ -462,8 +464,8 @@
   <section class="features-band">
     <div class="feature">
       <div class="feature-icon">🔑</div>
-      <h3>اربط مفتاحك</h3>
-      <p>مفتاح Apify يُحفظ محلياً في متصفحك فقط ولا يُرسل إلا إلى Apify مباشرة</p>
+      <h3>اضبط مفتاحك مرة</h3>
+      <p>يُحفظ مفتاحك محلياً في متصفحك فقط من صفحة الإعدادات، ويُستخدم في كل الصفحات</p>
     </div>
     <div class="feature">
       <div class="feature-icon">🗓️</div>
@@ -482,28 +484,16 @@
     </div>
   </section>
 
-  <!-- API Key -->
-  <section class="panel" id="setupPanel">
-    <div class="panel-title"><span class="num">1</span> مفتاح Apify API</div>
-    <div class="grid grid-2">
-      <div>
-        <label class="field-label" for="apiKey">المفتاح <small>(يُحفظ محلياً في متصفحك فقط)</small></label>
-        <div class="input-wrap">
-          <input class="input" type="password" id="apiKey" placeholder="apify_api_XXXXXXXXXXXX" autocomplete="off" style="padding-left:42px">
-          <button class="toggle-eye" id="eyeBtn" title="إظهار / إخفاء">👁️</button>
-        </div>
-        <div class="hint">احصل على مفتاحك من <a href="https://console.apify.com/settings/integrations" target="_blank" rel="noopener">لوحة تحكم Apify ← Integrations</a></div>
-      </div>
-      <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" id="saveKeyBtn">💾 حفظ المفتاح</button>
-        <button class="btn btn-danger-ghost btn-sm" id="clearKeyBtn">🗑️ مسح المفتاح</button>
-      </div>
-    </div>
+  <!-- Setup notice -->
+  <section class="panel" id="setupPanel" style="display:none">
+    <div class="panel-title"><span class="num">⚠️</span> لم يُضبط مفتاح الاستخراج بعد</div>
+    <div class="hint" style="font-size:.9rem">اذهب إلى <a href="settings.html" style="color:var(--green-700);font-weight:900">⚙️ صفحة الإعدادات</a> واضبط مفتاح واجهة الاستخراج مرة واحدة، ثم عُد إلى هنا للبدء.</div>
+    <div class="actions-row"><a class="btn btn-ghost btn-sm" href="settings.html">⚙️ فتح الإعدادات</a></div>
   </section>
 
   <!-- Search form -->
   <section class="panel">
-    <div class="panel-title"><span class="num">2</span> إعدادات الاستخراج والفلاتر</div>
+    <div class="panel-title"><span class="num">1</span> إعدادات الاستخراج والفلاتر</div>
 
     <label class="field-label" for="pageUrls">روابط صفحات فيسبوك <small>(رابط واحد في كل سطر)</small></label>
     <textarea class="input" id="pageUrls" placeholder="https://www.facebook.com/nasa&#10;https://www.facebook.com/bbcnews"></textarea>
@@ -512,7 +502,7 @@
       <div>
         <label class="field-label" for="postsLimit">عدد المنشورات <small>(لكل صفحة)</small></label>
         <input class="input" type="number" id="postsLimit" min="1" max="1000" value="20">
-        <div class="hint">🛡️ يُفرض هذا العدد كسقف فوترة إلزامي على Apify — لن تُحاسَب على أكثر منه</div>
+        <div class="hint">🛡️ يُفرض هذا العدد كسقف استخراج إلزامي — لن تُحاسَب على أكثر منه</div>
       </div>
       <div>
         <label class="field-label" for="dateFrom">من تاريخ <small>(اختياري)</small></label>
@@ -539,17 +529,6 @@
       <button class="btn btn-ghost" id="resetBtn">↺ إعادة تعيين</button>
     </div>
     <div class="alert alert-error" id="formError"></div>
-  </section>
-
-  <!-- Local database -->
-  <section class="panel">
-    <div class="panel-title"><span class="num">3</span> قاعدة البيانات المحلية <small style="font-weight:400;color:var(--text-2);font-size:.8rem">(اختياري)</small></div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <input class="input" type="url" id="dbUrl" dir="ltr" placeholder="http://localhost:3300" value="http://localhost:3300" style="flex:1 1 260px">
-      <button class="btn btn-ghost btn-sm" id="dbCheckBtn">🔌 فحص الاتصال</button>
-    </div>
-    <div class="hint" id="dbStatus">⚪ غير متصلة — شغّل الخادم المحلي ثم اضغط «فحص الاتصال»</div>
-    <div class="hint">لتشغيل قاعدة البيانات على جهازك: افتح مجلد <strong>local-server</strong> وشغّل <strong>تشغيل-قاعدة-البيانات.bat</strong> (ويندوز) أو <strong>run.sh</strong> (ماك/لينكس). عند الاتصال تُحفظ نتائج كل استخراج تلقائياً في ملف SQLite دائم على جهازك.</div>
   </section>
 
   <!-- Status -->
@@ -592,7 +571,7 @@
 
 </main>
 
-<footer>FB Extractor — يعمل عبر <strong>Apify Facebook Posts Scraper</strong> · تحليل وتصنيف محلي · مفتاحك لا يغادر متصفحك إلا نحو Apify مباشرة · الإصدار 3.0 🍃</footer>
+<footer>FB Extractor — استخراج وتحليل وتصنيف منشورات فيسبوك · تحليل محلي بالكامل · مفتاحك لا يغادر متصفحك · الإصدار 3.0 🍃</footer>
 <div class="toast" id="toast"></div>
 
 <script src="analyzer.js"></script>
@@ -608,7 +587,7 @@ const THEME_STORAGE = 'fbx_theme';
 
 /* =============== Elements =============== */
 const $ = id => document.getElementById(id);
-const apiKeyInput = $('apiKey'), pageUrlsInput = $('pageUrls'),
+const pageUrlsInput = $('pageUrls'),
       postsLimitInput = $('postsLimit'), dateFromInput = $('dateFrom'), dateToInput = $('dateTo'),
       sortSelect = $('sortSelect'), runBtn = $('runBtn'),
       statusPanel = $('statusPanel'), statusText = $('statusText'), statusSub = $('statusSub'),
@@ -633,23 +612,13 @@ $('themeBtn').onclick = () => {
   applyTheme(next);
 };
 
-$('heroCta').onclick = () => $('setupPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+$('heroCta').onclick = () => document.querySelector('main .panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-/* =============== API key handling =============== */
-apiKeyInput.value = localStorage.getItem(KEY_STORAGE) || '';
-$('eyeBtn').onclick = () => {
-  apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password';
-};
-$('saveKeyBtn').onclick = () => {
-  if (!apiKeyInput.value.trim()) return showToast('أدخل المفتاح أولاً');
-  localStorage.setItem(KEY_STORAGE, apiKeyInput.value.trim());
-  showToast('✅ تم حفظ المفتاح في المتصفح');
-};
-$('clearKeyBtn').onclick = () => {
-  localStorage.removeItem(KEY_STORAGE);
-  apiKeyInput.value = '';
-  showToast('🗑️ تم مسح المفتاح');
-};
+/* =============== API key (managed from settings.html) =============== */
+// إن لم يُضبط المفتاح بعد، أظهِر تنبيهاً يوجّه إلى صفحة الإعدادات.
+function refreshSetupNotice() {
+  $('setupPanel').style.display = getToken() ? 'none' : 'block';
+}
 
 function showToast(msg) {
   toast.textContent = msg;
@@ -685,7 +654,7 @@ $('abortBtn').onclick = async () => {
   setStatus('تم إيقاف العملية', 'يمكنك بدء عملية جديدة في أي وقت', true);
 };
 
-function getToken() { return apiKeyInput.value.trim(); }
+function getToken() { return (localStorage.getItem(KEY_STORAGE) || '').trim(); }
 
 function validDate(v) { return v && !isNaN(new Date(v).getTime()); }
 
@@ -694,7 +663,7 @@ async function startExtraction() {
   runError.style.display = 'none';
 
   const token = getToken();
-  if (!token) return showFormError('⚠️ أدخل مفتاح Apify API أولاً.');
+  if (!token) { refreshSetupNotice(); return showFormError('⚠️ لم يُضبط مفتاح الاستخراج بعد — اضبطه من صفحة الإعدادات ⚙️.'); }
 
   const urls = pageUrlsInput.value.split('\n').map(u => u.trim()).filter(Boolean);
   if (!urls.length) return showFormError('⚠️ أدخل رابط صفحة فيسبوك واحدة على الأقل.');
@@ -722,10 +691,10 @@ async function startExtraction() {
   spinner.style.display = 'block';
   $('abortBtn').style.display = 'inline-flex';
   progressBar.style.width = '10%';
-  setStatus('جارٍ بدء عملية الاستخراج...', 'الاتصال بخوادم Apify');
+  setStatus('جارٍ بدء عملية الاستخراج...', 'الاتصال بخوادم الاستخراج');
   statusPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-  // Hard billing cap enforced by the Apify platform itself: the run is stopped
+  // Hard cap enforced by the extraction platform itself: the run is stopped
   // and never charges for more than maxItems dataset items, regardless of how
   // many the scraper crawls. resultsLimit alone is only approximate.
   const maxItems = limit * urls.length;
@@ -761,7 +730,7 @@ async function startExtraction() {
     // When the maxItems billing cap is hit, the platform stops the run itself —
     // that can surface as ABORTED even though results were collected normally.
     if (status !== 'SUCCEEDED' && status !== 'ABORTED') {
-      throw new Error(`انتهى التشغيل بحالة "${status}". تحقق من رصيدك في Apify أو من صحة الروابط.`);
+      throw new Error(`انتهى التشغيل بحالة "${status}". تحقق من رصيدك أو من صحة الروابط.`);
     }
 
     // 3) Fetch dataset items
@@ -771,7 +740,7 @@ async function startExtraction() {
     if (!itemsRes.ok) throw await apiError(itemsRes);
     const items = await itemsRes.json();
     if (status === 'ABORTED' && !items.length) {
-      throw new Error('توقف التشغيل قبل جمع أي نتائج. تحقق من رصيدك في Apify أو من صحة الروابط.');
+      throw new Error('توقف التشغيل قبل جمع أي نتائج. تحقق من رصيدك أو من صحة الروابط.');
     }
 
     const scrapedCount = items.length;
@@ -793,7 +762,7 @@ async function startExtraction() {
     setStatus(
       `✅ اكتمل الاستخراج — ${allPosts.length} منشور`,
       hidden > 0
-        ? `استُخرج ${scrapedCount} منشوراً من Apify، أُخفي ${hidden} منها لوقوعها خارج الفترة الزمنية المحددة`
+        ? `استُخرج ${scrapedCount} منشوراً، أُخفي ${hidden} منها لوقوعها خارج الفترة الزمنية المحددة`
         : 'يمكنك البحث والفرز والتصدير من الأسفل',
       true
     );
@@ -812,13 +781,13 @@ async function startExtraction() {
 }
 
 async function apiError(res) {
-  let msg = `خطأ من Apify (HTTP ${res.status})`;
+  let msg = `خطأ من خدمة الاستخراج (HTTP ${res.status})`;
   try {
     const body = await res.json();
     if (body?.error?.message) msg += `: ${body.error.message}`;
   } catch (_) {}
-  if (res.status === 401) msg = '🔑 مفتاح API غير صحيح أو منتهي. تحقق من المفتاح في لوحة تحكم Apify.';
-  if (res.status === 402) msg = '💳 رصيد حساب Apify غير كافٍ لتشغيل هذه العملية.';
+  if (res.status === 401) msg = '🔑 مفتاح الاستخراج غير صحيح أو منتهي. تحقق منه في صفحة الإعدادات ⚙️.';
+  if (res.status === 402) msg = '💳 رصيد حساب الاستخراج غير كافٍ لتشغيل هذه العملية.';
   return new Error(msg);
 }
 
@@ -1006,41 +975,33 @@ $('exportCsvBtn').onclick = () => {
   download('﻿' + [header.join(','), ...rows].join('\r\n'), 'facebook-posts.csv', 'text/csv;charset=utf-8');
   showToast('⬇️ تم تنزيل ملف CSV');
 };
-/* =============== Local database =============== */
+/* =============== Local database (configured in settings.html) =============== */
 const DB_URL_STORAGE = 'fbx_db_url';
-let dbUrl = localStorage.getItem(DB_URL_STORAGE) || '';
+let dbUrl = (localStorage.getItem(DB_URL_STORAGE) || '').trim().replace(/\/+$/, '');
 let dbOnline = false;
 
-function dbSetStatus(msg) { $('dbStatus').textContent = msg; }
 function postKey(p) {
   return p.key || p.url || `${p.author}|${p.ts || ''}|${(p.text || '').slice(0, 80)}`;
 }
 
 async function dbCheck(silent) {
-  const url = ($('dbUrl').value || '').trim().replace(/\/+$/, '');
-  if (!url) return;
-  dbSetStatus('⏳ جارٍ فحص الاتصال...');
+  if (!dbUrl) return;
   try {
-    const r = await fetch(url + '/api/health', { signal: AbortSignal.timeout(4000) });
+    const r = await fetch(dbUrl + '/api/health', { signal: AbortSignal.timeout(4000) });
     const d = await r.json();
     if (!d.ok) throw new Error();
     dbOnline = true;
-    dbUrl = url;
-    localStorage.setItem(DB_URL_STORAGE, url);
-    dbSetStatus(`🟢 متصلة — ${d.total} منشور محفوظ في قاعدة البيانات`);
     if (!silent) showToast('✅ تم الاتصال بقاعدة البيانات المحلية');
   } catch (_) {
     dbOnline = false;
-    dbSetStatus('🔴 غير متصلة — تأكد أن الخادم المحلي يعمل ثم اضغط «فحص الاتصال»');
-    if (!silent) showToast('⚠️ تعذر الاتصال بقاعدة البيانات');
+    if (!silent) showToast('⚠️ تعذر الاتصال بقاعدة البيانات — اضبطها من صفحة الإعدادات');
   }
 }
-$('dbCheckBtn').onclick = () => dbCheck(false);
-if (dbUrl) { $('dbUrl').value = dbUrl; dbCheck(true); }
+if (dbUrl) dbCheck(true);
 
 async function saveToDb(posts, source, silent) {
   if (!posts.length) return;
-  if (!dbOnline) { if (!silent) showToast('⚠️ قاعدة البيانات غير متصلة — افحص الاتصال أولاً'); return; }
+  if (!dbOnline) { if (!silent) showToast('⚠️ قاعدة البيانات غير متصلة — فعّلها من صفحة الإعدادات ⚙️'); return; }
   try {
     const payload = posts.map(p => {
       const a = p.analysis || FBXAnalyzer.analyze(p);
@@ -1060,15 +1021,14 @@ async function saveToDb(posts, source, silent) {
     });
     const d = await r.json();
     if (!d.ok) throw new Error(d.error || '');
-    dbSetStatus(`🟢 متصلة — ${d.total} منشور محفوظ في قاعدة البيانات`);
     showToast(`💾 حُفظ ${d.saved} منشور في قاعدة البيانات`);
   } catch (_) {
     dbOnline = false;
-    dbSetStatus('🔴 انقطع الاتصال بقاعدة البيانات — أعد فحص الاتصال');
     if (!silent) showToast('⚠️ فشل الحفظ في قاعدة البيانات');
   }
 }
 $('saveDbBtn').onclick = () => saveToDb(getVisiblePosts(), 'extract', false);
+refreshSetupNotice();
 
 function csvCell(v) {
   const s = String(v ?? '');

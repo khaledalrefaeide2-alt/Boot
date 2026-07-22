@@ -313,13 +313,14 @@
     <div class="nav-actions">
       <a class="nav-link" href="index.html">🔍 الاستخراج اليدوي</a>
       <a class="nav-link" href="monitor.html">📋 عرض القائمة</a>
+      <a class="nav-link" href="settings.html">⚙️ الإعدادات</a>
       <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري">🌙</button>
     </div>
   </nav>
   <div class="hero">
     <span class="hero-badge">📊 رصد مباشر وتحليل تفاعلي</span>
     <h2>لوحة رصد <em>منصاتك الرسمية</em> على فيسبوك</h2>
-    <p>أضف صفحاتك الرسمية واربط مفتاح Apify، وسترصد اللوحة منشوراتها دورياً وتعرض النشاط والتفاعل في رسوم بيانية تفاعلية مع تصفية حية حسب المنصة والفترة الزمنية.</p>
+    <p>أضف صفحاتك الرسمية (واضبط مفتاحك من الإعدادات)، وسترصد اللوحة منشوراتها دورياً وتحلّلها وتصنّفها وتعرض النشاط والتفاعل في رسوم بيانية تفاعلية مع تصفية حية حسب المنصة والفترة الزمنية.</p>
   </div>
 </div>
 
@@ -327,7 +328,7 @@
 
   <!-- Setup -->
   <section class="panel">
-    <div class="panel-title"><span class="num">1</span> الإعداد — المنصات والمفتاح</div>
+    <div class="panel-title"><span class="num">1</span> الإعداد — المنصات</div>
     <div class="row">
       <input class="input" type="url" id="newPageUrl" placeholder="https://www.facebook.com/mypage" dir="ltr" style="flex:1 1 280px">
       <button class="btn btn-primary btn-sm" id="addPageBtn">➕ إضافة منصة</button>
@@ -336,19 +337,8 @@
     <div class="chips" id="platformChips"></div>
     <div class="no-platforms" id="noPlatforms">لم تضف أي منصة بعد.</div>
 
-    <div class="hint" id="keyHint" style="display:none">⚠️ لا يوجد مفتاح Apify محفوظ — أدخله هنا:</div>
-    <div class="row" id="keyRow" style="display:none">
-      <input class="input" type="password" id="apiKeyInline" placeholder="apify_api_XXXXXXXXXXXX" dir="ltr" style="flex:1 1 280px">
-      <button class="btn btn-ghost btn-sm" id="saveKeyInlineBtn">💾 حفظ المفتاح</button>
-    </div>
-    <div class="hint" style="margin-top:14px">
-      🗄️ قاعدة البيانات المحلية (اختياري):
-      <span id="dbStatusInline">غير متصلة</span>
-    </div>
-    <div class="row" id="dbRow">
-      <input class="input" type="url" id="dbUrl" dir="ltr" placeholder="http://localhost:3300" value="http://localhost:3300" style="flex:1 1 240px">
-      <button class="btn btn-ghost btn-sm" id="dbCheckBtn">🔌 فحص الاتصال</button>
-    </div>
+    <div class="hint" id="keyHint" style="display:none">⚠️ لم يُضبط مفتاح الاستخراج بعد — <a href="settings.html">اضبطه من صفحة الإعدادات ⚙️</a>.</div>
+    <div class="hint" style="margin-top:14px">💡 مفتاح الاستخراج وقاعدة البيانات يُضبطان من <a href="settings.html">صفحة الإعدادات ⚙️</a> ويُطبَّقان تلقائياً هنا.</div>
   </section>
 
   <!-- Control band -->
@@ -356,7 +346,7 @@
     <div class="pulse-dot" id="pulseDot"></div>
     <div class="control-info">
       <h3 id="monitorTitle">الرصد متوقف</h3>
-      <p>يرصد <strong>منشورين</strong> لكل منصة كل دورة · بسقف فوترة إلزامي على Apify</p>
+      <p>يرصد <strong>منشوراً واحداً</strong> لكل منصة كل دورة · تحليل وتصنيف تلقائي · بسقف استخراج إلزامي</p>
     </div>
     <select class="interval-select" id="intervalSelect" title="مدة الدورة">
       <option value="15">كل 15 دقيقة</option>
@@ -424,7 +414,7 @@
 
   <div class="empty-state" id="bootEmpty">
     <div class="big">📊</div>
-    <p>أضف منصاتك الرسمية ومفتاح Apify، ثم اضغط «بدء الرصد» لتظهر لوحة التحليل التفاعلية هنا.</p>
+    <p>أضف منصاتك الرسمية (واضبط مفتاحك من الإعدادات ⚙️)، ثم اضغط «بدء الرصد» لتظهر لوحة التحليل التفاعلية هنا.</p>
   </div>
 
 </main>
@@ -487,17 +477,10 @@ function load(k, fb) { try { const v = JSON.parse(localStorage.getItem(k)); retu
 function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
 function getToken() { return (localStorage.getItem(KEY_STORAGE) || '').trim(); }
 
-/* =============== API key inline =============== */
+/* =============== API key (managed from settings.html) =============== */
 function refreshKeyUi() {
-  const missing = !getToken();
-  $('keyHint').style.display = missing ? 'block' : 'none';
-  $('keyRow').style.display = missing ? 'flex' : 'none';
+  $('keyHint').style.display = getToken() ? 'none' : 'block';
 }
-$('saveKeyInlineBtn').onclick = () => {
-  const v = $('apiKeyInline').value.trim();
-  if (!v) return showToast('أدخل المفتاح أولاً');
-  localStorage.setItem(KEY_STORAGE, v); refreshKeyUi(); showToast('✅ تم حفظ المفتاح');
-};
 
 /* =============== Platforms =============== */
 $('addPageBtn').onclick = addPage;
@@ -527,7 +510,7 @@ $('toggleBtn').onclick = () => (monitorOn ? stopMonitor() : startMonitor());
 $('runNowBtn').onclick = () => runCycle(true);
 
 function startMonitor() {
-  if (!getToken()) { refreshKeyUi(); return showToast('⚠️ احفظ مفتاح Apify أولاً'); }
+  if (!getToken()) { refreshKeyUi(); return showToast('⚠️ اضبط مفتاح الاستخراج من صفحة الإعدادات ⚙️'); }
   if (!pages.length) return showToast('⚠️ أضف منصة واحدة على الأقل');
   monitorOn = true; localStorage.setItem(ON_STORAGE, '1'); refreshControlUi();
   if (Date.now() - lastRunAt >= intervalMs()) runCycle();
@@ -553,7 +536,7 @@ function tick() {
 async function runCycle(manual) {
   if (cycleRunning) return;
   const token = getToken();
-  if (!token) { refreshKeyUi(); return showToast('⚠️ احفظ مفتاح Apify أولاً'); }
+  if (!token) { refreshKeyUi(); return showToast('⚠️ اضبط مفتاح الاستخراج من صفحة الإعدادات ⚙️'); }
   if (!pages.length) return showToast('⚠️ أضف منصة واحدة على الأقل');
   cycleRunning = true;
   $('bandAlert').style.display = 'none';
@@ -607,10 +590,10 @@ async function runCycle(manual) {
 }
 
 async function apiError(res) {
-  let msg = `خطأ من Apify (HTTP ${res.status})`;
+  let msg = `خطأ من خدمة الاستخراج (HTTP ${res.status})`;
   try { const b = await res.json(); if (b?.error?.message) msg += `: ${b.error.message}`; } catch (_) {}
-  if (res.status === 401) msg = '🔑 مفتاح API غير صحيح أو منتهي.';
-  if (res.status === 402) msg = '💳 رصيد حساب Apify غير كافٍ.';
+  if (res.status === 401) msg = '🔑 مفتاح الاستخراج غير صحيح أو منتهي. تحقق منه في الإعدادات ⚙️.';
+  if (res.status === 402) msg = '💳 رصيد حساب الاستخراج غير كافٍ.';
   return new Error(msg);
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -888,33 +871,28 @@ $('exportBtn').onclick = () => {
   setTimeout(() => URL.revokeObjectURL(a.href), 3000); showToast('⬇️ تم التصدير');
 };
 
-/* =============== Local database =============== */
-let dbUrl = localStorage.getItem(DB_URL_STORAGE) || '';
+/* =============== Local database (configured in settings.html) =============== */
+let dbUrl = (localStorage.getItem(DB_URL_STORAGE) || '').trim().replace(/\/+$/, '');
 let dbOnline = false;
 async function dbCheck(silent) {
-  const url = ($('dbUrl').value || '').trim().replace(/\/+$/, '');
-  if (!url) return;
-  $('dbStatusInline').textContent = '⏳ جارٍ الفحص...';
+  if (!dbUrl) return;
   try {
-    const r = await fetch(url + '/api/health', { signal: AbortSignal.timeout(4000) });
+    const r = await fetch(dbUrl + '/api/health', { signal: AbortSignal.timeout(4000) });
     const d = await r.json(); if (!d.ok) throw new Error();
-    dbOnline = true; dbUrl = url; localStorage.setItem(DB_URL_STORAGE, url);
-    $('dbStatusInline').textContent = `🟢 متصلة — ${d.total} منشور محفوظ`;
+    dbOnline = true;
     if (!silent) showToast('✅ تم الاتصال بقاعدة البيانات');
   } catch (_) {
-    dbOnline = false; $('dbStatusInline').textContent = '🔴 غير متصلة';
-    if (!silent) showToast('⚠️ تعذر الاتصال بقاعدة البيانات');
+    dbOnline = false;
+    if (!silent) showToast('⚠️ تعذر الاتصال بقاعدة البيانات — اضبطها من الإعدادات');
   }
 }
-$('dbCheckBtn').onclick = () => dbCheck(false);
 async function saveToDb(posts, source) {
   if (!dbOnline || !posts.length) return;
   try {
     const payload = posts.map(p => { const a = ensureAnalysis(p).analysis; return { key: p.key, text: p.text, url: p.url, ts: p.ts, author: p.author, avatar: p.avatar, media: p.media, likes: p.likes, comments: p.comments, shares: p.shares, source, sentiment: a.sentiment, emotion: a.emotionLabel, intent: a.intentLabel, domain: a.domainLabel, severity: a.severity, action: a.action, flagged: a.flagged ? 1 : 0, analysis: JSON.stringify(a) }; });
     const r = await fetch(dbUrl + '/api/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ posts: payload }) });
     const d = await r.json(); if (!d.ok) throw new Error();
-    $('dbStatusInline').textContent = `🟢 متصلة — ${d.total} منشور محفوظ`;
-  } catch (_) { dbOnline = false; $('dbStatusInline').textContent = '🔴 انقطع الاتصال'; }
+  } catch (_) { dbOnline = false; }
 }
 
 /* =============== Utils =============== */
@@ -927,7 +905,7 @@ renderChips();
 refreshKeyUi();
 refreshControlUi();
 $('intervalSelect').value = String(intervalMin);
-if (dbUrl) { $('dbUrl').value = dbUrl; dbCheck(true); }
+if (dbUrl) dbCheck(true);
 if (lastRunAt) $('miniStatus').textContent = `آخر رصد: ${new Date(lastRunAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}`;
 if (feed.length) { showDashboard(); renderDashboard(); }
 tick();

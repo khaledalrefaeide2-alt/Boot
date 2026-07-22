@@ -373,13 +373,14 @@
         <div class="brand-logo">🍃</div>
         <div>
           <h1>FB Extractor</h1>
-          <p>مستخرج منشورات فيسبوك عبر Apify</p>
+          <p>مستخرج وتحليل منشورات فيسبوك</p>
         </div>
       </a>
     </div>
     <div class="nav-actions">
-      <a class="nav-link" href="dashboard.html">📊 لوحة الرصد</a>
       <a class="nav-link" href="index.html">🔍 الاستخراج اليدوي</a>
+      <a class="nav-link" href="dashboard.html">📊 لوحة الرصد</a>
+      <a class="nav-link" href="settings.html">⚙️ الإعدادات</a>
       <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري">🌙</button>
     </div>
   </nav>
@@ -404,23 +405,9 @@
     <div class="chips" id="platformChips"></div>
     <div class="no-platforms" id="noPlatforms">لم تضف أي منصة بعد.</div>
     <div class="hint" id="keyHint" style="display:none">
-      ⚠️ لا يوجد مفتاح Apify محفوظ — <a href="index.html">احفظه من الصفحة الرئيسية</a> أو أدخله هنا:
+      ⚠️ لم يُضبط مفتاح الاستخراج بعد — <a href="settings.html">اضبطه من صفحة الإعدادات ⚙️</a>.
     </div>
-    <div class="add-row" id="keyRow" style="display:none;margin-top:10px">
-      <input class="input" type="password" id="apiKeyInline" placeholder="apify_api_XXXXXXXXXXXX" dir="ltr">
-      <button class="btn btn-ghost btn-sm" id="saveKeyInlineBtn">💾 حفظ المفتاح</button>
-    </div>
-  </section>
-
-  <!-- Local database -->
-  <section class="panel">
-    <div class="panel-title"><span class="num">2</span> قاعدة البيانات المحلية <small style="font-weight:400;color:var(--text-2);font-size:.8rem">(اختياري)</small></div>
-    <div class="add-row">
-      <input class="input" type="url" id="dbUrl" dir="ltr" placeholder="http://localhost:3300" value="http://localhost:3300">
-      <button class="btn btn-ghost btn-sm" id="dbCheckBtn">🔌 فحص الاتصال</button>
-    </div>
-    <div class="hint" id="dbStatus">⚪ غير متصلة — شغّل الخادم المحلي ثم اضغط «فحص الاتصال»</div>
-    <div class="hint">عند الاتصال، يُحفظ كل منشور جديد ترصده الدورات تلقائياً في ملف SQLite دائم على جهازك (مجلد <strong>local-server</strong>).</div>
+    <div class="hint">💡 مفتاح الاستخراج وقاعدة البيانات يُضبطان من <a href="settings.html">صفحة الإعدادات ⚙️</a> ويُطبَّقان تلقائياً هنا.</div>
   </section>
 
   <!-- Control band -->
@@ -428,7 +415,7 @@
     <div class="pulse-dot" id="pulseDot"></div>
     <div class="control-info">
       <h3 id="monitorTitle">الرصد متوقف</h3>
-      <p>كل <strong>30 دقيقة</strong> · <strong>منشور واحد</strong> لكل منصة · تحليل وتصنيف تلقائي · بسقف فوترة إلزامي على Apify</p>
+      <p>كل <strong>30 دقيقة</strong> · <strong>منشور واحد</strong> لكل منصة · تحليل وتصنيف تلقائي · بسقف استخراج إلزامي</p>
     </div>
     <div class="countdown" id="countdown">--:--</div>
     <button class="btn btn-cream" id="toggleBtn">▶️ بدء الرصد</button>
@@ -523,19 +510,10 @@ function load(k, fallback) {
 function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
 function getToken() { return (localStorage.getItem(KEY_STORAGE) || '').trim(); }
 
-/* =============== API key inline =============== */
+/* =============== API key (managed from settings.html) =============== */
 function refreshKeyUi() {
-  const missing = !getToken();
-  $('keyHint').style.display = missing ? 'block' : 'none';
-  $('keyRow').style.display = missing ? 'flex' : 'none';
+  $('keyHint').style.display = getToken() ? 'none' : 'block';
 }
-$('saveKeyInlineBtn').onclick = () => {
-  const v = $('apiKeyInline').value.trim();
-  if (!v) return showToast('أدخل المفتاح أولاً');
-  localStorage.setItem(KEY_STORAGE, v);
-  refreshKeyUi();
-  showToast('✅ تم حفظ المفتاح');
-};
 
 /* =============== Platforms =============== */
 $('addPageBtn').onclick = addPage;
@@ -574,7 +552,7 @@ $('toggleBtn').onclick = () => (monitorOn ? stopMonitor() : startMonitor());
 $('runNowBtn').onclick = () => runCycle(true);
 
 function startMonitor() {
-  if (!getToken()) { refreshKeyUi(); return showToast('⚠️ احفظ مفتاح Apify أولاً'); }
+  if (!getToken()) { refreshKeyUi(); return showToast('⚠️ اضبط مفتاح الاستخراج من صفحة الإعدادات ⚙️'); }
   if (!pages.length) return showToast('⚠️ أضف منصة واحدة على الأقل');
   monitorOn = true;
   localStorage.setItem(ON_STORAGE, '1');
@@ -616,7 +594,7 @@ function tick() {
 async function runCycle(manual) {
   if (cycleRunning) return;
   const token = getToken();
-  if (!token) { refreshKeyUi(); return showToast('⚠️ احفظ مفتاح Apify أولاً'); }
+  if (!token) { refreshKeyUi(); return showToast('⚠️ اضبط مفتاح الاستخراج من صفحة الإعدادات ⚙️'); }
   if (!pages.length) return showToast('⚠️ أضف منصة واحدة على الأقل');
 
   cycleRunning = true;
@@ -650,7 +628,7 @@ async function runCycle(manual) {
       datasetId = d.defaultDatasetId;
     }
     if (status !== 'SUCCEEDED' && status !== 'ABORTED') {
-      throw new Error(`انتهى التشغيل بحالة "${status}". تحقق من رصيدك في Apify أو من صحة الروابط.`);
+      throw new Error(`انتهى التشغيل بحالة "${status}". تحقق من رصيدك أو من صحة الروابط.`);
     }
 
     const itemsRes = await fetch(`${API_BASE}/datasets/${datasetId}/items?clean=true&format=json&token=${encodeURIComponent(token)}`);
@@ -699,13 +677,13 @@ async function runCycle(manual) {
 }
 
 async function apiError(res) {
-  let msg = `خطأ من Apify (HTTP ${res.status})`;
+  let msg = `خطأ من خدمة الاستخراج (HTTP ${res.status})`;
   try {
     const body = await res.json();
     if (body?.error?.message) msg += `: ${body.error.message}`;
   } catch (_) {}
-  if (res.status === 401) msg = '🔑 مفتاح API غير صحيح أو منتهي. تحقق من المفتاح.';
-  if (res.status === 402) msg = '💳 رصيد حساب Apify غير كافٍ.';
+  if (res.status === 401) msg = '🔑 مفتاح الاستخراج غير صحيح أو منتهي. تحقق منه في الإعدادات ⚙️.';
+  if (res.status === 402) msg = '💳 رصيد حساب الاستخراج غير كافٍ.';
   return new Error(msg);
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));
@@ -876,33 +854,24 @@ function esc(s) {
   return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
 
-/* =============== Local database =============== */
+/* =============== Local database (configured in settings.html) =============== */
 const DB_URL_STORAGE = 'fbx_db_url';
-let dbUrl = localStorage.getItem(DB_URL_STORAGE) || '';
+let dbUrl = (localStorage.getItem(DB_URL_STORAGE) || '').trim().replace(/\/+$/, '');
 let dbOnline = false;
 
-function dbSetStatus(msg) { $('dbStatus').textContent = msg; }
-
 async function dbCheck(silent) {
-  const url = ($('dbUrl').value || '').trim().replace(/\/+$/, '');
-  if (!url) return;
-  dbSetStatus('⏳ جارٍ فحص الاتصال...');
+  if (!dbUrl) return;
   try {
-    const r = await fetch(url + '/api/health', { signal: AbortSignal.timeout(4000) });
+    const r = await fetch(dbUrl + '/api/health', { signal: AbortSignal.timeout(4000) });
     const d = await r.json();
     if (!d.ok) throw new Error();
     dbOnline = true;
-    dbUrl = url;
-    localStorage.setItem(DB_URL_STORAGE, url);
-    dbSetStatus(`🟢 متصلة — ${d.total} منشور محفوظ في قاعدة البيانات`);
     if (!silent) showToast('✅ تم الاتصال بقاعدة البيانات المحلية');
   } catch (_) {
     dbOnline = false;
-    dbSetStatus('🔴 غير متصلة — تأكد أن الخادم المحلي يعمل ثم اضغط «فحص الاتصال»');
-    if (!silent) showToast('⚠️ تعذر الاتصال بقاعدة البيانات');
+    if (!silent) showToast('⚠️ تعذر الاتصال بقاعدة البيانات — اضبطها من الإعدادات');
   }
 }
-$('dbCheckBtn').onclick = () => dbCheck(false);
 
 async function saveToDb(posts, source) {
   if (!dbOnline || !posts.length) return;
@@ -925,11 +894,9 @@ async function saveToDb(posts, source) {
     });
     const d = await r.json();
     if (!d.ok) throw new Error(d.error || '');
-    dbSetStatus(`🟢 متصلة — ${d.total} منشور محفوظ في قاعدة البيانات`);
     showToast(`💾 حُفظ ${d.saved} منشور في قاعدة البيانات`);
   } catch (_) {
     dbOnline = false;
-    dbSetStatus('🔴 انقطع الاتصال بقاعدة البيانات — أعد فحص الاتصال');
   }
 }
 
@@ -939,7 +906,7 @@ renderFeed();
 renderSummary();
 refreshKeyUi();
 refreshControlUi();
-if (dbUrl) { $('dbUrl').value = dbUrl; dbCheck(true); }
+if (dbUrl) dbCheck(true);
 if (lastRunAt) {
   $('miniStatus').textContent = `آخر رصد: ${new Date(lastRunAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}`;
 }
