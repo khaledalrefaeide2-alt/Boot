@@ -44,6 +44,7 @@ export interface ProviderPost {
   shares: number;
   reactions: number;
   engagementRate: number;
+  sentiment?: number; // -1..1, when the provider supplies per-post sentiment
   matchedKeyword?: string;
   matchedHashtag?: string;
   publishedAt: string;

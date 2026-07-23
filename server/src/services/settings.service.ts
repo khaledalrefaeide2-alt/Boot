@@ -52,5 +52,9 @@ export function getApiConfig() {
     apiKey: getSettingRaw('api.apiKey'),
     apiSecret: getSettingRaw('api.apiSecret'),
     provider: getSettingRaw('api.provider') || 'mock',
+    // Optional overrides for providers whose routes differ from the defaults.
+    // Defaults target apidirect.io: GET /facebook/posts?query=...
+    postsPath: getSettingRaw('api.postsPath') || '/facebook/posts',
+    queryParam: getSettingRaw('api.queryParam') || 'query',
   };
 }

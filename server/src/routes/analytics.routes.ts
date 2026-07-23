@@ -5,6 +5,11 @@ import { requireAuth } from '../middleware/auth';
 import { asyncH } from '../middleware/error';
 import { getProvider } from '../services/provider.factory';
 import {
+  emptyHashtagInsight,
+  emptyKeywordInsight,
+  emptyPageInsight,
+} from '../services/analytics.service';
+import {
   parseFilters,
   recordSearch,
   snapshotHashtag,
@@ -21,9 +26,16 @@ analyticsRouter.get(
   asyncH(async (req, res) => {
     const keyword = z.string().min(1).parse(req.query.q);
     const filters = parseFilters(req.query);
-    const insight = await getProvider().keywordInsight(keyword, filters);
-    recordSearch({ userId: req.user!.id, type: 'keyword', query: keyword, filters, resultsCount: insight.mentions });
-    snapshotKeyword(keyword, insight.mentions, insight.engagement, insight.reach, insight.sentiment);
+    let insight = emptyKeywordInsight(keyword);
+    try {
+      insight = await getProvider().keywordInsight(keyword, filters);
+    } catch (err) {
+      console.error('[analytics] keywordInsight failed:', (err as Error)?.message);
+    }
+    safely(() =>
+      recordSearch({ userId: req.user!.id, type: 'keyword', query: keyword, filters, resultsCount: insight.mentions })
+    );
+    safely(() => snapshotKeyword(keyword, insight.mentions, insight.engagement, insight.reach, insight.sentiment));
     res.json(insight);
   })
 );
@@ -32,11 +44,14 @@ analyticsRouter.get(
 analyticsRouter.get(
   '/keywords/compare',
   asyncH(async (req, res) => {
-    const list = String(req.query.q || '').split(',').map((s) => s.trim()).filter(Boolean).slice(0, 5);
+    const list = splitList(req.query.q);
     const filters = parseFilters(req.query);
     const provider = getProvider();
-    const results = await Promise.all(list.map((k) => provider.keywordInsight(k, filters)));
-    res.json({ items: results });
+    const settled = await Promise.allSettled(list.map((k) => provider.keywordInsight(k, filters)));
+    const items = settled.map((s, i) =>
+      s.status === 'fulfilled' ? s.value : emptyKeywordInsight(list[i])
+    );
+    res.json({ items });
   })
 );
 
@@ -46,9 +61,16 @@ analyticsRouter.get(
   asyncH(async (req, res) => {
     const hashtag = z.string().min(1).parse(req.query.q);
     const filters = parseFilters(req.query);
-    const insight = await getProvider().hashtagInsight(hashtag, filters);
-    recordSearch({ userId: req.user!.id, type: 'hashtag', query: insight.hashtag, filters, resultsCount: insight.mentions });
-    snapshotHashtag(insight.hashtag, insight.mentions, insight.engagement, insight.trendingScore, insight.growth);
+    let insight = emptyHashtagInsight(hashtag);
+    try {
+      insight = await getProvider().hashtagInsight(hashtag, filters);
+    } catch (err) {
+      console.error('[analytics] hashtagInsight failed:', (err as Error)?.message);
+    }
+    safely(() =>
+      recordSearch({ userId: req.user!.id, type: 'hashtag', query: insight.hashtag, filters, resultsCount: insight.mentions })
+    );
+    safely(() => snapshotHashtag(insight.hashtag, insight.mentions, insight.engagement, insight.trendingScore, insight.growth));
     res.json(insight);
   })
 );
@@ -56,11 +78,14 @@ analyticsRouter.get(
 analyticsRouter.get(
   '/hashtags/compare',
   asyncH(async (req, res) => {
-    const list = String(req.query.q || '').split(',').map((s) => s.trim()).filter(Boolean).slice(0, 5);
+    const list = splitList(req.query.q);
     const filters = parseFilters(req.query);
     const provider = getProvider();
-    const results = await Promise.all(list.map((h) => provider.hashtagInsight(h, filters)));
-    res.json({ items: results });
+    const settled = await Promise.allSettled(list.map((h) => provider.hashtagInsight(h, filters)));
+    const items = settled.map((s, i) =>
+      s.status === 'fulfilled' ? s.value : emptyHashtagInsight(list[i])
+    );
+    res.json({ items });
   })
 );
 
@@ -70,9 +95,15 @@ analyticsRouter.get(
   asyncH(async (req, res) => {
     const query = z.string().min(1).parse(req.query.q);
     const filters = parseFilters(req.query);
-    const posts = await getProvider().searchContent(query, filters);
-    persistPosts(posts);
-    recordSearch({ userId: req.user!.id, type: 'content', query, filters, resultsCount: posts.length });
+    let posts: ProviderPost[] = [];
+    try {
+      posts = await getProvider().searchContent(query, filters);
+    } catch (err) {
+      console.error('[analytics] searchContent failed:', (err as Error)?.message);
+    }
+    if (!Array.isArray(posts)) posts = [];
+    safely(() => persistPosts(posts));
+    safely(() => recordSearch({ userId: req.user!.id, type: 'content', query, filters, resultsCount: posts.length }));
     res.json({ posts, count: posts.length });
   })
 );
@@ -81,9 +112,12 @@ analyticsRouter.get(
 analyticsRouter.get(
   '/competitors/pages',
   asyncH(async (req, res) => {
-    const list = String(req.query.q || '').split(',').map((s) => s.trim()).filter(Boolean).slice(0, 5);
+    const list = splitList(req.query.q);
     const provider = getProvider();
-    const items = await Promise.all(list.map((p) => provider.pageInsight(p)));
+    const settled = await Promise.allSettled(list.map((p) => provider.pageInsight(p)));
+    const items = settled.map((s, i) =>
+      s.status === 'fulfilled' ? s.value : emptyPageInsight(list[i])
+    );
     res.json({ items });
   })
 );
@@ -108,7 +142,26 @@ analyticsRouter.get(
   })
 );
 
+/** Parse a comma-separated `q` param into up to 5 trimmed terms. */
+function splitList(raw: any): string[] {
+  return String(raw || '')
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 5);
+}
+
+/** Run a side effect without letting its failure surface to the client. */
+function safely(fn: () => void): void {
+  try {
+    fn();
+  } catch (err) {
+    console.error('[analytics] side-effect failed:', (err as Error)?.message);
+  }
+}
+
 function persistPosts(posts: ProviderPost[]) {
+  if (!Array.isArray(posts) || posts.length === 0) return;
   const insert = `INSERT INTO posts
     (external_id, page_name, page_id, content, url, media_url, language,
      likes, comments, shares, reactions, engagement_rate, matched_keyword,

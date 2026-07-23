@@ -20,6 +20,8 @@ export function getProvider(): SocialProvider {
       baseUrl: cfg.baseUrl,
       apiKey: cfg.apiKey,
       apiSecret: cfg.apiSecret,
+      postsPath: cfg.postsPath,
+      queryParam: cfg.queryParam,
     });
   }
   return mock;
