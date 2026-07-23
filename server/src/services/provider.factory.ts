@@ -1,3 +1,4 @@
+import { ApifyProvider } from '../providers/apifyProvider';
 import { HttpProvider } from '../providers/httpProvider';
 import { MockProvider } from '../providers/mockProvider';
 import { SocialProvider } from '../types';
@@ -15,6 +16,14 @@ const mock = new MockProvider();
  */
 export function getProvider(): SocialProvider {
   const cfg = getApiConfig();
+  if (cfg.provider === 'apify' && cfg.apifyToken) {
+    return new ApifyProvider({
+      token: cfg.apifyToken,
+      actor: cfg.apifyActor,
+      inputTemplate: cfg.apifyInput || undefined,
+      resultsLimit: cfg.apifyResultsLimit,
+    });
+  }
   if (cfg.provider === 'http' && cfg.baseUrl && cfg.apiKey) {
     return new HttpProvider({
       baseUrl: cfg.baseUrl,
@@ -22,6 +31,8 @@ export function getProvider(): SocialProvider {
       apiSecret: cfg.apiSecret,
       postsPath: cfg.postsPath,
       queryParam: cfg.queryParam,
+      pages: cfg.pages,
+      getSentiment: cfg.getSentiment,
     });
   }
   return mock;

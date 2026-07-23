@@ -12,6 +12,7 @@ import {
   getKeywordAnalytics,
   getPageAnalytics,
 } from '../services/analytics.service';
+import { extractPosts, normalizeProviderPost, sortPosts } from './normalize';
 
 export interface HttpProviderOptions {
   baseUrl: string;
@@ -21,6 +22,10 @@ export interface HttpProviderOptions {
   postsPath?: string;
   /** Query parameter name for the search term. Defaults to `query`. */
   queryParam?: string;
+  /** Pages to fetch per search (apidirect.io bills per page). 1–10. */
+  pages?: number;
+  /** Ask the provider for AI sentiment analysis (apidirect.io: +cost/page). */
+  getSentiment?: boolean;
 }
 
 interface RequestResult<T> {
@@ -44,10 +49,15 @@ export class HttpProvider implements SocialProvider {
   readonly platform = 'facebook';
   private readonly postsPath: string;
   private readonly queryParam: string;
+  private readonly pages: number;
+  private readonly getSentiment: boolean;
 
   constructor(private opts: HttpProviderOptions) {
     this.postsPath = opts.postsPath || '/facebook/posts';
     this.queryParam = opts.queryParam || 'query';
+    // Clamp to apidirect.io's documented 1–10 range; default to 5 for volume.
+    this.pages = Math.min(10, Math.max(1, Math.floor(opts.pages || 5)));
+    this.getSentiment = opts.getSentiment !== false; // default on
   }
 
   isConfigured(): boolean {
@@ -129,28 +139,39 @@ export class HttpProvider implements SocialProvider {
     return { ok: false, message: hint, latencyMs };
   }
 
-  /** Fetch and normalize posts for a query. Always returns an array. */
+  /**
+   * Fetch and normalize posts for a query. Always returns an array.
+   * Sends apidirect.io's documented parameters — crucially `pages` (not
+   * `limit`) drives how many results come back, so we request several pages
+   * to maximise volume. Result sorting is applied locally to honour the
+   * explorer's sort options (viral / engagement / comments / shares).
+   */
   async searchContent(query: string, filters: SearchFilters): Promise<ProviderPost[]> {
     const result = await this.request<any>(this.postsPath, {
       [this.queryParam]: query,
+      pages: this.pages,
+      start_date: filters.dateFrom,
+      end_date: filters.dateTo,
+      location_id: filters.country,
+      sort_by: filters.sort === 'newest' ? 'most_recent' : 'relevance',
+      get_sentiment: this.getSentiment ? 'true' : undefined,
+      // Also send generic aliases so alternative providers still work.
       from: filters.dateFrom,
       to: filters.dateTo,
-      country: filters.country,
       language: filters.language,
-      type: filters.postType,
-      limit: filters.limit || 25,
-      sort: filters.sort,
+      limit: filters.limit,
     });
     const rows = extractPosts(result.data);
     const isHashtag = String(query).trim().startsWith('#');
-    return rows.map((raw) => {
-      const post = normalizePost(raw);
+    const posts = rows.map((raw) => {
+      const post = normalizeProviderPost(raw);
       return {
         ...post,
         matchedKeyword: isHashtag ? undefined : query,
         matchedHashtag: isHashtag ? query : undefined,
       };
     });
+    return sortPosts(posts, filters.sort);
   }
 
   // Insights are derived from the posts endpoint (see class docs), so an empty
@@ -171,87 +192,3 @@ export class HttpProvider implements SocialProvider {
     return getPageAnalytics(page, posts);
   }
 }
-
-/** Pull the posts array out of the many shapes providers wrap it in. */
-function extractPosts(payload: any): any[] {
-  if (Array.isArray(payload)) return payload;
-  if (!payload || typeof payload !== 'object') return [];
-  return (
-    payload.data ??
-    payload.posts ??
-    payload.results ??
-    payload.items ??
-    payload.result ??
-    []
-  ) as any[];
-}
-
-/**
- * Map an apidirect.io (or similar) payload to our normalized ProviderPost.
- * Tolerates missing fields — never throws — and understands apidirect.io's
- * `post_id`, `message`, `date`, `reactions` and `sentiment` fields.
- */
-function normalizePost(raw: any): ProviderPost {
-  const r = raw && typeof raw === 'object' ? raw : {};
-
-  // apidirect.io returns `reactions` either as a number or a breakdown object.
-  const reactionsField = r.reactions ?? r.reaction_count;
-  const reactionsFromObj =
-    reactionsField && typeof reactionsField === 'object'
-      ? sumValues(reactionsField)
-      : num(reactionsField);
-
-  const likes = num(r.likes ?? r.like_count ?? (typeof reactionsField === 'object' ? reactionsField.like : undefined));
-  const comments = num(r.comments ?? r.comment_count ?? r.comments_count);
-  const shares = num(r.shares ?? r.share_count ?? r.shares_count);
-  const reactions = reactionsFromObj || likes;
-  const reach = num(r.reach) || reactions + comments * 10 + shares * 25 + 1000;
-  const denom = reach || 1;
-
-  return {
-    externalId: String(r.post_id ?? r.id ?? r._id ?? `${Date.now()}-${Math.random().toString(36).slice(2)}`),
-    pageName: r.page_name ?? r.page ?? r.author ?? r.from?.name ?? 'Unknown',
-    pageId: String(r.page_id ?? r.from?.id ?? ''),
-    content: r.message ?? r.content ?? r.text ?? r.caption ?? '',
-    url: r.url ?? r.permalink ?? r.link ?? r.post_url ?? '',
-    mediaUrl: r.media_url ?? r.image ?? r.picture ?? r.thumbnail ?? undefined,
-    language: r.language ?? r.lang ?? 'en',
-    likes,
-    comments,
-    shares,
-    reactions,
-    engagementRate: +(((likes + comments + shares) / denom) * 100).toFixed(2),
-    sentiment: parseSentiment(r.sentiment ?? r.sentiment_score),
-    publishedAt: parseDate(r.date ?? r.published_at ?? r.created_time ?? r.created_at ?? r.timestamp),
-  };
-}
-
-/** Convert varied sentiment encodings to a -1..1 number, or undefined. */
-function parseSentiment(v: any): number | undefined {
-  if (v === undefined || v === null) return undefined;
-  if (typeof v === 'number' && Number.isFinite(v)) return Math.max(-1, Math.min(1, v));
-  if (typeof v === 'object') return parseSentiment(v.score ?? v.value ?? v.label);
-  const s = String(v).toLowerCase().trim();
-  if (['positive', 'pos', 'good'].includes(s)) return 1;
-  if (['negative', 'neg', 'bad'].includes(s)) return -1;
-  if (['neutral', 'neu', 'mixed'].includes(s)) return 0;
-  const n = Number(s);
-  return Number.isFinite(n) ? Math.max(-1, Math.min(1, n)) : undefined;
-}
-
-/** Parse a date field (ISO string, unix seconds, or ms) to an ISO string. */
-function parseDate(v: any): string {
-  if (v === undefined || v === null || v === '') return new Date().toISOString();
-  if (typeof v === 'number') {
-    const ms = v < 1e12 ? v * 1000 : v; // treat < 1e12 as unix seconds
-    const d = new Date(ms);
-    return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
-  }
-  const d = new Date(v);
-  return isNaN(d.getTime()) ? new Date().toISOString() : d.toISOString();
-}
-
-const num = (v: any): number => (Number.isFinite(+v) ? Math.floor(+v) : 0);
-
-const sumValues = (obj: Record<string, any>): number =>
-  Object.values(obj).reduce((a: number, b) => a + (Number.isFinite(+b) ? +b : 0), 0);

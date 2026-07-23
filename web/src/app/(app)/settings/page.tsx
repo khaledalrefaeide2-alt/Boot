@@ -105,6 +105,12 @@ function ApiTab() {
     baseUrl: s['api.baseUrl'] || '',
     apiKey: s['api.apiKey'] || '',
     apiSecret: s['api.apiSecret'] || '',
+    pages: s['api.pages'] || '5',
+    getSentiment: (s['api.getSentiment'] ?? 'true') !== 'false',
+    apifyToken: s['api.apifyToken'] || '',
+    apifyActor: s['api.apifyActor'] || 'easyapi/facebook-hashtag-search-scraper',
+    apifyInput: s['api.apifyInput'] || '',
+    apifyResultsLimit: s['api.apifyResultsLimit'] || '50',
   };
   const set = (patch: any) => setForm({ ...model, ...patch });
 
@@ -146,23 +152,51 @@ function ApiTab() {
         <div className="space-y-3">
           <div>
             <label className="label">Provider mode</label>
-            <div className="flex gap-2">
+            <div className="grid grid-cols-3 gap-2">
               {[
-                { id: 'mock', label: 'Built-in (demo data)' },
-                { id: 'http', label: 'Third-party Direct API' },
+                { id: 'mock', label: 'Built-in demo' },
+                { id: 'http', label: 'Direct API' },
+                { id: 'apify', label: 'Apify' },
               ].map((p) => (
-                <button key={p.id} onClick={() => set({ provider: p.id })} className={`flex-1 rounded-lg border py-2 text-sm ${model.provider === p.id ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-600' : 'border-[var(--border)]'}`}>
+                <button key={p.id} onClick={() => set({ provider: p.id })} className={`rounded-lg border py-2 text-sm ${model.provider === p.id ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20 text-brand-600' : 'border-[var(--border)]'}`}>
                   {p.label}
                 </button>
               ))}
             </div>
           </div>
+
+          {/* Third-party Direct API (e.g. apidirect.io) */}
           {model.provider === 'http' && (
             <>
-              <div><label className="label">Base URL</label><input className="input" placeholder="https://api.provider.com/v1" value={model.baseUrl} onChange={(e) => set({ baseUrl: e.target.value })} /></div>
+              <div><label className="label">Base URL</label><input className="input" placeholder="https://apidirect.io/v1" value={model.baseUrl} onChange={(e) => set({ baseUrl: e.target.value })} /></div>
               <div><label className="label">API Key</label><input className="input" placeholder="Paste your key" value={model.apiKey} onChange={(e) => set({ apiKey: e.target.value })} /></div>
               <div><label className="label">API Secret (optional)</label><input className="input" value={model.apiSecret} onChange={(e) => set({ apiSecret: e.target.value })} /></div>
-              <p className="text-xs text-[var(--muted)]">Keys are encrypted at rest and never returned in plaintext.</p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="label">Pages per search (1–10)</label>
+                  <input type="number" min={1} max={10} className="input" value={model.pages} onChange={(e) => set({ pages: e.target.value })} />
+                </div>
+                <label className="flex items-center gap-2 text-sm mt-6">
+                  <input type="checkbox" checked={model.getSentiment} onChange={(e) => set({ getSentiment: e.target.checked })} />
+                  AI sentiment
+                </label>
+              </div>
+              <p className="text-xs text-[var(--muted)]">More pages = more results (apidirect.io bills per page). Keys are encrypted at rest.</p>
+            </>
+          )}
+
+          {/* Apify platform actor */}
+          {model.provider === 'apify' && (
+            <>
+              <div><label className="label">Apify API token</label><input className="input" placeholder="apify_api_..." value={model.apifyToken} onChange={(e) => set({ apifyToken: e.target.value })} /></div>
+              <div><label className="label">Actor (username/name)</label><input className="input" placeholder="easyapi/facebook-hashtag-search-scraper" value={model.apifyActor} onChange={(e) => set({ apifyActor: e.target.value })} /></div>
+              <div>
+                <label className="label">Input template (JSON) — optional</label>
+                <textarea className="input font-mono text-xs h-24" placeholder={'{"searchQuery":"{{query}}","maxItems":{{limit}}}'} value={model.apifyInput} onChange={(e) => set({ apifyInput: e.target.value })} />
+                <p className="text-[10px] text-[var(--muted)] mt-1">Use <code>{'{{query}}'}</code> for the search term and <code>{'{{limit}}'}</code> for the results limit. Leave empty to use the default.</p>
+              </div>
+              <div><label className="label">Results limit</label><input type="number" min={1} max={1000} className="input" value={model.apifyResultsLimit} onChange={(e) => set({ apifyResultsLimit: e.target.value })} /></div>
+              <p className="text-xs text-[var(--muted)]">The token is encrypted at rest. The actor runs synchronously via Apify's run-sync dataset endpoint.</p>
             </>
           )}
           <div className="flex flex-wrap gap-2 pt-2">

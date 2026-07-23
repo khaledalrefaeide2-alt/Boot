@@ -8,7 +8,7 @@ interface SettingRow {
   updated_at: string;
 }
 
-const SECRET_KEYS = new Set(['api.apiKey', 'api.apiSecret']);
+const SECRET_KEYS = new Set(['api.apiKey', 'api.apiSecret', 'api.apifyToken']);
 
 export function setSetting(key: string, value: string): void {
   const isSecret = SECRET_KEYS.has(key) ? 1 : 0;
@@ -56,5 +56,14 @@ export function getApiConfig() {
     // Defaults target apidirect.io: GET /facebook/posts?query=...
     postsPath: getSettingRaw('api.postsPath') || '/facebook/posts',
     queryParam: getSettingRaw('api.queryParam') || 'query',
+    // How many pages to pull per search (apidirect.io bills per page, 1–10).
+    pages: parseInt(getSettingRaw('api.pages') || '5', 10) || 5,
+    // Whether to request AI sentiment (apidirect.io: get_sentiment=true).
+    getSentiment: (getSettingRaw('api.getSentiment') || 'true') !== 'false',
+    // ---- Apify provider settings ----
+    apifyToken: getSettingRaw('api.apifyToken'),
+    apifyActor: getSettingRaw('api.apifyActor') || 'easyapi/facebook-hashtag-search-scraper',
+    apifyInput: getSettingRaw('api.apifyInput') || '',
+    apifyResultsLimit: parseInt(getSettingRaw('api.apifyResultsLimit') || '50', 10) || 50,
   };
 }

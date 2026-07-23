@@ -35,6 +35,8 @@ export interface ProviderPost {
   externalId: string;
   pageName: string;
   pageId: string;
+  pageUrl?: string;   // link to the author/page profile
+  pageAvatar?: string; // author/page profile picture
   content: string;
   url: string;
   mediaUrl?: string;

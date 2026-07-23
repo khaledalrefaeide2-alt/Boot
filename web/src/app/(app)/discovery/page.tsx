@@ -53,12 +53,23 @@ function Discovery() {
                   <img src={p.mediaUrl} alt="" className="mb-3 h-40 w-full rounded-xl object-cover" />
                 )}
                 <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="grid h-7 w-7 place-items-center rounded-full bg-brand-600 text-white text-[10px] font-bold">
-                      {p.pageName.slice(0, 2).toUpperCase()}
-                    </div>
-                    <span className="text-sm font-medium">{p.pageName}</span>
-                  </div>
+                  <a
+                    href={p.pageUrl || p.url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="flex items-center gap-2 min-w-0 group"
+                    title={p.pageName}
+                  >
+                    {p.pageAvatar ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={p.pageAvatar} alt={p.pageName} className="h-7 w-7 rounded-full object-cover" />
+                    ) : (
+                      <div className="grid h-7 w-7 place-items-center rounded-full bg-brand-600 text-white text-[10px] font-bold shrink-0">
+                        {(p.pageName || '?').slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                    <span className="text-sm font-medium truncate group-hover:text-brand-600">{p.pageName}</span>
+                  </a>
                   <Badge>{p.language}</Badge>
                 </div>
                 <p className="mt-2 text-sm text-[var(--muted)] line-clamp-3 flex-1">{p.content}</p>

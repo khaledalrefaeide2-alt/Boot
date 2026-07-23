@@ -123,22 +123,48 @@ cd web && npm run build && npm start
 
 ---
 
-## 🔌 Connecting a real Facebook Direct API
+## 🔌 Connecting a real data source
 
-No API key is hardcoded. To use live data:
+No API key is hardcoded. Three provider modes are selectable from **Settings → API**:
 
-1. Sign in and go to **Settings → API**.
-2. Switch provider mode to **Third-party Direct API**.
-3. Enter your **Base URL**, **API Key** (and optional **Secret**), then **Save**.
-4. Click **Test connection**.
+### 1. Built-in demo (default)
+Fully offline realistic data — no key required.
 
-Keys are **encrypted at rest** with AES-256-GCM (`SETTINGS_ENCRYPTION_KEY`) and are
-never returned to the client in plaintext (they are masked). Every outbound call is
-timed and written to `api_logs`, powering the rate-limit monitor and API logs view.
+### 2. Third-party Direct API (e.g. `apidirect.io`)
+1. Provider mode → **Direct API**.
+2. **Base URL:** `https://apidirect.io/v1` (include the version prefix).
+3. **API Key** (and optional Secret).
+4. **Pages per search (1–10):** higher = more results (`apidirect.io` bills per page).
+   Optionally toggle **AI sentiment**.
+5. **Save**, then **Test connection**.
 
-Because real providers differ, response mapping lives in one place —
-`server/src/providers/httpProvider.ts` (`normalizePost`). Adjust the field mapping
-to match your provider's payload.
+The adapter calls `GET /facebook/posts?query=...&pages=N` and derives keyword /
+hashtag / competitor insights from the returned posts, so a single posts endpoint
+powers every explorer. It maps `apidirect.io` fields (`author_name`, `reshare_count`,
+`image_url`, `sentiment.polarity`, …) automatically.
+
+### 3. Apify actor (e.g. `easyapi/facebook-hashtag-search-scraper`)
+1. Provider mode → **Apify**.
+2. **Apify API token**.
+3. **Actor:** `easyapi/facebook-hashtag-search-scraper` (username/name).
+4. **Input template (optional):** defaults to `{"searchQuery":"{{query}}","maxItems":{{limit}}}`.
+   Use `{{query}}` for the search term and `{{limit}}` for the results limit — so any
+   Apify actor with a different input schema works too.
+5. **Results limit**, then **Save** and **Test connection**.
+
+The adapter runs the actor synchronously via
+`POST /v2/acts/{actor}/run-sync-get-dataset-items` and maps its dataset
+(`user.name/id/url/avatar`, `text`, `topReactions`, `commentsCount`, `sharesCount`,
+`time`, …).
+
+> Keys/tokens are **encrypted at rest** with AES-256-GCM (`SETTINGS_ENCRYPTION_KEY`)
+> and never returned in plaintext (masked). Every outbound call is timed and written
+> to `api_logs`, powering the rate-limit monitor and API logs view. All provider calls
+> fail safe — an empty result or a 401/403/404 returns zero-value analytics, never a 500.
+
+Response mapping for every provider lives in one place —
+`server/src/providers/normalize.ts` (`normalizeProviderPost`). Adjust it to fit any
+other provider's payload.
 
 ---
 
