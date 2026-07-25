@@ -2,7 +2,7 @@
 'use strict';
 
 /*
- * FB Extractor — Local database server
+ * الإعلام الرقمي — Local database server
  * ------------------------------------
  * Zero-dependency local server that stores extracted/monitored Facebook
  * posts in a SQLite database file on this computer (fbx-posts.db, created
@@ -191,7 +191,7 @@ const server = http.createServer(async (req, res) => {
 
 server.listen(PORT, () => {
   console.log('');
-  console.log('  ✅ FB Extractor local database server is running');
+  console.log('  ✅ الإعلام الرقمي — local database server is running');
   console.log(`  📦 Database file : ${DB_PATH}`);
   console.log(`  🔗 API address   : http://localhost:${PORT}`);
   console.log('');

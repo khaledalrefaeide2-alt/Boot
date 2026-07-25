@@ -1,6 +1,6 @@
 @echo off
 chcp 65001 >nul
-title FB Extractor - قاعدة البيانات المحلية
+title الإعلام الرقمي - قاعدة البيانات المحلية
 cd /d "%~dp0"
 where node >nul 2>nul
 if errorlevel 1 (
