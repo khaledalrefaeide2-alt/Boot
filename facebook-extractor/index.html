@@ -498,8 +498,8 @@ function renderStats() {
     ['🟢', 'إيجابي', g.positive],
     ['🔴', 'سلبي', g.negative],
     ['🚩', 'مرفوع العلم', g.flagged],
-    ['⚖️', 'متوسط الشدة', g.avgSeverity + '/10'],
-    ['🚨', 'إزالة/تصعيد', g.actions.REMOVE + g.actions.ESCALATE]
+    ['⛔', 'خطورة/أهمية عالية', g.high],
+    ['🚨', 'حذف/مراجعة', g.needsDelete + g.needsReview]
   ];
   statsGrid.innerHTML = cards.map(([icon, label, val]) => `
     <div class="stat-tile">
@@ -664,8 +664,8 @@ async function saveToDb(posts, source, silent) {
         key: postKey(p), text: p.text, url: p.url, ts: p.ts,
         author: p.author, avatar: p.avatar, media: p.media,
         likes: p.likes, comments: p.comments, shares: p.shares, source,
-        sentiment: a.sentiment, emotion: a.emotionLabel, intent: a.intentLabel,
-        domain: a.domainLabel, severity: a.severity, action: a.action,
+        sentiment: a.classification, emotion: a.subCategory, intent: a.levelLabel,
+        domain: '', severity: a.level === 'HIGH' ? 3 : a.level === 'MEDIUM' ? 2 : 1, action: a.action,
         flagged: a.flagged ? 1 : 0, analysis: JSON.stringify(a)
       };
     });

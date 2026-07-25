@@ -454,7 +454,7 @@ function passesClass(p) {
   if (filterClass === 'all') return true;
   const a = ensureAnalysis(p).analysis;
   if (filterClass === 'flagged') return a.flagged;
-  return a.sentiment === filterClass;
+  return a.classification === filterClass;
 }
 function filteredPosts() {
   return feed.filter(p =>
@@ -505,12 +505,12 @@ function renderClassFilter() {
 function renderClassSummary(posts) {
   const g = FBXAnalyzer.aggregate(posts.map(p => ensureAnalysis(p).analysis));
   $('asumGrid').innerHTML = [
-    ['sev', '⚖️', g.avgSeverity + '/10', 'متوسط شدة المخالفة'],
+    ['sev', '⛔', g.high, 'خطورة/أهمية عالية'],
     ['pos', '🟢', g.positive, 'إيجابي'],
     ['neg', '🔴', g.negative, 'سلبي'],
     ['neu', '⚪', g.neutral, 'محايد'],
     ['flag', '🚩', g.flagged, 'مرفوع العلم'],
-    ['esc', '🚨', g.actions.ESCALATE + g.actions.REMOVE, 'يتطلب إزالة/تصعيد']
+    ['esc', '🚨', g.needsDelete + g.needsReview, 'يتطلب حذف/مراجعة']
   ].map(([cls, icon, v, l]) => `<div class="asum-card ${cls}"><div class="v">${icon} ${v}</div><div class="l">${l}</div></div>`).join('');
 }
 
@@ -755,7 +755,7 @@ async function dbCheck(silent) {
 async function saveToDb(posts, source) {
   if (!dbOnline || !posts.length) return;
   try {
-    const payload = posts.map(p => { const a = ensureAnalysis(p).analysis; return { key: p.key, text: p.text, url: p.url, ts: p.ts, author: p.author, avatar: p.avatar, media: p.media, likes: p.likes, comments: p.comments, shares: p.shares, source, sentiment: a.sentiment, emotion: a.emotionLabel, intent: a.intentLabel, domain: a.domainLabel, severity: a.severity, action: a.action, flagged: a.flagged ? 1 : 0, analysis: JSON.stringify(a) }; });
+    const payload = posts.map(p => { const a = ensureAnalysis(p).analysis; return { key: p.key, text: p.text, url: p.url, ts: p.ts, author: p.author, avatar: p.avatar, media: p.media, likes: p.likes, comments: p.comments, shares: p.shares, source, sentiment: a.classification, emotion: a.subCategory, intent: a.levelLabel, domain: '', severity: a.level === 'HIGH' ? 3 : a.level === 'MEDIUM' ? 2 : 1, action: a.action, flagged: a.flagged ? 1 : 0, analysis: JSON.stringify(a) }; });
     const r = await fetch(dbUrl + '/api/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ posts: payload }) });
     const d = await r.json(); if (!d.ok) throw new Error();
   } catch (_) { dbOnline = false; }
