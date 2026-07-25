@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>لوحة الرصد التفاعلية — الإعلام الرقمي</title>
+<title>الرصد التلقائي والتحليل التفاعلي — الإعلام الرقمي</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -326,6 +326,29 @@
   .chart-tooltip .tt-k { opacity: .8; font-size: .74rem; }
   svg text.num { direction: ltr; unicode-bidi: plaintext; }
 
+  /* ============ Classification summary (merged from monitor.html) ============ */
+  .asum-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 14px; margin: 24px 0 6px; }
+  .asum-card {
+    border-radius: 18px; padding: 18px 16px; text-align: center;
+    color: #f6f2e7; box-shadow: 0 12px 26px rgba(18, 44, 35, .18); position: relative; overflow: hidden;
+  }
+  .asum-card .v { font-size: 1.5rem; font-weight: 900; line-height: 1.1; }
+  .asum-card .l { font-size: .76rem; font-weight: 700; opacity: .9; margin-top: 4px; }
+  .asum-card.pos { background: linear-gradient(155deg, #8fae70, #4f7c3f); }
+  .asum-card.neg { background: linear-gradient(155deg, #c65b46, #8f2f1c); }
+  .asum-card.neu { background: linear-gradient(155deg, #6d7c6e, #46514a); }
+  .asum-card.flag { background: linear-gradient(155deg, #e0a94b, #b57a1f); color: #3d2c1d; }
+  .asum-card.esc { background: linear-gradient(155deg, #8f1f1f, #5c1212); }
+  .asum-card.sev { background: linear-gradient(155deg, #2c6a51, #16382c); }
+
+  /* prominent per-post engagement stats (likes/comments/shares/views) */
+  .post-stats { display: flex; flex-wrap: wrap; gap: 8px; padding: 12px 18px 0; }
+  .stat-pill {
+    display: inline-flex; align-items: center; gap: 5px;
+    background: var(--sage-soft); border: 1px solid var(--border); color: var(--text);
+    border-radius: 999px; padding: 5px 12px; font-size: .78rem; font-weight: 800;
+  }
+
   /* feed */
   .feed-head { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 30px 0 16px; }
   .feed-head h3 { font-size: 1.12rem; font-weight: 900; display: flex; align-items: center; gap: 10px; }
@@ -381,8 +404,7 @@
     </a>
     <nav class="side-nav">
       <a href="index.html"><span class="ico">🔍</span><span class="label">الاستخراج اليدوي</span></a>
-      <a href="monitor.html"><span class="ico">📡</span><span class="label">الرصد التلقائي</span></a>
-      <a href="dashboard.html" class="active"><span class="ico">📊</span><span class="label">لوحة الرصد</span></a>
+      <a href="dashboard.html" class="active"><span class="ico">📊</span><span class="label">الرصد التلقائي</span></a>
       <a href="settings.html"><span class="ico">⚙️</span><span class="label">الإعدادات</span></a>
     </nav>
     <div class="side-foot">
@@ -392,9 +414,9 @@
 
   <div class="main-col">
     <header class="page-header">
-      <span class="hero-badge">📊 رصد مباشر وتحليل تفاعلي</span>
-      <h2>لوحة رصد <em>منصاتك الرسمية</em> على فيسبوك</h2>
-      <p>أضف صفحاتك الرسمية (واضبط مفتاحك من الإعدادات)، وسترصد اللوحة منشوراتها دورياً وتحلّلها وتصنّفها وتعرض النشاط والتفاعل في رسوم بيانية تفاعلية مع تصفية حية حسب المنصة والفترة الزمنية.</p>
+      <span class="hero-badge">📡 رصد تلقائي · تحليل وتصنيف · رسوم بيانية تفاعلية</span>
+      <h2>الرصد التلقائي <em>لمنصاتك الرسمية</em> على فيسبوك</h2>
+      <p>أضف صفحاتك الرسمية (واضبط مفتاحك من الإعدادات)، وسيستخرج الموقع منشوراً واحداً من كل صفحة تلقائياً كل نصف ساعة (قابلة للتعديل)، ثم يحلّله ويصنّفه فوراً ويعرض كامل بياناته — النص، الصور والفيديوهات، والتفاعلات والمشاهدات والمشاركات والتعليقات — إلى جانب رسوم بيانية تفاعلية وتصفية حية حسب المنصة والفترة والتصنيف.</p>
     </header>
 
     <main>
@@ -439,12 +461,18 @@
 
   <!-- Dashboard -->
   <section id="dashboard">
+    <div class="asum-grid" id="asumGrid"></div>
+
     <div class="filters">
       <div class="filter-group" id="platformFilter">
         <span class="filter-label">المنصة:</span>
         <!-- pills injected -->
       </div>
       <div class="spacer"></div>
+      <div class="filter-group" id="classFilter">
+        <span class="filter-label">التصنيف:</span>
+        <!-- pills injected -->
+      </div>
       <div class="filter-group" id="rangeFilter">
         <span class="filter-label">الفترة:</span>
         <button class="pill" data-range="7">7 أيام</button>
@@ -493,7 +521,7 @@
 
     </main>
 
-    <footer>الإعلام الرقمي — لوحة الرصد والتحليل التفاعلية · صور وفيديو · تصدير Excel · الإصدار 3.2 🍃</footer>
+    <footer>الإعلام الرقمي — الرصد التلقائي والتحليل التفاعلي · صور وفيديو · تصدير Excel · الإصدار 3.3 🍃</footer>
   </div>
 </div>
 <div class="toast" id="toast"></div>
@@ -506,7 +534,7 @@
 FBXAnalyzer.injectStyles();
 FBXMedia.injectStyles();
 
-/* =============== Constants (shared storage with monitor.html) =============== */
+/* =============== Constants =============== */
 const ACTOR_ID = 'apify~facebook-posts-scraper';
 const API_BASE = 'https://api.apify.com/v2';
 const KEY_STORAGE = 'fbx_apify_key';
@@ -549,11 +577,27 @@ let freshKeys = new Set();
 
 let filterPlatform = 'all';   // author name or 'all'
 let filterRange = 30;         // days, 0 = all
+let filterClass = 'all';      // all | NEGATIVE | flagged | POSITIVE | NEUTRAL
 let searchQ = '';
 let sortMode = 'newest';
 
 function load(k, fb) { try { const v = JSON.parse(localStorage.getItem(k)); return Array.isArray(v) ? v : fb; } catch (_) { return fb; } }
 function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+// حفظ السجل مع الاحتفاظ بكامل البيانات، ومعالجة تجاوز سعة التخزين
+// بإسقاط النسخة الخام التدريجية من الأقدم عند الحاجة فقط.
+function saveFeed() {
+  try { localStorage.setItem(FEED_STORAGE, JSON.stringify(feed)); return; }
+  catch (e) {
+    for (let i = feed.length - 1; i >= 0; i--) {
+      if (feed[i].raw) delete feed[i].raw;
+      try { localStorage.setItem(FEED_STORAGE, JSON.stringify(feed)); return; } catch (_) {}
+    }
+    while (feed.length > 50) {
+      feed = feed.slice(0, Math.floor(feed.length * 0.8));
+      try { localStorage.setItem(FEED_STORAGE, JSON.stringify(feed)); return; } catch (_) {}
+    }
+  }
+}
 function getToken() { return (localStorage.getItem(KEY_STORAGE) || '').trim(); }
 
 /* =============== API key (managed from settings.html) =============== */
@@ -654,7 +698,7 @@ async function runCycle(manual) {
     }
     feed.sort((a, b) => (b.ts || b.seenAt || 0) - (a.ts || a.seenAt || 0));
     if (feed.length > FEED_CAP) feed = feed.slice(0, FEED_CAP);
-    save(FEED_STORAGE, feed);
+    saveFeed();
     lastRunAt = Date.now(); localStorage.setItem(LAST_STORAGE, String(lastRunAt));
     $('miniStatus').textContent = `آخر رصد: ${new Date(lastRunAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })} · ` + (added ? `${added} منشور جديد ✨` : 'لا جديد');
     if (added) { showToast(`✨ ${added} منشور جديد`); saveToDb(feed.filter(p => freshKeys.has(p.key)), 'monitor'); }
@@ -679,28 +723,24 @@ const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 /* =============== Normalization =============== */
 function normalizePost(raw) {
-  const text = raw.text || raw.message || raw.postText || '';
-  const url = raw.url || raw.postUrl || raw.topLevelUrl || '';
-  const timeVal = raw.time || raw.date || raw.publishedTime || raw.timestamp || null;
+  const text = raw.text || raw.message || raw.postText || raw.caption || '';
+  const url = raw.url || raw.postUrl || raw.topLevelUrl || raw.link || '';
+  const timeVal = raw.time || raw.date || raw.publishedTime || raw.timestamp || raw.publish_time || null;
   let ts = null;
   if (typeof timeVal === 'number') ts = timeVal > 1e12 ? timeVal : timeVal * 1000;
   else if (timeVal) { const d = new Date(timeVal); if (!isNaN(d)) ts = d.getTime(); }
   const author = raw.user?.name || raw.pageName || raw.author || raw.user?.id || 'صفحة فيسبوك';
-  const avatar = raw.user?.profilePic || raw.pageProfilePic || '';
-  let media = '';
-  if (Array.isArray(raw.media) && raw.media.length) {
-    const m = raw.media.find(x => x?.thumbnail || x?.photo_image?.uri || x?.image?.uri);
-    media = m?.thumbnail || m?.photo_image?.uri || m?.image?.uri || '';
-  }
+  const avatar = raw.user?.profilePic || raw.pageProfilePic || raw.user?.profilePicture || '';
   const key = url || `${author}|${ts || ''}|${text.slice(0, 80)}`;
   const mediaList = FBXMedia.extract(raw);
   const firstImg = mediaList.find(m => m.type === 'image');
-  const mediaBest = firstImg ? firstImg.src : (mediaList[0]?.thumb || media);
+  const mediaBest = firstImg ? firstImg.src : (mediaList[0]?.thumb || '');
   const p = { key, text, url, ts, author, avatar, media: mediaBest, mediaList,
     likes: num(raw.likes ?? raw.likesCount ?? raw.reactions ?? raw.reactionsCount),
     comments: num(raw.comments ?? raw.commentsCount), shares: num(raw.shares ?? raw.sharesCount),
     views: num(raw.viewsCount ?? raw.videoViewCount ?? raw.views ?? 0),
     postId: raw.postId || raw.id || raw.post_id || '',
+    pageName: raw.pageName || raw.user?.name || '',
     pageUrl: raw.pageUrl || raw.user?.profileUrl || '', raw };
   p.analysis = FBXAnalyzer.analyze(p);
   return p;
@@ -720,10 +760,17 @@ function inRange(p) {
   const t = p.ts || p.seenAt || 0;
   return t >= Date.now() - filterRange * 86400000;
 }
+function passesClass(p) {
+  if (filterClass === 'all') return true;
+  const a = ensureAnalysis(p).analysis;
+  if (filterClass === 'flagged') return a.flagged;
+  return a.sentiment === filterClass;
+}
 function filteredPosts() {
   return feed.filter(p =>
     (filterPlatform === 'all' || platformKey(p) === filterPlatform) &&
     inRange(p) &&
+    passesClass(p) &&
     (!searchQ || (p.text || '').toLowerCase().includes(searchQ) || platformKey(p).toLowerCase().includes(searchQ))
   );
 }
@@ -731,7 +778,9 @@ function filteredPosts() {
 /* =============== Render dashboard =============== */
 function renderDashboard() {
   renderPlatformFilter();
+  renderClassFilter();
   const posts = filteredPosts();
+  renderClassSummary(posts);
   renderStats(posts);
   renderTimeChart(posts);
   renderPlatformChart();
@@ -749,22 +798,44 @@ function renderPlatformFilter() {
   box.querySelectorAll('.pill').forEach(b => b.onclick = () => { filterPlatform = b.dataset.plat; renderDashboard(); });
 }
 
+/* classification filter (merged from monitor.html) */
+function renderClassFilter() {
+  const box = $('classFilter');
+  const opts = [
+    ['all', 'الكل'], ['NEGATIVE', '🔴 سلبي'], ['flagged', '🚩 مرفوع العلم'],
+    ['POSITIVE', '🟢 إيجابي'], ['NEUTRAL', '⚪ محايد']
+  ];
+  box.innerHTML = ['<span class="filter-label">التصنيف:</span>',
+    ...opts.map(([id, label]) => `<button class="pill ${filterClass === id ? 'active' : ''}" data-cls="${id}">${label}</button>`)
+  ].join('');
+  box.querySelectorAll('.pill').forEach(b => b.onclick = () => { filterClass = b.dataset.cls; renderDashboard(); });
+}
+
+/* colorful classification summary cards (merged from monitor.html) */
+function renderClassSummary(posts) {
+  const g = FBXAnalyzer.aggregate(posts.map(p => ensureAnalysis(p).analysis));
+  $('asumGrid').innerHTML = [
+    ['sev', '⚖️', g.avgSeverity + '/10', 'متوسط شدة المخالفة'],
+    ['pos', '🟢', g.positive, 'إيجابي'],
+    ['neg', '🔴', g.negative, 'سلبي'],
+    ['neu', '⚪', g.neutral, 'محايد'],
+    ['flag', '🚩', g.flagged, 'مرفوع العلم'],
+    ['esc', '🚨', g.actions.ESCALATE + g.actions.REMOVE, 'يتطلب إزالة/تصعيد']
+  ].map(([cls, icon, v, l]) => `<div class="asum-card ${cls}"><div class="v">${icon} ${v}</div><div class="l">${l}</div></div>`).join('');
+}
+
 function renderStats(posts) {
   const total = posts.length;
   const eng = posts.reduce((s, p) => s + engagement(p), 0);
   const avg = total ? Math.round(eng / total) : 0;
-  // most active platform within current range (ignores platform filter for this stat)
+  // most active platform within current range (ignores platform/class filter for this stat)
   const byPlat = {};
   feed.filter(inRange).forEach(p => { byPlat[platformKey(p)] = (byPlat[platformKey(p)] || 0) + 1; });
   let topPlat = '—', topN = 0;
   for (const [k, v] of Object.entries(byPlat)) if (v > topN) { topN = v; topPlat = k; }
   const lastStr = lastRunAt ? new Date(lastRunAt).toLocaleString('ar', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
-  const g = FBXAnalyzer.aggregate(posts.map(p => ensureAnalysis(p).analysis));
   const tiles = [
     ['📝 المنشورات', fmtNum(total), `منصات: ${platformList().length}`],
-    ['🟢 إيجابي', fmtNum(g.positive), `سلبي: ${g.negative} · محايد: ${g.neutral}`],
-    ['🚩 مرفوع العلم', fmtNum(g.flagged), `إزالة/تصعيد: ${g.actions.REMOVE + g.actions.ESCALATE}`],
-    ['⚖️ متوسط الشدة', `${g.avgSeverity}/10`, 'شدة المخالفة'],
     ['💫 إجمالي التفاعل', fmtNum(eng), `متوسط: ${fmtNum(avg)}/منشور`],
     ['🏆 الأنشط', `<span class="v small">${esc(topPlat)}</span>`, `${fmtNum(topN)} منشور`, true],
     ['🕓 آخر رصد', `<span class="v small">${lastStr}</span>`, monitorOn ? 'الرصد نشط' : 'الرصد متوقف', true]
@@ -917,10 +988,16 @@ function renderFeed(posts) {
     const fresh = freshKeys.has(p.key);
     return `<article class="post-card ${fresh ? 'fresh' : ''}" style="animation-delay:${Math.min(i * 25, 300)}ms">
       <div class="post-head">${avatar}<div><div class="post-author">${esc(platformKey(p))} ${fresh ? '<span class="badge-new">جديد</span>' : ''}</div><div class="post-date">🕓 ${dateStr}</div></div></div>
+      <div class="post-stats">
+        <span class="stat-pill">👍 ${fmtNum(p.likes)}</span>
+        <span class="stat-pill">💬 ${fmtNum(p.comments)}</span>
+        <span class="stat-pill">🔁 ${fmtNum(p.shares)}</span>
+        <span class="stat-pill">👁️ ${fmtNum(p.views)}</span>
+      </div>
       <div class="post-body"><div class="post-text ${longText ? 'clamped' : ''}" id="dtxt-${i}">${esc(p.text) || '<em style="color:var(--text-2)">— منشور بدون نص —</em>'}</div>${longText ? `<button class="read-more" data-target="dtxt-${i}">عرض المزيد ▾</button>` : ''}
       ${FBXMedia.galleryHtml(p)}
       ${FBXAnalyzer.badges(a)}<button class="fbx-toggle" data-panel="dpan-${i}">🧠 عرض التحليل الكامل ▾</button><div id="dpan-${i}" style="display:none">${FBXAnalyzer.panel(a)}</div></div>
-      <div class="post-foot"><div class="reactions"><span>👍 ${fmtNum(p.likes)}</span><span>💬 ${fmtNum(p.comments)}</span><span>🔁 ${fmtNum(p.shares)}</span>${p.views ? `<span>👁️ ${fmtNum(p.views)}</span>` : ''}</div>${p.url ? `<a class="post-link" href="${esc(p.url)}" target="_blank" rel="noopener">فتح ↗</a>` : ''}</div>
+      <div class="post-foot" style="justify-content:flex-end">${p.url ? `<a class="post-link" href="${esc(p.url)}" target="_blank" rel="noopener">فتح المنشور ↗</a>` : ''}</div>
     </article>`;
   }).join('');
   $('feed').querySelectorAll('.read-more').forEach(btn => btn.onclick = () => {
@@ -945,7 +1022,7 @@ $('sortSelect').addEventListener('change', e => { sortMode = e.target.value; ren
 $('clearBtn').onclick = () => {
   if (!feed.length) return;
   if (!confirm('سيتم مسح جميع المنشورات المرصودة من المتصفح. متابعة؟')) return;
-  feed = []; freshKeys = new Set(); save(FEED_STORAGE, feed);
+  feed = []; freshKeys = new Set(); saveFeed();
   $('dashboard').style.display = 'none'; $('bootEmpty').style.display = 'block';
   showToast('🗑️ تم مسح السجل');
 };
