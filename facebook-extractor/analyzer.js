@@ -525,60 +525,60 @@
   function injectStyles() {
     if (document.getElementById('fbx-analyzer-styles')) return;
     const css = `
-    .fbx-badges { display:flex; flex-wrap:wrap; gap:7px; margin:10px 0 2px; }
-    .fbx-badge { display:inline-flex; align-items:center; gap:4px; font-size:.72rem; font-weight:800;
-      padding:4px 11px; border-radius:999px; line-height:1.4; border:1px solid transparent; white-space:nowrap; }
-    .fbx-soft { background:var(--sage-soft,#e6ecdd); color:var(--text,#22372e); border-color:var(--border,#dcdcc6); }
-    .fbx-pos { background:#dff2e3; color:#1c6b39; border-color:#a9dcb6; }
-    .fbx-neg { background:#fbe0da; color:#a3341f; border-color:#f0b3a6; }
-    .fbx-neu { background:#e9ecef; color:#4c5560; border-color:#d3d8de; }
-    .fbx-flag { background:#fff0d6; color:#9a5b00; border-color:#f2cf8a; }
+    .fbx-badges { display:flex; flex-wrap:wrap; gap:5px; margin:8px 0 0; }
+    .fbx-badge { display:inline-flex; align-items:center; gap:3px; font-size:.66rem; font-weight:800;
+      padding:3px 9px; border-radius:999px; line-height:1.3; border:1px solid transparent; white-space:nowrap; }
+    .fbx-soft { background:var(--surface-2,#eef1ea); color:var(--text,#1c2a22); border-color:var(--border,#dfe4d8); }
+    .fbx-pos { background:#e1f2e5; color:#1c6b39; border-color:#aedcb9; }
+    .fbx-neg { background:#fbe2de; color:#a3341f; border-color:#f0b6aa; }
+    .fbx-neu { background:#e9ecea; color:#4c5550; border-color:#d3d8d4; }
+    .fbx-flag { background:#fff1d8; color:#9a5b00; border-color:#f2cf8a; }
     .fbx-badge.sev-min { background:#e5f2e8; color:#2f7a49; border-color:#b7ddc2; }
-    .fbx-badge.sev-low { background:#eaf1d8; color:#5f7020; border-color:#cad9a3; }
+    .fbx-badge.sev-low { background:#eef1d8; color:#5f7020; border-color:#cfd9a3; }
     .fbx-badge.sev-mid { background:#fff2cf; color:#8a6100; border-color:#f0d68a; }
     .fbx-badge.sev-high { background:#fbe0d3; color:#a1471d; border-color:#f0b596; }
     .fbx-badge.sev-crit { background:#f7d3d3; color:#8f1f1f; border-color:#e8a6a6; }
 
-    .fbx-toggle { border:none; background:none; cursor:pointer; font-family:inherit; font-weight:900;
-      font-size:.8rem; color:var(--green-700,#23553f); padding:8px 0 2px; display:inline-flex; align-items:center; gap:6px; }
-    [data-theme="dark"] .fbx-toggle { color:var(--sage,#8fae70); }
+    .fbx-toggle { border:none; background:none; cursor:pointer; font-family:inherit; font-weight:800;
+      font-size:.72rem; color:var(--green-700,#205f45); padding:6px 0 0; display:inline-flex; align-items:center; gap:5px; }
+    [data-theme="dark"] .fbx-toggle { color:var(--sage,#8aab6c); }
 
-    .fbx-analysis { margin-top:12px; border-top:1px dashed var(--border,#dcdcc6); padding-top:14px;
-      animation:fbxFade .3s ease; }
-    @keyframes fbxFade { from{opacity:0;transform:translateY(-4px);} to{opacity:1;transform:none;} }
-    .fbx-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(150px,1fr)); gap:10px; }
-    .fbx-cell { background:var(--surface-2,#f0eddd); border:1px solid var(--border,#dcdcc6);
-      border-radius:12px; padding:9px 12px; display:flex; flex-direction:column; gap:2px; }
-    .fbx-k { font-size:.7rem; font-weight:800; color:var(--text-2,#6d7c6e); }
-    .fbx-v { font-size:.85rem; font-weight:900; color:var(--text,#22372e); }
-    .fbx-sev-row { display:flex; align-items:center; gap:12px; margin-top:14px; flex-wrap:wrap; }
-    .fbx-meter { flex:1 1 160px; height:9px; border-radius:99px; background:var(--surface-2,#f0eddd);
-      overflow:hidden; min-width:140px; }
+    .fbx-analysis { margin-top:9px; border-top:1px dashed var(--border,#dfe4d8); padding-top:10px;
+      animation:fbxFade .25s ease; }
+    @keyframes fbxFade { from{opacity:0;transform:translateY(-3px);} to{opacity:1;transform:none;} }
+    .fbx-grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(120px,1fr)); gap:7px; }
+    .fbx-cell { background:var(--surface-2,#eef1ea); border:1px solid var(--border,#dfe4d8);
+      border-radius:9px; padding:7px 9px; display:flex; flex-direction:column; gap:1px; }
+    .fbx-k { font-size:.62rem; font-weight:800; color:var(--text-2,#667167); }
+    .fbx-v { font-size:.75rem; font-weight:800; color:var(--text,#1c2a22); }
+    .fbx-sev-row { display:flex; align-items:center; gap:9px; margin-top:10px; flex-wrap:wrap; }
+    .fbx-meter { flex:1 1 140px; height:7px; border-radius:99px; background:var(--surface-2,#eef1ea);
+      overflow:hidden; min-width:120px; }
     .fbx-meter-fill { height:100%; border-radius:99px; transition:width .5s ease; }
-    .fbx-meter-fill.sev-min, .fbx-meter-fill.sev-low { background:linear-gradient(90deg,#8fae70,#5f8348); }
+    .fbx-meter-fill.sev-min, .fbx-meter-fill.sev-low { background:linear-gradient(90deg,#8aab6c,#5f8348); }
     .fbx-meter-fill.sev-mid { background:linear-gradient(90deg,#e8c060,#d99a2b); }
     .fbx-meter-fill.sev-high { background:linear-gradient(90deg,#e08a5a,#c65b32); }
     .fbx-meter-fill.sev-crit { background:linear-gradient(90deg,#d64c4c,#8f1f1f); }
-    .fbx-sev-num { font-weight:900; font-size:.85rem; }
+    .fbx-sev-num { font-weight:800; font-size:.75rem; }
     .fbx-sev-num.sev-mid { color:#8a6100; } .fbx-sev-num.sev-high { color:#a1471d; }
     .fbx-sev-num.sev-crit { color:#8f1f1f; } .fbx-sev-num.sev-min,.fbx-sev-num.sev-low { color:#2f7a49; }
-    [data-theme="dark"] .fbx-sev-num.sev-min,[data-theme="dark"] .fbx-sev-num.sev-low { color:#8fae70; }
+    [data-theme="dark"] .fbx-sev-num.sev-min,[data-theme="dark"] .fbx-sev-num.sev-low { color:#8aab6c; }
 
-    .fbx-block { margin-top:14px; }
-    .fbx-text { font-size:.85rem; line-height:1.85; color:var(--text,#22372e); margin-top:5px; }
-    .fbx-note { font-size:.74rem; color:var(--text-2,#6d7c6e); margin-top:4px; font-style:italic; }
-    .fbx-flags { list-style:none; margin:6px 0 0; padding:0; display:flex; flex-direction:column; gap:6px; }
-    .fbx-flags li { background:#fbe0da; color:#a3341f; border:1px solid #f0b3a6; border-radius:10px;
-      padding:7px 12px; font-size:.8rem; font-weight:700; }
-    [data-theme="dark"] .fbx-flags li { background:#3a1f19; color:#f0b3a6; border-color:#5a2f24; }
-    .fbx-noflag { margin-top:6px; font-size:.82rem; font-weight:800; color:#2f7a49; }
-    [data-theme="dark"] .fbx-noflag { color:#8fae70; }
-    .fbx-reasons { margin:6px 0 0; padding-inline-start:20px; font-size:.8rem; line-height:1.9; color:var(--text-2,#6d7c6e); }
-    .fbx-rec { border-radius:14px; padding:12px 14px; border:1px solid var(--border,#dcdcc6); background:var(--surface-2,#f0eddd); }
-    .fbx-rec.sev-high { background:#fbe6dd; border-color:#f0b596; }
-    .fbx-rec.sev-crit { background:#f7d9d9; border-color:#e8a6a6; }
-    [data-theme="dark"] .fbx-rec.sev-high { background:#3a241c; border-color:#5a382a; }
-    [data-theme="dark"] .fbx-rec.sev-crit { background:#3d1f1f; border-color:#5e2c2c; }
+    .fbx-block { margin-top:10px; }
+    .fbx-text { font-size:.76rem; line-height:1.65; color:var(--text,#1c2a22); margin-top:3px; }
+    .fbx-note { font-size:.68rem; color:var(--text-2,#667167); margin-top:3px; font-style:italic; }
+    .fbx-flags { list-style:none; margin:5px 0 0; padding:0; display:flex; flex-direction:column; gap:5px; }
+    .fbx-flags li { background:#fbe2de; color:#a3341f; border:1px solid #f0b6aa; border-radius:8px;
+      padding:6px 10px; font-size:.72rem; font-weight:700; }
+    [data-theme="dark"] .fbx-flags li { background:#33201b; color:#f0b6aa; border-color:#4f2b25; }
+    .fbx-noflag { margin-top:5px; font-size:.74rem; font-weight:800; color:#2f7a49; }
+    [data-theme="dark"] .fbx-noflag { color:#8aab6c; }
+    .fbx-reasons { margin:5px 0 0; padding-inline-start:18px; font-size:.72rem; line-height:1.75; color:var(--text-2,#667167); }
+    .fbx-rec { border-radius:10px; padding:9px 11px; border:1px solid var(--border,#dfe4d8); background:var(--surface-2,#eef1ea); }
+    .fbx-rec.sev-high { background:#fbe8e0; border-color:#f0b596; }
+    .fbx-rec.sev-crit { background:#f7dcdc; border-color:#e8a6a6; }
+    [data-theme="dark"] .fbx-rec.sev-high { background:#332019; border-color:#523527; }
+    [data-theme="dark"] .fbx-rec.sev-crit { background:#361d1d; border-color:#552929; }
     `;
     const style = document.createElement('style');
     style.id = 'fbx-analyzer-styles';
