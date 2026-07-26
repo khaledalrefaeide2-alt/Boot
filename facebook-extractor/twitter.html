@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>الإعلام الرقمي — مستخرج منشورات فيسبوك</title>
+<title>الإعلام الرقمي — مستخرج تغريدات X (تويتر)</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -63,6 +63,13 @@
 
   #resultsSection { display: none; }
 
+  /* ================= Tweet cards (unique to this page) ================= */
+  .rt-tag { font-size: .68rem; font-weight: 800; padding: 2px 9px; border-radius: 99px; background: rgba(219, 163, 66, .18); color: #a5750e; display: inline-block; margin-bottom: 8px; }
+  .tw-media { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; margin: 10px 0; }
+  .tw-media img { width: 100%; height: 100px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+  .tw-media a { display: block; position: relative; }
+  .tw-media .vid-badge { position: absolute; inset-inline-start: 6px; bottom: 6px; background: rgba(0,0,0,.6); color: #fff; font-size: .65rem; padding: 1px 6px; border-radius: 6px; }
+
   @media (max-width: 720px) {
     .feature + .feature::before { display: none; }
     .actions-row .btn { flex: 1; }
@@ -81,9 +88,9 @@
       </div>
     </a>
     <nav class="side-nav">
-      <a href="index.html" class="active"><span class="ico">🔍</span><span class="label">استخراج فيسبوك</span></a>
+      <a href="index.html"><span class="ico">🔍</span><span class="label">استخراج فيسبوك</span></a>
       <a href="dashboard.html"><span class="ico">📊</span><span class="label">رصد فيسبوك</span></a>
-      <a href="twitter.html"><span class="ico">𝕏</span><span class="label">استخراج X (تويتر)</span></a>
+      <a href="twitter.html" class="active"><span class="ico">𝕏</span><span class="label">استخراج X (تويتر)</span></a>
       <a href="twitter-dashboard.html"><span class="ico">📡</span><span class="label">رصد X (تويتر)</span></a>
       <a href="settings.html"><span class="ico">⚙️</span><span class="label">الإعدادات</span></a>
     </nav>
@@ -95,8 +102,8 @@
   <div class="main-col">
     <header class="page-header">
       <span class="hero-badge">✦ استخراج · تحليل · تصنيف</span>
-      <h2>استخرج منشورات أي صفحة فيسبوك <em>بضغطة زر</em> وبتحكم كامل</h2>
-      <p>اضبط مفتاحك من صفحة الإعدادات مرة واحدة، حدّد الفترة الزمنية وعدد المنشورات بسقف مضمون، واحصل على النتائج محلّلة ومصنّفة بعرض عصري أنيق مع التصدير إلى JSON أو CSV.</p>
+      <h2>استخرج تغريدات أي حساب <em>على X (تويتر)</em> بضغطة زر</h2>
+      <p>اضبط مفتاحك ورموز الدخول من صفحة الإعدادات مرة واحدة، أدخل أسماء المستخدمين وعدد التغريدات المطلوب لكل حساب، واحصل على النتائج محلَّلة ومصنَّفة بنفس محرك التحليل المستخدم لمنشورات فيسبوك، مع التصدير إلى Excel أو JSON أو CSV.</p>
       <button class="hero-cta" id="heroCta">ابدأ الاستخراج الآن ↓</button>
     </header>
 
@@ -106,30 +113,30 @@
   <section class="features-band">
     <div class="feature">
       <div class="feature-icon">🔑</div>
-      <h3>اضبط مفتاحك مرة</h3>
-      <p>يُحفظ مفتاحك محلياً في متصفحك فقط من صفحة الإعدادات، ويُستخدم في كل الصفحات</p>
+      <h3>إعداد موحّد</h3>
+      <p>مفتاح الاستخراج ورموز الدخول لمنصة X يُضبطان مرة واحدة من الإعدادات ويُستخدمان هنا تلقائياً</p>
     </div>
     <div class="feature">
-      <div class="feature-icon">🗓️</div>
-      <h3>فلاتر دقيقة</h3>
-      <p>حدّد الفترة الزمنية وعدد المنشورات مع سقف فوترة إلزامي يحميك من الاستهلاك الزائد</p>
+      <div class="feature-icon">🐦</div>
+      <h3>تغريدات فعلية</h3>
+      <p>يجلب آخر تغريدات كل حساب (نص، صور، فيديو، تفاعلات) لا مجرد بيانات الملف الشخصي</p>
     </div>
     <div class="feature">
-      <div class="feature-icon">📰</div>
-      <h3>عرض عصري</h3>
-      <p>بطاقات أنيقة مع الإحصائيات والتفاعلات، وبحث وفرز فوري داخل النتائج</p>
+      <div class="feature-icon">🧠</div>
+      <h3>تحليل موحّد</h3>
+      <p>كل تغريدة تُصنَّف تلقائياً بنفس معايير التحليل القانوني/الأخلاقي المستخدمة لمنشورات فيسبوك</p>
     </div>
     <div class="feature">
       <div class="feature-icon">⬇️</div>
       <h3>تصدير مرن</h3>
-      <p>نزّل نتائجك بصيغة JSON أو CSV متوافقة مع Excel واللغة العربية</p>
+      <p>نزّل نتائجك بصيغة Excel أو JSON أو CSV متوافقة مع العربية</p>
     </div>
   </section>
 
   <!-- Setup notice -->
   <section class="panel" id="setupPanel" style="display:none">
-    <div class="panel-title"><span class="num">⚠️</span> لم يُضبط مفتاح الاستخراج بعد</div>
-    <div class="hint" style="font-size:.9rem">اذهب إلى <a href="settings.html" style="color:var(--green-700);font-weight:900">⚙️ صفحة الإعدادات</a> واضبط مفتاح واجهة الاستخراج مرة واحدة، ثم عُد إلى هنا للبدء.</div>
+    <div class="panel-title"><span class="num">⚠️</span> الإعداد غير مكتمل بعد</div>
+    <div class="hint" style="font-size:.9rem" id="setupMsg">اذهب إلى <a href="settings.html" style="color:var(--green-700);font-weight:900">⚙️ صفحة الإعدادات</a> واضبط مفتاح الاستخراج ورموز الدخول لمنصة X، ثم عُد إلى هنا للبدء.</div>
     <div class="actions-row"><a class="btn btn-ghost btn-sm" href="settings.html">⚙️ فتح الإعدادات</a></div>
   </section>
 
@@ -137,13 +144,13 @@
   <section class="panel">
     <div class="panel-title"><span class="num">1</span> إعدادات الاستخراج والفلاتر</div>
 
-    <label class="field-label" for="pageUrls">روابط صفحات فيسبوك <small>(رابط واحد في كل سطر)</small></label>
-    <textarea class="input" id="pageUrls" placeholder="https://www.facebook.com/nasa&#10;https://www.facebook.com/bbcnews"></textarea>
+    <label class="field-label" for="usernames">أسماء المستخدمين على X <small>(اسم واحد في كل سطر — بـ@ أو بدونه، أو رابط الحساب كاملاً)</small></label>
+    <textarea class="input" id="usernames" placeholder="elonmusk&#10;bbcarabic"></textarea>
 
     <div class="grid grid-4" style="margin-top:18px">
       <div>
-        <label class="field-label" for="postsLimit">عدد المنشورات <small>(لكل صفحة)</small></label>
-        <input class="input" type="number" id="postsLimit" min="1" max="1000" value="20">
+        <label class="field-label" for="tweetsLimit">عدد التغريدات <small>(لكل حساب)</small></label>
+        <input class="input" type="number" id="tweetsLimit" min="1" max="200" value="20">
         <div class="hint">🛡️ يُفرض هذا العدد كسقف استخراج إلزامي — لن تُحاسَب على أكثر منه</div>
       </div>
       <div>
@@ -160,8 +167,8 @@
           <option value="newest">الأحدث أولاً</option>
           <option value="oldest">الأقدم أولاً</option>
           <option value="likes">الأكثر إعجاباً</option>
-          <option value="comments">الأكثر تعليقاً</option>
-          <option value="shares">الأكثر مشاركة</option>
+          <option value="shares">الأكثر إعادة نشر</option>
+          <option value="comments">الأكثر رداً</option>
         </select>
       </div>
     </div>
@@ -179,7 +186,7 @@
       <div class="spinner" id="spinner"></div>
       <div>
         <div class="status-text" id="statusText">جارٍ تشغيل عملية الاستخراج...</div>
-        <div class="status-sub" id="statusSub">قد تستغرق العملية من ثوانٍ إلى دقائق حسب عدد المنشورات</div>
+        <div class="status-sub" id="statusSub">قد تستغرق العملية من ثوانٍ إلى دقائق حسب عدد التغريدات</div>
       </div>
       <button class="btn btn-danger-ghost btn-sm" id="abortBtn" style="margin-inline-start:auto">⛔ إيقاف</button>
     </div>
@@ -214,29 +221,28 @@
 
     </main>
 
-    <footer>الإعلام الرقمي — استخراج وتحليل وتصنيف منشورات فيسبوك · صور وفيديو · تصدير Excel · تحليل محلي بالكامل · الإصدار 4.0 🍃</footer>
+    <footer>الإعلام الرقمي — استخراج وتحليل وتصنيف تغريدات X (تويتر) · صور وفيديو · تصدير Excel · تحليل محلي بالكامل · الإصدار 4.1 🍃</footer>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 
 <script src="analyzer.js"></script>
-<script src="media.js"></script>
 <script src="xlsx-export.js"></script>
 <script>
 'use strict';
 FBXAnalyzer.injectStyles();
-FBXMedia.injectStyles();
 
 /* =============== Constants =============== */
-const ACTOR_ID = 'apify~facebook-posts-scraper';
+const ACTOR_ID = 'epctex~twitter-profile-scraper';
 const API_BASE = 'https://api.apify.com/v2';
 const KEY_STORAGE = 'fbx_apify_key';
+const X_TOKENS_STORAGE = 'fbx_x_auth_tokens';
 const THEME_STORAGE = 'fbx_theme';
 
 /* =============== Elements =============== */
 const $ = id => document.getElementById(id);
-const pageUrlsInput = $('pageUrls'),
-      postsLimitInput = $('postsLimit'), dateFromInput = $('dateFrom'), dateToInput = $('dateTo'),
+const usernamesInput = $('usernames'),
+      tweetsLimitInput = $('tweetsLimit'), dateFromInput = $('dateFrom'), dateToInput = $('dateTo'),
       sortSelect = $('sortSelect'), runBtn = $('runBtn'),
       statusPanel = $('statusPanel'), statusText = $('statusText'), statusSub = $('statusSub'),
       progressBar = $('progressBar'), runError = $('runError'), formError = $('formError'),
@@ -262,10 +268,14 @@ $('themeBtn').onclick = () => {
 
 $('heroCta').onclick = () => document.querySelector('main .panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-/* =============== API key (managed from settings.html) =============== */
-// إن لم يُضبط المفتاح بعد، أظهِر تنبيهاً يوجّه إلى صفحة الإعدادات.
+/* =============== API key & X auth tokens (managed from settings.html) =============== */
+function getToken() { return (localStorage.getItem(KEY_STORAGE) || '').trim(); }
+function getXTokens() { try { const v = JSON.parse(localStorage.getItem(X_TOKENS_STORAGE)); return Array.isArray(v) ? v.filter(Boolean) : []; } catch (_) { return []; } }
 function refreshSetupNotice() {
-  $('setupPanel').style.display = getToken() ? 'none' : 'block';
+  const hasKey = !!getToken(), hasXTokens = getXTokens().length > 0;
+  $('setupPanel').style.display = (hasKey && hasXTokens) ? 'none' : 'block';
+  if (!hasKey) $('setupMsg').innerHTML = 'اذهب إلى <a href="settings.html" style="color:var(--green-700);font-weight:900">⚙️ صفحة الإعدادات</a> واضبط مفتاح الاستخراج، ثم عُد إلى هنا للبدء.';
+  else if (!hasXTokens) $('setupMsg').innerHTML = 'اذهب إلى <a href="settings.html" style="color:var(--green-700);font-weight:900">⚙️ صفحة الإعدادات</a> واضبط رموز الدخول لمنصة X، ثم عُد إلى هنا للبدء.';
 }
 
 function showToast(msg) {
@@ -277,8 +287,8 @@ function showToast(msg) {
 
 /* =============== Form =============== */
 $('resetBtn').onclick = () => {
-  pageUrlsInput.value = '';
-  postsLimitInput.value = 20;
+  usernamesInput.value = '';
+  tweetsLimitInput.value = 20;
   dateFromInput.value = '';
   dateToInput.value = '';
   formError.style.display = 'none';
@@ -288,6 +298,14 @@ function showFormError(msg) {
   formError.textContent = msg;
   formError.style.display = 'block';
   formError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
+function parseHandle(raw) {
+  let s = (raw || '').trim();
+  s = s.replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '');
+  s = s.replace(/^@/, '');
+  s = s.split(/[/?#]/)[0];
+  return s.trim();
 }
 
 /* =============== Run flow =============== */
@@ -302,8 +320,6 @@ $('abortBtn').onclick = async () => {
   setStatus('تم إيقاف العملية', 'يمكنك بدء عملية جديدة في أي وقت', true);
 };
 
-function getToken() { return (localStorage.getItem(KEY_STORAGE) || '').trim(); }
-
 function validDate(v) { return v && !isNaN(new Date(v).getTime()); }
 
 async function startExtraction() {
@@ -311,25 +327,28 @@ async function startExtraction() {
   runError.style.display = 'none';
 
   const token = getToken();
-  if (!token) { refreshSetupNotice(); return showFormError('⚠️ لم يُضبط مفتاح الاستخراج بعد — اضبطه من صفحة الإعدادات ⚙️.'); }
+  const xTokens = getXTokens();
+  if (!token || !xTokens.length) { refreshSetupNotice(); return showFormError('⚠️ الإعداد غير مكتمل — اضبط مفتاح الاستخراج ورموز الدخول لمنصة X من صفحة الإعدادات ⚙️.'); }
 
-  const urls = pageUrlsInput.value.split('\n').map(u => u.trim()).filter(Boolean);
-  if (!urls.length) return showFormError('⚠️ أدخل رابط صفحة فيسبوك واحدة على الأقل.');
-  const badUrl = urls.find(u => !/^https?:\/\/(www\.|m\.|web\.)?facebook\.com\//i.test(u));
-  if (badUrl) return showFormError(`⚠️ الرابط التالي ليس رابط فيسبوك صالحاً: ${badUrl}`);
+  const handles = usernamesInput.value.split('\n').map(parseHandle).filter(Boolean);
+  if (!handles.length) return showFormError('⚠️ أدخل اسم مستخدم واحد على الأقل على منصة X.');
+  const badHandle = handles.find(h => !/^[A-Za-z0-9_]{1,15}$/.test(h));
+  if (badHandle) return showFormError(`⚠️ اسم المستخدم التالي غير صالح: ${badHandle}`);
 
-  const limit = Math.max(1, Math.min(1000, parseInt(postsLimitInput.value, 10) || 20));
+  const limit = Math.max(1, Math.min(200, parseInt(tweetsLimitInput.value, 10) || 20));
   const from = dateFromInput.value, to = dateToInput.value;
   if (validDate(from) && validDate(to) && new Date(from) > new Date(to)) {
     return showFormError('⚠️ تاريخ البداية يجب أن يكون قبل تاريخ النهاية.');
   }
 
   const input = {
-    startUrls: urls.map(url => ({ url })),
-    resultsLimit: limit
+    startUrls: handles.map(h => `https://twitter.com/${h}`),
+    authTokens: xTokens,
+    maxTweetsPerUser: limit,
+    addUserInfo: true,
+    onlyUserInfo: false,
+    proxy: { useApifyProxy: true }
   };
-  if (validDate(from)) input.onlyPostsNewerThan = from;
-  if (validDate(to)) input.onlyPostsOlderThan = to;
 
   aborted = false;
   currentRunId = null;
@@ -342,13 +361,9 @@ async function startExtraction() {
   setStatus('جارٍ بدء عملية الاستخراج...', 'الاتصال بخوادم الاستخراج');
   statusPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-  // Hard cap enforced by the extraction platform itself: the run is stopped
-  // and never charges for more than maxItems dataset items, regardless of how
-  // many the scraper crawls. resultsLimit alone is only approximate.
-  const maxItems = limit * urls.length;
+  const maxItems = limit * handles.length;
 
   try {
-    // 1) Start the actor run
     const startRes = await fetch(`${API_BASE}/acts/${ACTOR_ID}/runs?token=${encodeURIComponent(token)}&maxItems=${maxItems}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -358,9 +373,8 @@ async function startExtraction() {
     const run = (await startRes.json()).data;
     currentRunId = run.id;
 
-    // 2) Poll until finished
     progressBar.style.width = '25%';
-    setStatus('جارٍ استخراج المنشورات...', 'قد تستغرق العملية عدة دقائق حسب حجم الطلب');
+    setStatus('جارٍ استخراج التغريدات...', 'قد تستغرق العملية عدة دقائق حسب حجم الطلب');
     let status = run.status, datasetId = run.defaultDatasetId, elapsed = 0;
     while (['READY', 'RUNNING'].includes(status)) {
       if (aborted) return;
@@ -375,31 +389,27 @@ async function startExtraction() {
       datasetId = d.defaultDatasetId;
     }
     if (aborted) return;
-    // When the maxItems billing cap is hit, the platform stops the run itself —
-    // that can surface as ABORTED even though results were collected normally.
     if (status !== 'SUCCEEDED' && status !== 'ABORTED') {
-      throw new Error(`انتهى التشغيل بحالة "${status}". تحقق من رصيدك أو من صحة الروابط.`);
+      throw new Error(`انتهى التشغيل بحالة "${status}". تحقق من رصيدك أو من صحة رموز الدخول.`);
     }
 
-    // 3) Fetch dataset items
     progressBar.style.width = '92%';
     setStatus('جارٍ تحميل النتائج...', 'قراءة البيانات المستخرجة');
     const itemsRes = await fetch(`${API_BASE}/datasets/${datasetId}/items?clean=true&format=json&token=${encodeURIComponent(token)}`);
     if (!itemsRes.ok) throw await apiError(itemsRes);
     const items = await itemsRes.json();
     if (status === 'ABORTED' && !items.length) {
-      throw new Error('توقف التشغيل قبل جمع أي نتائج. تحقق من رصيدك أو من صحة الروابط.');
+      throw new Error('توقف التشغيل قبل جمع أي نتائج. تحقق من رصيدك أو من صحة رموز الدخول.');
     }
 
     const scrapedCount = items.length;
-    allPosts = items.map(normalizePost).filter(p => p.text || p.url);
-    // Client-side date filter as a safety net on top of the actor's own filter
+    allPosts = items.map(normalizeTweet).filter(p => p.text || p.url);
     if (validDate(from)) {
       const f = new Date(from).getTime();
       allPosts = allPosts.filter(p => !p.ts || p.ts >= f);
     }
     if (validDate(to)) {
-      const t = new Date(to).getTime() + 86399999; // include the whole end day
+      const t = new Date(to).getTime() + 86399999;
       allPosts = allPosts.filter(p => !p.ts || p.ts <= t);
     }
 
@@ -408,14 +418,13 @@ async function startExtraction() {
     $('abortBtn').style.display = 'none';
     const hidden = scrapedCount - allPosts.length;
     setStatus(
-      `✅ اكتمل الاستخراج — ${allPosts.length} منشور`,
+      `✅ اكتمل الاستخراج — ${allPosts.length} تغريدة`,
       hidden > 0
-        ? `استُخرج ${scrapedCount} منشوراً، أُخفي ${hidden} منها لوقوعها خارج الفترة الزمنية المحددة`
+        ? `استُخرج ${scrapedCount} عنصراً، أُخفي ${hidden} منها لعدم احتوائه على نص/رابط أو لوقوعه خارج الفترة الزمنية`
         : 'يمكنك البحث والفرز والتصدير من الأسفل',
       true
     );
     renderResults();
-    // Auto-archive every extraction into the local database when connected
     saveToDb(allPosts, 'extract', true);
   } catch (err) {
     spinner.style.display = 'none';
@@ -448,31 +457,39 @@ function setStatus(main, sub, done) {
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 /* =============== Normalization =============== */
-function normalizePost(raw) {
-  const text = raw.text || raw.message || raw.postText || '';
-  const url = raw.url || raw.postUrl || raw.topLevelUrl || '';
-  const timeVal = raw.time || raw.date || raw.publishedTime || raw.timestamp || null;
+function normalizeTweet(raw) {
+  const isRetweet = !!raw.retweeted_status;
+  const source = isRetweet ? raw.retweeted_status : raw;
+  const user = source.user || raw.user || raw.author || {};
+  const text = source.full_text || source.text || raw.full_text || raw.text || '';
+  const screenName = user.screen_name || user.username || '';
+  const author = user.name || screenName || 'حساب X';
+  const idStr = source.id_str || String(source.id || raw.id_str || raw.id || '');
+  const url = screenName && idStr ? `https://x.com/${screenName}/status/${idStr}` : '';
   let ts = null;
-  if (typeof timeVal === 'number') ts = timeVal > 1e12 ? timeVal : timeVal * 1000;
-  else if (timeVal) { const d = new Date(timeVal); if (!isNaN(d)) ts = d.getTime(); }
-  const author = raw.user?.name || raw.pageName || raw.author || raw.user?.id || 'صفحة فيسبوك';
-  const avatar = raw.user?.profilePic || raw.pageProfilePic || '';
-  const mediaList = FBXMedia.extract(raw);
+  if (source.created_at) { const d = new Date(source.created_at); if (!isNaN(d)) ts = d.getTime(); }
+  const mediaRaw = source.extended_entities?.media || source.entities?.media || [];
+  const mediaList = mediaRaw.map(m => ({
+    type: m.type === 'photo' ? 'image' : 'video',
+    src: m.media_url_https || m.media_url || ''
+  })).filter(m => m.src);
   const firstImg = mediaList.find(m => m.type === 'image');
-  const media = firstImg ? firstImg.src : (mediaList[0]?.thumb || '');
+  const media = firstImg ? firstImg.src : (mediaList[0]?.src || '');
   const p = {
     text, url, ts,
     date: ts ? new Date(ts) : null,
-    author, avatar, media, mediaList,
-    likes: num(raw.likes ?? raw.likesCount ?? raw.reactions ?? raw.reactionsCount),
-    comments: num(raw.comments ?? raw.commentsCount),
-    shares: num(raw.shares ?? raw.sharesCount),
-    views: num(raw.viewsCount ?? raw.videoViewCount ?? raw.views ?? 0),
-    postId: raw.postId || raw.id || raw.post_id || '',
-    pageUrl: raw.pageUrl || raw.user?.profileUrl || '',
+    author, screenName, avatar: user.profile_image_url_https || user.profile_image_url || '',
+    media, mediaList, isRetweet,
+    retweetedFrom: isRetweet ? (raw.user?.screen_name || raw.user?.name || '') : '',
+    likes: num(source.favorite_count ?? source.favourite_count ?? source.like_count),
+    comments: num(source.reply_count ?? source.replies_count),
+    shares: num(source.retweet_count ?? source.retweets_count) + num(source.quote_count),
+    views: num(source.view_count ?? source.views_count ?? source.ext_views?.count ?? 0),
+    postId: idStr,
+    pageUrl: screenName ? `https://x.com/${screenName}` : '',
     raw
   };
-  p.analysis = FBXAnalyzer.analyze(p);   // تحليل وتصنيف فوري
+  p.analysis = FBXAnalyzer.analyze(p);
   return p;
 }
 function num(v) {
@@ -492,11 +509,10 @@ function renderResults() {
 function renderStats() {
   const total = allPosts.length;
   const likes = allPosts.reduce((s, p) => s + p.likes, 0);
-  const comments = allPosts.reduce((s, p) => s + p.comments, 0);
   const shares = allPosts.reduce((s, p) => s + p.shares, 0);
   const g = FBXAnalyzer.aggregate(allPosts.map(p => p.analysis));
   const cards = [
-    ['📝', 'إجمالي المنشورات', total],
+    ['📝', 'إجمالي التغريدات', total],
     ['🟢', 'إيجابي', g.positive],
     ['🔴', 'سلبي', g.negative],
     ['🚩', 'مرفوع العلم', g.flagged],
@@ -516,18 +532,27 @@ function renderStats() {
 function getVisiblePosts() {
   const q = searchInput.value.trim().toLowerCase();
   let posts = allPosts.filter(p =>
-    !q || p.text.toLowerCase().includes(q) || p.author.toLowerCase().includes(q)
+    !q || p.text.toLowerCase().includes(q) || p.author.toLowerCase().includes(q) || (p.screenName || '').toLowerCase().includes(q)
   );
   const sort = sortSelect.value;
   posts = posts.slice().sort((a, b) => {
     if (sort === 'newest') return (b.ts || 0) - (a.ts || 0);
     if (sort === 'oldest') return (a.ts || 0) - (b.ts || 0);
     if (sort === 'likes') return b.likes - a.likes;
-    if (sort === 'comments') return b.comments - a.comments;
     if (sort === 'shares') return b.shares - a.shares;
+    if (sort === 'comments') return b.comments - a.comments;
     return 0;
   });
   return posts;
+}
+
+function twMediaHtml(p) {
+  if (!p.mediaList.length) return '';
+  return `<div class="tw-media">${p.mediaList.slice(0, 4).map(m => `
+    <a href="${escapeAttr(m.src)}" target="_blank" rel="noopener">
+      <img src="${escapeAttr(m.src)}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'">
+      ${m.type === 'video' ? '<span class="vid-badge">🎬 فيديو</span>' : ''}
+    </a>`).join('')}</div>`;
 }
 
 function renderPosts() {
@@ -548,25 +573,26 @@ function renderPosts() {
         ${avatar}
         <div>
           <div class="post-author">${escapeHtml(p.author)}</div>
-          <div class="post-date">🕓 ${dateStr}</div>
+          <div class="post-date">@${escapeHtml(p.screenName)} · 🕓 ${dateStr}</div>
         </div>
       </div>
       <div class="post-body">
-        <div class="post-text ${longText ? 'clamped' : ''}" id="txt-${i}">${escapeHtml(p.text) || '<em style="color:var(--text-2)">— منشور بدون نص —</em>'}</div>
+        ${p.isRetweet ? `<span class="rt-tag">🔁 إعادة نشر من @${escapeHtml(p.retweetedFrom)}</span>` : ''}
+        <div class="post-text ${longText ? 'clamped' : ''}" id="txt-${i}">${escapeHtml(p.text) || '<em style="color:var(--text-2)">— تغريدة بدون نص —</em>'}</div>
         ${longText ? `<button class="read-more" data-target="txt-${i}">عرض المزيد ▾</button>` : ''}
-        ${FBXMedia.galleryHtml(p)}
+        ${twMediaHtml(p)}
         ${FBXAnalyzer.badges(p.analysis)}
         <button class="fbx-toggle" data-panel="pan-${i}">🧠 عرض التحليل الكامل ▾</button>
         <div id="pan-${i}" style="display:none">${FBXAnalyzer.panel(p.analysis)}</div>
       </div>
       <div class="post-foot">
         <div class="reactions">
-          <span>👍 ${fmtNum(p.likes)}</span>
+          <span>❤️ ${fmtNum(p.likes)}</span>
           <span>💬 ${fmtNum(p.comments)}</span>
           <span>🔁 ${fmtNum(p.shares)}</span>
           ${p.views ? `<span>👁️ ${fmtNum(p.views)}</span>` : ''}
         </div>
-        ${p.url ? `<a class="post-link" href="${escapeAttr(p.url)}" target="_blank" rel="noopener">فتح المنشور ↗</a>` : ''}
+        ${p.url ? `<a class="post-link" href="${escapeAttr(p.url)}" target="_blank" rel="noopener">فتح التغريدة ↗</a>` : ''}
       </div>
     </article>`;
   }).join('');
@@ -612,34 +638,30 @@ function setView(list) {
 /* =============== Export =============== */
 $('exportJsonBtn').onclick = () => {
   const posts = getVisiblePosts().map(p => p.raw);
-  download(JSON.stringify(posts, null, 2), 'facebook-posts.json', 'application/json');
+  download(JSON.stringify(posts, null, 2), 'x-tweets.json', 'application/json');
   showToast('⬇️ تم تنزيل ملف JSON');
 };
 $('exportExcelBtn').onclick = () => {
   const posts = getVisiblePosts();
   if (!posts.length) return showToast('لا نتائج للتصدير');
-  const n = FBXExcel.exportPosts('', posts);
-  showToast(`📊 تم تصدير ${n} منشوراً إلى Excel`);
+  const n = FBXExcel.exportPosts('تغريدات-X-' + new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') + '.xlsx', posts, 'تغريدات X');
+  showToast(`📊 تم تصدير ${n} تغريدة إلى Excel`);
 };
 $('exportCsvBtn').onclick = () => {
   const posts = getVisiblePosts();
-  const header = ['author', 'date', 'text', 'likes', 'comments', 'shares', 'url'];
+  const header = ['author', 'screen_name', 'date', 'text', 'likes', 'comments', 'shares', 'views', 'url'];
   const rows = posts.map(p => [
-    p.author, p.date ? p.date.toISOString() : '', p.text,
-    p.likes, p.comments, p.shares, p.url
+    p.author, p.screenName, p.date ? p.date.toISOString() : '', p.text,
+    p.likes, p.comments, p.shares, p.views, p.url
   ].map(csvCell).join(','));
-  // BOM so Excel opens Arabic text correctly
-  download('﻿' + [header.join(','), ...rows].join('\r\n'), 'facebook-posts.csv', 'text/csv;charset=utf-8');
+  download('﻿' + [header.join(','), ...rows].join('\r\n'), 'x-tweets.csv', 'text/csv;charset=utf-8');
   showToast('⬇️ تم تنزيل ملف CSV');
 };
+
 /* =============== Local database (configured in settings.html) =============== */
 const DB_URL_STORAGE = 'fbx_db_url';
 let dbUrl = (localStorage.getItem(DB_URL_STORAGE) || '').trim().replace(/\/+$/, '');
 let dbOnline = false;
-
-function postKey(p) {
-  return p.key || p.url || `${p.author}|${p.ts || ''}|${(p.text || '').slice(0, 80)}`;
-}
 
 async function dbCheck(silent) {
   if (!dbUrl) return;
@@ -663,7 +685,7 @@ async function saveToDb(posts, source, silent) {
     const payload = posts.map(p => {
       const a = p.analysis || FBXAnalyzer.analyze(p);
       return {
-        key: postKey(p), text: p.text, url: p.url, ts: p.ts,
+        key: p.url || `${p.screenName}|${p.ts || ''}|${(p.text || '').slice(0, 80)}`, text: p.text, url: p.url, ts: p.ts,
         author: p.author, avatar: p.avatar, media: p.media,
         likes: p.likes, comments: p.comments, shares: p.shares, source,
         sentiment: a.classification, emotion: a.subCategory, intent: a.levelLabel,
@@ -678,7 +700,7 @@ async function saveToDb(posts, source, silent) {
     });
     const d = await r.json();
     if (!d.ok) throw new Error(d.error || '');
-    showToast(`💾 حُفظ ${d.saved} منشور في قاعدة البيانات`);
+    showToast(`💾 حُفظ ${d.saved} تغريدة في قاعدة البيانات`);
   } catch (_) {
     dbOnline = false;
     if (!silent) showToast('⚠️ فشل الحفظ في قاعدة البيانات');

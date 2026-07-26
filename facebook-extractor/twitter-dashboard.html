@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>الرصد التلقائي والتحليل التفاعلي — الإعلام الرقمي</title>
+<title>الرصد التلقائي لتغريدات X (تويتر) — الإعلام الرقمي</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
@@ -60,7 +60,7 @@
   .chart-tooltip .tt-k { opacity: .8; font-size: .68rem; }
   svg text.num { direction: ltr; unicode-bidi: plaintext; }
 
-  /* ============ Classification summary (merged from monitor.html) ============ */
+  /* ============ Classification summary ============ */
   .asum-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 18px 0 4px; }
   .asum-card {
     border-radius: var(--radius); padding: 12px 13px; text-align: center;
@@ -74,6 +74,13 @@
   .asum-card.flag { background: linear-gradient(155deg, #dba342, #b57a1f); color: #2c1f10; }
   .asum-card.esc { background: linear-gradient(155deg, #8f1f1f, #5c1212); }
   .asum-card.sev { background: linear-gradient(155deg, var(--green-700), var(--green-950)); }
+
+  /* ============ Tweet cards ============ */
+  .rt-tag { font-size: .68rem; font-weight: 800; padding: 2px 9px; border-radius: 99px; background: rgba(219, 163, 66, .18); color: #a5750e; display: inline-block; margin-bottom: 8px; }
+  .tw-media { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; margin: 10px 0; }
+  .tw-media img { width: 100%; height: 100px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+  .tw-media a { display: block; position: relative; }
+  .tw-media .vid-badge { position: absolute; inset-inline-start: 6px; bottom: 6px; background: rgba(0,0,0,.6); color: #fff; font-size: .65rem; padding: 1px 6px; border-radius: 6px; }
 
   @media (max-width: 720px) {
     .control-band { padding: 14px 16px; }
@@ -94,9 +101,9 @@
     </a>
     <nav class="side-nav">
       <a href="index.html"><span class="ico">🔍</span><span class="label">استخراج فيسبوك</span></a>
-      <a href="dashboard.html" class="active"><span class="ico">📊</span><span class="label">رصد فيسبوك</span></a>
+      <a href="dashboard.html"><span class="ico">📊</span><span class="label">رصد فيسبوك</span></a>
       <a href="twitter.html"><span class="ico">𝕏</span><span class="label">استخراج X (تويتر)</span></a>
-      <a href="twitter-dashboard.html"><span class="ico">📡</span><span class="label">رصد X (تويتر)</span></a>
+      <a href="twitter-dashboard.html" class="active"><span class="ico">📡</span><span class="label">رصد X (تويتر)</span></a>
       <a href="settings.html"><span class="ico">⚙️</span><span class="label">الإعدادات</span></a>
     </nav>
     <div class="side-foot">
@@ -107,25 +114,33 @@
   <div class="main-col">
     <header class="page-header">
       <span class="hero-badge">📡 رصد تلقائي · تحليل وتصنيف · رسوم بيانية تفاعلية</span>
-      <h2>الرصد التلقائي <em>لمنصاتك الرسمية</em> على فيسبوك</h2>
-      <p>أضف صفحاتك الرسمية (واضبط مفتاحك من الإعدادات)، وسيستخرج الموقع منشوراً واحداً من كل صفحة تلقائياً كل نصف ساعة (قابلة للتعديل)، ثم يحلّله ويصنّفه فوراً ويعرض كامل بياناته — النص، الصور والفيديوهات، والتفاعلات والمشاهدات والمشاركات والتعليقات — إلى جانب رسوم بيانية تفاعلية وتصفية حية حسب المنصة والفترة والتصنيف.</p>
+      <h2>الرصد التلقائي <em>لتغريدات حساباتك</em> على X (تويتر)</h2>
+      <p>أضف حسابات X الرسمية (واضبط مفتاحك ورموز الدخول من الإعدادات)، وسيستخرج الموقع أحدث تغريدة (أو أكثر) من كل حساب تلقائياً كل دورة، ثم يحلّلها ويصنّفها فوراً ويعرض كامل بياناتها — النص، الصور والفيديو، والتفاعلات — إلى جانب رسوم بيانية تفاعلية وتصفية حية حسب الحساب والفترة والتصنيف.</p>
     </header>
 
     <main>
 
   <!-- Setup -->
   <section class="panel">
-    <div class="panel-title"><span class="num">1</span> الإعداد — المنصات</div>
+    <div class="panel-title"><span class="num">1</span> الإعداد — الحسابات المستهدَفة</div>
     <div class="row">
-      <input class="input" type="url" id="newPageUrl" placeholder="https://www.facebook.com/mypage" dir="ltr" style="flex:1 1 280px">
-      <button class="btn btn-primary btn-sm" id="addPageBtn">➕ إضافة منصة</button>
+      <input class="input" type="text" id="newAccount" placeholder="اسم المستخدم على X، مثال: bbcarabic" dir="ltr" style="flex:1 1 280px">
+      <button class="btn btn-primary btn-sm" id="addAccountBtn">➕ إضافة حساب</button>
     </div>
-    <div class="hint">أضف روابط صفحاتك الرسمية — تُحفظ في متصفحك وتُشارَك مع صفحة عرض القائمة.</div>
-    <div class="chips" id="platformChips"></div>
-    <div class="no-platforms" id="noPlatforms">لم تضف أي منصة بعد.</div>
+    <div class="hint">أضف حسابات X الرسمية التي تريد رصد تغريداتها — تُحفظ في متصفحك.</div>
+    <div class="chips" id="accountChips"></div>
+    <div class="no-platforms" id="noAccounts">لم تضف أي حساب بعد.</div>
 
-    <div class="hint" id="keyHint" style="display:none">⚠️ لم يُضبط مفتاح الاستخراج بعد — <a href="settings.html">اضبطه من صفحة الإعدادات ⚙️</a>.</div>
-    <div class="hint" style="margin-top:14px">💡 مفتاح الاستخراج وقاعدة البيانات يُضبطان من <a href="settings.html">صفحة الإعدادات ⚙️</a> ويُطبَّقان تلقائياً هنا.</div>
+    <div class="grid grid-4" style="margin-top:14px">
+      <div>
+        <label class="field-label" for="tweetsPerCycle">عدد التغريدات لكل دورة</label>
+        <input class="input" type="number" id="tweetsPerCycle" min="1" max="20" value="3">
+        <div class="hint">🛡️ سقف استخراج إلزامي لكل حساب في كل دورة</div>
+      </div>
+    </div>
+
+    <div class="hint" id="keyHint" style="display:none">⚠️ الإعداد غير مكتمل — <a href="settings.html">اضبط مفتاح الاستخراج ورموز الدخول لمنصة X من صفحة الإعدادات ⚙️</a>.</div>
+    <div class="hint" style="margin-top:14px">💡 مفتاح الاستخراج ورموز الدخول وقاعدة البيانات تُضبط من <a href="settings.html">صفحة الإعدادات ⚙️</a> وتُطبَّق تلقائياً هنا.</div>
   </section>
 
   <!-- Control band -->
@@ -133,7 +148,7 @@
     <div class="pulse-dot" id="pulseDot"></div>
     <div class="control-info">
       <h3 id="monitorTitle">الرصد متوقف</h3>
-      <p>يرصد <strong>منشوراً واحداً</strong> لكل منصة كل دورة · تحليل وتصنيف تلقائي · بسقف استخراج إلزامي</p>
+      <p>يرصد <strong>دفعة محدودة</strong> من تغريدات كل حساب كل دورة · تحليل وتصنيف تلقائي · بسقف استخراج إلزامي</p>
     </div>
     <select class="interval-select" id="intervalSelect" title="مدة الدورة">
       <option value="15">كل 15 دقيقة</option>
@@ -157,7 +172,7 @@
 
     <div class="filters">
       <div class="filter-group" id="platformFilter">
-        <span class="filter-label">المنصة:</span>
+        <span class="filter-label">الحساب:</span>
         <!-- pills injected -->
       </div>
       <div class="spacer"></div>
@@ -179,19 +194,19 @@
     <div class="charts-grid">
       <div class="chart-card">
         <h4>📈 نشاط النشر عبر الزمن</h4>
-        <div class="chart-sub">عدد المنشورات المرصودة يومياً</div>
+        <div class="chart-sub">عدد التغريدات المرصودة يومياً</div>
         <div class="chart-holder" id="timeHolder"></div>
       </div>
       <div class="chart-card">
-        <h4>🏆 التفاعل حسب المنصة</h4>
-        <div class="chart-sub">إجمالي (إعجابات + تعليقات + مشاركات)</div>
+        <h4>🏆 التفاعل حسب الحساب</h4>
+        <div class="chart-sub">إجمالي (إعجابات + ردود + إعادة نشر)</div>
         <div class="chart-holder" id="platHolder"></div>
       </div>
     </div>
 
     <div class="feed-head">
-      <h3>📰 المنشورات <span class="feed-count" id="feedCount">0</span></h3>
-      <div class="search-wrap"><input class="input" type="search" id="searchInput" placeholder="ابحث في المنشورات..."></div>
+      <h3>📰 التغريدات <span class="feed-count" id="feedCount">0</span></h3>
+      <div class="search-wrap"><input class="input" type="search" id="searchInput" placeholder="ابحث في التغريدات..."></div>
       <select class="input" id="sortSelect">
         <option value="newest">الأحدث أولاً</option>
         <option value="oldest">الأقدم أولاً</option>
@@ -203,42 +218,41 @@
       <button class="btn btn-danger-ghost btn-sm" id="clearBtn">🗑️ مسح السجل</button>
     </div>
     <div class="feed" id="feed"></div>
-    <div class="empty-state" id="feedEmpty" style="display:none"><div class="big">🔎</div><p>لا منشورات ضمن هذه التصفية</p></div>
+    <div class="empty-state" id="feedEmpty" style="display:none"><div class="big">🔎</div><p>لا تغريدات ضمن هذه التصفية</p></div>
   </section>
 
   <div class="empty-state" id="bootEmpty">
     <div class="big">📊</div>
-    <p>أضف منصاتك الرسمية (واضبط مفتاحك من الإعدادات ⚙️)، ثم اضغط «بدء الرصد» لتظهر لوحة التحليل التفاعلية هنا.</p>
+    <p>أضف حساباتك الرسمية (واضبط مفتاحك ورموز الدخول من الإعدادات ⚙️)، ثم اضغط «بدء الرصد» لتظهر لوحة التحليل التفاعلية هنا.</p>
   </div>
 
     </main>
 
-    <footer>الإعلام الرقمي — الرصد التلقائي والتحليل التفاعلي · صور وفيديو · تصدير Excel · الإصدار 4.0 🍃</footer>
+    <footer>الإعلام الرقمي — الرصد التلقائي لتغريدات X (تويتر) · صور وفيديو · تصدير Excel · الإصدار 4.1 🍃</footer>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 
 <script src="analyzer.js"></script>
-<script src="media.js"></script>
 <script src="xlsx-export.js"></script>
 <script>
 'use strict';
 FBXAnalyzer.injectStyles();
-FBXMedia.injectStyles();
 
 /* =============== Constants =============== */
-const ACTOR_ID = 'apify~facebook-posts-scraper';
+const ACTOR_ID = 'epctex~twitter-profile-scraper';
 const API_BASE = 'https://api.apify.com/v2';
 const KEY_STORAGE = 'fbx_apify_key';
+const X_TOKENS_STORAGE = 'fbx_x_auth_tokens';
 const THEME_STORAGE = 'fbx_theme';
-const PAGES_STORAGE = 'fbx_monitor_pages';
-const FEED_STORAGE = 'fbx_monitor_feed';
-const ON_STORAGE = 'fbx_monitor_on';
-const LAST_STORAGE = 'fbx_monitor_last';
-const INTERVAL_STORAGE = 'fbx_monitor_interval';
+const ACCOUNTS_STORAGE = 'fbx_x_tweet_monitor_accounts';
+const FEED_STORAGE = 'fbx_x_tweet_monitor_feed';
+const ON_STORAGE = 'fbx_x_tweet_monitor_on';
+const LAST_STORAGE = 'fbx_x_tweet_monitor_last';
+const INTERVAL_STORAGE = 'fbx_x_tweet_monitor_interval';
+const PER_CYCLE_STORAGE = 'fbx_x_tweet_monitor_per_cycle';
 const DB_URL_STORAGE = 'fbx_db_url';
 
-const POSTS_PER_PAGE = 1;
 const FEED_CAP = 800;
 
 const $ = id => document.getElementById(id);
@@ -259,24 +273,23 @@ $('themeBtn').onclick = () => {
 function showToast(msg) { toast.textContent = msg; toast.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => toast.classList.remove('show'), 2600); }
 
 /* =============== State =============== */
-let pages = load(PAGES_STORAGE, []);
+let accounts = load(ACCOUNTS_STORAGE, []);
 let feed = load(FEED_STORAGE, []);
 let monitorOn = localStorage.getItem(ON_STORAGE) === '1';
 let lastRunAt = parseInt(localStorage.getItem(LAST_STORAGE), 10) || 0;
 let intervalMin = parseInt(localStorage.getItem(INTERVAL_STORAGE), 10) || 30;
+let tweetsPerCycle = parseInt(localStorage.getItem(PER_CYCLE_STORAGE), 10) || 3;
 let cycleRunning = false;
 let freshKeys = new Set();
 
-let filterPlatform = 'all';   // author name or 'all'
-let filterRange = 30;         // days, 0 = all
-let filterClass = 'all';      // all | NEGATIVE | flagged | POSITIVE | NEUTRAL
+let filterAccount = 'all';
+let filterRange = 30;
+let filterClass = 'all';
 let searchQ = '';
 let sortMode = 'newest';
 
 function load(k, fb) { try { const v = JSON.parse(localStorage.getItem(k)); return Array.isArray(v) ? v : fb; } catch (_) { return fb; } }
 function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
-// حفظ السجل مع الاحتفاظ بكامل البيانات، ومعالجة تجاوز سعة التخزين
-// بإسقاط النسخة الخام التدريجية من الأقدم عند الحاجة فقط.
 function saveFeed() {
   try { localStorage.setItem(FEED_STORAGE, JSON.stringify(feed)); return; }
   catch (e) {
@@ -291,30 +304,43 @@ function saveFeed() {
   }
 }
 function getToken() { return (localStorage.getItem(KEY_STORAGE) || '').trim(); }
+function getXTokens() { try { const v = JSON.parse(localStorage.getItem(X_TOKENS_STORAGE)); return Array.isArray(v) ? v.filter(Boolean) : []; } catch (_) { return []; } }
 
-/* =============== API key (managed from settings.html) =============== */
+/* =============== API key & X tokens (managed from settings.html) =============== */
 function refreshKeyUi() {
-  $('keyHint').style.display = getToken() ? 'none' : 'block';
+  $('keyHint').style.display = (getToken() && getXTokens().length) ? 'none' : 'block';
 }
 
-/* =============== Platforms =============== */
-$('addPageBtn').onclick = addPage;
-$('newPageUrl').addEventListener('keydown', e => { if (e.key === 'Enter') addPage(); });
-function addPage() {
-  const url = $('newPageUrl').value.trim();
-  if (!url) return;
-  if (!/^https?:\/\/(www\.|m\.|web\.)?facebook\.com\//i.test(url)) return showToast('⚠️ أدخل رابط صفحة فيسبوك صالحاً');
-  if (pages.includes(url)) return showToast('هذه المنصة مضافة مسبقاً');
-  pages.push(url); save(PAGES_STORAGE, pages); $('newPageUrl').value = '';
-  renderChips(); showToast('✅ تمت إضافة المنصة');
+/* =============== Accounts =============== */
+$('addAccountBtn').onclick = addAccount;
+$('newAccount').addEventListener('keydown', e => { if (e.key === 'Enter') addAccount(); });
+function parseHandle(raw) {
+  let s = (raw || '').trim();
+  s = s.replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '');
+  s = s.replace(/^@/, '');
+  s = s.split(/[/?#]/)[0];
+  return s.trim();
 }
-function removePage(i) { pages.splice(i, 1); save(PAGES_STORAGE, pages); renderChips(); }
+function addAccount() {
+  const handle = parseHandle($('newAccount').value);
+  if (!handle) return;
+  if (!/^[A-Za-z0-9_]{1,15}$/.test(handle)) return showToast('⚠️ أدخل اسم مستخدم صالحاً على X');
+  if (accounts.includes(handle)) return showToast('هذا الحساب مضاف مسبقاً');
+  accounts.push(handle); save(ACCOUNTS_STORAGE, accounts); $('newAccount').value = '';
+  renderChips(); showToast('✅ تمت إضافة الحساب');
+}
+function removeAccount(i) { accounts.splice(i, 1); save(ACCOUNTS_STORAGE, accounts); renderChips(); }
 function renderChips() {
-  const box = $('platformChips');
-  box.innerHTML = pages.map((u, i) => `<span class="chip"><span class="chip-url" title="${esc(u)}">${esc(u.replace(/^https?:\/\/(www\.)?/, ''))}</span><button data-i="${i}" title="حذف">✕</button></span>`).join('');
-  box.querySelectorAll('button').forEach(b => b.onclick = () => removePage(+b.dataset.i));
-  $('noPlatforms').style.display = pages.length ? 'none' : 'block';
+  const box = $('accountChips');
+  box.innerHTML = accounts.map((u, i) => `<span class="chip"><span class="chip-url">@${esc(u)}</span><button data-i="${i}" title="حذف">✕</button></span>`).join('');
+  box.querySelectorAll('button').forEach(b => b.onclick = () => removeAccount(+b.dataset.i));
+  $('noAccounts').style.display = accounts.length ? 'none' : 'block';
 }
+$('tweetsPerCycle').value = tweetsPerCycle;
+$('tweetsPerCycle').addEventListener('change', () => {
+  tweetsPerCycle = Math.max(1, Math.min(20, parseInt($('tweetsPerCycle').value, 10) || 3));
+  localStorage.setItem(PER_CYCLE_STORAGE, String(tweetsPerCycle));
+});
 
 /* =============== Monitor engine =============== */
 $('intervalSelect').value = String(intervalMin);
@@ -325,8 +351,8 @@ $('toggleBtn').onclick = () => (monitorOn ? stopMonitor() : startMonitor());
 $('runNowBtn').onclick = () => runCycle(true);
 
 function startMonitor() {
-  if (!getToken()) { refreshKeyUi(); return showToast('⚠️ اضبط مفتاح الاستخراج من صفحة الإعدادات ⚙️'); }
-  if (!pages.length) return showToast('⚠️ أضف منصة واحدة على الأقل');
+  if (!getToken() || !getXTokens().length) { refreshKeyUi(); return showToast('⚠️ أكمل الإعداد من صفحة الإعدادات ⚙️'); }
+  if (!accounts.length) return showToast('⚠️ أضف حساباً واحداً على الأقل');
   monitorOn = true; localStorage.setItem(ON_STORAGE, '1'); refreshControlUi();
   if (Date.now() - lastRunAt >= intervalMs()) runCycle();
   showToast('📡 بدأ الرصد الدوري');
@@ -351,16 +377,25 @@ function tick() {
 async function runCycle(manual) {
   if (cycleRunning) return;
   const token = getToken();
-  if (!token) { refreshKeyUi(); return showToast('⚠️ اضبط مفتاح الاستخراج من صفحة الإعدادات ⚙️'); }
-  if (!pages.length) return showToast('⚠️ أضف منصة واحدة على الأقل');
+  const xTokens = getXTokens();
+  if (!token || !xTokens.length) { refreshKeyUi(); return showToast('⚠️ أكمل الإعداد من صفحة الإعدادات ⚙️'); }
+  if (!accounts.length) return showToast('⚠️ أضف حساباً واحداً على الأقل');
+
   cycleRunning = true;
   $('bandAlert').style.display = 'none';
   $('miniSpinner').style.display = 'block';
   $('countdown').textContent = '📡';
   $('miniStatus').textContent = manual ? 'رصد فوري قيد التنفيذ...' : 'دورة رصد قيد التنفيذ...';
   try {
-    const input = { startUrls: pages.map(url => ({ url })), resultsLimit: POSTS_PER_PAGE };
-    const maxItems = POSTS_PER_PAGE * pages.length;
+    const input = {
+      startUrls: accounts.map(h => `https://twitter.com/${h}`),
+      authTokens: xTokens,
+      maxTweetsPerUser: tweetsPerCycle,
+      addUserInfo: true,
+      onlyUserInfo: false,
+      proxy: { useApifyProxy: true }
+    };
+    const maxItems = tweetsPerCycle * accounts.length;
     const startRes = await fetch(`${API_BASE}/acts/${ACTOR_ID}/runs?token=${encodeURIComponent(token)}&maxItems=${maxItems}`, {
       method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input)
     });
@@ -373,7 +408,7 @@ async function runCycle(manual) {
       if (!st.ok) throw await apiError(st);
       const d = (await st.json()).data; status = d.status; datasetId = d.defaultDatasetId;
     }
-    if (status !== 'SUCCEEDED' && status !== 'ABORTED') throw new Error(`انتهى التشغيل بحالة "${status}". تحقق من الرصيد أو الروابط.`);
+    if (status !== 'SUCCEEDED' && status !== 'ABORTED') throw new Error(`انتهى التشغيل بحالة "${status}". تحقق من الرصيد أو رموز الدخول.`);
     const itemsRes = await fetch(`${API_BASE}/datasets/${datasetId}/items?clean=true&format=json&token=${encodeURIComponent(token)}`);
     if (!itemsRes.ok) throw await apiError(itemsRes);
     const items = await itemsRes.json();
@@ -382,9 +417,9 @@ async function runCycle(manual) {
     freshKeys = new Set();
     let added = 0;
     for (const raw of items) {
-      const p = normalizePost(raw);
+      const p = normalizeTweet(raw);
       if (!p.text && !p.url) continue;
-      if (existing.has(p.key)) continue;
+      if (!p.key || existing.has(p.key)) continue;
       existing.add(p.key); p.seenAt = Date.now();
       feed.push(p); freshKeys.add(p.key); added++;
     }
@@ -392,8 +427,8 @@ async function runCycle(manual) {
     if (feed.length > FEED_CAP) feed = feed.slice(0, FEED_CAP);
     saveFeed();
     lastRunAt = Date.now(); localStorage.setItem(LAST_STORAGE, String(lastRunAt));
-    $('miniStatus').textContent = `آخر رصد: ${new Date(lastRunAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })} · ` + (added ? `${added} منشور جديد ✨` : 'لا جديد');
-    if (added) { showToast(`✨ ${added} منشور جديد`); saveToDb(feed.filter(p => freshKeys.has(p.key)), 'monitor'); }
+    $('miniStatus').textContent = `آخر رصد: ${new Date(lastRunAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })} · ` + (added ? `${added} تغريدة جديدة ✨` : 'لا جديد');
+    if (added) { showToast(`✨ ${added} تغريدة جديدة`); saveToDb(feed.filter(p => freshKeys.has(p.key)), 'monitor'); }
     showDashboard();
     renderDashboard();
   } catch (err) {
@@ -414,26 +449,37 @@ async function apiError(res) {
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 /* =============== Normalization =============== */
-function normalizePost(raw) {
-  const text = raw.text || raw.message || raw.postText || raw.caption || '';
-  const url = raw.url || raw.postUrl || raw.topLevelUrl || raw.link || '';
-  const timeVal = raw.time || raw.date || raw.publishedTime || raw.timestamp || raw.publish_time || null;
+function normalizeTweet(raw) {
+  const isRetweet = !!raw.retweeted_status;
+  const source = isRetweet ? raw.retweeted_status : raw;
+  const user = source.user || raw.user || raw.author || {};
+  const text = source.full_text || source.text || raw.full_text || raw.text || '';
+  const screenName = user.screen_name || user.username || '';
+  const author = user.name || screenName || 'حساب X';
+  const idStr = source.id_str || String(source.id || raw.id_str || raw.id || '');
+  const url = screenName && idStr ? `https://x.com/${screenName}/status/${idStr}` : '';
   let ts = null;
-  if (typeof timeVal === 'number') ts = timeVal > 1e12 ? timeVal : timeVal * 1000;
-  else if (timeVal) { const d = new Date(timeVal); if (!isNaN(d)) ts = d.getTime(); }
-  const author = raw.user?.name || raw.pageName || raw.author || raw.user?.id || 'صفحة فيسبوك';
-  const avatar = raw.user?.profilePic || raw.pageProfilePic || raw.user?.profilePicture || '';
-  const key = url || `${author}|${ts || ''}|${text.slice(0, 80)}`;
-  const mediaList = FBXMedia.extract(raw);
+  if (source.created_at) { const d = new Date(source.created_at); if (!isNaN(d)) ts = d.getTime(); }
+  const mediaRaw = source.extended_entities?.media || source.entities?.media || [];
+  const mediaList = mediaRaw.map(m => ({
+    type: m.type === 'photo' ? 'image' : 'video',
+    src: m.media_url_https || m.media_url || ''
+  })).filter(m => m.src);
   const firstImg = mediaList.find(m => m.type === 'image');
-  const mediaBest = firstImg ? firstImg.src : (mediaList[0]?.thumb || '');
-  const p = { key, text, url, ts, author, avatar, media: mediaBest, mediaList,
-    likes: num(raw.likes ?? raw.likesCount ?? raw.reactions ?? raw.reactionsCount),
-    comments: num(raw.comments ?? raw.commentsCount), shares: num(raw.shares ?? raw.sharesCount),
-    views: num(raw.viewsCount ?? raw.videoViewCount ?? raw.views ?? 0),
-    postId: raw.postId || raw.id || raw.post_id || '',
-    pageName: raw.pageName || raw.user?.name || '',
-    pageUrl: raw.pageUrl || raw.user?.profileUrl || '', raw };
+  const media = firstImg ? firstImg.src : (mediaList[0]?.src || '');
+  const key = url || `${screenName}|${idStr}`;
+  const p = {
+    key, text, url, ts, author, screenName,
+    avatar: user.profile_image_url_https || user.profile_image_url || '',
+    media, mediaList, isRetweet,
+    retweetedFrom: isRetweet ? (raw.user?.screen_name || raw.user?.name || '') : '',
+    likes: num(source.favorite_count ?? source.favourite_count ?? source.like_count),
+    comments: num(source.reply_count ?? source.replies_count),
+    shares: num(source.retweet_count ?? source.retweets_count) + num(source.quote_count),
+    views: num(source.view_count ?? source.views_count ?? source.ext_views?.count ?? 0),
+    postId: idStr, pageUrl: screenName ? `https://x.com/${screenName}` : '',
+    raw
+  };
   p.analysis = FBXAnalyzer.analyze(p);
   return p;
 }
@@ -445,7 +491,7 @@ function engagement(p) { return (p.likes || 0) + (p.comments || 0) + (p.shares |
 function showDashboard() { $('dashboard').style.display = 'block'; $('bootEmpty').style.display = 'none'; }
 
 /* =============== Filtering =============== */
-function platformKey(p) { return p.author || 'غير معروف'; }
+function platformKey(p) { return p.screenName || p.author || 'غير معروف'; }
 function platformList() { return [...new Set(feed.map(platformKey))]; }
 function inRange(p) {
   if (!filterRange) return true;
@@ -460,7 +506,7 @@ function passesClass(p) {
 }
 function filteredPosts() {
   return feed.filter(p =>
-    (filterPlatform === 'all' || platformKey(p) === filterPlatform) &&
+    (filterAccount === 'all' || platformKey(p) === filterAccount) &&
     inRange(p) &&
     passesClass(p) &&
     (!searchQ || (p.text || '').toLowerCase().includes(searchQ) || platformKey(p).toLowerCase().includes(searchQ))
@@ -469,7 +515,7 @@ function filteredPosts() {
 
 /* =============== Render dashboard =============== */
 function renderDashboard() {
-  renderPlatformFilter();
+  renderAccountFilter();
   renderClassFilter();
   const posts = filteredPosts();
   renderClassSummary(posts);
@@ -479,18 +525,17 @@ function renderDashboard() {
   renderFeed(posts);
 }
 
-function renderPlatformFilter() {
+function renderAccountFilter() {
   const box = $('platformFilter');
   const plats = platformList();
-  const pills = ['<span class="filter-label">المنصة:</span>',
-    `<button class="pill ${filterPlatform === 'all' ? 'active' : ''}" data-plat="all">كل المنصات</button>`,
-    ...plats.map(pl => `<button class="pill ${filterPlatform === pl ? 'active' : ''}" data-plat="${esc(pl)}">${esc(pl)}</button>`)
+  const pills = ['<span class="filter-label">الحساب:</span>',
+    `<button class="pill ${filterAccount === 'all' ? 'active' : ''}" data-plat="all">كل الحسابات</button>`,
+    ...plats.map(pl => `<button class="pill ${filterAccount === pl ? 'active' : ''}" data-plat="${esc(pl)}">@${esc(pl)}</button>`)
   ];
   box.innerHTML = pills.join('');
-  box.querySelectorAll('.pill').forEach(b => b.onclick = () => { filterPlatform = b.dataset.plat; renderDashboard(); });
+  box.querySelectorAll('.pill').forEach(b => b.onclick = () => { filterAccount = b.dataset.plat; renderDashboard(); });
 }
 
-/* classification filter (merged from monitor.html) */
 function renderClassFilter() {
   const box = $('classFilter');
   const opts = [
@@ -503,7 +548,6 @@ function renderClassFilter() {
   box.querySelectorAll('.pill').forEach(b => b.onclick = () => { filterClass = b.dataset.cls; renderDashboard(); });
 }
 
-/* colorful classification summary cards (merged from monitor.html) */
 function renderClassSummary(posts) {
   const g = FBXAnalyzer.aggregate(posts.map(p => ensureAnalysis(p).analysis));
   $('asumGrid').innerHTML = [
@@ -520,16 +564,15 @@ function renderStats(posts) {
   const total = posts.length;
   const eng = posts.reduce((s, p) => s + engagement(p), 0);
   const avg = total ? Math.round(eng / total) : 0;
-  // most active platform within current range (ignores platform/class filter for this stat)
   const byPlat = {};
   feed.filter(inRange).forEach(p => { byPlat[platformKey(p)] = (byPlat[platformKey(p)] || 0) + 1; });
   let topPlat = '—', topN = 0;
   for (const [k, v] of Object.entries(byPlat)) if (v > topN) { topN = v; topPlat = k; }
   const lastStr = lastRunAt ? new Date(lastRunAt).toLocaleString('ar', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
   const tiles = [
-    ['📝', 'المنشورات', fmtNum(total), `منصات: ${platformList().length}`],
-    ['💫', 'إجمالي التفاعل', fmtNum(eng), `متوسط: ${fmtNum(avg)}/منشور`],
-    ['🏆', 'الأنشط', `<div class="v small">${esc(topPlat)}</div>`, `${fmtNum(topN)} منشور`, true],
+    ['📝', 'التغريدات', fmtNum(total), `حسابات: ${platformList().length}`],
+    ['💫', 'إجمالي التفاعل', fmtNum(eng), `متوسط: ${fmtNum(avg)}/تغريدة`],
+    ['🏆', 'الأنشط', `<div class="v small">@${esc(topPlat)}</div>`, `${fmtNum(topN)} تغريدة`, true],
     ['🕓', 'آخر رصد', `<div class="v small">${lastStr}</div>`, monitorOn ? 'الرصد نشط' : 'الرصد متوقف', true]
   ];
   $('statsGrid').innerHTML = tiles.map(([icon, label, val, sub, raw]) => `
@@ -543,7 +586,7 @@ function renderStats(posts) {
     </div>`).join('');
 }
 
-/* ---- time chart: posts per day (single-hue area + crosshair tooltip) ---- */
+/* ---- time chart: tweets per day ---- */
 function renderTimeChart(posts) {
   const holder = $('timeHolder');
   if (!posts.length) { holder.innerHTML = '<div class="chart-empty">لا بيانات ضمن هذه التصفية</div>'; return; }
@@ -570,7 +613,6 @@ function renderTimeChart(posts) {
   }
   const linePts = buckets.map((b, i) => `${x(i)},${y(b.n)}`).join(' ');
   const areaPts = `${x(0)},${y(0)} ${linePts} ${x(n - 1)},${y(0)}`;
-  // x labels: ~5 evenly spaced
   let xlabels = '';
   const step = Math.max(1, Math.round(n / 5));
   for (let i = 0; i < n; i += step) {
@@ -606,7 +648,7 @@ function renderTimeChart(posts) {
     tip.style.left = (cx / W * rect.width) + 'px';
     tip.style.top = (cy / H * rect.height) + 'px';
     tip.style.opacity = '1';
-    tip.innerHTML = `<div class="tt-v">${b.n} منشور</div><div class="tt-k">${b.d.toLocaleDateString('ar', { weekday: 'long', day: 'numeric', month: 'long' })}</div>`;
+    tip.innerHTML = `<div class="tt-v">${b.n} تغريدة</div><div class="tt-k">${b.d.toLocaleDateString('ar', { weekday: 'long', day: 'numeric', month: 'long' })}</div>`;
   }
   function leave() { tip.style.opacity = '0'; cross.setAttribute('opacity', '0'); dot.setAttribute('opacity', '0'); }
   hit.addEventListener('pointermove', move);
@@ -623,12 +665,11 @@ function renderPlatformChart() {
   let rows = Object.entries(map).map(([k, v]) => ({ k, eng: v.eng, n: v.n })).sort((a, b) => b.eng - a.eng).slice(0, 8);
   if (!rows.length) { holder.innerHTML = '<div class="chart-empty">لا بيانات ضمن هذه التصفية</div>'; return; }
 
-  // RTL layout: platform name on the right, bar grows leftward, value at the bar's left end.
   const W = 460, rowH = 40, padT = 8, padB = 8, padL = 10, padR = 12;
   const H = padT + padB + rows.length * rowH;
   const labelW = 118, valW = 42;
-  const trackRight = W - padR - labelW;     // bars live left of the labels
-  const trackLeft = padL + valW;            // reserve room for the value at the far left
+  const trackRight = W - padR - labelW;
+  const trackLeft = padL + valW;
   const barMax = trackRight - trackLeft;
   const maxE = Math.max(1, ...rows.map(r => r.eng));
 
@@ -636,17 +677,17 @@ function renderPlatformChart() {
   rows.forEach((r, i) => {
     const yy = padT + i * rowH, bh = 18, by = yy + (rowH - bh) / 2;
     const bw = Math.max(3, r.eng / maxE * barMax);
-    const bx = trackRight - bw;             // right-anchored bar
-    const active = filterPlatform === r.k;
+    const bx = trackRight - bw;
+    const active = filterAccount === r.k;
     bars += `<g class="pbar" data-k="${esc(r.k)}" style="cursor:pointer">
-      <text x="${W - padR}" y="${by + bh / 2 + 4}" text-anchor="end" font-size="12" font-weight="700" fill="var(--c-text)">${esc(clip(r.k, 14))}</text>
+      <text x="${W - padR}" y="${by + bh / 2 + 4}" text-anchor="end" font-size="12" font-weight="700" fill="var(--c-text)">@${esc(clip(r.k, 13))}</text>
       <rect x="${trackLeft}" y="${by}" width="${barMax}" height="${bh}" rx="9" fill="var(--c-grid)" opacity=".5"/>
       <rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="9" fill="var(--c-accent)" opacity="${active ? 1 : .85}"/>
       <text class="num" x="${bx - 6}" y="${by + bh / 2 + 4}" text-anchor="end" font-size="11.5" font-weight="700" fill="var(--c-text-2)">${fmtNum(r.eng)}</text>
       <rect x="${padL}" y="${yy}" width="${W - padL - padR}" height="${rowH}" fill="transparent"/>
     </g>`;
   });
-  holder.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="التفاعل حسب المنصة">${bars}</svg><div class="chart-tooltip" id="pbTip"></div>`;
+  holder.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="التفاعل حسب الحساب">${bars}</svg><div class="chart-tooltip" id="pbTip"></div>`;
   const tip = $('pbTip');
   holder.querySelectorAll('.pbar').forEach(g => {
     const r = rows.find(x => x.k === g.dataset.k);
@@ -655,10 +696,10 @@ function renderPlatformChart() {
       tip.style.left = (ev.clientX - rect.left) + 'px';
       tip.style.top = (ev.clientY - rect.top) + 'px';
       tip.style.opacity = '1';
-      tip.innerHTML = `<div class="tt-v">${fmtNum(r.eng)} تفاعل</div><div class="tt-k">${esc(r.k)} · ${r.n} منشور</div>`;
+      tip.innerHTML = `<div class="tt-v">${fmtNum(r.eng)} تفاعل</div><div class="tt-k">@${esc(r.k)} · ${r.n} تغريدة</div>`;
     });
     g.addEventListener('pointerleave', () => tip.style.opacity = '0');
-    g.addEventListener('click', () => { filterPlatform = filterPlatform === r.k ? 'all' : r.k; renderDashboard(); });
+    g.addEventListener('click', () => { filterAccount = filterAccount === r.k ? 'all' : r.k; renderDashboard(); });
   });
 }
 
@@ -668,6 +709,15 @@ function svgPoint(svg, ev) {
 }
 
 /* =============== Feed =============== */
+function twMediaHtml(p) {
+  if (!p.mediaList.length) return '';
+  return `<div class="tw-media">${p.mediaList.slice(0, 4).map(m => `
+    <a href="${esc(m.src)}" target="_blank" rel="noopener">
+      <img src="${esc(m.src)}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'">
+      ${m.type === 'video' ? '<span class="vid-badge">🎬 فيديو</span>' : ''}
+    </a>`).join('')}</div>`;
+}
+
 function renderFeed(posts) {
   let list = posts.slice();
   list.sort((a, b) => {
@@ -680,22 +730,24 @@ function renderFeed(posts) {
   $('feed').innerHTML = list.map((p, i) => {
     const a = ensureAnalysis(p).analysis;
     const dateStr = p.ts ? new Date(p.ts).toLocaleDateString('ar', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'تاريخ غير معروف';
-    const initial = esc((platformKey(p)).charAt(0));
+    const initial = esc((p.author || '?').charAt(0));
     const avatar = p.avatar ? `<img class="avatar" src="${esc(p.avatar)}" alt="" onerror="this.outerHTML='<div class=avatar>${initial}</div>'">` : `<div class="avatar">${initial}</div>`;
     const longText = (p.text || '').length > 260;
     const fresh = freshKeys.has(p.key);
     return `<article class="post-card ${fresh ? 'fresh' : ''}" style="animation-delay:${Math.min(i * 25, 300)}ms">
-      <div class="post-head">${avatar}<div><div class="post-author">${esc(platformKey(p))} ${fresh ? '<span class="badge-new">جديد</span>' : ''}</div><div class="post-date">🕓 ${dateStr}</div></div></div>
+      <div class="post-head">${avatar}<div><div class="post-author">${esc(p.author)} ${fresh ? '<span class="badge-new">جديد</span>' : ''}</div><div class="post-date">@${esc(p.screenName)} · 🕓 ${dateStr}</div></div></div>
       <div class="post-stats">
-        <span class="stat-pill">👍 ${fmtNum(p.likes)}</span>
+        <span class="stat-pill">❤️ ${fmtNum(p.likes)}</span>
         <span class="stat-pill">💬 ${fmtNum(p.comments)}</span>
         <span class="stat-pill">🔁 ${fmtNum(p.shares)}</span>
         <span class="stat-pill">👁️ ${fmtNum(p.views)}</span>
       </div>
-      <div class="post-body"><div class="post-text ${longText ? 'clamped' : ''}" id="dtxt-${i}">${esc(p.text) || '<em style="color:var(--text-2)">— منشور بدون نص —</em>'}</div>${longText ? `<button class="read-more" data-target="dtxt-${i}">عرض المزيد ▾</button>` : ''}
-      ${FBXMedia.galleryHtml(p)}
+      <div class="post-body">
+      ${p.isRetweet ? `<span class="rt-tag">🔁 إعادة نشر من @${esc(p.retweetedFrom)}</span>` : ''}
+      <div class="post-text ${longText ? 'clamped' : ''}" id="dtxt-${i}">${esc(p.text) || '<em style="color:var(--text-2)">— تغريدة بدون نص —</em>'}</div>${longText ? `<button class="read-more" data-target="dtxt-${i}">عرض المزيد ▾</button>` : ''}
+      ${twMediaHtml(p)}
       ${FBXAnalyzer.badges(a)}<button class="fbx-toggle" data-panel="dpan-${i}">🧠 عرض التحليل الكامل ▾</button><div id="dpan-${i}" style="display:none">${FBXAnalyzer.panel(a)}</div></div>
-      <div class="post-foot" style="justify-content:flex-end">${p.url ? `<a class="post-link" href="${esc(p.url)}" target="_blank" rel="noopener">فتح المنشور ↗</a>` : ''}</div>
+      <div class="post-foot" style="justify-content:flex-end">${p.url ? `<a class="post-link" href="${esc(p.url)}" target="_blank" rel="noopener">فتح التغريدة ↗</a>` : ''}</div>
     </article>`;
   }).join('');
   $('feed').querySelectorAll('.read-more').forEach(btn => btn.onclick = () => {
@@ -719,7 +771,7 @@ $('sortSelect').addEventListener('change', e => { sortMode = e.target.value; ren
 
 $('clearBtn').onclick = () => {
   if (!feed.length) return;
-  if (!confirm('سيتم مسح جميع المنشورات المرصودة من المتصفح. متابعة؟')) return;
+  if (!confirm('سيتم مسح جميع التغريدات المرصودة من المتصفح. متابعة؟')) return;
   feed = []; freshKeys = new Set(); saveFeed();
   $('dashboard').style.display = 'none'; $('bootEmpty').style.display = 'block';
   showToast('🗑️ تم مسح السجل');
@@ -728,14 +780,14 @@ $('exportExcelBtn').onclick = () => {
   const list = filteredPosts();
   if (!list.length) return showToast('لا بيانات للتصدير');
   list.forEach(ensureAnalysis);
-  const n = FBXExcel.exportPosts('', list);
-  showToast(`📊 تم تصدير ${n} منشوراً إلى Excel`);
+  const n = FBXExcel.exportPosts('رصد-تغريدات-X-' + new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') + '.xlsx', list, 'تغريدات X');
+  showToast(`📊 تم تصدير ${n} تغريدة إلى Excel`);
 };
 $('exportBtn').onclick = () => {
   const list = filteredPosts();
   if (!list.length) return showToast('لا بيانات للتصدير');
   const blob = new Blob([JSON.stringify(list, null, 2)], { type: 'application/json' });
-  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'dashboard-posts.json'; a.click();
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'x-dashboard-tweets.json'; a.click();
   setTimeout(() => URL.revokeObjectURL(a.href), 3000); showToast('⬇️ تم التصدير');
 };
 

@@ -20,12 +20,14 @@
       <div class="brand-logo">🍃</div>
       <div>
         <h1>الإعلام الرقمي</h1>
-        <p>استخراج وتحليل منشورات فيسبوك</p>
+        <p>استخراج وتحليل منشورات وحسابات</p>
       </div>
     </a>
     <nav class="side-nav">
-      <a href="index.html"><span class="ico">🔍</span><span class="label">الاستخراج اليدوي</span></a>
-      <a href="dashboard.html"><span class="ico">📊</span><span class="label">الرصد التلقائي</span></a>
+      <a href="index.html"><span class="ico">🔍</span><span class="label">استخراج فيسبوك</span></a>
+      <a href="dashboard.html"><span class="ico">📊</span><span class="label">رصد فيسبوك</span></a>
+      <a href="twitter.html"><span class="ico">𝕏</span><span class="label">استخراج X (تويتر)</span></a>
+      <a href="twitter-dashboard.html"><span class="ico">📡</span><span class="label">رصد X (تويتر)</span></a>
       <a href="settings.html" class="active"><span class="ico">⚙️</span><span class="label">الإعدادات</span></a>
     </nav>
     <div class="side-foot">
@@ -60,6 +62,22 @@
     <div class="status-line" id="keyStatus"></div>
   </section>
 
+  <!-- X (Twitter) auth tokens -->
+  <section class="panel">
+    <div class="panel-title"><span class="num">𝕏</span> رموز الدخول لمنصة X (تويتر)</div>
+    <div class="panel-sub">صفحتا استخراج ورصد X تحتاجان إلى رمز (أو أكثر) من جلسة تسجيل دخول حقيقية على X لقراءة التغريدات الفعلية من الحسابات. يُحفظ محلياً في متصفحك فقط ولا يُشارَك مع أي جهة أخرى. رمز واحد في كل سطر — يمكن إضافة أكثر من رمز لتوزيع الأحمال.</div>
+
+    <label class="field-label" for="xTokens">الرموز <small>(محفوظة محلياً في هذا المتصفح)</small></label>
+    <div class="input-wrap">
+      <textarea class="input" id="xTokens" placeholder="أدخل رمز الدخول (auth_token) هنا، رمز واحد في كل سطر" autocomplete="off" dir="ltr" style="min-height:80px"></textarea>
+    </div>
+    <div class="actions-row">
+      <button class="btn btn-primary btn-sm" id="saveXTokensBtn">💾 حفظ الرموز</button>
+      <button class="btn btn-danger-ghost btn-sm" id="clearXTokensBtn">🗑️ مسح الرموز</button>
+    </div>
+    <div class="status-line" id="xTokensStatus"></div>
+  </section>
+
   <!-- Local database -->
   <section class="panel">
     <div class="panel-title"><span class="num">🗄️</span> قاعدة البيانات المحلية <small style="font-weight:400;color:var(--text-2);font-size:.8rem">(اختياري)</small></div>
@@ -84,6 +102,7 @@
 <script>
 'use strict';
 const KEY_STORAGE = 'fbx_apify_key';
+const X_TOKENS_STORAGE = 'fbx_x_auth_tokens';
 const DB_URL_STORAGE = 'fbx_db_url';
 const THEME_STORAGE = 'fbx_theme';
 const API_BASE = 'https://api.apify.com/v2';
@@ -131,6 +150,24 @@ $('checkKeyBtn').onclick = async () => {
     setStatus($('keyStatus'), '⚠️ تعذّر فحص المفتاح (قد يكون بسبب الاتصال). حُفظ المفتاح على أي حال.', false);
     localStorage.setItem(KEY_STORAGE, v);
   }
+};
+
+/* ===== X (Twitter) auth tokens ===== */
+function loadXTokens() { try { const v = JSON.parse(localStorage.getItem(X_TOKENS_STORAGE)); return Array.isArray(v) ? v : []; } catch (_) { return []; } }
+const savedXTokens = loadXTokens();
+$('xTokens').value = savedXTokens.join('\n');
+if (savedXTokens.length) setStatus($('xTokensStatus'), `🟢 ${savedXTokens.length} رمز محفوظ في هذا المتصفح.`, true);
+$('saveXTokensBtn').onclick = () => {
+  const tokens = $('xTokens').value.split('\n').map(t => t.trim()).filter(Boolean);
+  if (!tokens.length) return showToast('أدخل رمزاً واحداً على الأقل');
+  localStorage.setItem(X_TOKENS_STORAGE, JSON.stringify(tokens));
+  setStatus($('xTokensStatus'), `✅ تم حفظ ${tokens.length} رمز. سيُستخدم في صفحتَي X (استخراج ورصد).`, true);
+  showToast('✅ تم حفظ رموز X');
+};
+$('clearXTokensBtn').onclick = () => {
+  localStorage.removeItem(X_TOKENS_STORAGE); $('xTokens').value = '';
+  setStatus($('xTokensStatus'), '🗑️ تم مسح الرموز.', false);
+  showToast('🗑️ تم مسح رموز X');
 };
 
 /* ===== Local database ===== */
