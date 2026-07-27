@@ -313,6 +313,27 @@ $('abortBtn').onclick = () => {
 
 function validDate(v) { return v && !isNaN(new Date(v).getTime()); }
 
+/* =============== Username → restId resolution =============== */
+// get-user-posts يتطلّب معرّف X الرقمي (restId) لا اسم المستخدم النصي.
+// نحلّه محلياً عبر نقطة X العامة غير الموثَّقة (بلا مصادقة، بلا تكلفة إضافية على Just One API) ونخزّنه مؤقتاً.
+const REST_ID_CACHE_STORAGE = 'fbx_x_restid_cache';
+function loadRestIdCache() { try { const v = JSON.parse(localStorage.getItem(REST_ID_CACHE_STORAGE)); return v && typeof v === 'object' ? v : {}; } catch (_) { return {}; } }
+function saveRestIdCache(c) { try { localStorage.setItem(REST_ID_CACHE_STORAGE, JSON.stringify(c)); } catch (_) {} }
+async function resolveRestId(handle) {
+  const cache = loadRestIdCache();
+  if (cache[handle]) return cache[handle];
+  try {
+    const res = await fetch(`https://cdn.syndication.twimg.com/widgets/followbutton/info.json?screen_names=${encodeURIComponent(handle)}`, { signal: AbortSignal.timeout(8000) });
+    if (!res.ok) return null;
+    const arr = await res.json();
+    const id = arr && arr[0] && (arr[0].id || arr[0].id_str);
+    if (!id) return null;
+    cache[handle] = String(id);
+    saveRestIdCache(cache);
+    return cache[handle];
+  } catch (_) { return null; }
+}
+
 async function startExtraction() {
   formError.style.display = 'none';
   runError.style.display = 'none';
@@ -346,10 +367,13 @@ async function startExtraction() {
     for (let i = 0; i < handles.length; i++) {
       if (aborted) break;
       const handle = handles[i];
-      setStatus(`جارٍ استخراج تغريدات @${handle}... (${i + 1}/${handles.length})`, 'الاتصال بخدمة Just One API');
+      setStatus(`جارٍ تحديد هوية @${handle}... (${i + 1}/${handles.length})`, 'الاتصال بخدمة Just One API');
       progressBar.style.width = Math.round((i / handles.length) * 90 + 5) + '%';
       try {
-        const qs = new URLSearchParams({ token, username: handle, count: String(limit) });
+        const restId = await resolveRestId(handle);
+        if (!restId) throw new Error(`تعذّر تحديد معرّف الحساب @${handle} — تحقّق من صحة اسم المستخدم`);
+        setStatus(`جارٍ استخراج تغريدات @${handle}... (${i + 1}/${handles.length})`, 'الاتصال بخدمة Just One API');
+        const qs = new URLSearchParams({ token, restId, username: handle, screen_name: handle, count: String(limit) });
         const res = await fetch(`${JOA_BASE}${JOA_ENDPOINT}?${qs.toString()}`, { signal: AbortSignal.timeout(20000) });
         if (!res.ok) throw await joaError(res, handle);
         const data = await res.json();
