@@ -374,23 +374,44 @@ function tick() {
 
 /* =============== Username → restId resolution =============== */
 // get-user-posts يتطلّب معرّف X الرقمي (restId) لا اسم المستخدم النصي.
-// نحلّه محلياً عبر نقطة X العامة غير الموثَّقة (بلا مصادقة، بلا تكلفة إضافية على Just One API) ونخزّنه مؤقتاً.
+// المحاولة 1: نقطة معلومات المستخدم ضمن Just One API نفسها (بنفس نمط تسمية get-user-posts) —
+// الأرجح لإرجاع الصيغة الصحيحة تماماً لما تتوقعه get-user-posts.
+// المحاولة 2 (احتياط): نقطة X العامة غير الموثَّقة لزر المتابعة (بلا مصادقة، بلا تكلفة).
+// تُخزَّن النتيجة محلياً لكل اسم مستخدم لتفادي إعادة البحث في كل مرة.
 const REST_ID_CACHE_STORAGE = 'fbx_x_restid_cache';
 function loadRestIdCache() { try { const v = JSON.parse(localStorage.getItem(REST_ID_CACHE_STORAGE)); return v && typeof v === 'object' ? v : {}; } catch (_) { return {}; } }
 function saveRestIdCache(c) { try { localStorage.setItem(REST_ID_CACHE_STORAGE, JSON.stringify(c)); } catch (_) {} }
-async function resolveRestId(handle) {
+function pickId(obj) {
+  if (!obj) return null;
+  const d = obj.data ?? obj;
+  const id = d?.rest_id ?? d?.restId ?? d?.id ?? d?.id_str ?? d?.user_id ?? d?.uid;
+  return id ? String(id) : null;
+}
+async function resolveRestId(handle, token) {
   const cache = loadRestIdCache();
   if (cache[handle]) return cache[handle];
+
+  for (const path of ['/api/twitter/get-user-info/v1', '/api/twitter/user-info/v1', '/api/twitter/get-user/v1']) {
+    try {
+      const qs = new URLSearchParams({ token, username: handle, screen_name: handle });
+      const res = await fetch(`${JOA_BASE}${path}?${qs.toString()}`, { signal: AbortSignal.timeout(8000) });
+      if (res.ok) {
+        const id = pickId(await res.json());
+        if (id) { cache[handle] = id; saveRestIdCache(cache); return id; }
+      }
+    } catch (_) {}
+  }
+
   try {
     const res = await fetch(`https://cdn.syndication.twimg.com/widgets/followbutton/info.json?screen_names=${encodeURIComponent(handle)}`, { signal: AbortSignal.timeout(8000) });
-    if (!res.ok) return null;
-    const arr = await res.json();
-    const id = arr && arr[0] && (arr[0].id || arr[0].id_str);
-    if (!id) return null;
-    cache[handle] = String(id);
-    saveRestIdCache(cache);
-    return cache[handle];
-  } catch (_) { return null; }
+    if (res.ok) {
+      const arr = await res.json();
+      const id = arr && arr[0] && (arr[0].id || arr[0].id_str);
+      if (id) { cache[handle] = String(id); saveRestIdCache(cache); return cache[handle]; }
+    }
+  } catch (_) {}
+
+  return null;
 }
 
 async function runCycle(manual) {
@@ -413,7 +434,7 @@ async function runCycle(manual) {
       const handle = accounts[i];
       $('miniStatus').textContent = `جارٍ تحديد هوية @${handle}... (${i + 1}/${accounts.length})`;
       try {
-        const restId = await resolveRestId(handle);
+        const restId = await resolveRestId(handle, token);
         if (!restId) throw new Error(`تعذّر تحديد معرّف الحساب @${handle}`);
         $('miniStatus').textContent = `جارٍ رصد @${handle}... (${i + 1}/${accounts.length})`;
         const qs = new URLSearchParams({ token, restId, username: handle, screen_name: handle, count: String(tweetsPerCycle) });
