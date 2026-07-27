@@ -103,7 +103,7 @@
     <header class="page-header">
       <span class="hero-badge">✦ استخراج · تحليل · تصنيف</span>
       <h2>استخرج تغريدات أي حساب <em>على X (تويتر)</em> بضغطة زر</h2>
-      <p>اضبط مفتاحك ورموز الدخول من صفحة الإعدادات مرة واحدة، أدخل أسماء المستخدمين وعدد التغريدات المطلوب لكل حساب، واحصل على النتائج محلَّلة ومصنَّفة بنفس محرك التحليل المستخدم لمنشورات فيسبوك، مع التصدير إلى Excel أو JSON أو CSV.</p>
+      <p>اضبط مفتاح Just One API من صفحة الإعدادات مرة واحدة، أدخل أسماء المستخدمين وعدد التغريدات المطلوب لكل حساب، واحصل على النتائج محلَّلة ومصنَّفة بنفس محرك التحليل المستخدم لمنشورات فيسبوك، مع التصدير إلى Excel أو JSON أو CSV.</p>
       <button class="hero-cta" id="heroCta">ابدأ الاستخراج الآن ↓</button>
     </header>
 
@@ -114,7 +114,7 @@
     <div class="feature">
       <div class="feature-icon">🔑</div>
       <h3>إعداد موحّد</h3>
-      <p>مفتاح الاستخراج ورموز الدخول لمنصة X يُضبطان مرة واحدة من الإعدادات ويُستخدمان هنا تلقائياً</p>
+      <p>مفتاح Just One API يُضبط مرة واحدة من الإعدادات ويُستخدم هنا تلقائياً — بلا حاجة لأي رموز دخول شخصية</p>
     </div>
     <div class="feature">
       <div class="feature-icon">🐦</div>
@@ -136,7 +136,7 @@
   <!-- Setup notice -->
   <section class="panel" id="setupPanel" style="display:none">
     <div class="panel-title"><span class="num">⚠️</span> الإعداد غير مكتمل بعد</div>
-    <div class="hint" style="font-size:.9rem" id="setupMsg">اذهب إلى <a href="settings.html" style="color:var(--green-700);font-weight:900">⚙️ صفحة الإعدادات</a> واضبط مفتاح الاستخراج ورموز الدخول لمنصة X، ثم عُد إلى هنا للبدء.</div>
+    <div class="hint" style="font-size:.9rem" id="setupMsg">اذهب إلى <a href="settings.html" style="color:var(--green-700);font-weight:900">⚙️ صفحة الإعدادات</a> واضبط مفتاح Just One API، ثم عُد إلى هنا للبدء.</div>
     <div class="actions-row"><a class="btn btn-ghost btn-sm" href="settings.html">⚙️ فتح الإعدادات</a></div>
   </section>
 
@@ -233,10 +233,9 @@
 FBXAnalyzer.injectStyles();
 
 /* =============== Constants =============== */
-const ACTOR_ID = 'epctex~twitter-profile-scraper';
-const API_BASE = 'https://api.apify.com/v2';
-const KEY_STORAGE = 'fbx_apify_key';
-const X_TOKENS_STORAGE = 'fbx_x_auth_tokens';
+const JOA_BASE = 'https://api.justoneapi.com';
+const JOA_ENDPOINT = '/api/twitter/get-user-posts/v1';
+const JOA_KEY_STORAGE = 'fbx_joa_key';
 const THEME_STORAGE = 'fbx_theme';
 
 /* =============== Elements =============== */
@@ -252,7 +251,6 @@ const usernamesInput = $('usernames'),
 
 let allPosts = [];
 let aborted = false;
-let currentRunId = null;
 
 /* =============== Theme =============== */
 function applyTheme(t) {
@@ -268,14 +266,10 @@ $('themeBtn').onclick = () => {
 
 $('heroCta').onclick = () => document.querySelector('main .panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
-/* =============== API key & X auth tokens (managed from settings.html) =============== */
-function getToken() { return (localStorage.getItem(KEY_STORAGE) || '').trim(); }
-function getXTokens() { try { const v = JSON.parse(localStorage.getItem(X_TOKENS_STORAGE)); return Array.isArray(v) ? v.filter(Boolean) : []; } catch (_) { return []; } }
+/* =============== API key (managed from settings.html) =============== */
+function getJoaKey() { return (localStorage.getItem(JOA_KEY_STORAGE) || '').trim(); }
 function refreshSetupNotice() {
-  const hasKey = !!getToken(), hasXTokens = getXTokens().length > 0;
-  $('setupPanel').style.display = (hasKey && hasXTokens) ? 'none' : 'block';
-  if (!hasKey) $('setupMsg').innerHTML = 'اذهب إلى <a href="settings.html" style="color:var(--green-700);font-weight:900">⚙️ صفحة الإعدادات</a> واضبط مفتاح الاستخراج، ثم عُد إلى هنا للبدء.';
-  else if (!hasXTokens) $('setupMsg').innerHTML = 'اذهب إلى <a href="settings.html" style="color:var(--green-700);font-weight:900">⚙️ صفحة الإعدادات</a> واضبط رموز الدخول لمنصة X، ثم عُد إلى هنا للبدء.';
+  $('setupPanel').style.display = getJoaKey() ? 'none' : 'block';
 }
 
 function showToast(msg) {
@@ -310,14 +304,11 @@ function parseHandle(raw) {
 
 /* =============== Run flow =============== */
 runBtn.onclick = startExtraction;
-$('abortBtn').onclick = async () => {
+$('abortBtn').onclick = () => {
   aborted = true;
-  if (currentRunId) {
-    try {
-      await fetch(`${API_BASE}/actor-runs/${currentRunId}/abort?token=${encodeURIComponent(getToken())}`, { method: 'POST' });
-    } catch (_) {}
-  }
   setStatus('تم إيقاف العملية', 'يمكنك بدء عملية جديدة في أي وقت', true);
+  runBtn.disabled = false;
+  $('abortBtn').style.display = 'none';
 };
 
 function validDate(v) { return v && !isNaN(new Date(v).getTime()); }
@@ -326,9 +317,8 @@ async function startExtraction() {
   formError.style.display = 'none';
   runError.style.display = 'none';
 
-  const token = getToken();
-  const xTokens = getXTokens();
-  if (!token || !xTokens.length) { refreshSetupNotice(); return showFormError('⚠️ الإعداد غير مكتمل — اضبط مفتاح الاستخراج ورموز الدخول لمنصة X من صفحة الإعدادات ⚙️.'); }
+  const token = getJoaKey();
+  if (!token) { refreshSetupNotice(); return showFormError('⚠️ لم يُضبط مفتاح Just One API بعد — اضبطه من صفحة الإعدادات ⚙️.'); }
 
   const handles = usernamesInput.value.split('\n').map(parseHandle).filter(Boolean);
   if (!handles.length) return showFormError('⚠️ أدخل اسم مستخدم واحد على الأقل على منصة X.');
@@ -341,69 +331,44 @@ async function startExtraction() {
     return showFormError('⚠️ تاريخ البداية يجب أن يكون قبل تاريخ النهاية.');
   }
 
-  const input = {
-    startUrls: handles.map(h => `https://twitter.com/${h}`),
-    authTokens: xTokens,
-    maxTweetsPerUser: limit,
-    addUserInfo: true,
-    onlyUserInfo: false,
-    proxy: { useApifyProxy: true }
-  };
-
   aborted = false;
-  currentRunId = null;
   runBtn.disabled = true;
   statusPanel.style.display = 'block';
   resultsSection.style.display = 'none';
   spinner.style.display = 'block';
   $('abortBtn').style.display = 'inline-flex';
-  progressBar.style.width = '10%';
-  setStatus('جارٍ بدء عملية الاستخراج...', 'الاتصال بخوادم الاستخراج');
+  progressBar.style.width = '5%';
   statusPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-  const maxItems = limit * handles.length;
-
+  const collected = [];
+  const errors = [];
   try {
-    const startRes = await fetch(`${API_BASE}/acts/${ACTOR_ID}/runs?token=${encodeURIComponent(token)}&maxItems=${maxItems}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input)
-    });
-    if (!startRes.ok) throw await apiError(startRes);
-    const run = (await startRes.json()).data;
-    currentRunId = run.id;
-
-    progressBar.style.width = '25%';
-    setStatus('جارٍ استخراج التغريدات...', 'قد تستغرق العملية عدة دقائق حسب حجم الطلب');
-    let status = run.status, datasetId = run.defaultDatasetId, elapsed = 0;
-    while (['READY', 'RUNNING'].includes(status)) {
-      if (aborted) return;
-      await sleep(4000);
-      elapsed += 4;
-      progressBar.style.width = Math.min(85, 25 + elapsed * 1.2) + '%';
-      statusSub.textContent = `مضى ${elapsed} ثانية · الحالة: قيد التشغيل`;
-      const st = await fetch(`${API_BASE}/actor-runs/${currentRunId}?token=${encodeURIComponent(token)}`);
-      if (!st.ok) throw await apiError(st);
-      const d = (await st.json()).data;
-      status = d.status;
-      datasetId = d.defaultDatasetId;
+    for (let i = 0; i < handles.length; i++) {
+      if (aborted) break;
+      const handle = handles[i];
+      setStatus(`جارٍ استخراج تغريدات @${handle}... (${i + 1}/${handles.length})`, 'الاتصال بخدمة Just One API');
+      progressBar.style.width = Math.round((i / handles.length) * 90 + 5) + '%';
+      try {
+        const qs = new URLSearchParams({ token, username: handle, count: String(limit) });
+        const res = await fetch(`${JOA_BASE}${JOA_ENDPOINT}?${qs.toString()}`, { signal: AbortSignal.timeout(20000) });
+        if (!res.ok) throw await joaError(res, handle);
+        const data = await res.json();
+        const items = extractJoaItems(data);
+        if (!items) throw joaLogicalError(data, handle);
+        collected.push(...items.map(raw => normalizeTweet(raw, handle)));
+      } catch (err) {
+        errors.push(err.message || String(err));
+      }
     }
-    if (aborted) return;
-    if (status !== 'SUCCEEDED' && status !== 'ABORTED') {
-      throw new Error(`انتهى التشغيل بحالة "${status}". تحقق من رصيدك أو من صحة رموز الدخول.`);
+    if (aborted) {
+      spinner.style.display = 'none';
+      $('abortBtn').style.display = 'none';
+      setStatus('⏹️ تم إيقاف العملية', `تم استخراج ${collected.length} تغريدة قبل الإيقاف`, true);
+      return;
     }
 
-    progressBar.style.width = '92%';
-    setStatus('جارٍ تحميل النتائج...', 'قراءة البيانات المستخرجة');
-    const itemsRes = await fetch(`${API_BASE}/datasets/${datasetId}/items?clean=true&format=json&token=${encodeURIComponent(token)}`);
-    if (!itemsRes.ok) throw await apiError(itemsRes);
-    const items = await itemsRes.json();
-    if (status === 'ABORTED' && !items.length) {
-      throw new Error('توقف التشغيل قبل جمع أي نتائج. تحقق من رصيدك أو من صحة رموز الدخول.');
-    }
-
-    const scrapedCount = items.length;
-    allPosts = items.map(normalizeTweet).filter(p => p.text || p.url);
+    const scrapedCount = collected.length;
+    allPosts = collected.filter(p => p.text || p.url);
     if (validDate(from)) {
       const f = new Date(from).getTime();
       allPosts = allPosts.filter(p => !p.ts || p.ts >= f);
@@ -424,8 +389,14 @@ async function startExtraction() {
         : 'يمكنك البحث والفرز والتصدير من الأسفل',
       true
     );
-    renderResults();
-    saveToDb(allPosts, 'extract', true);
+    if (errors.length) {
+      runError.textContent = errors.join(' · ');
+      runError.style.display = 'block';
+    }
+    if (allPosts.length) {
+      renderResults();
+      saveToDb(allPosts, 'extract', true);
+    }
   } catch (err) {
     spinner.style.display = 'none';
     $('abortBtn').style.display = 'none';
@@ -437,14 +408,23 @@ async function startExtraction() {
   }
 }
 
-async function apiError(res) {
-  let msg = `خطأ من خدمة الاستخراج (HTTP ${res.status})`;
-  try {
-    const body = await res.json();
-    if (body?.error?.message) msg += `: ${body.error.message}`;
-  } catch (_) {}
-  if (res.status === 401) msg = '🔑 مفتاح الاستخراج غير صحيح أو منتهي. تحقق منه في صفحة الإعدادات ⚙️.';
-  if (res.status === 402) msg = '💳 رصيد حساب الاستخراج غير كافٍ لتشغيل هذه العملية.';
+// شكل غلاف الاستجابة غير مؤكَّد رسمياً، فتُغطّى عدة احتمالات شائعة لأدوات هذه الفئة
+function extractJoaItems(data) {
+  if (Array.isArray(data)) return data;
+  const d = data?.data ?? data;
+  if (Array.isArray(d)) return d;
+  const list = d?.list || d?.posts || d?.tweets || d?.items || d?.results;
+  return Array.isArray(list) ? list : null;
+}
+function joaLogicalError(data, handle) {
+  const msg = data?.msg || data?.message || data?.error || `تعذّر قراءة استجابة الحساب @${handle}`;
+  return new Error(msg);
+}
+async function joaError(res, handle) {
+  let msg = `خطأ من Just One API عند استخراج @${handle} (HTTP ${res.status})`;
+  try { const b = await res.json(); if (b?.msg || b?.message) msg += `: ${b.msg || b.message}`; } catch (_) {}
+  if (res.status === 401 || res.status === 403) msg = '🔑 مفتاح Just One API غير صحيح أو منتهي. تحقق منه في صفحة الإعدادات ⚙️.';
+  if (res.status === 429) msg = '⏳ تجاوزتَ حد الطلبات المسموح — أعد المحاولة بعد قليل.';
   return new Error(msg);
 }
 
@@ -454,37 +434,38 @@ function setStatus(main, sub, done) {
   if (done) spinner.style.display = 'none';
 }
 
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
 /* =============== Normalization =============== */
-function normalizeTweet(raw) {
-  const isRetweet = !!raw.retweeted_status;
-  const source = isRetweet ? raw.retweeted_status : raw;
-  const user = source.user || raw.user || raw.author || {};
-  const text = source.full_text || source.text || raw.full_text || raw.text || '';
-  const screenName = user.screen_name || user.username || '';
-  const author = user.name || screenName || 'حساب X';
-  const idStr = source.id_str || String(source.id || raw.id_str || raw.id || '');
-  const url = screenName && idStr ? `https://x.com/${screenName}/status/${idStr}` : '';
+// خرائط حقول دفاعية: مخطط مخرجات الأداة غير مؤكَّد رسمياً، فتُغطّى عدة تسميات شائعة معاً
+function normalizeTweet(raw, targetHandle) {
+  const isRetweet = !!(raw.retweeted_status || raw.retweeted_tweet || raw.isRetweet);
+  const source = raw.retweeted_status || raw.retweeted_tweet || raw;
+  const user = source.user || source.author || raw.user || raw.author || {};
+  const text = source.full_text || source.fullText || source.text || source.content || '';
+  const screenName = user.screen_name || user.username || user.screenName || raw.username || raw.authorUsername || targetHandle || '';
+  const author = user.name || user.fullName || user.displayName || screenName || 'حساب X';
+  const idStr = String(source.id_str || source.id || source.tweetId || raw.id_str || raw.id || raw.tweetId || '');
+  const url = source.url || source.tweetUrl || raw.url || raw.tweetUrl || (screenName && idStr ? `https://x.com/${screenName}/status/${idStr}` : '');
+  const createdRaw = source.created_at || source.createdAt || source.date || source.timestamp;
   let ts = null;
-  if (source.created_at) { const d = new Date(source.created_at); if (!isNaN(d)) ts = d.getTime(); }
-  const mediaRaw = source.extended_entities?.media || source.entities?.media || [];
+  if (createdRaw) { const d = new Date(createdRaw); if (!isNaN(d)) ts = d.getTime(); }
+  const mediaRaw = source.extended_entities?.media || source.entities?.media || source.media || [];
   const mediaList = mediaRaw.map(m => ({
-    type: m.type === 'photo' ? 'image' : 'video',
-    src: m.media_url_https || m.media_url || ''
+    type: (m.type === 'photo' || m.type === 'image') ? 'image' : 'video',
+    src: m.media_url_https || m.media_url || m.url || m.thumbnailUrl || ''
   })).filter(m => m.src);
   const firstImg = mediaList.find(m => m.type === 'image');
   const media = firstImg ? firstImg.src : (mediaList[0]?.src || '');
   const p = {
     text, url, ts,
     date: ts ? new Date(ts) : null,
-    author, screenName, avatar: user.profile_image_url_https || user.profile_image_url || '',
+    author, screenName,
+    avatar: user.profile_image_url_https || user.profile_image_url || user.profilePicture || user.avatar || '',
     media, mediaList, isRetweet,
-    retweetedFrom: isRetweet ? (raw.user?.screen_name || raw.user?.name || '') : '',
-    likes: num(source.favorite_count ?? source.favourite_count ?? source.like_count),
-    comments: num(source.reply_count ?? source.replies_count),
-    shares: num(source.retweet_count ?? source.retweets_count) + num(source.quote_count),
-    views: num(source.view_count ?? source.views_count ?? source.ext_views?.count ?? 0),
+    retweetedFrom: isRetweet ? (raw.user?.screen_name || raw.user?.username || raw.username || raw.user?.name || '') : '',
+    likes: num(source.favorite_count ?? source.favouriteCount ?? source.likeCount ?? source.likes),
+    comments: num(source.reply_count ?? source.replyCount ?? source.repliesCount ?? source.comments),
+    shares: num(source.retweet_count ?? source.retweetCount ?? source.retweetsCount ?? source.shares) + num(source.quote_count ?? source.quoteCount),
+    views: num(source.view_count ?? source.viewCount ?? source.viewsCount ?? source.ext_views?.count ?? 0),
     postId: idStr,
     pageUrl: screenName ? `https://x.com/${screenName}` : '',
     raw
