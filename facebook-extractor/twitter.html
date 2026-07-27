@@ -382,15 +382,24 @@ async function startExtraction() {
     spinner.style.display = 'none';
     $('abortBtn').style.display = 'none';
     const hidden = scrapedCount - allPosts.length;
+
+    if (!allPosts.length && errors.length) {
+      // كل الحسابات فشلت — لا نُظهر "اكتمل بنجاح" فوق رسالة خطأ متناقضة
+      setStatus('❌ فشلت العملية لكل الحسابات', '', true);
+      runError.textContent = errors.join(' · ');
+      runError.style.display = 'block';
+      return;
+    }
+
     setStatus(
       `✅ اكتمل الاستخراج — ${allPosts.length} تغريدة`,
       hidden > 0
         ? `استُخرج ${scrapedCount} عنصراً، أُخفي ${hidden} منها لعدم احتوائه على نص/رابط أو لوقوعه خارج الفترة الزمنية`
-        : 'يمكنك البحث والفرز والتصدير من الأسفل',
+        : (errors.length ? `نجح البعض؛ فشل: ${errors.join(' · ')}` : 'يمكنك البحث والفرز والتصدير من الأسفل'),
       true
     );
-    if (errors.length) {
-      runError.textContent = errors.join(' · ');
+    if (errors.length && allPosts.length) {
+      runError.textContent = `تعذّر استخراج بعض الحسابات: ${errors.join(' · ')}`;
       runError.style.display = 'block';
     }
     if (allPosts.length) {
