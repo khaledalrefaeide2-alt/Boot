@@ -78,6 +78,24 @@
     <div class="status-line" id="xTokensStatus"></div>
   </section>
 
+  <!-- Just One API key (X tweet monitoring) -->
+  <section class="panel">
+    <div class="panel-title"><span class="num">📡</span> مفتاح Just One API <small style="font-weight:400;color:var(--text-2);font-size:.8rem">(للرصد التلقائي لتغريدات X)</small></div>
+    <div class="panel-sub">صفحة الرصد التلقائي لتغريدات X تتصل مباشرةً بواجهة Just One API لجلب أحدث تغريدات كل حساب. يُحفظ المفتاح محلياً في متصفحك فقط ولا يُشارَك مع أي جهة أخرى.</div>
+
+    <label class="field-label" for="joaKey">المفتاح (token) <small>(محفوظ محلياً في هذا المتصفح)</small></label>
+    <div class="input-wrap">
+      <input class="input" type="password" id="joaKey" placeholder="أدخل مفتاح Just One API هنا" autocomplete="off" dir="ltr" style="padding-left:42px">
+      <button class="toggle-eye" id="joaEyeBtn" title="إظهار / إخفاء">👁️</button>
+    </div>
+    <div class="actions-row">
+      <button class="btn btn-primary btn-sm" id="saveJoaKeyBtn">💾 حفظ المفتاح</button>
+      <button class="btn btn-ghost btn-sm" id="checkJoaKeyBtn">🔌 فحص المفتاح</button>
+      <button class="btn btn-danger-ghost btn-sm" id="clearJoaKeyBtn">🗑️ مسح المفتاح</button>
+    </div>
+    <div class="status-line" id="joaKeyStatus"></div>
+  </section>
+
   <!-- Local database -->
   <section class="panel">
     <div class="panel-title"><span class="num">🗄️</span> قاعدة البيانات المحلية <small style="font-weight:400;color:var(--text-2);font-size:.8rem">(اختياري)</small></div>
@@ -103,9 +121,11 @@
 'use strict';
 const KEY_STORAGE = 'fbx_apify_key';
 const X_TOKENS_STORAGE = 'fbx_x_auth_tokens';
+const JOA_KEY_STORAGE = 'fbx_joa_key';
 const DB_URL_STORAGE = 'fbx_db_url';
 const THEME_STORAGE = 'fbx_theme';
 const API_BASE = 'https://api.apify.com/v2';
+const JOA_BASE = 'https://api.justoneapi.com';
 const $ = id => document.getElementById(id);
 const toast = $('toast');
 
@@ -168,6 +188,45 @@ $('clearXTokensBtn').onclick = () => {
   localStorage.removeItem(X_TOKENS_STORAGE); $('xTokens').value = '';
   setStatus($('xTokensStatus'), '🗑️ تم مسح الرموز.', false);
   showToast('🗑️ تم مسح رموز X');
+};
+
+/* ===== Just One API key (X tweet monitoring) ===== */
+$('joaKey').value = localStorage.getItem(JOA_KEY_STORAGE) || '';
+if ($('joaKey').value) setStatus($('joaKeyStatus'), '🟢 يوجد مفتاح محفوظ في هذا المتصفح.', true);
+$('joaEyeBtn').onclick = () => { const i = $('joaKey'); i.type = i.type === 'password' ? 'text' : 'password'; };
+$('saveJoaKeyBtn').onclick = () => {
+  const v = $('joaKey').value.trim();
+  if (!v) return showToast('أدخل المفتاح أولاً');
+  localStorage.setItem(JOA_KEY_STORAGE, v);
+  setStatus($('joaKeyStatus'), '✅ تم حفظ المفتاح. سيُستخدم في صفحة رصد X.', true);
+  showToast('✅ تم حفظ مفتاح Just One API');
+};
+$('clearJoaKeyBtn').onclick = () => {
+  localStorage.removeItem(JOA_KEY_STORAGE); $('joaKey').value = '';
+  setStatus($('joaKeyStatus'), '🗑️ تم مسح المفتاح.', false);
+  showToast('🗑️ تم مسح مفتاح Just One API');
+};
+$('checkJoaKeyBtn').onclick = async () => {
+  const v = $('joaKey').value.trim();
+  if (!v) return showToast('أدخل المفتاح أولاً');
+  setStatus($('joaKeyStatus'), '⏳ جارٍ فحص المفتاح...', null);
+  try {
+    const r = await fetch(`${JOA_BASE}/api/twitter/get-user-posts/v1?token=${encodeURIComponent(v)}&username=twitter`, { signal: AbortSignal.timeout(10000) });
+    if (r.status === 401 || r.status === 403) { setStatus($('joaKeyStatus'), '🔴 المفتاح غير صحيح أو منتهي الصلاحية.', false); return; }
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    const d = await r.json().catch(() => null);
+    const codeVal = d && (d.code ?? d.status);
+    const msg = (d && (d.msg || d.message || '')) + '';
+    if (codeVal != null && codeVal !== 0 && codeVal !== 200 && /token|key|auth/i.test(msg)) {
+      setStatus($('joaKeyStatus'), `🔴 المفتاح مرفوض: ${msg}`, false); return;
+    }
+    localStorage.setItem(JOA_KEY_STORAGE, v);
+    setStatus($('joaKeyStatus'), '🟢 المفتاح يستجيب بنجاح. تم الحفظ.', true);
+    showToast('✅ المفتاح يعمل');
+  } catch (e) {
+    setStatus($('joaKeyStatus'), '⚠️ تعذّر فحص المفتاح (قد يكون بسبب الاتصال). حُفظ المفتاح على أي حال.', false);
+    localStorage.setItem(JOA_KEY_STORAGE, v);
+  }
 };
 
 /* ===== Local database ===== */
