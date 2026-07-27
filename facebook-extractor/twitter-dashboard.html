@@ -115,7 +115,7 @@
     <header class="page-header">
       <span class="hero-badge">📡 رصد تلقائي · تحليل وتصنيف · رسوم بيانية تفاعلية</span>
       <h2>الرصد التلقائي <em>لتغريدات حساباتك</em> على X (تويتر)</h2>
-      <p>أضف حسابات X الرسمية (واضبط مفتاحك ورموز الدخول من الإعدادات)، وسيستخرج الموقع أحدث تغريدة (أو أكثر) من كل حساب تلقائياً كل دورة، ثم يحلّلها ويصنّفها فوراً ويعرض كامل بياناتها — النص، الصور والفيديو، والتفاعلات — إلى جانب رسوم بيانية تفاعلية وتصفية حية حسب الحساب والفترة والتصنيف.</p>
+      <p>أضف حسابات X الرسمية (واضبط مفتاحك من الإعدادات)، وسيستخرج الموقع أحدث تغريدة (أو أكثر) من كل حساب تلقائياً كل دورة عبر اتصال مباشر بمفتاح الاستخراج، ثم يحلّلها ويصنّفها فوراً ويعرض كامل بياناتها — النص، الصور والفيديو، والتفاعلات — إلى جانب رسوم بيانية تفاعلية وتصفية حية حسب الحساب والفترة والتصنيف.</p>
     </header>
 
     <main>
@@ -139,8 +139,8 @@
       </div>
     </div>
 
-    <div class="hint" id="keyHint" style="display:none">⚠️ الإعداد غير مكتمل — <a href="settings.html">اضبط مفتاح الاستخراج ورموز الدخول لمنصة X من صفحة الإعدادات ⚙️</a>.</div>
-    <div class="hint" style="margin-top:14px">💡 مفتاح الاستخراج ورموز الدخول وقاعدة البيانات تُضبط من <a href="settings.html">صفحة الإعدادات ⚙️</a> وتُطبَّق تلقائياً هنا.</div>
+    <div class="hint" id="keyHint" style="display:none">⚠️ لم يُضبط مفتاح الاستخراج بعد — <a href="settings.html">اضبطه من صفحة الإعدادات ⚙️</a>.</div>
+    <div class="hint" style="margin-top:14px">💡 هذه الصفحة تتصل مباشرةً بمفتاح الاستخراج العام (API) المضبوط من <a href="settings.html">صفحة الإعدادات ⚙️</a> — بلا حاجة لأي رموز دخول إضافية لمنصة X.</div>
   </section>
 
   <!-- Control band -->
@@ -240,10 +240,9 @@
 FBXAnalyzer.injectStyles();
 
 /* =============== Constants =============== */
-const ACTOR_ID = 'epctex~twitter-profile-scraper';
+const ACTOR_ID = 'scrape.badger~twitter-tweets-scraper';
 const API_BASE = 'https://api.apify.com/v2';
 const KEY_STORAGE = 'fbx_apify_key';
-const X_TOKENS_STORAGE = 'fbx_x_auth_tokens';
 const THEME_STORAGE = 'fbx_theme';
 const ACCOUNTS_STORAGE = 'fbx_x_tweet_monitor_accounts';
 const FEED_STORAGE = 'fbx_x_tweet_monitor_feed';
@@ -304,11 +303,10 @@ function saveFeed() {
   }
 }
 function getToken() { return (localStorage.getItem(KEY_STORAGE) || '').trim(); }
-function getXTokens() { try { const v = JSON.parse(localStorage.getItem(X_TOKENS_STORAGE)); return Array.isArray(v) ? v.filter(Boolean) : []; } catch (_) { return []; } }
 
-/* =============== API key & X tokens (managed from settings.html) =============== */
+/* =============== API key (managed from settings.html) =============== */
 function refreshKeyUi() {
-  $('keyHint').style.display = (getToken() && getXTokens().length) ? 'none' : 'block';
+  $('keyHint').style.display = getToken() ? 'none' : 'block';
 }
 
 /* =============== Accounts =============== */
@@ -351,7 +349,7 @@ $('toggleBtn').onclick = () => (monitorOn ? stopMonitor() : startMonitor());
 $('runNowBtn').onclick = () => runCycle(true);
 
 function startMonitor() {
-  if (!getToken() || !getXTokens().length) { refreshKeyUi(); return showToast('⚠️ أكمل الإعداد من صفحة الإعدادات ⚙️'); }
+  if (!getToken()) { refreshKeyUi(); return showToast('⚠️ اضبط مفتاح الاستخراج من صفحة الإعدادات ⚙️'); }
   if (!accounts.length) return showToast('⚠️ أضف حساباً واحداً على الأقل');
   monitorOn = true; localStorage.setItem(ON_STORAGE, '1'); refreshControlUi();
   if (Date.now() - lastRunAt >= intervalMs()) runCycle();
@@ -377,8 +375,7 @@ function tick() {
 async function runCycle(manual) {
   if (cycleRunning) return;
   const token = getToken();
-  const xTokens = getXTokens();
-  if (!token || !xTokens.length) { refreshKeyUi(); return showToast('⚠️ أكمل الإعداد من صفحة الإعدادات ⚙️'); }
+  if (!token) { refreshKeyUi(); return showToast('⚠️ اضبط مفتاح الاستخراج من صفحة الإعدادات ⚙️'); }
   if (!accounts.length) return showToast('⚠️ أضف حساباً واحداً على الأقل');
 
   cycleRunning = true;
@@ -387,12 +384,16 @@ async function runCycle(manual) {
   $('countdown').textContent = '📡';
   $('miniStatus').textContent = manual ? 'رصد فوري قيد التنفيذ...' : 'دورة رصد قيد التنفيذ...';
   try {
+    const urls = accounts.map(h => `https://twitter.com/${h}`);
     const input = {
-      startUrls: accounts.map(h => `https://twitter.com/${h}`),
-      authTokens: xTokens,
-      maxTweetsPerUser: tweetsPerCycle,
-      addUserInfo: true,
-      onlyUserInfo: false,
+      startUrls: urls,
+      twitterHandles: accounts,
+      usernames: accounts,
+      handles: accounts,
+      maxTweets: tweetsPerCycle,
+      maxItems: tweetsPerCycle,
+      resultsLimit: tweetsPerCycle,
+      tweetsDesired: tweetsPerCycle,
       proxy: { useApifyProxy: true }
     };
     const maxItems = tweetsPerCycle * accounts.length;
@@ -449,34 +450,36 @@ async function apiError(res) {
 const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 /* =============== Normalization =============== */
+// خرائط حقول دفاعية: مخطط مخرجات الأداة غير مؤكَّد رسمياً، فتُغطّى عدة تسميات شائعة معاً
 function normalizeTweet(raw) {
-  const isRetweet = !!raw.retweeted_status;
-  const source = isRetweet ? raw.retweeted_status : raw;
-  const user = source.user || raw.user || raw.author || {};
-  const text = source.full_text || source.text || raw.full_text || raw.text || '';
-  const screenName = user.screen_name || user.username || '';
-  const author = user.name || screenName || 'حساب X';
-  const idStr = source.id_str || String(source.id || raw.id_str || raw.id || '');
-  const url = screenName && idStr ? `https://x.com/${screenName}/status/${idStr}` : '';
+  const isRetweet = !!(raw.retweeted_status || raw.retweeted_tweet || raw.isRetweet);
+  const source = raw.retweeted_status || raw.retweeted_tweet || raw;
+  const user = source.user || source.author || raw.user || raw.author || {};
+  const text = source.full_text || source.fullText || source.text || source.content || '';
+  const screenName = user.screen_name || user.username || user.screenName || raw.username || raw.authorUsername || '';
+  const author = user.name || user.fullName || user.displayName || screenName || 'حساب X';
+  const idStr = String(source.id_str || source.id || source.tweetId || raw.id_str || raw.id || raw.tweetId || '');
+  const url = source.url || source.tweetUrl || raw.url || raw.tweetUrl || (screenName && idStr ? `https://x.com/${screenName}/status/${idStr}` : '');
+  const createdRaw = source.created_at || source.createdAt || source.date || source.timestamp;
   let ts = null;
-  if (source.created_at) { const d = new Date(source.created_at); if (!isNaN(d)) ts = d.getTime(); }
-  const mediaRaw = source.extended_entities?.media || source.entities?.media || [];
+  if (createdRaw) { const d = new Date(createdRaw); if (!isNaN(d)) ts = d.getTime(); }
+  const mediaRaw = source.extended_entities?.media || source.entities?.media || source.media || [];
   const mediaList = mediaRaw.map(m => ({
-    type: m.type === 'photo' ? 'image' : 'video',
-    src: m.media_url_https || m.media_url || ''
+    type: (m.type === 'photo' || m.type === 'image') ? 'image' : 'video',
+    src: m.media_url_https || m.media_url || m.url || m.thumbnailUrl || ''
   })).filter(m => m.src);
   const firstImg = mediaList.find(m => m.type === 'image');
   const media = firstImg ? firstImg.src : (mediaList[0]?.src || '');
   const key = url || `${screenName}|${idStr}`;
   const p = {
     key, text, url, ts, author, screenName,
-    avatar: user.profile_image_url_https || user.profile_image_url || '',
+    avatar: user.profile_image_url_https || user.profile_image_url || user.profilePicture || user.avatar || '',
     media, mediaList, isRetweet,
-    retweetedFrom: isRetweet ? (raw.user?.screen_name || raw.user?.name || '') : '',
-    likes: num(source.favorite_count ?? source.favourite_count ?? source.like_count),
-    comments: num(source.reply_count ?? source.replies_count),
-    shares: num(source.retweet_count ?? source.retweets_count) + num(source.quote_count),
-    views: num(source.view_count ?? source.views_count ?? source.ext_views?.count ?? 0),
+    retweetedFrom: isRetweet ? (raw.user?.screen_name || raw.user?.username || raw.username || raw.user?.name || '') : '',
+    likes: num(source.favorite_count ?? source.favouriteCount ?? source.likeCount ?? source.likes),
+    comments: num(source.reply_count ?? source.replyCount ?? source.repliesCount ?? source.comments),
+    shares: num(source.retweet_count ?? source.retweetCount ?? source.retweetsCount ?? source.shares) + num(source.quote_count ?? source.quoteCount),
+    views: num(source.view_count ?? source.viewCount ?? source.viewsCount ?? source.ext_views?.count ?? 0),
     postId: idStr, pageUrl: screenName ? `https://x.com/${screenName}` : '',
     raw
   };
