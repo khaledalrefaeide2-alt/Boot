@@ -313,10 +313,6 @@ $('abortBtn').onclick = () => {
 
 function validDate(v) { return v && !isNaN(new Date(v).getTime()); }
 
-/* =============== restId param =============== */
-// get-user-posts يتوقّع رابط الملف الشخصي الكامل كقيمة restId، وليس اسم المستخدم المجرد أو معرّفاً رقمياً
-function profileRestId(handle) { return `https://x.com/${handle}`; }
-
 async function startExtraction() {
   formError.style.display = 'none';
   runError.style.display = 'none';
@@ -350,15 +346,16 @@ async function startExtraction() {
     for (let i = 0; i < handles.length; i++) {
       if (aborted) break;
       const handle = handles[i];
-      setStatus(`جارٍ استخراج تغريدات @${handle}... (${i + 1}/${handles.length})`, 'الاتصال بخدمة Just One API');
       progressBar.style.width = Math.round((i / handles.length) * 90 + 5) + '%';
       try {
-        const qs = new URLSearchParams({ token, restId: profileRestId(handle), username: handle, screen_name: handle, count: String(limit) });
-        const res = await fetch(`${JOA_BASE}${JOA_ENDPOINT}?${qs.toString()}`, { signal: AbortSignal.timeout(20000) });
-        if (!res.ok) throw await joaError(res, handle);
-        const data = await res.json();
-        const items = extractJoaItems(data);
-        if (!items) throw joaLogicalError(data, handle);
+        const items = await fetchUserPosts(token, handle, limit, (attempt, max, variantLabel) => {
+          setStatus(
+            `جارٍ استخراج تغريدات @${handle}... (${i + 1}/${handles.length})`,
+            attempt === 1
+              ? `الاتصال بخدمة Just One API · ${variantLabel}`
+              : `الخدمة تجمع البيانات — إعادة المحاولة ${attempt} من ${max} · ${variantLabel}`
+          );
+        });
         collected.push(...items.map(raw => normalizeTweet(raw, handle)));
       } catch (err) {
         errors.push(err.message || String(err));
@@ -419,6 +416,48 @@ async function startExtraction() {
   } finally {
     runBtn.disabled = false;
   }
+}
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+/* =============== جلب التغريدات مع إعادة المحاولة =============== */
+// الجمع لدى Just One API غير متزامن: قد تُرجع أول محاولة "COLLECT FAILED, SEND REQUEST AGAIN"
+// وهي رسالة تطلب صراحةً إعادة الإرسال ريثما تُجهَّز البيانات على خوادمهم. نعيد المحاولة تلقائياً
+// بفواصل زمنية، ونجرّب أكثر من صيغة لقيمة restId إن استمر الفشل.
+const COLLECT_RETRY_MAX = 5;
+const COLLECT_RETRY_DELAY = 2500;
+function isRetryableCollect(msg) {
+  return /collect\s*failed|send\s*request\s*again|try\s*again|retry|processing|not\s*ready/i.test(String(msg || ''));
+}
+async function fetchUserPosts(token, handle, count, onAttempt) {
+  const variants = [
+    { restId: `https://x.com/${handle}`, label: 'رابط الحساب' },
+    { restId: handle, label: 'اسم المستخدم' }
+  ];
+  let lastErr = null;
+  for (const v of variants) {
+    for (let attempt = 1; attempt <= COLLECT_RETRY_MAX; attempt++) {
+      if (aborted) throw new Error('أُوقفت العملية');
+      if (onAttempt) onAttempt(attempt, COLLECT_RETRY_MAX, v.label);
+      let retryable = false;
+      try {
+        const qs = new URLSearchParams({ token, restId: v.restId, username: handle, screen_name: handle, count: String(count) });
+        const res = await fetch(`${JOA_BASE}${JOA_ENDPOINT}?${qs.toString()}`, { signal: AbortSignal.timeout(20000) });
+        if (!res.ok) throw await joaError(res, handle);
+        const data = await res.json();
+        const items = extractJoaItems(data);
+        if (items) return items;                    // ✅ نجحت
+        lastErr = joaLogicalError(data, handle);
+        retryable = isRetryableCollect(lastErr.message);
+      } catch (e) {
+        lastErr = e;
+        retryable = isRetryableCollect(e.message);
+      }
+      if (!retryable) break;                        // خطأ لا تنفع معه الإعادة — جرّب الصيغة التالية
+      if (attempt < COLLECT_RETRY_MAX) await sleep(COLLECT_RETRY_DELAY);
+    }
+  }
+  throw lastErr || new Error(`تعذّر جلب تغريدات @${handle}`);
 }
 
 // شكل غلاف الاستجابة غير مؤكَّد رسمياً، فتُغطّى عدة احتمالات شائعة لأدوات هذه الفئة

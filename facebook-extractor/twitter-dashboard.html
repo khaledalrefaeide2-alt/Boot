@@ -372,10 +372,6 @@ function tick() {
   setTimeout(tick, 1000);
 }
 
-/* =============== restId param =============== */
-// get-user-posts يتوقّع رابط الملف الشخصي الكامل كقيمة restId، وليس اسم المستخدم المجرد أو معرّفاً رقمياً
-function profileRestId(handle) { return `https://x.com/${handle}`; }
-
 async function runCycle(manual) {
   if (cycleRunning) return;
   const token = getJoaKey();
@@ -394,15 +390,12 @@ async function runCycle(manual) {
   try {
     for (let i = 0; i < accounts.length; i++) {
       const handle = accounts[i];
-      $('miniStatus').textContent = `جارٍ رصد @${handle}... (${i + 1}/${accounts.length})`;
       try {
-        const restId = profileRestId(handle);
-        const qs = new URLSearchParams({ token, restId, username: handle, screen_name: handle, count: String(tweetsPerCycle) });
-        const res = await fetch(`${JOA_BASE}${JOA_ENDPOINT}?${qs.toString()}`, { signal: AbortSignal.timeout(15000) });
-        if (!res.ok) throw await joaError(res, handle);
-        const data = await res.json();
-        const items = extractJoaItems(data);
-        if (!items) throw joaLogicalError(data, handle);
+        const items = await fetchUserPosts(token, handle, tweetsPerCycle, (attempt, max) => {
+          $('miniStatus').textContent = attempt === 1
+            ? `جارٍ رصد @${handle}... (${i + 1}/${accounts.length})`
+            : `@${handle}: الخدمة تجمع البيانات — إعادة المحاولة ${attempt} من ${max}`;
+        });
         for (const raw of items.slice(0, tweetsPerCycle)) {
           const p = normalizeTweet(raw, handle);
           if (!p.text && !p.url) continue;
@@ -430,6 +423,42 @@ async function runCycle(manual) {
     $('miniStatus').textContent = 'فشلت الدورة — ستُعاد المحاولة لاحقاً';
     lastRunAt = Date.now(); localStorage.setItem(LAST_STORAGE, String(lastRunAt));
   } finally { cycleRunning = false; $('miniSpinner').style.display = 'none'; }
+}
+
+/* =============== جلب التغريدات مع إعادة المحاولة =============== */
+// الجمع لدى Just One API غير متزامن: قد تُرجع أول محاولة "COLLECT FAILED, SEND REQUEST AGAIN"
+// وهي رسالة تطلب صراحةً إعادة الإرسال ريثما تُجهَّز البيانات على خوادمهم. نعيد المحاولة تلقائياً
+// بفواصل زمنية، ونجرّب أكثر من صيغة لقيمة restId إن استمر الفشل.
+const COLLECT_RETRY_MAX = 5;
+const COLLECT_RETRY_DELAY = 2500;
+function isRetryableCollect(msg) {
+  return /collect\s*failed|send\s*request\s*again|try\s*again|retry|processing|not\s*ready/i.test(String(msg || ''));
+}
+async function fetchUserPosts(token, handle, count, onAttempt) {
+  const variants = [`https://x.com/${handle}`, handle];
+  let lastErr = null;
+  for (const restId of variants) {
+    for (let attempt = 1; attempt <= COLLECT_RETRY_MAX; attempt++) {
+      if (onAttempt) onAttempt(attempt, COLLECT_RETRY_MAX);
+      let retryable = false;
+      try {
+        const qs = new URLSearchParams({ token, restId, username: handle, screen_name: handle, count: String(count) });
+        const res = await fetch(`${JOA_BASE}${JOA_ENDPOINT}?${qs.toString()}`, { signal: AbortSignal.timeout(20000) });
+        if (!res.ok) throw await joaError(res, handle);
+        const data = await res.json();
+        const items = extractJoaItems(data);
+        if (items) return items;                    // ✅ نجحت
+        lastErr = joaLogicalError(data, handle);
+        retryable = isRetryableCollect(lastErr.message);
+      } catch (e) {
+        lastErr = e;
+        retryable = isRetryableCollect(e.message);
+      }
+      if (!retryable) break;                        // خطأ لا تنفع معه الإعادة — جرّب الصيغة التالية
+      if (attempt < COLLECT_RETRY_MAX) await sleep(COLLECT_RETRY_DELAY);
+    }
+  }
+  throw lastErr || new Error(`تعذّر جلب تغريدات @${handle}`);
 }
 
 // شكل غلاف الاستجابة غير مؤكَّد رسمياً (docs توضّح المصادقة فقط)، فتُغطّى عدة احتمالات شائعة لأدوات هذه الفئة
