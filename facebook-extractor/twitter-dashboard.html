@@ -389,7 +389,7 @@ async function runCycle(manual) {
     const query = accounts.map(h => `from:${h}`).join(' OR ');
     const input = {
       query,
-      mode: 'Search',
+      mode: 'Advanced Search',
       query_type: 'Latest',
       max_results: tweetsPerCycle * accounts.length
     };

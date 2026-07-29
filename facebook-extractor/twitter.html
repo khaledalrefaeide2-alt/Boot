@@ -343,7 +343,7 @@ async function startExtraction() {
   const query = handles.map(h => `from:${h}`).join(' OR ');
   const input = {
     query,
-    mode: 'Search',
+    mode: 'Advanced Search',
     query_type: 'Latest',
     max_results: limit * handles.length
   };
