@@ -25,13 +25,13 @@
     background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2); color: #fff;
     border-radius: var(--radius-sm); padding: 7px 10px; font-family: inherit; font-size: .74rem; font-weight: 700;
   }
-  .interval-select option { color: #14352a; }
+  .interval-select option { color: #1b1730; }
   .countdown {
     font-size: 1.15rem; font-weight: 800; letter-spacing: .5px; direction: ltr;
     background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18);
     border-radius: var(--radius-sm); padding: 6px 15px; font-variant-numeric: tabular-nums;
   }
-  .btn-cream { background: linear-gradient(155deg, var(--gold), var(--gold-deep)); color: #2c1f10; }
+  .btn-cream { background: linear-gradient(155deg, var(--gold), var(--gold-deep)); color: #fff; }
   .btn-stop { background: linear-gradient(155deg, #c65b46, #96331f); color: #fff; }
   .mini-status { width: 100%; font-size: .72rem; opacity: .78; display: flex; align-items: center; gap: 7px; }
   .mini-spinner { width: 12px; height: 12px; flex: none; border: 2px solid rgba(255,255,255,.25); border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; display: none; }
@@ -494,7 +494,7 @@ function sevAccent(a) {
     if (a.level === 'MEDIUM') return 'var(--gold-deep)';
     return '#c98a7a';
   }
-  if (a.classification === 'POSITIVE') return 'var(--green-600)';
+  if (a.classification === 'POSITIVE') return 'var(--success)';
   return 'var(--text-2)';
 }
 
