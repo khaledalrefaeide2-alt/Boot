@@ -84,10 +84,11 @@
     const css = `
     .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 5px; margin: 8px 0 0; }
     .media-grid.one { grid-template-columns: 1fr; }
-    .media-item { position: relative; display: block; border-radius: 9px; overflow: hidden;
+    .media-item { position: relative; display: block; border-radius: 10px; overflow: hidden;
       background: var(--surface-2, #eef1ea); border: 1px solid var(--border, #dfe4d8); text-decoration: none; aspect-ratio: 16 / 10; }
     .media-grid.one .media-item { aspect-ratio: auto; max-height: 220px; }
-    .media-el { width: 100%; height: 100%; object-fit: cover; display: block; background: #000; }
+    .media-el { width: 100%; height: 100%; object-fit: cover; display: block; background: #000; transition: transform .35s ease; }
+    a.media-item:hover .media-el { transform: scale(1.06); }
     .media-grid.one .media-el { max-height: 220px; object-fit: contain; }
     video.media-el { object-fit: contain; }
     .media-blank { display: grid; place-items: center; color: var(--text-2, #667167); font-weight: 800; aspect-ratio: 16/10; font-size: .72rem; }

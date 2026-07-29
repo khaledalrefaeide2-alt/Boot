@@ -369,7 +369,7 @@
   function badges(a) {
     if (!a) return '';
     return `<div class="fbx-badges">
-      <span class="fbx-badge fbx-${a.classification.toLowerCase()}">${a.classificationIcon} ${esc(a.classificationLabel)}</span>
+      <span class="fbx-badge fbx-badge-main fbx-${a.classification.toLowerCase()}">${a.classificationIcon} ${esc(a.classificationLabel)}</span>
       <span class="fbx-badge ${a.levelClass}">${esc(a.levelLabel)} الخطورة</span>
       <span class="fbx-badge fbx-soft">${esc(a.subCategory.split(' — ')[0])}</span>
       ${a.action !== 'KEEP' ? `<span class="fbx-badge fbx-flag">${a.actionIcon} ${esc(a.actionLabel)}</span>` : ''}
@@ -377,34 +377,37 @@
     </div>`;
   }
 
-  // اللوحة الكاملة — تطابق صيغة المخرجات المطلوبة بالضبط (Chain of Thought)
+  // اللوحة الكاملة — مسار تسلسلي بصري (Chain of Thought) بشكل خط زمني مرقَّم
   function panel(a) {
     if (!a) return '';
+    const steps = [
+      { icon: '📌', k: 'التصنيف النهائي', dot: `fbx-${a.classification.toLowerCase()}`,
+        v: `<span class="fbx-step-v fbx-${a.classification.toLowerCase()}">${a.classificationIcon} ${esc(a.classificationLabel)}</span>` },
+      { icon: '⚖️', k: 'مستوى الخطورة/الأهمية', dot: a.levelClass,
+        v: `<span class="fbx-step-v ${a.levelClass}">${esc(a.levelLabel)}</span>` },
+      { icon: '🧭', k: 'التحليل السياقي (لماذا؟)', dot: 'fbx-info',
+        v: `<p class="fbx-text">${esc(a.contextualAnalysis)}</p>` },
+      { icon: '📖', k: 'الاستناد القانوني والأخلاقي', dot: 'fbx-info',
+        v: `<p class="fbx-text">${esc(a.legalBasis)}</p>` },
+      { icon: a.actionIcon, k: 'الإجراء الموصى به', dot: a.levelClass,
+        v: `<div class="fbx-rec-box ${a.levelClass}"><strong>${esc(a.actionLabel)}</strong></div>` }
+    ];
+    const stepsHtml = steps.map((s, i) => `
+      <div class="fbx-step">
+        <div class="fbx-step-line">
+          <div class="fbx-step-dot ${s.dot}">${s.icon}</div>
+          ${i < steps.length - 1 ? '<div class="fbx-step-connector"></div>' : ''}
+        </div>
+        <div class="fbx-step-body">
+          <div class="fbx-step-k">${s.k}</div>
+          ${s.v}
+        </div>
+      </div>`).join('');
     return `<div class="fbx-analysis">
-      <div class="fbx-cot-row"><span class="fbx-cot-k">📌 التصنيف النهائي</span>
-        <span class="fbx-cot-v fbx-${a.classification.toLowerCase()}">${a.classificationIcon} ${esc(a.classificationLabel)}</span></div>
-
-      <div class="fbx-cot-row"><span class="fbx-cot-k">⚖️ مستوى الخطورة/الأهمية</span>
-        <span class="fbx-cot-v ${a.levelClass}">${esc(a.levelLabel)}</span></div>
-
-      <div class="fbx-block">
-        <span class="fbx-k">🧭 التحليل السياقي (لماذا؟)</span>
-        <p class="fbx-text">${esc(a.contextualAnalysis)}</p>
-      </div>
-
-      <div class="fbx-block">
-        <span class="fbx-k">📖 الاستناد القانوني والأخلاقي</span>
-        <p class="fbx-text">${esc(a.legalBasis)}</p>
-      </div>
-
-      <div class="fbx-block fbx-rec ${a.levelClass}">
-        <span class="fbx-k">${a.actionIcon} الإجراء الموصى به</span>
-        <p class="fbx-text"><strong>${esc(a.actionLabel)}</strong></p>
-      </div>
-
-      <div class="fbx-block">
-        <span class="fbx-k">👤 تحليل المصدر</span>
-        <p class="fbx-text">${esc(a.source.account)} · ${esc(a.source.type)} · ${esc(a.source.credibility)} (تفاعل: ${a.source.engagement})</p>
+      ${stepsHtml}
+      <div class="fbx-source-row">
+        <span>👤 ${esc(a.source.account)}</span><span>·</span><span>${esc(a.source.type)}</span><span>·</span>
+        <span>${esc(a.source.credibility)}</span><span>·</span><span>تفاعل: ${a.source.engagement}</span>
       </div>
     </div>`;
   }
@@ -415,45 +418,78 @@
   function injectStyles() {
     if (document.getElementById('fbx-analyzer-styles')) return;
     const css = `
-    .fbx-badges { display:flex; flex-wrap:wrap; gap:5px; margin:8px 0 0; }
-    .fbx-badge { display:inline-flex; align-items:center; gap:3px; font-size:.66rem; font-weight:800;
-      padding:3px 9px; border-radius:999px; line-height:1.3; border:1px solid transparent; white-space:nowrap; }
+    .fbx-badges { display:flex; flex-wrap:wrap; gap:6px; margin:10px 0 0; }
+    .fbx-badge { display:inline-flex; align-items:center; gap:4px; font-size:.67rem; font-weight:800;
+      padding:4px 10px; border-radius:999px; line-height:1.3; border:1px solid transparent; white-space:nowrap;
+      transition:transform .15s ease, box-shadow .15s ease; }
+    .fbx-badge:hover { transform:translateY(-1px); box-shadow:0 3px 8px rgba(0,0,0,.1); }
+    .fbx-badge-main { font-size:.7rem; padding:4.5px 12px; }
     .fbx-soft { background:var(--surface-2,#eef1ea); color:var(--text,#1c2a22); border-color:var(--border,#dfe4d8); }
     .fbx-positive { background:#e1f2e5; color:#1c6b39; border-color:#aedcb9; }
     .fbx-negative { background:#fbe2de; color:#a3341f; border-color:#f0b6aa; }
     .fbx-neutral { background:#e9ecea; color:#4c5550; border-color:#d3d8d4; }
-    .fbx-flag { background:#fff1d8; color:#9a5b00; border-color:#f2cf8a; }
+    .fbx-flag { background:linear-gradient(155deg,#ffe1ab,#f2cf8a); color:#7a4c00; border-color:#e0b662; }
     .fbx-exc { background:#e2ecfb; color:#215a9c; border-color:#b7d2f0; }
     .fbx-badge.lv-low { background:#e5f2e8; color:#2f7a49; border-color:#b7ddc2; }
     .fbx-badge.lv-mid { background:#fff2cf; color:#8a6100; border-color:#f0d68a; }
     .fbx-badge.lv-high { background:#fbe0d3; color:#a1471d; border-color:#f0b596; }
+    [data-theme="dark"] .fbx-soft { background:var(--surface-2,#182620); color:var(--text,#e6ece6); border-color:var(--border,#23342b); }
+    [data-theme="dark"] .fbx-positive { background:#173425; color:#7fcf9c; border-color:#28543a; }
+    [data-theme="dark"] .fbx-negative { background:#3a2019; color:#e8917c; border-color:#5a3327; }
+    [data-theme="dark"] .fbx-neutral { background:#232b27; color:#adb7b0; border-color:#374039; }
+    [data-theme="dark"] .fbx-flag { background:linear-gradient(155deg,#4a3a17,#3a2d10); color:#e9c479; border-color:#5c481f; }
+    [data-theme="dark"] .fbx-exc { background:#182838; color:#8bb4e8; border-color:#294564; }
+    [data-theme="dark"] .fbx-badge.lv-low { background:#173425; color:#7fcf9c; border-color:#28543a; }
+    [data-theme="dark"] .fbx-badge.lv-mid { background:#3a3117; color:#e9c479; border-color:#5c4d1f; }
+    [data-theme="dark"] .fbx-badge.lv-high { background:#3a2019; color:#e8917c; border-color:#5a3327; }
 
     .fbx-toggle { border:none; background:none; cursor:pointer; font-family:inherit; font-weight:800;
-      font-size:.72rem; color:var(--green-700,#205f45); padding:6px 0 0; display:inline-flex; align-items:center; gap:5px; }
+      font-size:.72rem; color:var(--green-700,#205f45); padding:8px 0 0; display:inline-flex; align-items:center; gap:5px; }
     [data-theme="dark"] .fbx-toggle { color:var(--sage,#8aab6c); }
 
-    .fbx-analysis { margin-top:9px; border-top:1px dashed var(--border,#dfe4d8); padding-top:10px;
-      animation:fbxFade .25s ease; }
-    @keyframes fbxFade { from{opacity:0;transform:translateY(-3px);} to{opacity:1;transform:none;} }
+    .fbx-analysis { margin-top:11px; padding-top:13px; border-top:1px dashed var(--border,#dfe4d8);
+      animation:fbxFade .3s ease; }
+    @keyframes fbxFade { from{opacity:0;transform:translateY(-4px);} to{opacity:1;transform:none;} }
 
-    .fbx-cot-row { display:flex; align-items:center; justify-content:space-between; gap:10px;
-      padding:6px 0; border-bottom:1px solid var(--border,#dfe4d8); }
-    .fbx-cot-k { font-size:.72rem; font-weight:800; color:var(--text-2,#667167); }
-    .fbx-cot-v { font-size:.8rem; font-weight:900; padding:2px 10px; border-radius:999px; }
-    .fbx-cot-v.fbx-positive { background:#e1f2e5; color:#1c6b39; }
-    .fbx-cot-v.fbx-negative { background:#fbe2de; color:#a3341f; }
-    .fbx-cot-v.fbx-neutral { background:#e9ecea; color:#4c5550; }
-    .fbx-cot-v.lv-low { background:#e5f2e8; color:#2f7a49; }
-    .fbx-cot-v.lv-mid { background:#fff2cf; color:#8a6100; }
-    .fbx-cot-v.lv-high { background:#fbe0d3; color:#a1471d; }
+    /* ---- خط زمني للتحليل التسلسلي (Chain of Thought) ---- */
+    .fbx-step { display:flex; gap:12px; padding-bottom:14px; }
+    .fbx-step:last-of-type { padding-bottom:0; }
+    .fbx-step-line { display:flex; flex-direction:column; align-items:center; flex:none; }
+    .fbx-step-dot {
+      width:27px; height:27px; border-radius:50%; flex:none;
+      display:grid; place-items:center; font-size:12px;
+      background:var(--surface-2,#eef1ea); border:1.5px solid var(--border,#dfe4d8); color:var(--text-2,#667167);
+      box-shadow:0 0 0 3px var(--surface,#fff);
+    }
+    .fbx-step-connector { width:2px; flex:1; min-height:8px; margin:3px 0; background:var(--border,#dfe4d8); }
+    .fbx-step-body { flex:1; min-width:0; padding-top:2px; }
+    .fbx-step-k { font-size:.71rem; font-weight:800; color:var(--text-2,#667167); margin-bottom:3px; }
+    .fbx-step-v { display:inline-block; font-size:.85rem; font-weight:900; padding:2px 11px; border-radius:999px; }
+    .fbx-step-v.fbx-positive, .fbx-step-dot.fbx-positive { background:#e1f2e5; color:#1c6b39; border-color:#aedcb9; }
+    .fbx-step-v.fbx-negative, .fbx-step-dot.fbx-negative { background:#fbe2de; color:#a3341f; border-color:#f0b6aa; }
+    .fbx-step-v.fbx-neutral, .fbx-step-dot.fbx-neutral   { background:#e9ecea; color:#4c5550; border-color:#d3d8d4; }
+    .fbx-step-v.lv-low, .fbx-step-dot.lv-low  { background:#e5f2e8; color:#2f7a49; border-color:#b7ddc2; }
+    .fbx-step-v.lv-mid, .fbx-step-dot.lv-mid  { background:#fff2cf; color:#8a6100; border-color:#f0d68a; }
+    .fbx-step-v.lv-high, .fbx-step-dot.lv-high { background:#fbe0d3; color:#a1471d; border-color:#f0b596; }
+    [data-theme="dark"] .fbx-step-v.fbx-positive, [data-theme="dark"] .fbx-step-dot.fbx-positive { background:#173425; color:#7fcf9c; border-color:#28543a; }
+    [data-theme="dark"] .fbx-step-v.fbx-negative, [data-theme="dark"] .fbx-step-dot.fbx-negative { background:#3a2019; color:#e8917c; border-color:#5a3327; }
+    [data-theme="dark"] .fbx-step-v.fbx-neutral,  [data-theme="dark"] .fbx-step-dot.fbx-neutral  { background:#232b27; color:#adb7b0; border-color:#374039; }
+    [data-theme="dark"] .fbx-step-v.lv-low,  [data-theme="dark"] .fbx-step-dot.lv-low  { background:#173425; color:#7fcf9c; border-color:#28543a; }
+    [data-theme="dark"] .fbx-step-v.lv-mid,  [data-theme="dark"] .fbx-step-dot.lv-mid  { background:#3a3117; color:#e9c479; border-color:#5c4d1f; }
+    [data-theme="dark"] .fbx-step-v.lv-high, [data-theme="dark"] .fbx-step-dot.lv-high { background:#3a2019; color:#e8917c; border-color:#5a3327; }
 
-    .fbx-block { margin-top:10px; }
-    .fbx-text { font-size:.76rem; line-height:1.65; color:var(--text,#1c2a22); margin-top:3px; }
-    .fbx-rec { border-radius:10px; padding:9px 11px; border:1px solid var(--border,#dfe4d8); background:var(--surface-2,#eef1ea); }
-    .fbx-rec.lv-high { background:#fbe8e0; border-color:#f0b596; }
-    .fbx-rec.lv-mid { background:#fff6e2; border-color:#f0d68a; }
-    [data-theme="dark"] .fbx-rec.lv-high { background:#332019; border-color:#523527; }
-    [data-theme="dark"] .fbx-rec.lv-mid { background:#332c19; border-color:#524a27; }
+    .fbx-text { font-size:.78rem; line-height:1.7; color:var(--text,#1c2a22); }
+    .fbx-rec-box { border-radius:10px; padding:10px 13px; border:1px solid var(--border,#dfe4d8); background:var(--surface-2,#eef1ea); font-size:.84rem; }
+    .fbx-rec-box.lv-high { background:#fbe8e0; border-color:#f0b596; }
+    .fbx-rec-box.lv-mid { background:#fff6e2; border-color:#f0d68a; }
+    .fbx-rec-box.lv-low { background:#e9f5ec; border-color:#b7ddc2; }
+    [data-theme="dark"] .fbx-rec-box { background:var(--surface-2,#182620); border-color:var(--border,#23342b); }
+    [data-theme="dark"] .fbx-rec-box.lv-high { background:#332019; border-color:#523527; }
+    [data-theme="dark"] .fbx-rec-box.lv-mid { background:#332c19; border-color:#524a27; }
+    [data-theme="dark"] .fbx-rec-box.lv-low { background:#182b20; border-color:#28543a; }
+
+    .fbx-source-row { display:flex; flex-wrap:wrap; gap:6px; align-items:center;
+      font-size:.74rem; color:var(--text-2,#667167); margin-top:2px; padding-top:12px; border-top:1px solid var(--border,#dfe4d8); }
     `;
     const style = document.createElement('style');
     style.id = 'fbx-analyzer-styles';
