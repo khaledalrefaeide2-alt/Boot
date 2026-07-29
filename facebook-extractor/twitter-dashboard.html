@@ -757,7 +757,7 @@ function renderFeed(posts) {
       ${p.isRetweet ? `<span class="rt-tag">🔁 إعادة نشر من @${esc(p.retweetedFrom)}</span>` : ''}
       <div class="post-text ${longText ? 'clamped' : ''}" id="dtxt-${i}">${esc(p.text) || '<em style="color:var(--text-2)">— تغريدة بدون نص —</em>'}</div>${longText ? `<button class="read-more" data-target="dtxt-${i}">عرض المزيد ▾</button>` : ''}
       ${twMediaHtml(p)}
-      ${FBXAnalyzer.badges(a)}<button class="fbx-toggle" data-panel="dpan-${i}">🧠 عرض التحليل الكامل ▾</button><div id="dpan-${i}" style="display:none">${FBXAnalyzer.panel(a)}</div></div>
+      ${FBXAnalyzer.badges(a)}<button class="fbx-toggle" data-panel="dpan-${i}" title="عرض التحليل الكامل">🧠</button><div id="dpan-${i}" style="display:none">${FBXAnalyzer.panel(a)}</div></div>
       <div class="post-foot" style="justify-content:flex-end">${p.url ? `<a class="post-link" href="${esc(p.url)}" target="_blank" rel="noopener">فتح التغريدة ↗</a>` : ''}</div>
     </article>`;
   }).join('');
@@ -768,7 +768,7 @@ function renderFeed(posts) {
   $('feed').querySelectorAll('.fbx-toggle').forEach(btn => btn.onclick = () => {
     const el = $(btn.dataset.panel); const open = el.style.display === 'none';
     el.style.display = open ? 'block' : 'none';
-    btn.textContent = open ? '🧠 إخفاء التحليل ▴' : '🧠 عرض التحليل الكامل ▾';
+    btn.classList.toggle('open', open); btn.title = open ? 'إخفاء التحليل' : 'عرض التحليل الكامل';
   });
 }
 

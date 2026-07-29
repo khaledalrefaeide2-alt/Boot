@@ -567,7 +567,7 @@ function renderPosts() {
         ${longText ? `<button class="read-more" data-target="txt-${i}">عرض المزيد ▾</button>` : ''}
         ${FBXMedia.galleryHtml(p)}
         ${FBXAnalyzer.badges(p.analysis)}
-        <button class="fbx-toggle" data-panel="pan-${i}">🧠 عرض التحليل الكامل ▾</button>
+        <button class="fbx-toggle" data-panel="pan-${i}" title="عرض التحليل الكامل">🧠</button>
         <div id="pan-${i}" style="display:none">${FBXAnalyzer.panel(p.analysis)}</div>
       </div>
       <div class="post-foot">
@@ -594,7 +594,7 @@ function renderPosts() {
       const el = document.getElementById(btn.dataset.panel);
       const open = el.style.display === 'none';
       el.style.display = open ? 'block' : 'none';
-      btn.textContent = open ? '🧠 إخفاء التحليل ▴' : '🧠 عرض التحليل الكامل ▾';
+      btn.classList.toggle('open', open); btn.title = open ? 'إخفاء التحليل' : 'عرض التحليل الكامل';
     };
   });
 }

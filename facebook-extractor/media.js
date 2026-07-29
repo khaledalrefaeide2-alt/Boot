@@ -82,16 +82,16 @@
   function injectStyles() {
     if (document.getElementById('fbx-media-styles')) return;
     const css = `
-    .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); gap: 5px; margin: 8px 0 0; }
+    .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 4px; margin: 6px 0 0; }
     .media-grid.one { grid-template-columns: 1fr; }
-    .media-item { position: relative; display: block; border-radius: 10px; overflow: hidden;
-      background: var(--surface-2, #eef1ea); border: 1px solid var(--border, #dfe4d8); text-decoration: none; aspect-ratio: 16 / 10; }
-    .media-grid.one .media-item { aspect-ratio: auto; max-height: 220px; }
+    .media-item { position: relative; display: block; border-radius: 9px; overflow: hidden; height: 84px;
+      background: var(--surface-2, #eef1ea); border: 1px solid var(--border, #dfe4d8); text-decoration: none; }
+    .media-grid.one .media-item { height: auto; max-height: 150px; }
     .media-el { width: 100%; height: 100%; object-fit: cover; display: block; background: #000; transition: transform .35s ease; }
     a.media-item:hover .media-el { transform: scale(1.06); }
-    .media-grid.one .media-el { max-height: 220px; object-fit: contain; }
+    .media-grid.one .media-el { max-height: 150px; object-fit: contain; }
     video.media-el { object-fit: contain; }
-    .media-blank { display: grid; place-items: center; color: var(--text-2, #667167); font-weight: 800; aspect-ratio: 16/10; font-size: .72rem; }
+    .media-blank { display: grid; place-items: center; color: var(--text-2, #667167); font-weight: 800; height: 84px; font-size: .68rem; }
     .media-tag { position: absolute; inset-block-end: 4px; inset-inline-start: 4px;
       background: rgba(15, 32, 25, .78); color: #f3f0e6; font-size: .6rem; font-weight: 800;
       padding: 2px 7px; border-radius: 999px; backdrop-filter: blur(4px); }
