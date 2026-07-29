@@ -82,21 +82,21 @@
   function injectStyles() {
     if (document.getElementById('fbx-media-styles')) return;
     const css = `
-    .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: 4px; margin: 6px 0 0; }
+    .media-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(80px, 1fr)); gap: 3px; margin: 5px 0 0; }
     .media-grid.one { grid-template-columns: 1fr; }
-    .media-item { position: relative; display: block; border-radius: 9px; overflow: hidden; height: 84px;
+    .media-item { position: relative; display: block; border-radius: 8px; overflow: hidden; height: 62px;
       background: var(--surface-2, #eef1ea); border: 1px solid var(--border, #dfe4d8); text-decoration: none; }
-    .media-grid.one .media-item { height: auto; max-height: 150px; }
+    .media-grid.one .media-item { height: auto; max-height: 120px; }
     .media-el { width: 100%; height: 100%; object-fit: cover; display: block; background: #000; transition: transform .35s ease; }
     a.media-item:hover .media-el { transform: scale(1.06); }
-    .media-grid.one .media-el { max-height: 150px; object-fit: contain; }
+    .media-grid.one .media-el { max-height: 120px; object-fit: contain; }
     video.media-el { object-fit: contain; }
-    .media-blank { display: grid; place-items: center; color: var(--text-2, #667167); font-weight: 800; height: 84px; font-size: .68rem; }
-    .media-tag { position: absolute; inset-block-end: 4px; inset-inline-start: 4px;
-      background: rgba(15, 32, 25, .78); color: #f3f0e6; font-size: .6rem; font-weight: 800;
-      padding: 2px 7px; border-radius: 999px; backdrop-filter: blur(4px); }
-    .media-play { position: absolute; inset: 0; margin: auto; width: 34px; height: 34px;
-      display: grid; place-items: center; font-size: 14px; color: #fff;
+    .media-blank { display: grid; place-items: center; color: var(--text-2, #667167); font-weight: 800; height: 62px; font-size: .64rem; }
+    .media-tag { position: absolute; inset-block-end: 3px; inset-inline-start: 3px;
+      background: rgba(15, 32, 25, .78); color: #f3f0e6; font-size: .55rem; font-weight: 800;
+      padding: 1px 6px; border-radius: 999px; backdrop-filter: blur(4px); }
+    .media-play { position: absolute; inset: 0; margin: auto; width: 26px; height: 26px;
+      display: grid; place-items: center; font-size: 11px; color: #fff;
       background: rgba(15, 32, 25, .55); border: 2px solid rgba(255,255,255,.8); border-radius: 50%; pointer-events: none; }
     .media-video-link:hover .media-play { background: rgba(28, 69, 52, .8); }
     `;

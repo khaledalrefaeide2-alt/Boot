@@ -418,12 +418,12 @@
   function injectStyles() {
     if (document.getElementById('fbx-analyzer-styles')) return;
     const css = `
-    .fbx-badges { display:flex; flex-wrap:wrap; align-items:center; gap:6px; margin:8px 0 0; }
-    .fbx-badge { display:inline-flex; align-items:center; gap:4px; font-size:.67rem; font-weight:800;
-      padding:4px 10px; border-radius:999px; line-height:1.3; border:1px solid transparent; white-space:nowrap;
+    .fbx-badges { display:flex; flex-wrap:wrap; align-items:center; gap:5px; margin:6px 0 0; }
+    .fbx-badge { display:inline-flex; align-items:center; gap:3px; font-size:.63rem; font-weight:800;
+      padding:3px 8px; border-radius:999px; line-height:1.25; border:1px solid transparent; white-space:nowrap;
       transition:transform .15s ease, box-shadow .15s ease; }
     .fbx-badge:hover { transform:translateY(-1px); box-shadow:0 3px 8px rgba(0,0,0,.1); }
-    .fbx-badge-main { font-size:.7rem; padding:4.5px 12px; }
+    .fbx-badge-main { font-size:.66rem; padding:3.5px 10px; }
     .fbx-soft { background:var(--surface-2,#eef1ea); color:var(--text,#1c2a22); border-color:var(--border,#dfe4d8); }
     .fbx-positive { background:#e1f2e5; color:#1c6b39; border-color:#aedcb9; }
     .fbx-negative { background:#fbe2de; color:#a3341f; border-color:#f0b6aa; }
@@ -445,15 +445,15 @@
 
     .fbx-toggle {
       border:1px solid var(--border,#dfe4d8); background:var(--surface-2,#eef1ea); cursor:pointer;
-      color:var(--green-700,#205f45); width:28px; height:28px; border-radius:50%; margin-top:6px;
-      display:inline-flex; align-items:center; justify-content:center; font-size:13px; line-height:1;
+      color:var(--green-700,#205f45); width:22px; height:22px; border-radius:50%; margin-top:4px;
+      display:inline-flex; align-items:center; justify-content:center; font-size:11px; line-height:1;
       transition:background .15s ease, border-color .15s ease, transform .15s ease;
     }
     .fbx-toggle:hover { border-color:var(--green-500,#47775a); transform:translateY(-1px); }
     .fbx-toggle.open { background:var(--primary-soft,#e6eee3); border-color:var(--green-500,#47775a); }
     [data-theme="dark"] .fbx-toggle { color:var(--sage,#8aab6c); }
 
-    .fbx-analysis { margin-top:11px; padding-top:13px; border-top:1px dashed var(--border,#dfe4d8);
+    .fbx-analysis { margin-top:8px; padding-top:10px; border-top:1px dashed var(--border,#dfe4d8);
       animation:fbxFade .3s ease; }
     @keyframes fbxFade { from{opacity:0;transform:translateY(-4px);} to{opacity:1;transform:none;} }
 
