@@ -115,7 +115,7 @@
     <header class="page-header">
       <span class="hero-badge">📡 رصد تلقائي · تحليل وتصنيف · رسوم بيانية تفاعلية</span>
       <h2>الرصد التلقائي <em>لتغريدات حساباتك</em> على X (تويتر)</h2>
-      <p>أضف حسابات X الرسمية (واضبط مفتاح Just One API من الإعدادات)، وسيستخرج الموقع أحدث تغريدة (أو أكثر) من كل حساب تلقائياً كل دورة عبر اتصال مباشر بواجهة Just One API، ثم يحلّلها ويصنّفها فوراً ويعرض كامل بياناتها — النص، الصور والفيديو، والتفاعلات — إلى جانب رسوم بيانية تفاعلية وتصفية حية حسب الحساب والفترة والتصنيف.</p>
+      <p>أضف حسابات X الرسمية (واضبط مفتاحك من الإعدادات)، وسيستخرج الموقع أحدث تغريدة (أو أكثر) من كل حساب تلقائياً كل دورة، ثم يحلّلها ويصنّفها فوراً ويعرض كامل بياناتها — النص، الصور والفيديو، والتفاعلات — إلى جانب رسوم بيانية تفاعلية وتصفية حية حسب الحساب والفترة والتصنيف.</p>
     </header>
 
     <main>
@@ -139,8 +139,8 @@
       </div>
     </div>
 
-    <div class="hint" id="keyHint" style="display:none">⚠️ لم يُضبط مفتاح Just One API بعد — <a href="settings.html">اضبطه من صفحة الإعدادات ⚙️</a>.</div>
-    <div class="hint" style="margin-top:14px">💡 هذه الصفحة تتصل مباشرةً بواجهة Just One API عبر المفتاح المضبوط من <a href="settings.html">صفحة الإعدادات ⚙️</a>.</div>
+    <div class="hint" id="keyHint" style="display:none">⚠️ لم يُضبط مفتاح الاستخراج بعد — <a href="settings.html">اضبطه من صفحة الإعدادات ⚙️</a>.</div>
+    <div class="hint" style="margin-top:14px">💡 مفتاح الاستخراج وقاعدة البيانات يُضبطان من <a href="settings.html">صفحة الإعدادات ⚙️</a> ويُطبَّقان تلقائياً هنا.</div>
   </section>
 
   <!-- Control band -->
@@ -223,7 +223,7 @@
 
   <div class="empty-state" id="bootEmpty">
     <div class="big">📊</div>
-    <p>أضف حساباتك الرسمية (واضبط مفتاح Just One API من الإعدادات ⚙️)، ثم اضغط «بدء الرصد» لتظهر لوحة التحليل التفاعلية هنا.</p>
+    <p>أضف حساباتك الرسمية (واضبط مفتاحك من الإعدادات ⚙️)، ثم اضغط «بدء الرصد» لتظهر لوحة التحليل التفاعلية هنا.</p>
   </div>
 
     </main>
@@ -240,9 +240,9 @@
 FBXAnalyzer.injectStyles();
 
 /* =============== Constants =============== */
-const JOA_BASE = 'https://api.justoneapi.com';
-const JOA_ENDPOINT = '/api/twitter/get-user-posts/v1';
-const JOA_KEY_STORAGE = 'fbx_joa_key';
+const ACTOR_ID = 'scrape.badger~twitter-tweets-scraper';
+const API_BASE = 'https://api.apify.com/v2';
+const KEY_STORAGE = 'fbx_apify_key';
 const THEME_STORAGE = 'fbx_theme';
 const ACCOUNTS_STORAGE = 'fbx_x_tweet_monitor_accounts';
 const FEED_STORAGE = 'fbx_x_tweet_monitor_feed';
@@ -302,11 +302,11 @@ function saveFeed() {
     }
   }
 }
-function getJoaKey() { return (localStorage.getItem(JOA_KEY_STORAGE) || '').trim(); }
+function getToken() { return (localStorage.getItem(KEY_STORAGE) || '').trim(); }
 
 /* =============== API key (managed from settings.html) =============== */
 function refreshKeyUi() {
-  $('keyHint').style.display = getJoaKey() ? 'none' : 'block';
+  $('keyHint').style.display = getToken() ? 'none' : 'block';
 }
 
 /* =============== Accounts =============== */
@@ -349,7 +349,7 @@ $('toggleBtn').onclick = () => (monitorOn ? stopMonitor() : startMonitor());
 $('runNowBtn').onclick = () => runCycle(true);
 
 function startMonitor() {
-  if (!getJoaKey()) { refreshKeyUi(); return showToast('⚠️ اضبط مفتاح Just One API من صفحة الإعدادات ⚙️'); }
+  if (!getToken()) { refreshKeyUi(); return showToast('⚠️ اضبط مفتاح الاستخراج من صفحة الإعدادات ⚙️'); }
   if (!accounts.length) return showToast('⚠️ أضف حساباً واحداً على الأقل');
   monitorOn = true; localStorage.setItem(ON_STORAGE, '1'); refreshControlUi();
   if (Date.now() - lastRunAt >= intervalMs()) runCycle();
@@ -374,8 +374,8 @@ function tick() {
 
 async function runCycle(manual) {
   if (cycleRunning) return;
-  const token = getJoaKey();
-  if (!token) { refreshKeyUi(); return showToast('⚠️ اضبط مفتاح Just One API من صفحة الإعدادات ⚙️'); }
+  const token = getToken();
+  if (!token) { refreshKeyUi(); return showToast('⚠️ اضبط مفتاح الاستخراج من صفحة الإعدادات ⚙️'); }
   if (!accounts.length) return showToast('⚠️ أضف حساباً واحداً على الأقل');
 
   cycleRunning = true;
@@ -383,37 +383,51 @@ async function runCycle(manual) {
   $('miniSpinner').style.display = 'block';
   $('countdown').textContent = '📡';
   $('miniStatus').textContent = manual ? 'رصد فوري قيد التنفيذ...' : 'دورة رصد قيد التنفيذ...';
-  const existing = new Set(feed.map(p => p.key));
-  freshKeys = new Set();
-  let added = 0;
-  const errors = [];
   try {
-    for (let i = 0; i < accounts.length; i++) {
-      const handle = accounts[i];
-      try {
-        const items = await fetchUserPosts(token, handle, tweetsPerCycle, (attempt, max) => {
-          $('miniStatus').textContent = attempt === 1
-            ? `جارٍ رصد @${handle}... (${i + 1}/${accounts.length})`
-            : `@${handle}: الخدمة تجمع البيانات — إعادة المحاولة ${attempt} من ${max}`;
-        });
-        for (const raw of items.slice(0, tweetsPerCycle)) {
-          const p = normalizeTweet(raw, handle);
-          if (!p.text && !p.url) continue;
-          if (!p.key || existing.has(p.key)) continue;
-          existing.add(p.key); p.seenAt = Date.now();
-          feed.push(p); freshKeys.add(p.key); added++;
-        }
-      } catch (err) {
-        errors.push(`@${handle}: ${err.message || err}`);
-      }
-      if (i < accounts.length - 1) await sleep(600);
+    const input = {
+      startUrls: accounts.map(h => `https://twitter.com/${h}`),
+      twitterHandles: accounts,
+      usernames: accounts,
+      handles: accounts,
+      maxTweets: tweetsPerCycle,
+      maxTweetsPerUser: tweetsPerCycle,
+      resultsLimit: tweetsPerCycle,
+      tweetsDesired: tweetsPerCycle,
+      proxy: { useApifyProxy: true }
+    };
+    const maxItems = tweetsPerCycle * accounts.length;
+    const startRes = await fetch(`${API_BASE}/acts/${ACTOR_ID}/runs?token=${encodeURIComponent(token)}&maxItems=${maxItems}`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input)
+    });
+    if (!startRes.ok) throw await apiError(startRes);
+    const run = (await startRes.json()).data;
+    let status = run.status, datasetId = run.defaultDatasetId;
+    while (['READY', 'RUNNING'].includes(status)) {
+      await sleep(4000);
+      const st = await fetch(`${API_BASE}/actor-runs/${run.id}?token=${encodeURIComponent(token)}`);
+      if (!st.ok) throw await apiError(st);
+      const d = (await st.json()).data; status = d.status; datasetId = d.defaultDatasetId;
+    }
+    if (status !== 'SUCCEEDED' && status !== 'ABORTED') throw new Error(`انتهى التشغيل بحالة "${status}". تحقق من الرصيد أو أسماء الحسابات.`);
+    const itemsRes = await fetch(`${API_BASE}/datasets/${datasetId}/items?clean=true&format=json&token=${encodeURIComponent(token)}`);
+    if (!itemsRes.ok) throw await apiError(itemsRes);
+    const items = await itemsRes.json();
+
+    const existing = new Set(feed.map(p => p.key));
+    freshKeys = new Set();
+    let added = 0;
+    for (const raw of items) {
+      const p = normalizeTweet(raw);
+      if (!p.text && !p.url) continue;
+      if (!p.key || existing.has(p.key)) continue;
+      existing.add(p.key); p.seenAt = Date.now();
+      feed.push(p); freshKeys.add(p.key); added++;
     }
     feed.sort((a, b) => (b.ts || b.seenAt || 0) - (a.ts || a.seenAt || 0));
     if (feed.length > FEED_CAP) feed = feed.slice(0, FEED_CAP);
     saveFeed();
     lastRunAt = Date.now(); localStorage.setItem(LAST_STORAGE, String(lastRunAt));
     $('miniStatus').textContent = `آخر رصد: ${new Date(lastRunAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })} · ` + (added ? `${added} تغريدة جديدة ✨` : 'لا جديد');
-    if (errors.length) { $('bandAlert').textContent = errors.join(' · '); $('bandAlert').style.display = 'block'; }
     if (added) { showToast(`✨ ${added} تغريدة جديدة`); saveToDb(feed.filter(p => freshKeys.has(p.key)), 'monitor'); }
     showDashboard();
     renderDashboard();
@@ -425,59 +439,11 @@ async function runCycle(manual) {
   } finally { cycleRunning = false; $('miniSpinner').style.display = 'none'; }
 }
 
-/* =============== جلب التغريدات مع إعادة المحاولة =============== */
-// الجمع لدى Just One API غير متزامن: قد تُرجع أول محاولة "COLLECT FAILED, SEND REQUEST AGAIN"
-// وهي رسالة تطلب صراحةً إعادة الإرسال ريثما تُجهَّز البيانات على خوادمهم. نعيد المحاولة تلقائياً
-// بفواصل زمنية، ونجرّب أكثر من صيغة لقيمة restId إن استمر الفشل.
-const COLLECT_RETRY_MAX = 5;
-const COLLECT_RETRY_DELAY = 2500;
-function isRetryableCollect(msg) {
-  return /collect\s*failed|send\s*request\s*again|try\s*again|retry|processing|not\s*ready/i.test(String(msg || ''));
-}
-async function fetchUserPosts(token, handle, count, onAttempt) {
-  const variants = [`https://x.com/${handle}`, handle];
-  let lastErr = null;
-  for (const restId of variants) {
-    for (let attempt = 1; attempt <= COLLECT_RETRY_MAX; attempt++) {
-      if (onAttempt) onAttempt(attempt, COLLECT_RETRY_MAX);
-      let retryable = false;
-      try {
-        const qs = new URLSearchParams({ token, restId, username: handle, screen_name: handle, count: String(count) });
-        const res = await fetch(`${JOA_BASE}${JOA_ENDPOINT}?${qs.toString()}`, { signal: AbortSignal.timeout(20000) });
-        if (!res.ok) throw await joaError(res, handle);
-        const data = await res.json();
-        const items = extractJoaItems(data);
-        if (items) return items;                    // ✅ نجحت
-        lastErr = joaLogicalError(data, handle);
-        retryable = isRetryableCollect(lastErr.message);
-      } catch (e) {
-        lastErr = e;
-        retryable = isRetryableCollect(e.message);
-      }
-      if (!retryable) break;                        // خطأ لا تنفع معه الإعادة — جرّب الصيغة التالية
-      if (attempt < COLLECT_RETRY_MAX) await sleep(COLLECT_RETRY_DELAY);
-    }
-  }
-  throw lastErr || new Error(`تعذّر جلب تغريدات @${handle}`);
-}
-
-// شكل غلاف الاستجابة غير مؤكَّد رسمياً (docs توضّح المصادقة فقط)، فتُغطّى عدة احتمالات شائعة لأدوات هذه الفئة
-function extractJoaItems(data) {
-  if (Array.isArray(data)) return data;
-  const d = data?.data ?? data;
-  if (Array.isArray(d)) return d;
-  const list = d?.list || d?.posts || d?.tweets || d?.items || d?.results;
-  return Array.isArray(list) ? list : null;
-}
-function joaLogicalError(data, handle) {
-  const msg = data?.msg || data?.message || data?.error || `تعذّر قراءة استجابة الحساب @${handle}`;
-  return new Error(msg);
-}
-async function joaError(res, handle) {
-  let msg = `خطأ من Just One API عند رصد @${handle} (HTTP ${res.status})`;
-  try { const b = await res.json(); if (b?.msg || b?.message) msg += `: ${b.msg || b.message}`; } catch (_) {}
-  if (res.status === 401 || res.status === 403) msg = '🔑 مفتاح Just One API غير صحيح أو منتهي. تحقق منه في الإعدادات ⚙️.';
-  if (res.status === 429) msg = '⏳ تجاوزتَ حد الطلبات المسموح — سيُعاد المحاولة في الدورة القادمة.';
+async function apiError(res) {
+  let msg = `خطأ من خدمة الاستخراج (HTTP ${res.status})`;
+  try { const b = await res.json(); if (b?.error?.message) msg += `: ${b.error.message}`; } catch (_) {}
+  if (res.status === 401) msg = '🔑 مفتاح الاستخراج غير صحيح أو منتهي. تحقق منه في الإعدادات ⚙️.';
+  if (res.status === 402) msg = '💳 رصيد حساب الاستخراج غير كافٍ.';
   return new Error(msg);
 }
 const sleep = ms => new Promise(r => setTimeout(r, ms));

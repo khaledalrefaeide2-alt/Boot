@@ -103,7 +103,7 @@
     <header class="page-header">
       <span class="hero-badge">✦ استخراج · تحليل · تصنيف</span>
       <h2>استخرج تغريدات أي حساب <em>على X (تويتر)</em> بضغطة زر</h2>
-      <p>اضبط مفتاح Just One API من صفحة الإعدادات مرة واحدة، أدخل أسماء المستخدمين وعدد التغريدات المطلوب لكل حساب، واحصل على النتائج محلَّلة ومصنَّفة بنفس محرك التحليل المستخدم لمنشورات فيسبوك، مع التصدير إلى Excel أو JSON أو CSV.</p>
+      <p>اضبط مفتاحك من صفحة الإعدادات مرة واحدة، أدخل أسماء المستخدمين وعدد التغريدات المطلوب لكل حساب، واحصل على النتائج محلَّلة ومصنَّفة بنفس محرك التحليل المستخدم لمنشورات فيسبوك، مع التصدير إلى Excel أو JSON أو CSV.</p>
       <button class="hero-cta" id="heroCta">ابدأ الاستخراج الآن ↓</button>
     </header>
 
@@ -114,7 +114,7 @@
     <div class="feature">
       <div class="feature-icon">🔑</div>
       <h3>إعداد موحّد</h3>
-      <p>مفتاح Just One API يُضبط مرة واحدة من الإعدادات ويُستخدم هنا تلقائياً — بلا حاجة لأي رموز دخول شخصية</p>
+      <p>يُحفظ مفتاحك محلياً في متصفحك فقط من صفحة الإعدادات، ويُستخدم في كل صفحات الموقع</p>
     </div>
     <div class="feature">
       <div class="feature-icon">🐦</div>
@@ -135,8 +135,8 @@
 
   <!-- Setup notice -->
   <section class="panel" id="setupPanel" style="display:none">
-    <div class="panel-title"><span class="num">⚠️</span> الإعداد غير مكتمل بعد</div>
-    <div class="hint" style="font-size:.9rem" id="setupMsg">اذهب إلى <a href="settings.html" style="color:var(--green-700);font-weight:900">⚙️ صفحة الإعدادات</a> واضبط مفتاح Just One API، ثم عُد إلى هنا للبدء.</div>
+    <div class="panel-title"><span class="num">⚠️</span> لم يُضبط مفتاح الاستخراج بعد</div>
+    <div class="hint" style="font-size:.9rem">اذهب إلى <a href="settings.html" style="color:var(--green-700);font-weight:900">⚙️ صفحة الإعدادات</a> واضبط مفتاح واجهة الاستخراج مرة واحدة، ثم عُد إلى هنا للبدء.</div>
     <div class="actions-row"><a class="btn btn-ghost btn-sm" href="settings.html">⚙️ فتح الإعدادات</a></div>
   </section>
 
@@ -233,9 +233,9 @@
 FBXAnalyzer.injectStyles();
 
 /* =============== Constants =============== */
-const JOA_BASE = 'https://api.justoneapi.com';
-const JOA_ENDPOINT = '/api/twitter/get-user-posts/v1';
-const JOA_KEY_STORAGE = 'fbx_joa_key';
+const ACTOR_ID = 'scrape.badger~twitter-tweets-scraper';
+const API_BASE = 'https://api.apify.com/v2';
+const KEY_STORAGE = 'fbx_apify_key';
 const THEME_STORAGE = 'fbx_theme';
 
 /* =============== Elements =============== */
@@ -251,6 +251,7 @@ const usernamesInput = $('usernames'),
 
 let allPosts = [];
 let aborted = false;
+let currentRunId = null;
 
 /* =============== Theme =============== */
 function applyTheme(t) {
@@ -267,9 +268,9 @@ $('themeBtn').onclick = () => {
 $('heroCta').onclick = () => document.querySelector('main .panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
 /* =============== API key (managed from settings.html) =============== */
-function getJoaKey() { return (localStorage.getItem(JOA_KEY_STORAGE) || '').trim(); }
+function getToken() { return (localStorage.getItem(KEY_STORAGE) || '').trim(); }
 function refreshSetupNotice() {
-  $('setupPanel').style.display = getJoaKey() ? 'none' : 'block';
+  $('setupPanel').style.display = getToken() ? 'none' : 'block';
 }
 
 function showToast(msg) {
@@ -304,11 +305,17 @@ function parseHandle(raw) {
 
 /* =============== Run flow =============== */
 runBtn.onclick = startExtraction;
-$('abortBtn').onclick = () => {
+$('abortBtn').onclick = async () => {
   aborted = true;
+  if (currentRunId) {
+    try {
+      await fetch(`${API_BASE}/actor-runs/${currentRunId}/abort?token=${encodeURIComponent(getToken())}`, { method: 'POST' });
+    } catch (_) {}
+  }
   setStatus('تم إيقاف العملية', 'يمكنك بدء عملية جديدة في أي وقت', true);
-  runBtn.disabled = false;
+  spinner.style.display = 'none';
   $('abortBtn').style.display = 'none';
+  runBtn.disabled = false;
 };
 
 function validDate(v) { return v && !isNaN(new Date(v).getTime()); }
@@ -317,8 +324,8 @@ async function startExtraction() {
   formError.style.display = 'none';
   runError.style.display = 'none';
 
-  const token = getJoaKey();
-  if (!token) { refreshSetupNotice(); return showFormError('⚠️ لم يُضبط مفتاح Just One API بعد — اضبطه من صفحة الإعدادات ⚙️.'); }
+  const token = getToken();
+  if (!token) { refreshSetupNotice(); return showFormError('⚠️ لم يُضبط مفتاح الاستخراج بعد — اضبطه من صفحة الإعدادات ⚙️.'); }
 
   const handles = usernamesInput.value.split('\n').map(parseHandle).filter(Boolean);
   if (!handles.length) return showFormError('⚠️ أدخل اسم مستخدم واحد على الأقل على منصة X.');
@@ -331,45 +338,72 @@ async function startExtraction() {
     return showFormError('⚠️ تاريخ البداية يجب أن يكون قبل تاريخ النهاية.');
   }
 
+  const input = {
+    startUrls: handles.map(h => `https://twitter.com/${h}`),
+    twitterHandles: handles,
+    usernames: handles,
+    handles,
+    maxTweets: limit,
+    maxTweetsPerUser: limit,
+    resultsLimit: limit,
+    tweetsDesired: limit,
+    proxy: { useApifyProxy: true }
+  };
+
   aborted = false;
+  currentRunId = null;
   runBtn.disabled = true;
   statusPanel.style.display = 'block';
   resultsSection.style.display = 'none';
   spinner.style.display = 'block';
   $('abortBtn').style.display = 'inline-flex';
-  progressBar.style.width = '5%';
+  progressBar.style.width = '10%';
+  setStatus('جارٍ بدء عملية الاستخراج...', 'الاتصال بخوادم الاستخراج');
   statusPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
-  const collected = [];
-  const errors = [];
+  const maxItems = limit * handles.length;
+
   try {
-    for (let i = 0; i < handles.length; i++) {
-      if (aborted) break;
-      const handle = handles[i];
-      progressBar.style.width = Math.round((i / handles.length) * 90 + 5) + '%';
-      try {
-        const items = await fetchUserPosts(token, handle, limit, (attempt, max, variantLabel) => {
-          setStatus(
-            `جارٍ استخراج تغريدات @${handle}... (${i + 1}/${handles.length})`,
-            attempt === 1
-              ? `الاتصال بخدمة Just One API · ${variantLabel}`
-              : `الخدمة تجمع البيانات — إعادة المحاولة ${attempt} من ${max} · ${variantLabel}`
-          );
-        });
-        collected.push(...items.map(raw => normalizeTweet(raw, handle)));
-      } catch (err) {
-        errors.push(err.message || String(err));
-      }
+    const startRes = await fetch(`${API_BASE}/acts/${ACTOR_ID}/runs?token=${encodeURIComponent(token)}&maxItems=${maxItems}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(input)
+    });
+    if (!startRes.ok) throw await apiError(startRes);
+    const run = (await startRes.json()).data;
+    currentRunId = run.id;
+
+    progressBar.style.width = '25%';
+    setStatus('جارٍ استخراج التغريدات...', 'قد تستغرق العملية عدة دقائق حسب حجم الطلب');
+    let status = run.status, datasetId = run.defaultDatasetId, elapsed = 0;
+    while (['READY', 'RUNNING'].includes(status)) {
+      if (aborted) return;
+      await sleep(4000);
+      elapsed += 4;
+      progressBar.style.width = Math.min(85, 25 + elapsed * 1.2) + '%';
+      statusSub.textContent = `مضى ${elapsed} ثانية · الحالة: قيد التشغيل`;
+      const st = await fetch(`${API_BASE}/actor-runs/${currentRunId}?token=${encodeURIComponent(token)}`);
+      if (!st.ok) throw await apiError(st);
+      const d = (await st.json()).data;
+      status = d.status;
+      datasetId = d.defaultDatasetId;
     }
-    if (aborted) {
-      spinner.style.display = 'none';
-      $('abortBtn').style.display = 'none';
-      setStatus('⏹️ تم إيقاف العملية', `تم استخراج ${collected.length} تغريدة قبل الإيقاف`, true);
-      return;
+    if (aborted) return;
+    if (status !== 'SUCCEEDED' && status !== 'ABORTED') {
+      throw new Error(`انتهى التشغيل بحالة "${status}". تحقق من رصيدك أو من صحة أسماء المستخدمين.`);
     }
 
-    const scrapedCount = collected.length;
-    allPosts = collected.filter(p => p.text || p.url);
+    progressBar.style.width = '92%';
+    setStatus('جارٍ تحميل النتائج...', 'قراءة البيانات المستخرجة');
+    const itemsRes = await fetch(`${API_BASE}/datasets/${datasetId}/items?clean=true&format=json&token=${encodeURIComponent(token)}`);
+    if (!itemsRes.ok) throw await apiError(itemsRes);
+    const items = await itemsRes.json();
+    if (status === 'ABORTED' && !items.length) {
+      throw new Error('توقف التشغيل قبل جمع أي نتائج. تحقق من رصيدك أو من صحة أسماء المستخدمين.');
+    }
+
+    const scrapedCount = items.length;
+    allPosts = items.map(raw => normalizeTweet(raw)).filter(p => p.text || p.url);
     if (validDate(from)) {
       const f = new Date(from).getTime();
       allPosts = allPosts.filter(p => !p.ts || p.ts >= f);
@@ -384,10 +418,9 @@ async function startExtraction() {
     $('abortBtn').style.display = 'none';
     const hidden = scrapedCount - allPosts.length;
 
-    if (!allPosts.length && errors.length) {
-      // كل الحسابات فشلت — لا نُظهر "اكتمل بنجاح" فوق رسالة خطأ متناقضة
-      setStatus('❌ فشلت العملية لكل الحسابات', '', true);
-      runError.textContent = errors.join(' · ');
+    if (!allPosts.length && scrapedCount === 0) {
+      setStatus('❌ لم يُعثر على تغريدات', '', true);
+      runError.textContent = 'لم يُرجع التشغيل أي عناصر. تحقق من صحة أسماء المستخدمين أو من رصيدك.';
       runError.style.display = 'block';
       return;
     }
@@ -396,17 +429,11 @@ async function startExtraction() {
       `✅ اكتمل الاستخراج — ${allPosts.length} تغريدة`,
       hidden > 0
         ? `استُخرج ${scrapedCount} عنصراً، أُخفي ${hidden} منها لعدم احتوائه على نص/رابط أو لوقوعه خارج الفترة الزمنية`
-        : (errors.length ? `نجح البعض؛ فشل: ${errors.join(' · ')}` : 'يمكنك البحث والفرز والتصدير من الأسفل'),
+        : 'يمكنك البحث والفرز والتصدير من الأسفل',
       true
     );
-    if (errors.length && allPosts.length) {
-      runError.textContent = `تعذّر استخراج بعض الحسابات: ${errors.join(' · ')}`;
-      runError.style.display = 'block';
-    }
-    if (allPosts.length) {
-      renderResults();
-      saveToDb(allPosts, 'extract', true);
-    }
+    renderResults();
+    saveToDb(allPosts, 'extract', true);
   } catch (err) {
     spinner.style.display = 'none';
     $('abortBtn').style.display = 'none';
@@ -418,65 +445,14 @@ async function startExtraction() {
   }
 }
 
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-/* =============== جلب التغريدات مع إعادة المحاولة =============== */
-// الجمع لدى Just One API غير متزامن: قد تُرجع أول محاولة "COLLECT FAILED, SEND REQUEST AGAIN"
-// وهي رسالة تطلب صراحةً إعادة الإرسال ريثما تُجهَّز البيانات على خوادمهم. نعيد المحاولة تلقائياً
-// بفواصل زمنية، ونجرّب أكثر من صيغة لقيمة restId إن استمر الفشل.
-const COLLECT_RETRY_MAX = 5;
-const COLLECT_RETRY_DELAY = 2500;
-function isRetryableCollect(msg) {
-  return /collect\s*failed|send\s*request\s*again|try\s*again|retry|processing|not\s*ready/i.test(String(msg || ''));
-}
-async function fetchUserPosts(token, handle, count, onAttempt) {
-  const variants = [
-    { restId: `https://x.com/${handle}`, label: 'رابط الحساب' },
-    { restId: handle, label: 'اسم المستخدم' }
-  ];
-  let lastErr = null;
-  for (const v of variants) {
-    for (let attempt = 1; attempt <= COLLECT_RETRY_MAX; attempt++) {
-      if (aborted) throw new Error('أُوقفت العملية');
-      if (onAttempt) onAttempt(attempt, COLLECT_RETRY_MAX, v.label);
-      let retryable = false;
-      try {
-        const qs = new URLSearchParams({ token, restId: v.restId, username: handle, screen_name: handle, count: String(count) });
-        const res = await fetch(`${JOA_BASE}${JOA_ENDPOINT}?${qs.toString()}`, { signal: AbortSignal.timeout(20000) });
-        if (!res.ok) throw await joaError(res, handle);
-        const data = await res.json();
-        const items = extractJoaItems(data);
-        if (items) return items;                    // ✅ نجحت
-        lastErr = joaLogicalError(data, handle);
-        retryable = isRetryableCollect(lastErr.message);
-      } catch (e) {
-        lastErr = e;
-        retryable = isRetryableCollect(e.message);
-      }
-      if (!retryable) break;                        // خطأ لا تنفع معه الإعادة — جرّب الصيغة التالية
-      if (attempt < COLLECT_RETRY_MAX) await sleep(COLLECT_RETRY_DELAY);
-    }
-  }
-  throw lastErr || new Error(`تعذّر جلب تغريدات @${handle}`);
-}
-
-// شكل غلاف الاستجابة غير مؤكَّد رسمياً، فتُغطّى عدة احتمالات شائعة لأدوات هذه الفئة
-function extractJoaItems(data) {
-  if (Array.isArray(data)) return data;
-  const d = data?.data ?? data;
-  if (Array.isArray(d)) return d;
-  const list = d?.list || d?.posts || d?.tweets || d?.items || d?.results;
-  return Array.isArray(list) ? list : null;
-}
-function joaLogicalError(data, handle) {
-  const msg = data?.msg || data?.message || data?.error || `تعذّر قراءة استجابة الحساب @${handle}`;
-  return new Error(msg);
-}
-async function joaError(res, handle) {
-  let msg = `خطأ من Just One API عند استخراج @${handle} (HTTP ${res.status})`;
-  try { const b = await res.json(); if (b?.msg || b?.message) msg += `: ${b.msg || b.message}`; } catch (_) {}
-  if (res.status === 401 || res.status === 403) msg = '🔑 مفتاح Just One API غير صحيح أو منتهي. تحقق منه في صفحة الإعدادات ⚙️.';
-  if (res.status === 429) msg = '⏳ تجاوزتَ حد الطلبات المسموح — أعد المحاولة بعد قليل.';
+async function apiError(res) {
+  let msg = `خطأ من خدمة الاستخراج (HTTP ${res.status})`;
+  try {
+    const body = await res.json();
+    if (body?.error?.message) msg += `: ${body.error.message}`;
+  } catch (_) {}
+  if (res.status === 401) msg = '🔑 مفتاح الاستخراج غير صحيح أو منتهي. تحقق منه في صفحة الإعدادات ⚙️.';
+  if (res.status === 402) msg = '💳 رصيد حساب الاستخراج غير كافٍ لتشغيل هذه العملية.';
   return new Error(msg);
 }
 
@@ -485,6 +461,8 @@ function setStatus(main, sub, done) {
   statusSub.textContent = sub || '';
   if (done) spinner.style.display = 'none';
 }
+
+const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 /* =============== Normalization =============== */
 // خرائط حقول دفاعية: مخطط مخرجات الأداة غير مؤكَّد رسمياً، فتُغطّى عدة تسميات شائعة معاً
