@@ -384,16 +384,14 @@ async function runCycle(manual) {
   $('countdown').textContent = '📡';
   $('miniStatus').textContent = manual ? 'رصد فوري قيد التنفيذ...' : 'دورة رصد قيد التنفيذ...';
   try {
+    // هذه الأداة أداة بحث (query + mode + query_type)، وليست "جلب تايملاين حساب" مباشرة —
+    // نبني استعلام بحث بمشغّل from: القياسي في X لجلب تغريدات الحسابات المحدَّدة تحديداً
+    const query = accounts.map(h => `from:${h}`).join(' OR ');
     const input = {
-      startUrls: accounts.map(h => `https://twitter.com/${h}`),
-      twitterHandles: accounts,
-      usernames: accounts,
-      handles: accounts,
-      maxTweets: tweetsPerCycle,
-      maxTweetsPerUser: tweetsPerCycle,
-      resultsLimit: tweetsPerCycle,
-      tweetsDesired: tweetsPerCycle,
-      proxy: { useApifyProxy: true }
+      query,
+      mode: 'Search',
+      query_type: 'Latest',
+      max_results: tweetsPerCycle * accounts.length
     };
     const maxItems = tweetsPerCycle * accounts.length;
     const startRes = await fetch(`${API_BASE}/acts/${ACTOR_ID}/runs?token=${encodeURIComponent(token)}&maxItems=${maxItems}`, {

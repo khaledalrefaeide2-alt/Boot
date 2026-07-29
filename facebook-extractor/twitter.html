@@ -338,16 +338,14 @@ async function startExtraction() {
     return showFormError('⚠️ تاريخ البداية يجب أن يكون قبل تاريخ النهاية.');
   }
 
+  // هذه الأداة أداة بحث (query + mode + query_type)، وليست "جلب تايملاين حساب" مباشرة —
+  // نبني استعلام بحث بمشغّل from: القياسي في X لجلب تغريدات الحسابات المحدَّدة تحديداً
+  const query = handles.map(h => `from:${h}`).join(' OR ');
   const input = {
-    startUrls: handles.map(h => `https://twitter.com/${h}`),
-    twitterHandles: handles,
-    usernames: handles,
-    handles,
-    maxTweets: limit,
-    maxTweetsPerUser: limit,
-    resultsLimit: limit,
-    tweetsDesired: limit,
-    proxy: { useApifyProxy: true }
+    query,
+    mode: 'Search',
+    query_type: 'Latest',
+    max_results: limit * handles.length
   };
 
   aborted = false;
