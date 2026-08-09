@@ -14,7 +14,50 @@
 
 const http = require('node:http');
 const path = require('node:path');
-const { DatabaseSync } = require('node:sqlite');
+
+// The built-in node:sqlite module only exists (and only works without an
+// experimental flag) from Node 22.13 onward. Fail loudly and clearly here,
+// otherwise the user just sees an unexplained "Cannot find module" crash.
+function fatal(lines) {
+  console.error('');
+  for (const l of lines) console.error('  ' + l);
+  console.error('');
+  process.exit(1);
+}
+const [nodeMajor, nodeMinor] = process.versions.node.split('.').map(Number);
+if (nodeMajor < 22 || (nodeMajor === 22 && nodeMinor < 13)) {
+  fatal([
+    '[ ERROR ]  Your Node.js version is too old.',
+    '',
+    `Installed version : v${process.versions.node}`,
+    'Required version  : 22.13 or newer',
+    '',
+    'Download the LTS version from https://nodejs.org, install it,',
+    'then run this again.'
+  ]);
+}
+// Node prints an alarming-looking "SQLite is an experimental feature" warning
+// on some versions. The API we use is stable in practice and this window is
+// shown to non-technical users, so hide that one warning and keep the rest.
+process.removeAllListeners('warning');   // drops Node's own printing listener
+process.on('warning', w => {
+  if (w.name === 'ExperimentalWarning' && /SQLite/i.test(w.message)) return;
+  console.warn(`${w.name}: ${w.message}`);
+});
+
+let DatabaseSync;
+try {
+  ({ DatabaseSync } = require('node:sqlite'));
+} catch (err) {
+  fatal([
+    '[ ERROR ]  This Node.js build has no built-in SQLite support.',
+    '',
+    `Installed version : v${process.versions.node}`,
+    '',
+    'Install the official LTS build from https://nodejs.org and run this again.',
+    `Details: ${err.message}`
+  ]);
+}
 
 const PORT = parseInt(process.env.PORT, 10) || 3300;
 const DB_PATH = path.join(__dirname, 'fbx-posts.db');
@@ -187,6 +230,25 @@ const server = http.createServer(async (req, res) => {
   } catch (err) {
     return json(res, 500, { ok: false, error: String(err.message || err) });
   }
+});
+
+server.on('error', err => {
+  if (err.code === 'EADDRINUSE') {
+    fatal([
+      `[ ERROR ]  Port ${PORT} is already in use.`,
+      '',
+      'Either the database server is already running in another window',
+      '(check your open windows before starting a second one), or another',
+      'program took this port.',
+      '',
+      'To use a different port instead, run:',
+      `  Windows : set PORT=3400 && node server.js`,
+      `  Mac/Linux: PORT=3400 node server.js`,
+      '',
+      'Then set the same address in the site Settings page.'
+    ]);
+  }
+  fatal([`[ ERROR ]  Could not start the server: ${err.message}`]);
 });
 
 server.listen(PORT, () => {
