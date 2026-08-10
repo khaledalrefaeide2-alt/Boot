@@ -126,6 +126,7 @@
     <div class="row">
       <input class="input" type="text" id="newAccount" placeholder="https://x.com/ALsahmaLsaudi" dir="ltr" style="flex:1 1 280px">
       <button class="btn btn-primary btn-sm" id="addAccountBtn">➕ إضافة حساب</button>
+      <button class="btn btn-ghost btn-sm" id="pickPagesBtn" type="button">📚 من الدليل</button>
     </div>
     <div class="hint">أضف روابط حسابات X الرسمية التي تريد رصد تغريداتها (مثل <span dir="ltr">https://x.com/ALsahmaLsaudi</span>) — تُحفظ في متصفحك.</div>
     <div class="chips" id="accountChips"></div>
@@ -237,6 +238,8 @@
 <script src="media.js"></script>
 <script src="xlsx-export.js"></script>
 <script src="common.js"></script>
+<script src="xlsx-import.js"></script>
+<script src="pages.js"></script>
 <script>
 'use strict';
 FBXAnalyzer.injectStyles();
@@ -781,6 +784,22 @@ if (FBXCommon.db.url) dbCheck(true);
 if (lastRunAt) $('miniStatus').textContent = `آخر رصد: ${new Date(lastRunAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}`;
 if (feed.length) { showDashboard(); renderDashboard(); }
 tick();
+
+/* =============== دليل الحسابات =============== */
+$('pickPagesBtn').onclick = () => FBXPages.openPicker({
+  platform: 'twitter',
+  onPick: picked => {
+    let added = 0;
+    for (const p of picked) {
+      const handle = parseHandle(p.handle || p.url || '');
+      if (!handle || !/^[A-Za-z0-9_]{1,15}$/.test(handle)) continue;
+      if (accounts.includes(handle)) continue;
+      accounts.push(handle); added++;
+    }
+    save(ACCOUNTS_STORAGE, accounts); renderChips();
+    showToast(added ? `✅ أُضيف ${added} حساب للرصد` : 'كل ما اخترته مضاف مسبقاً');
+  }
+});
 </script>
 </body>
 </html>

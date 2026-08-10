@@ -138,6 +138,9 @@
     <div class="panel-title"><span class="num">1</span> إعدادات الاستخراج والفلاتر</div>
 
     <label class="field-label" for="pageUrls">روابط صفحات فيسبوك <small>(رابط واحد في كل سطر)</small></label>
+    <div class="actions-row" style="margin:0 0 8px">
+      <button class="btn btn-ghost btn-sm" id="pickPagesBtn" type="button">📚 اختر من دليل الصفحات</button>
+    </div>
     <textarea class="input" id="pageUrls" placeholder="https://www.facebook.com/nasa&#10;https://www.facebook.com/bbcnews"></textarea>
 
     <div class="grid grid-4" style="margin-top:18px">
@@ -225,6 +228,8 @@
 <script src="media.js"></script>
 <script src="xlsx-export.js"></script>
 <script src="common.js"></script>
+<script src="xlsx-import.js"></script>
+<script src="pages.js"></script>
 <script src="ai.js"></script>
 <script src="report.js"></script>
 <script>
@@ -610,6 +615,19 @@ $('reportBtn').onclick = () => {
   const r = FBXReport.open(posts, { platform: 'facebook' });
   showToast(r.ok ? `📄 جهّزنا تقريراً بـ ${r.count} منشوراً — اختر «حفظ بصيغة PDF»` : '⚠️ ' + r.error);
 };
+
+/* =============== دليل الصفحات =============== */
+// يملأ حقل الروابط بما تختاره من الدليل، مع دمج ما هو موجود ومنع التكرار.
+$('pickPagesBtn').onclick = () => FBXPages.openPicker({
+  platform: 'facebook',
+  onPick: picked => {
+    const existing = pageUrlsInput.value.split('\n').map(s => s.trim()).filter(Boolean);
+    const added = picked.map(p => p.url).filter(Boolean);
+    const merged = [...new Set([...existing, ...added])];
+    pageUrlsInput.value = merged.join('\n');
+    showToast(`✅ أُضيفت ${merged.length - existing.length} صفحة (المجموع ${merged.length})`);
+  }
+});
 </script>
 </body>
 </html>

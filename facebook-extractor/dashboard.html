@@ -119,6 +119,7 @@
     <div class="row">
       <input class="input" type="url" id="newPageUrl" placeholder="https://www.facebook.com/mypage" dir="ltr" style="flex:1 1 280px">
       <button class="btn btn-primary btn-sm" id="addPageBtn">➕ إضافة منصة</button>
+      <button class="btn btn-ghost btn-sm" id="pickPagesBtn" type="button">📚 من الدليل</button>
     </div>
     <div class="hint">أضف روابط صفحاتك الرسمية — تُحفظ في متصفحك وتُشارَك مع صفحة عرض القائمة.</div>
     <div class="chips" id="platformChips"></div>
@@ -222,6 +223,8 @@
 <script src="media.js"></script>
 <script src="xlsx-export.js"></script>
 <script src="common.js"></script>
+<script src="xlsx-import.js"></script>
+<script src="pages.js"></script>
 <script>
 'use strict';
 FBXAnalyzer.injectStyles();
@@ -712,6 +715,23 @@ if (FBXCommon.db.url) dbCheck(true);
 if (lastRunAt) $('miniStatus').textContent = `آخر رصد: ${new Date(lastRunAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}`;
 if (feed.length) { showDashboard(); renderDashboard(); }
 tick();
+
+/* =============== دليل الصفحات =============== */
+// يضيف المختار إلى قائمة المنصات المرصودة مباشرة (نفس تحقّق addPage).
+$('pickPagesBtn').onclick = () => FBXPages.openPicker({
+  platform: 'facebook',
+  onPick: picked => {
+    let added = 0;
+    for (const p of picked) {
+      const url = (p.url || '').trim();
+      if (!url || !/^https?:\/\/(www\.|m\.|web\.)?facebook\.com\//i.test(url)) continue;
+      if (pages.includes(url)) continue;
+      pages.push(url); added++;
+    }
+    save(PAGES_STORAGE, pages); renderChips();
+    showToast(added ? `✅ أُضيفت ${added} منصة للرصد` : 'كل ما اخترته مضاف مسبقاً');
+  }
+});
 </script>
 </body>
 </html>

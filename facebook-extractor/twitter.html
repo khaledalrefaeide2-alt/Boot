@@ -145,6 +145,9 @@
     <div class="panel-title"><span class="num">1</span> إعدادات الاستخراج والفلاتر</div>
 
     <label class="field-label" for="usernames">روابط حسابات X <small>(رابط واحد في كل سطر — ويُقبل أيضاً اسم المستخدم مجرّداً أو بـ@)</small></label>
+    <div class="actions-row" style="margin:0 0 8px">
+      <button class="btn btn-ghost btn-sm" id="pickPagesBtn" type="button">📚 اختر من دليل الحسابات</button>
+    </div>
     <textarea class="input" id="usernames" placeholder="https://x.com/ALsahmaLsaudi&#10;https://x.com/bbcarabic" dir="ltr"></textarea>
 
     <div class="grid grid-4" style="margin-top:18px">
@@ -232,6 +235,8 @@
 <script src="media.js"></script>
 <script src="xlsx-export.js"></script>
 <script src="common.js"></script>
+<script src="xlsx-import.js"></script>
+<script src="pages.js"></script>
 <script src="ai.js"></script>
 <script src="report.js"></script>
 <script>
@@ -676,6 +681,18 @@ $('reportBtn').onclick = () => {
   const r = FBXReport.open(posts, { platform: 'twitter' });
   showToast(r.ok ? `📄 جهّزنا تقريراً بـ ${r.count} منشوراً — اختر «حفظ بصيغة PDF»` : '⚠️ ' + r.error);
 };
+
+/* =============== دليل الحسابات =============== */
+$('pickPagesBtn').onclick = () => FBXPages.openPicker({
+  platform: 'twitter',
+  onPick: picked => {
+    const existing = usernamesInput.value.split('\n').map(s => s.trim()).filter(Boolean);
+    const added = picked.map(p => p.handle || p.url).filter(Boolean);
+    const merged = [...new Set([...existing, ...added])];
+    usernamesInput.value = merged.join('\n');
+    showToast(`✅ أُضيف ${merged.length - existing.length} حساب (المجموع ${merged.length})`);
+  }
+});
 </script>
 </body>
 </html>

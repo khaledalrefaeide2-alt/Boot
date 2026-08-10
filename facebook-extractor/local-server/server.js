@@ -87,6 +87,22 @@ db.exec(`
     saved_at  INTEGER
   );
   CREATE INDEX IF NOT EXISTS idx_posts_ts ON posts (ts DESC);
+
+  -- دليل الصفحات/الحسابات المرشّحة للرصد (يُستورد عادةً من ملف Excel).
+  -- key هو الرابط أو المعرّف بعد التطبيع، فيستحيل تكرار الصفحة نفسها.
+  CREATE TABLE IF NOT EXISTS pages (
+    key       TEXT PRIMARY KEY,
+    name      TEXT,
+    url       TEXT,
+    handle    TEXT,
+    platform  TEXT,
+    category  TEXT,
+    notes     TEXT,
+    selected  INTEGER DEFAULT 0,
+    added_at  INTEGER
+  );
+  CREATE INDEX IF NOT EXISTS idx_pages_platform ON pages (platform);
+  CREATE INDEX IF NOT EXISTS idx_pages_selected ON pages (selected);
 `);
 
 // ترقية غير مدمّرة للجداول القديمة: أضف الأعمدة الناقصة إن وُجد جدول سابق
@@ -224,6 +240,86 @@ const server = http.createServer(async (req, res) => {
         FROM posts
       `).get();
       return json(res, 200, { ok: true, ...s });
+    }
+
+    /* ===== دليل الصفحات/الحسابات ===== */
+
+    // حفظ دفعة صفحات (من استيراد Excel أو إضافة يدوية).
+    // التكرار مستحيل: نفس المفتاح يُحدَّث بدل أن يُضاف، ويُحافَظ على حالة
+    // «مُختارة» و«وقت الإضافة» السابقين حتى لا يمحو استيرادٌ جديد اختياراتك.
+    if (u.pathname === '/api/pages' && req.method === 'POST') {
+      const body = JSON.parse(await readBody(req) || '{}');
+      const list = Array.isArray(body.pages) ? body.pages : [];
+      const stmt = db.prepare(`
+        INSERT INTO pages (key, name, url, handle, platform, category, notes, selected, added_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(key) DO UPDATE SET
+          name     = COALESCE(NULLIF(excluded.name, ''), pages.name),
+          url      = COALESCE(NULLIF(excluded.url, ''), pages.url),
+          handle   = COALESCE(NULLIF(excluded.handle, ''), pages.handle),
+          platform = COALESCE(NULLIF(excluded.platform, ''), pages.platform),
+          category = COALESCE(NULLIF(excluded.category, ''), pages.category),
+          notes    = COALESCE(NULLIF(excluded.notes, ''), pages.notes)
+      `);
+      let saved = 0;
+      const now = Date.now();
+      db.exec('BEGIN');
+      try {
+        for (const p of list) {
+          const key = String(p.key || p.url || p.handle || '').trim();
+          if (!key) continue;
+          stmt.run(key, String(p.name || ''), String(p.url || ''), String(p.handle || ''),
+                   String(p.platform || ''), String(p.category || ''), String(p.notes || ''),
+                   p.selected ? 1 : 0, now);
+          saved++;
+        }
+        db.exec('COMMIT');
+      } catch (e) { db.exec('ROLLBACK'); throw e; }
+      const total = db.prepare('SELECT COUNT(*) AS n FROM pages').get().n;
+      return json(res, 200, { ok: true, saved, total });
+    }
+
+    if (u.pathname === '/api/pages' && req.method === 'GET') {
+      const platform = (u.searchParams.get('platform') || '').trim();
+      const q = (u.searchParams.get('q') || '').trim();
+      const selectedOnly = u.searchParams.get('selected') === '1';
+      const where = [], args = [];
+      if (platform) { where.push('platform = ?'); args.push(platform); }
+      if (selectedOnly) where.push('selected = 1');
+      if (q) { where.push('(name LIKE ? OR url LIKE ? OR handle LIKE ? OR category LIKE ?)');
+               const like = `%${q}%`; args.push(like, like, like, like); }
+      const clause = where.length ? `WHERE ${where.join(' AND ')}` : '';
+      const rows = db.prepare(`SELECT * FROM pages ${clause} ORDER BY selected DESC, name COLLATE NOCASE`).all(...args);
+      const total = db.prepare('SELECT COUNT(*) AS n FROM pages').get().n;
+      return json(res, 200, { ok: true, total, count: rows.length, pages: rows });
+    }
+
+    // تحديث الاختيار: {keys:[...], selected:true|false} أو {selectAll:false} لمسح كل الاختيارات
+    if (u.pathname === '/api/pages/select' && req.method === 'POST') {
+      const body = JSON.parse(await readBody(req) || '{}');
+      if (body.selectAll === false) {
+        db.exec('UPDATE pages SET selected = 0');
+        return json(res, 200, { ok: true, selected: 0 });
+      }
+      const keys = Array.isArray(body.keys) ? body.keys : [];
+      const val = body.selected ? 1 : 0;
+      const stmt = db.prepare('UPDATE pages SET selected = ? WHERE key = ?');
+      db.exec('BEGIN');
+      try { for (const k of keys) stmt.run(val, String(k)); db.exec('COMMIT'); }
+      catch (e) { db.exec('ROLLBACK'); throw e; }
+      const n = db.prepare('SELECT COUNT(*) AS n FROM pages WHERE selected = 1').get().n;
+      return json(res, 200, { ok: true, selected: n });
+    }
+
+    if (u.pathname === '/api/pages' && req.method === 'DELETE') {
+      const key = u.searchParams.get('key');
+      if (key) {
+        db.prepare('DELETE FROM pages WHERE key = ?').run(key);
+      } else {
+        db.exec('DELETE FROM pages');
+      }
+      const total = db.prepare('SELECT COUNT(*) AS n FROM pages').get().n;
+      return json(res, 200, { ok: true, total });
     }
 
     return json(res, 404, { ok: false, error: 'not found' });
