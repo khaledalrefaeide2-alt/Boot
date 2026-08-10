@@ -76,14 +76,51 @@
     <div class="hint">لتشغيل قاعدة البيانات: افتح مجلد <strong>local-server</strong> واضغط مرتين على <strong dir="ltr">START-DATABASE.bat</strong> (ويندوز) أو نفّذ <strong dir="ltr">bash run.sh</strong> (ماك/لينكس)، ثم اضغط «فحص الاتصال».<br>يتطلب تثبيت <a href="https://nodejs.org" target="_blank" rel="noopener">Node.js</a> إصدار 22.13 أو أحدث مرة واحدة على الجهاز — وإن لم يكن مثبتاً سيخبرك الملف بذلك ويفتح صفحة التحميل تلقائياً.</div>
   </section>
 
+  <!-- AI review layer -->
+  <section class="panel">
+    <div class="panel-title"><span class="num">🧠</span> مراجعة التصنيف بالذكاء الاصطناعي <small style="font-weight:400;color:var(--text-2);font-size:.8rem">(اختياري)</small></div>
+    <div class="panel-sub">المحرك المحلي يطابق كلمات مفتاحية: سريع ومجاني، لكنه ينكسر أمام اللهجات والأخطاء الإملائية والسياق المعكوس («لا يجوز أن نقول إنهم خونة» ليست خطاب كراهية). تُراجع هذه الطبقة الحكم بنموذج لغوي يفهم السياق، وتضبط تحديداً الحالات الخاصة الثماني التي يصعب ضبطها بالكلمات وحدها.</div>
+
+    <div class="hint" style="border-right:3px solid var(--gold-deep);background:var(--surface-2);margin:10px 0 14px">
+      ⚠️ <strong>تنبيه الخصوصية:</strong> عند تفعيل هذه الطبقة يُرسَل <strong>نص المنشور</strong> إلى واجهة النموذج لتحليله — وهذا خروج عن مبدأ «كل شيء محلي» الذي يعمل به باقي الموقع. المفتاح نفسه يبقى في متصفحك فقط. اتركها معطَّلة إن كانت السرّية شرطاً في عملك.
+    </div>
+
+    <label class="field-label" for="aiKey">مفتاح واجهة النموذج <small>(محفوظ محلياً في هذا المتصفح)</small></label>
+    <div class="input-wrap">
+      <input class="input" type="password" id="aiKey" placeholder="sk-ant-..." autocomplete="off" dir="ltr" style="padding-left:42px">
+      <button class="toggle-eye" id="aiEyeBtn" title="إظهار / إخفاء">👁️</button>
+    </div>
+
+    <label class="field-label" for="aiModel" style="margin-top:12px">النموذج</label>
+    <select class="input" id="aiModel" dir="ltr">
+      <option value="claude-sonnet-5">claude-sonnet-5 — متوازن (موصى به)</option>
+      <option value="claude-opus-5">claude-opus-5 — الأدق للحالات المعقدة</option>
+      <option value="claude-haiku-4-5-20251001">claude-haiku-4.5 — الأسرع والأرخص</option>
+    </select>
+
+    <label style="display:flex;align-items:center;gap:8px;margin-top:14px;cursor:pointer;font-size:.88rem">
+      <input type="checkbox" id="aiAuto" style="width:16px;height:16px;cursor:pointer">
+      <span>مراجعة تلقائية بعد كل استخراج <small style="color:var(--text-2)">(بدونها تُراجَع يدوياً بزر في صفحة النتائج — أوفر للتكلفة)</small></span>
+    </label>
+
+    <div class="actions-row">
+      <button class="btn btn-primary btn-sm" id="saveAiBtn">💾 حفظ الإعدادات</button>
+      <button class="btn btn-ghost btn-sm" id="checkAiBtn">🔌 فحص المفتاح</button>
+      <button class="btn btn-danger-ghost btn-sm" id="clearAiBtn">🗑️ تعطيل ومسح المفتاح</button>
+    </div>
+    <div class="status-line" id="aiStatus"></div>
+  </section>
+
     </main>
 
-    <footer>الإعلام الرقمي — مركز الإعدادات · تحليل وتصنيف محلي · بياناتك لا تغادر متصفحك · الإصدار 4.0 🍃</footer>
+    <footer>الإعلام الرقمي — مركز الإعدادات · تحليل وتصنيف محلي · بياناتك لا تغادر متصفحك · الإصدار 4.1 🍃</footer>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="analyzer.js"></script>
 <script src="common.js"></script>
+<script src="ai.js"></script>
 <script>
 'use strict';
 const KEY_STORAGE = 'fbx_apify_key';
@@ -148,6 +185,55 @@ $('dbCheckBtn').onclick = async () => {
   } catch (_) {
     setStatus($('dbStatus'), '🔴 غير متصلة — تأكد أن الخادم المحلي يعمل ثم أعد الفحص.', false);
     showToast('⚠️ تعذر الاتصال بقاعدة البيانات');
+  }
+};
+
+/* ===== AI review layer ===== */
+const AI_KEY = FBXCommon.STORAGE.aiKey, AI_MODEL = FBXCommon.STORAGE.aiModel, AI_AUTO = FBXCommon.STORAGE.aiAuto;
+
+$('aiKey').value = localStorage.getItem(AI_KEY) || '';
+$('aiModel').value = localStorage.getItem(AI_MODEL) || FBXAI.DEFAULT_MODEL;
+$('aiAuto').checked = localStorage.getItem(AI_AUTO) === '1';
+if ($('aiKey').value) setStatus($('aiStatus'), '🟢 الطبقة مفعَّلة — النموذج: ' + $('aiModel').value, true);
+else setStatus($('aiStatus'), '⚪ معطَّلة — يعمل المحرك المحلي وحده (بلا إرسال أي بيانات للخارج).', null);
+
+$('aiEyeBtn').onclick = () => { const i = $('aiKey'); i.type = i.type === 'password' ? 'text' : 'password'; };
+
+$('saveAiBtn').onclick = () => {
+  const v = $('aiKey').value.trim();
+  localStorage.setItem(AI_MODEL, $('aiModel').value);
+  localStorage.setItem(AI_AUTO, $('aiAuto').checked ? '1' : '0');
+  if (!v) {
+    localStorage.removeItem(AI_KEY);
+    setStatus($('aiStatus'), '⚪ لا يوجد مفتاح — الطبقة معطَّلة.', null);
+    return showToast('حُفظت الإعدادات — الطبقة معطَّلة');
+  }
+  localStorage.setItem(AI_KEY, v);
+  setStatus($('aiStatus'), `✅ حُفظت الإعدادات — النموذج: ${$('aiModel').value}${$('aiAuto').checked ? ' · مراجعة تلقائية' : ' · مراجعة يدوية'}`, true);
+  showToast('✅ تم حفظ إعدادات الذكاء الاصطناعي');
+};
+
+$('clearAiBtn').onclick = () => {
+  localStorage.removeItem(AI_KEY);
+  localStorage.setItem(AI_AUTO, '0');
+  $('aiKey').value = ''; $('aiAuto').checked = false;
+  setStatus($('aiStatus'), '🗑️ تم مسح المفتاح — الطبقة معطَّلة والتحليل محلي بالكامل.', false);
+  showToast('🗑️ تم تعطيل طبقة الذكاء الاصطناعي');
+};
+
+$('checkAiBtn').onclick = async () => {
+  const v = $('aiKey').value.trim();
+  if (!v) return showToast('أدخل المفتاح أولاً');
+  setStatus($('aiStatus'), '⏳ جارٍ فحص المفتاح...', null);
+  try {
+    await FBXAI.testKey(v, $('aiModel').value);
+    localStorage.setItem(AI_KEY, v);
+    localStorage.setItem(AI_MODEL, $('aiModel').value);
+    setStatus($('aiStatus'), `🟢 المفتاح صالح والنموذج ${$('aiModel').value} يستجيب. تم الحفظ.`, true);
+    showToast('✅ المفتاح صالح');
+  } catch (e) {
+    setStatus($('aiStatus'), String(e.message || e), false);
+    showToast('⚠️ تعذّر التحقق من المفتاح');
   }
 };
 </script>

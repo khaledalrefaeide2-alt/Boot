@@ -203,6 +203,8 @@
       <button class="btn btn-ghost btn-sm" id="exportJsonBtn">⬇️ JSON</button>
       <button class="btn btn-ghost btn-sm" id="exportCsvBtn">⬇️ CSV</button>
       <button class="btn btn-ghost btn-sm" id="saveDbBtn">💾 حفظ في قاعدة البيانات</button>
+      <button class="btn btn-ghost btn-sm" id="aiReviewBtn" style="display:none">🧠 مراجعة بالذكاء الاصطناعي</button>
+      <button class="btn btn-ghost btn-sm" id="reportBtn">📄 تقرير PDF</button>
     </div>
 
     <div class="posts-grid" id="postsGrid"></div>
@@ -223,6 +225,8 @@
 <script src="media.js"></script>
 <script src="xlsx-export.js"></script>
 <script src="common.js"></script>
+<script src="ai.js"></script>
+<script src="report.js"></script>
 <script>
 'use strict';
 FBXAnalyzer.injectStyles();
@@ -398,6 +402,7 @@ async function startExtraction() {
     renderResults();
     // Auto-archive every extraction into the local database when connected
     saveToDb(allPosts, 'extract', true);
+    if (window.maybeAutoReview) window.maybeAutoReview(allPosts);
   } catch (err) {
     spinner.style.display = 'none';
     $('abortBtn').style.display = 'none';
@@ -563,6 +568,48 @@ if (FBXCommon.db.url) dbCheck(true);
 $('saveDbBtn').onclick = () => saveToDb(getVisiblePosts(), 'extract', false);
 refreshSetupNotice();
 
+
+/* =============== طبقة مراجعة الذكاء الاصطناعي (اختيارية) =============== */
+// تعمل فقط عند ضبط مفتاح النموذج من صفحة الإعدادات؛ بدونه يختفي الزر تماماً
+// ويبقى التصنيف محلياً بالكامل كما كان.
+(function () {
+  const btn = $('aiReviewBtn');
+  if (!btn) return;
+  let running = false;
+
+  function refresh() { btn.style.display = FBXAI.isEnabled() ? 'inline-flex' : 'none'; }
+  refresh();
+
+  async function review(posts, silent) {
+    if (running || !posts.length) return;
+    running = true;
+    const label = btn.textContent;
+    btn.disabled = true;
+    try {
+      const r = await FBXAI.classifyBatch(posts, {
+        onProgress: ({ done, total }) => { btn.textContent = `🧠 جارٍ المراجعة ${done}/${total}...`; }
+      });
+      renderResults();
+      if (r.failed && r.errors.length) showToast('⚠️ ' + r.errors[0]);
+      else showToast(`🧠 روجعت ${r.done} — عُدِّل حكم ${r.changed}`);
+    } catch (e) {
+      showToast('⚠️ ' + (e.message || 'تعذّرت المراجعة'));
+    } finally {
+      btn.textContent = label; btn.disabled = false; running = false;
+    }
+  }
+
+  btn.onclick = () => review(getVisiblePosts(), false);
+  // تُستدعى بعد كل استخراج عندما تكون المراجعة التلقائية مفعَّلة
+  window.maybeAutoReview = list => { if (FBXAI.isEnabled() && FBXAI.isAuto()) review(list, true); };
+})();
+
+/* =============== تقرير PDF =============== */
+$('reportBtn').onclick = () => {
+  const posts = getVisiblePosts();
+  const r = FBXReport.open(posts, { platform: 'facebook' });
+  showToast(r.ok ? `📄 جهّزنا تقريراً بـ ${r.count} منشوراً — اختر «حفظ بصيغة PDF»` : '⚠️ ' + r.error);
+};
 </script>
 </body>
 </html>

@@ -528,6 +528,20 @@
     return out;
   }
 
-  global.FBXAnalyzer = { analyze, badges, panel, injectStyles, aggregate, normalize };
+  /* ============================================================
+   * 10) وصف الإطار للاستهلاك الخارجي
+   * ------------------------------------------------------------
+   * تُستخدمه طبقة النموذج اللغوي (ai.js) لبناء تعليماتها من نفس المصدر،
+   * حتى لا ينحرف تعريف الفئات بين المحرك المحلي والنموذج.
+   * ============================================================ */
+  function framework() {
+    const neg = Object.entries(NEG).map(([id, c]) =>
+      ({ id, label: c.label, severity: c.severity, action: c.action, legal: c.legal }));
+    const pos = Object.entries(POS).map(([id, c]) =>
+      ({ id, label: c.label, importance: c.importance, legal: c.legal }));
+    return { negative: neg, positive: pos };
+  }
+
+  global.FBXAnalyzer = { analyze, badges, panel, injectStyles, aggregate, normalize, framework };
 
 })(typeof window !== 'undefined' ? window : this);
