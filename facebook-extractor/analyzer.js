@@ -369,11 +369,11 @@
   function badges(a) {
     if (!a) return '';
     return `<div class="fbx-badges">
-      <span class="fbx-badge fbx-badge-main fbx-${a.classification.toLowerCase()}">${a.classificationIcon} ${esc(a.classificationLabel)}</span>
+      <span class="fbx-badge fbx-badge-main fbx-${a.classification.toLowerCase()}">${esc(a.classificationLabel)}</span>
       <span class="fbx-badge ${a.levelClass}">${esc(a.levelLabel)} الخطورة</span>
       <span class="fbx-badge fbx-soft">${esc(a.subCategory.split(' — ')[0])}</span>
-      ${a.action !== 'KEEP' ? `<span class="fbx-badge fbx-flag">${a.actionIcon} ${esc(a.actionLabel)}</span>` : ''}
-      ${a.exceptionApplied ? `<span class="fbx-badge fbx-exc">⚖️ استثناء توثيق/إدانة</span>` : ''}
+      ${a.action !== 'KEEP' ? `<span class="fbx-badge fbx-flag">${esc(a.actionLabel)}</span>` : ''}
+      ${a.exceptionApplied ? `<span class="fbx-badge fbx-exc">استثناء توثيق/إدانة</span>` : ''}
     </div>`;
   }
 

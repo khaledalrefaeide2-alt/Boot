@@ -26,24 +26,14 @@
   const esc = s => String(s == null ? '' : s).replace(/[&<>"']/g, c =>
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
-  /* ============================================================
-   * أيقونات SVG — مقاس موحّد، تأخذ لونها من currentColor
-   * ============================================================ */
-  const ICON = {
-    like: '<path d="M7 22h9.3a2 2 0 0 0 2-1.6l1.4-7A2 2 0 0 0 17.7 11H14l.7-3.9A2.2 2.2 0 0 0 12.5 4.5L9 12"/><rect x="2.5" y="11" width="4.5" height="11" rx="1"/>',
-    comment: '<path d="M21 12a8.5 8.5 0 0 1-12.3 7.6L3 21l1.4-5.4A8.5 8.5 0 1 1 21 12Z"/>',
-    share: '<path d="m17 2 5 5-5 5"/><path d="M22 7H9a5 5 0 0 0-5 5v1"/><path d="m7 22-5-5 5-5"/><path d="M2 17h13a5 5 0 0 0 5-5v-1"/>',
-    eye: '<path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
-    clock: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3.2 2"/>',
-    link: '<path d="M13.5 10.5 21 3"/><path d="M15 3h6v6"/><path d="M20 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5"/>',
-    brain: '<path d="M12 5.5a3 3 0 0 0-5.6-1.5A2.8 2.8 0 0 0 4 8.6a3 3 0 0 0 .6 5A3 3 0 0 0 12 15Z"/><path d="M12 5.5A3 3 0 0 1 17.6 4 2.8 2.8 0 0 1 20 8.6a3 3 0 0 1-.6 5A3 3 0 0 1 12 15Z"/><path d="M12 15v4.5"/>',
-    chevron: '<path d="m6 9 6 6 6-6"/>',
-    alert: '<path d="M12 3 2.5 20h19L12 3Z"/><path d="M12 10v4"/><path d="M12 17.5v.01"/>'
-  };
+  /* مسارات الأيقونات مصدرها الوحيد icons.js — فلا تُعرَّف نسخة ثانية هنا
+     تتباعد عنها مع الوقت. المقاس يُمرَّر صراحة لأن أيقونات البطاقة تُوضع
+     داخل أسطر بمقاسات نصّ مختلفة. */
+  const PATHS = (global.FBXIcons && global.FBXIcons.paths) || {};
   const icon = (name, size) =>
     `<svg class="fx-i" viewBox="0 0 24 24" width="${size || 15}" height="${size || 15}" fill="none"
       stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"
-      aria-hidden="true">${ICON[name] || ''}</svg>`;
+      aria-hidden="true">${PATHS[name] || ''}</svg>`;
 
   /* ============================================================
    * مساعدات
@@ -133,7 +123,7 @@
       <span class="fx-vd fx-vd-${a.classification.toLowerCase()}">${esc(a.classificationLabel)}</span>
       ${meter(a)}
       <span class="fx-vd-sub">${esc(String(a.subCategory || '').split(' — ')[0])}</span>
-      ${a.action !== 'KEEP' ? `<span class="fx-vd-act">${icon('alert', 12)}${esc(a.actionLabel)}</span>` : ''}
+      ${a.action !== 'KEEP' ? `<span class="fx-vd-act">${icon('warning', 12)}${esc(a.actionLabel)}</span>` : ''}
       ${a.exceptionApplied ? '<span class="fx-vd-exc">استثناء توثيق/إدانة</span>' : ''}
     </div>` : '';
 

@@ -294,7 +294,8 @@ textarea.input { resize: vertical; min-height: 76px; line-height: 1.7; }
   border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; font-size: .76rem; font-weight: 700;
 }
 .chip .chip-url { direction: ltr; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 280px; }
-.chip button { border: none; background: var(--danger); color: #fff; width: 17px; height: 17px; border-radius: 50%; cursor: pointer; font-size: 10px; display: grid; place-items: center; flex: none; }
+.chip button { border: none; background: var(--danger); color: #fff; width: 18px; height: 18px; border-radius: 50%; cursor: pointer; font-size: 9px; display: grid; place-items: center; flex: none; padding: 0; }
+.chip button svg { width: 1.3em; height: 1.3em; }
 .no-platforms { font-size: .8rem; color: var(--text-2); margin-top: 10px; }
 
 .filters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 20px 0 4px; }

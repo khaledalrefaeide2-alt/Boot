@@ -78,7 +78,8 @@
   function applyTheme(t) {
     document.documentElement.dataset.theme = t;
     const btn = $('themeBtn');
-    if (btn) btn.textContent = t === 'dark' ? '☀️' : '🌙';
+    // زرّ السمة رسم لا حرف: يتبع لون الشريط الجانبي ولا يختلف شكله بين الأنظمة
+    if (btn) btn.innerHTML = W.FBXIcons ? W.FBXIcons.svg(t === 'dark' ? 'sun' : 'moon') : '';
   }
 
   function initTheme() {
@@ -120,6 +121,68 @@
   }
 
   /* ============================================================
+   * طلبات خدمة الاستخراج — طبقة واحدة مُحصَّنة
+   * ------------------------------------------------------------
+   * كانت الصفحات الأربع تنادي fetch() الخام مباشرة، فورثت ثلاث مشاكل:
+   *
+   * 1) «Failed to fetch» عند تشغيل الموقع من ملف محلي (file://).
+   *    طلب POST بترويسة Content-Type: application/json ليس طلباً «بسيطاً»
+   *    في معايير CORS، فيسبقه المتصفح بطلب فحص مسبق (preflight OPTIONS).
+   *    وصفحة file:// تُرسل Origin: null، فإن لم يقبله الخادم في ردّ الفحص
+   *    المسبق حُجب الطلب كلّه قبل أن يبدأ — ويظهر «Failed to fetch» بلا أي
+   *    رمز حالة. الحل: إرسال نفس المحتوى JSON بترويسة text/plain، فيصير
+   *    الطلب «بسيطاً» بلا فحص مسبق أصلاً (الخادم يقرأ الجسم كما هو).
+   *
+   * 2) أي تعثّر لحظي في الشبكة كان يُسقط الدورة كاملة. دورة رصد لاثنتي
+   *    عشرة صفحة تستغرق دقائق وتستطلع الحالة عشرات المرات؛ انقطاع ثانية
+   *    واحدة في أي استطلاع كان يُلغي العمل كلّه. الحل: إعادة محاولة
+   *    بتباعد متزايد لأخطاء الشبكة وحدها (لا لأخطاء الخادم المنطقية).
+   *
+   * 3) رسالة الخطأ كانت تصل للمستخدم بالإنجليزية وبلا معنى عملي.
+   * ============================================================ */
+  const NET_HINT = 'تعذّر الوصول إلى خدمة الاستخراج. تحقّق من اتصالك بالإنترنت، ' +
+    'ومن أن مانع الإعلانات أو جدار الحماية لا يحجب api.apify.com.';
+
+  // خطأ الشبكة يأتي من fetch كـ TypeError بلا استجابة؛ أخطاء الخادم لها ردّ ورمز حالة.
+  const isNetworkError = e => e instanceof TypeError || /failed to fetch|networkerror|load failed/i.test(e && e.message || '');
+
+  async function apiFetch(url, opts, tries) {
+    const n = tries || 3;
+    let last;
+    for (let i = 0; i < n; i++) {
+      try {
+        return await fetch(url, opts);
+      } catch (e) {
+        last = e;
+        if (!isNetworkError(e)) throw e;         // خطأ منطقي: لا معنى لإعادة المحاولة
+        if (i < n - 1) await sleep(1200 * Math.pow(2, i));   // 1.2s ثم 2.4s
+      }
+    }
+    throw new Error(NET_HINT);
+  }
+
+  /* POST بجسم JSON بلا فحص مسبق — راجع الشرح (1) أعلاه.
+     نجرّب text/plain أولاً لأنه وحده يتفادى الفحص المسبق، وإن ردّ الخادم بما
+     يفيد رفض نوع المحتوى (400 أو 415) نعيد الطلب بـ application/json كما كان.
+     فالتحسين لا يمكن أن يكون أسوأ من السلوك السابق في أي حال. */
+  async function apiPost(url, body) {
+    const payload = JSON.stringify(body == null ? {} : body);
+    const res = await apiFetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=UTF-8' },
+      body: payload
+    });
+    if (res.status !== 400 && res.status !== 415) return res;
+    return apiFetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: payload
+    });
+  }
+
+  const apiGet = url => apiFetch(url);
+
+  /* ============================================================
    * أخطاء واجهة الاستخراج
    * ============================================================ */
   async function apiError(res) {
@@ -128,8 +191,8 @@
       const body = await res.json();
       if (body?.error?.message) msg += `: ${body.error.message}`;
     } catch (_) {}
-    if (res.status === 401) msg = '🔑 مفتاح الاستخراج غير صحيح أو منتهي. تحقق منه في صفحة الإعدادات ⚙️.';
-    if (res.status === 402) msg = '💳 رصيد حساب الاستخراج غير كافٍ لتشغيل هذه العملية.';
+    if (res.status === 401) msg = 'مفتاح الاستخراج غير صحيح أو منتهي. تحقق منه في صفحة الإعدادات.';
+    if (res.status === 402) msg = 'رصيد حساب الاستخراج غير كافٍ لتشغيل هذه العملية.';
     return new Error(msg);
   }
 
@@ -194,6 +257,12 @@
       pageUrl: raw.pageUrl || raw.user?.profileUrl || raw.author?.url || '',
       raw
     };
+    /* المُعرِّف الفريد للمنشور. صفحتا الرصد تعتمدانه في ثلاثة مواضع: منع التكرار
+       بين الدورات، وتمييز الجديد، واختيار ما يُحفظ في قاعدة البيانات. وغيابه لا
+       يُعطِّل واحداً منها فحسب بل يعكس معناها: مجموعة المفاتيح تصير {undefined}،
+       فيُطابقها كل منشور تالٍ ويُهمَل باعتباره مكرَّراً — أي يتوقف الرصد عن
+       إضافة أي شيء. لذلك يُضبط هنا دائماً وبقيمة غير فارغة. */
+    p.key = postKey(p);
     p.analysis = W.FBXAnalyzer.analyze(p);   // تحليل وتصنيف فوري
     return p;
   }
@@ -213,10 +282,10 @@
       const d = await r.json();
       if (!d.ok) throw new Error();
       db.online = true;
-      if (!silent) showToast('✅ تم الاتصال بقاعدة البيانات المحلية');
+      if (!silent) showToast('تم الاتصال بقاعدة البيانات المحلية');
     } catch (_) {
       db.online = false;
-      if (!silent) showToast('⚠️ تعذر الاتصال بقاعدة البيانات — اضبطها من صفحة الإعدادات');
+      if (!silent) showToast('تعذر الاتصال بقاعدة البيانات — اضبطها من صفحة الإعدادات');
     }
     return db.online;
   }
@@ -224,7 +293,7 @@
   async function saveToDb(posts, source, silent) {
     if (!posts || !posts.length) return;
     if (!db.online) {
-      if (!silent) showToast('⚠️ قاعدة البيانات غير متصلة — فعّلها من صفحة الإعدادات ⚙️');
+      if (!silent) showToast('قاعدة البيانات غير متصلة — فعّلها من صفحة الإعدادات');
       return;
     }
     try {
@@ -246,10 +315,10 @@
       });
       const d = await r.json();
       if (!d.ok) throw new Error(d.error || '');
-      showToast(`💾 حُفظ ${d.saved} منشور في قاعدة البيانات`);
+      showToast(`حُفظ ${d.saved} منشور في قاعدة البيانات`);
     } catch (_) {
       db.online = false;
-      if (!silent) showToast('⚠️ فشل الحفظ في قاعدة البيانات');
+      if (!silent) showToast('فشل الحفظ في قاعدة البيانات');
     }
   }
 
@@ -259,6 +328,7 @@
   const api = {
     STORAGE, $, sleep, escapeHtml, escapeAttr: escapeHtml, fmtNum, num, validDate,
     getToken, postKey, applyTheme, initTheme, showToast, sevAccent, apiError,
+    apiFetch, apiPost, apiGet, isNetworkError, NET_HINT,
     csvCell, download, exportCsv, normalizePost, db, dbCheck, saveToDb
   };
   W.FBXCommon = api;

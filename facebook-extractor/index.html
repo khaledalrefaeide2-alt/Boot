@@ -74,30 +74,30 @@
 <div class="app-shell">
   <aside class="sidebar">
     <a class="side-brand" href="index.html">
-      <div class="brand-logo">🍃</div>
+      <div class="brand-logo"><i class="ic" data-ic="logo"></i></div>
       <div>
         <h1>الإعلام الرقمي</h1>
         <p>استخراج وتحليل منشورات وحسابات</p>
       </div>
     </a>
     <nav class="side-nav">
-      <a href="index.html" class="active"><span class="ico">🔍</span><span class="label">استخراج فيسبوك</span></a>
-      <a href="dashboard.html"><span class="ico">📊</span><span class="label">رصد فيسبوك</span></a>
+      <a href="index.html" class="active"><span class="ico"><i class="ic" data-ic="search"></i></span><span class="label">استخراج فيسبوك</span></a>
+      <a href="dashboard.html"><span class="ico"><i class="ic" data-ic="chart"></i></span><span class="label">رصد فيسبوك</span></a>
       <a href="twitter.html"><span class="ico">𝕏</span><span class="label">استخراج X (تويتر)</span></a>
-      <a href="twitter-dashboard.html"><span class="ico">📡</span><span class="label">رصد X (تويتر)</span></a>
-      <a href="settings.html"><span class="ico">⚙️</span><span class="label">الإعدادات</span></a>
+      <a href="twitter-dashboard.html"><span class="ico"><i class="ic" data-ic="signal"></i></span><span class="label">رصد X (تويتر)</span></a>
+      <a href="settings.html"><span class="ico"><i class="ic" data-ic="settings"></i></span><span class="label">الإعدادات</span></a>
     </nav>
     <div class="side-foot">
-      <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري">🌙</button>
+      <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري"><i class="ic" data-ic="moon"></i></button>
     </div>
   </aside>
 
   <div class="main-col">
     <header class="page-header">
-      <span class="hero-badge">✦ استخراج · تحليل · تصنيف</span>
+      <span class="hero-badge"><i class="ic" data-ic="sparkle"></i> استخراج · تحليل · تصنيف</span>
       <h2>استخرج منشورات أي صفحة فيسبوك <em>بضغطة زر</em> وبتحكم كامل</h2>
       <p>اضبط مفتاحك من صفحة الإعدادات مرة واحدة، حدّد الفترة الزمنية وعدد المنشورات بسقف مضمون، واحصل على النتائج محلّلة ومصنّفة بعرض عصري أنيق مع التصدير إلى JSON أو CSV.</p>
-      <button class="hero-cta" id="heroCta">ابدأ الاستخراج الآن ↓</button>
+      <button class="hero-cta" id="heroCta">ابدأ الاستخراج الآن <i class="ic" data-ic="arrowDown"></i></button>
     </header>
 
     <main>
@@ -105,22 +105,22 @@
   <!-- Features band -->
   <section class="features-band">
     <div class="feature">
-      <div class="feature-icon">🔑</div>
+      <div class="feature-icon"><i class="ic" data-ic="key"></i></div>
       <h3>اضبط مفتاحك مرة</h3>
       <p>يُحفظ مفتاحك محلياً في متصفحك فقط من صفحة الإعدادات، ويُستخدم في كل الصفحات</p>
     </div>
     <div class="feature">
-      <div class="feature-icon">🗓️</div>
+      <div class="feature-icon"><i class="ic" data-ic="calendar"></i></div>
       <h3>فلاتر دقيقة</h3>
       <p>حدّد الفترة الزمنية وعدد المنشورات مع سقف فوترة إلزامي يحميك من الاستهلاك الزائد</p>
     </div>
     <div class="feature">
-      <div class="feature-icon">📰</div>
+      <div class="feature-icon"><i class="ic" data-ic="news"></i></div>
       <h3>عرض عصري</h3>
       <p>بطاقات أنيقة مع الإحصائيات والتفاعلات، وبحث وفرز فوري داخل النتائج</p>
     </div>
     <div class="feature">
-      <div class="feature-icon">⬇️</div>
+      <div class="feature-icon"><i class="ic" data-ic="download"></i></div>
       <h3>تصدير مرن</h3>
       <p>نزّل نتائجك بصيغة JSON أو CSV متوافقة مع Excel واللغة العربية</p>
     </div>
@@ -128,9 +128,9 @@
 
   <!-- Setup notice -->
   <section class="panel" id="setupPanel" style="display:none">
-    <div class="panel-title"><span class="num">⚠️</span> لم يُضبط مفتاح الاستخراج بعد</div>
-    <div class="hint" style="font-size:.9rem">اذهب إلى <a href="settings.html" style="color:var(--green-700);font-weight:900">⚙️ صفحة الإعدادات</a> واضبط مفتاح واجهة الاستخراج مرة واحدة، ثم عُد إلى هنا للبدء.</div>
-    <div class="actions-row"><a class="btn btn-ghost btn-sm" href="settings.html">⚙️ فتح الإعدادات</a></div>
+    <div class="panel-title"><span class="num"><i class="ic" data-ic="warning"></i></span> لم يُضبط مفتاح الاستخراج بعد</div>
+    <div class="hint" style="font-size:.9rem">اذهب إلى <a href="settings.html" style="color:var(--green-700);font-weight:900"><i class="ic" data-ic="settings"></i> صفحة الإعدادات</a> واضبط مفتاح واجهة الاستخراج مرة واحدة، ثم عُد إلى هنا للبدء.</div>
+    <div class="actions-row"><a class="btn btn-ghost btn-sm" href="settings.html"><i class="ic" data-ic="settings"></i> فتح الإعدادات</a></div>
   </section>
 
   <!-- Search form -->
@@ -139,7 +139,7 @@
 
     <label class="field-label" for="pageUrls">روابط صفحات فيسبوك <small>(رابط واحد في كل سطر)</small></label>
     <div class="actions-row" style="margin:0 0 8px">
-      <button class="btn btn-ghost btn-sm" id="pickPagesBtn" type="button">📚 اختر من دليل الصفحات</button>
+      <button class="btn btn-ghost btn-sm" id="pickPagesBtn" type="button"><i class="ic" data-ic="library"></i> اختر من دليل الصفحات</button>
     </div>
     <textarea class="input" id="pageUrls" placeholder="https://www.facebook.com/nasa&#10;https://www.facebook.com/bbcnews"></textarea>
 
@@ -147,7 +147,7 @@
       <div>
         <label class="field-label" for="postsLimit">عدد المنشورات <small>(لكل صفحة)</small></label>
         <input class="input" type="number" id="postsLimit" min="1" max="1000" value="20">
-        <div class="hint">🛡️ يُفرض هذا العدد كسقف استخراج إلزامي — لن تُحاسَب على أكثر منه</div>
+        <div class="hint"><i class="ic" data-ic="shield"></i> يُفرض هذا العدد كسقف استخراج إلزامي — لن تُحاسَب على أكثر منه</div>
       </div>
       <div>
         <label class="field-label" for="dateFrom">من تاريخ <small>(اختياري)</small></label>
@@ -170,8 +170,8 @@
     </div>
 
     <div class="actions-row">
-      <button class="btn btn-primary" id="runBtn">🚀 بدء الاستخراج</button>
-      <button class="btn btn-ghost" id="resetBtn">↺ إعادة تعيين</button>
+      <button class="btn btn-primary" id="runBtn"><i class="ic" data-ic="rocket"></i> بدء الاستخراج</button>
+      <button class="btn btn-ghost" id="resetBtn"><i class="ic" data-ic="refresh"></i> إعادة تعيين</button>
     </div>
     <div class="alert alert-error" id="formError"></div>
   </section>
@@ -184,7 +184,7 @@
         <div class="status-text" id="statusText">جارٍ تشغيل عملية الاستخراج...</div>
         <div class="status-sub" id="statusSub">قد تستغرق العملية من ثوانٍ إلى دقائق حسب عدد المنشورات</div>
       </div>
-      <button class="btn btn-danger-ghost btn-sm" id="abortBtn" style="margin-inline-start:auto">⛔ إيقاف</button>
+      <button class="btn btn-danger-ghost btn-sm" id="abortBtn" style="margin-inline-start:auto"><i class="ic" data-ic="ban"></i> إيقاف</button>
     </div>
     <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
     <div class="alert alert-error" id="runError"></div>
@@ -199,31 +199,32 @@
         <input class="input" type="search" id="searchInput" placeholder="ابحث داخل النتائج...">
       </div>
       <div class="view-toggle">
-        <button id="gridViewBtn" class="active" title="عرض شبكي">▦</button>
-        <button id="listViewBtn" title="عرض قائمة">☰</button>
+        <button id="gridViewBtn" class="active" title="عرض بطاقات"><i class="ic" data-ic="grid"></i></button>
+        <button id="listViewBtn" title="عرض جدول"><i class="ic" data-ic="rows"></i></button>
       </div>
-      <button class="btn btn-primary btn-sm" id="exportExcelBtn">📊 Excel</button>
-      <button class="btn btn-ghost btn-sm" id="exportJsonBtn">⬇️ JSON</button>
-      <button class="btn btn-ghost btn-sm" id="exportCsvBtn">⬇️ CSV</button>
-      <button class="btn btn-ghost btn-sm" id="saveDbBtn">💾 حفظ في قاعدة البيانات</button>
-      <button class="btn btn-ghost btn-sm" id="aiReviewBtn" style="display:none">🧠 مراجعة بالذكاء الاصطناعي</button>
-      <button class="btn btn-ghost btn-sm" id="reportBtn">📄 تقرير PDF</button>
+      <button class="btn btn-primary btn-sm" id="exportExcelBtn"><i class="ic" data-ic="chart"></i> Excel</button>
+      <button class="btn btn-ghost btn-sm" id="exportJsonBtn"><i class="ic" data-ic="download"></i> JSON</button>
+      <button class="btn btn-ghost btn-sm" id="exportCsvBtn"><i class="ic" data-ic="download"></i> CSV</button>
+      <button class="btn btn-ghost btn-sm" id="saveDbBtn"><i class="ic" data-ic="save"></i> حفظ في قاعدة البيانات</button>
+      <button class="btn btn-ghost btn-sm" id="aiReviewBtn" style="display:none"><i class="ic" data-ic="brain"></i> مراجعة بالذكاء الاصطناعي</button>
+      <button class="btn btn-ghost btn-sm" id="reportBtn"><i class="ic" data-ic="file"></i> تقرير PDF</button>
     </div>
 
     <div class="posts-grid" id="postsGrid"></div>
     <div class="empty-state" id="emptyState" style="display:none">
-      <div class="big">🔎</div>
+      <div class="big"><i class="ic" data-ic="search"></i></div>
       <p>لا توجد نتائج مطابقة لبحثك</p>
     </div>
   </section>
 
     </main>
 
-    <footer>الإعلام الرقمي — استخراج وتحليل وتصنيف منشورات فيسبوك · صور وفيديو · تصدير Excel · تحليل محلي بالكامل · الإصدار 4.0 🍃</footer>
+    <footer>الإعلام الرقمي — استخراج وتحليل وتصنيف منشورات فيسبوك · صور وفيديو · تصدير Excel · تحليل محلي بالكامل · الإصدار 4.0 <i class="ic" data-ic="logo"></i></footer>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="icons.js"></script>
 <script src="analyzer.js"></script>
 <script src="media.js"></script>
 <script src="card.js"></script>
@@ -292,7 +293,7 @@ $('abortBtn').onclick = async () => {
   aborted = true;
   if (currentRunId) {
     try {
-      await fetch(`${API_BASE}/actor-runs/${currentRunId}/abort?token=${encodeURIComponent(getToken())}`, { method: 'POST' });
+      await apiPost(`${API_BASE}/actor-runs/${currentRunId}/abort?token=${encodeURIComponent(getToken())}`);
     } catch (_) {}
   }
   setStatus('تم إيقاف العملية', 'يمكنك بدء عملية جديدة في أي وقت', true);
@@ -303,17 +304,17 @@ async function startExtraction() {
   runError.style.display = 'none';
 
   const token = getToken();
-  if (!token) { refreshSetupNotice(); return showFormError('⚠️ لم يُضبط مفتاح الاستخراج بعد — اضبطه من صفحة الإعدادات ⚙️.'); }
+  if (!token) { refreshSetupNotice(); return showFormError('لم يُضبط مفتاح الاستخراج بعد — اضبطه من صفحة الإعدادات.'); }
 
   const urls = pageUrlsInput.value.split('\n').map(u => u.trim()).filter(Boolean);
-  if (!urls.length) return showFormError('⚠️ أدخل رابط صفحة فيسبوك واحدة على الأقل.');
+  if (!urls.length) return showFormError('أدخل رابط صفحة فيسبوك واحدة على الأقل.');
   const badUrl = urls.find(u => !/^https?:\/\/(www\.|m\.|web\.)?facebook\.com\//i.test(u));
-  if (badUrl) return showFormError(`⚠️ الرابط التالي ليس رابط فيسبوك صالحاً: ${badUrl}`);
+  if (badUrl) return showFormError(`الرابط التالي ليس رابط فيسبوك صالحاً: ${badUrl}`);
 
   const limit = Math.max(1, Math.min(1000, parseInt(postsLimitInput.value, 10) || 20));
   const from = dateFromInput.value, to = dateToInput.value;
   if (validDate(from) && validDate(to) && new Date(from) > new Date(to)) {
-    return showFormError('⚠️ تاريخ البداية يجب أن يكون قبل تاريخ النهاية.');
+    return showFormError('تاريخ البداية يجب أن يكون قبل تاريخ النهاية.');
   }
 
   const input = {
@@ -341,11 +342,7 @@ async function startExtraction() {
 
   try {
     // 1) Start the actor run
-    const startRes = await fetch(`${API_BASE}/acts/${ACTOR_ID}/runs?token=${encodeURIComponent(token)}&maxItems=${maxItems}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input)
-    });
+    const startRes = await apiPost(`${API_BASE}/acts/${ACTOR_ID}/runs?token=${encodeURIComponent(token)}&maxItems=${maxItems}`, input);
     if (!startRes.ok) throw await apiError(startRes);
     const run = (await startRes.json()).data;
     currentRunId = run.id;
@@ -360,7 +357,7 @@ async function startExtraction() {
       elapsed += 4;
       progressBar.style.width = Math.min(85, 25 + elapsed * 1.2) + '%';
       statusSub.textContent = `مضى ${elapsed} ثانية · الحالة: قيد التشغيل`;
-      const st = await fetch(`${API_BASE}/actor-runs/${currentRunId}?token=${encodeURIComponent(token)}`);
+      const st = await apiGet(`${API_BASE}/actor-runs/${currentRunId}?token=${encodeURIComponent(token)}`);
       if (!st.ok) throw await apiError(st);
       const d = (await st.json()).data;
       status = d.status;
@@ -376,7 +373,7 @@ async function startExtraction() {
     // 3) Fetch dataset items
     progressBar.style.width = '92%';
     setStatus('جارٍ تحميل النتائج...', 'قراءة البيانات المستخرجة');
-    const itemsRes = await fetch(`${API_BASE}/datasets/${datasetId}/items?clean=true&format=json&token=${encodeURIComponent(token)}`);
+    const itemsRes = await apiGet(`${API_BASE}/datasets/${datasetId}/items?clean=true&format=json&token=${encodeURIComponent(token)}`);
     if (!itemsRes.ok) throw await apiError(itemsRes);
     const items = await itemsRes.json();
     if (status === 'ABORTED' && !items.length) {
@@ -400,7 +397,7 @@ async function startExtraction() {
     $('abortBtn').style.display = 'none';
     const hidden = scrapedCount - allPosts.length;
     setStatus(
-      `✅ اكتمل الاستخراج — ${allPosts.length} منشور`,
+      `اكتمل الاستخراج — ${allPosts.length} منشور`,
       hidden > 0
         ? `استُخرج ${scrapedCount} منشوراً، أُخفي ${hidden} منها لوقوعها خارج الفترة الزمنية المحددة`
         : 'يمكنك البحث والفرز والتصدير من الأسفل',
@@ -413,7 +410,7 @@ async function startExtraction() {
   } catch (err) {
     spinner.style.display = 'none';
     $('abortBtn').style.display = 'none';
-    setStatus('❌ فشلت العملية', '', true);
+    setStatus('فشلت العملية', '', true);
     runError.textContent = err.message || String(err);
     runError.style.display = 'block';
   } finally {
@@ -500,13 +497,13 @@ function setView(mode) {
 $('exportJsonBtn').onclick = () => {
   const posts = getVisiblePosts().map(p => p.raw);
   download(JSON.stringify(posts, null, 2), 'facebook-posts.json', 'application/json');
-  showToast('⬇️ تم تنزيل ملف JSON');
+  showToast('تم تنزيل ملف JSON');
 };
 $('exportExcelBtn').onclick = () => {
   const posts = getVisiblePosts();
   if (!posts.length) return showToast('لا نتائج للتصدير');
   const n = FBXExcel.exportPosts('', posts);
-  showToast(`📊 تم تصدير ${n} منشوراً إلى Excel`);
+  showToast(`تم تصدير ${n} منشوراً إلى Excel`);
 };
 $('exportCsvBtn').onclick = () => {
   const posts = getVisiblePosts();
@@ -517,7 +514,7 @@ $('exportCsvBtn').onclick = () => {
   ].map(csvCell).join(','));
   // BOM so Excel opens Arabic text correctly
   download('﻿' + [header.join(','), ...rows].join('\r\n'), 'facebook-posts.csv', 'text/csv;charset=utf-8');
-  showToast('⬇️ تم تنزيل ملف CSV');
+  showToast('تم تنزيل ملف CSV');
 };
 /* =============== Local database (shared helpers in common.js) =============== */
 if (FBXCommon.db.url) dbCheck(true);
@@ -544,13 +541,13 @@ refreshSetupNotice();
     btn.disabled = true;
     try {
       const r = await FBXAI.classifyBatch(posts, {
-        onProgress: ({ done, total }) => { btn.textContent = `🧠 جارٍ المراجعة ${done}/${total}...`; }
+        onProgress: ({ done, total }) => { btn.textContent = `جارٍ المراجعة ${done}/${total}...`; }
       });
       renderResults();
-      if (r.failed && r.errors.length) showToast('⚠️ ' + r.errors[0]);
-      else showToast(`🧠 روجعت ${r.done} — عُدِّل حكم ${r.changed}`);
+      if (r.failed && r.errors.length) showToast('' + r.errors[0]);
+      else showToast(`روجعت ${r.done} — عُدِّل حكم ${r.changed}`);
     } catch (e) {
-      showToast('⚠️ ' + (e.message || 'تعذّرت المراجعة'));
+      showToast('' + (e.message || 'تعذّرت المراجعة'));
     } finally {
       btn.textContent = label; btn.disabled = false; running = false;
     }
@@ -565,7 +562,7 @@ refreshSetupNotice();
 $('reportBtn').onclick = () => {
   const posts = getVisiblePosts();
   const r = FBXReport.open(posts, { platform: 'facebook' });
-  showToast(r.ok ? `📄 جهّزنا تقريراً بـ ${r.count} منشوراً — اختر «حفظ بصيغة PDF»` : '⚠️ ' + r.error);
+  showToast(r.ok ? `جهّزنا تقريراً بـ ${r.count} منشوراً — اختر «حفظ بصيغة PDF»` : '' + r.error);
 };
 
 /* =============== دليل الصفحات =============== */
@@ -577,7 +574,7 @@ $('pickPagesBtn').onclick = () => FBXPages.openPicker({
     const added = picked.map(p => p.url).filter(Boolean);
     const merged = [...new Set([...existing, ...added])];
     pageUrlsInput.value = merged.join('\n');
-    showToast(`✅ أُضيفت ${merged.length - existing.length} صفحة (المجموع ${merged.length})`);
+    showToast(`أُضيفت ${merged.length - existing.length} صفحة (المجموع ${merged.length})`);
   }
 });
 </script>

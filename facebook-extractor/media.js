@@ -12,6 +12,9 @@
 
 (function (global) {
 
+  // اختصار لرسم أيقونة داخل قوالب المعرض
+  const ic = n => (global.FBXIcons ? global.FBXIcons.svg(n) : '');
+
   const isImgUrl = u => typeof u === 'string' && /\.(jpg|jpeg|png|webp|gif)(\?|$)/i.test(u);
   const isVidUrl = u => typeof u === 'string' && /\.(mp4|webm|mov|m3u8)(\?|$)/i.test(u);
 
@@ -73,10 +76,10 @@
       const poster = m.thumb || (isVid ? '' : m.src) || '';
       const plus = (i === shown.length - 1 && extra > 0)
         ? `<span class="media-more">+${extra}</span>` : '';
-      const badge = isVid ? '<span class="media-play">▶</span>' : '';
+      const badge = isVid ? `<span class="media-play">${ic('play')}</span>` : '';
       const visual = poster
         ? `<img class="media-el" loading="lazy" src="${esc(poster)}" alt="" onerror="this.closest('.media-item').classList.add('no-img')" onload="FBXMedia.autoCrop(this)">`
-        : `<span class="media-blank">${isVid ? '🎬' : '🖼️'}</span>`;
+        : `<span class="media-blank">${ic(isVid ? 'video' : 'image')}</span>`;
 
       // فيديو بلا رابط تشغيل مباشر لا يمكن عرضه في العارض — يفتح المنشور الأصلي
       if (isVid && !m.src) {
@@ -104,13 +107,13 @@
     lb.setAttribute('role', 'dialog');
     lb.setAttribute('aria-modal', 'true');
     lb.innerHTML = `
-      <button type="button" class="fbx-lb-x" aria-label="إغلاق">✕</button>
+      <button type="button" class="fbx-lb-x" aria-label="إغلاق">${ic('close')}</button>
       <button type="button" class="fbx-lb-nav prev" aria-label="السابق">›</button>
       <div class="fbx-lb-stage"></div>
       <button type="button" class="fbx-lb-nav next" aria-label="التالي">‹</button>
       <div class="fbx-lb-bar">
         <span class="fbx-lb-count" dir="ltr"></span>
-        <a class="fbx-lb-open" target="_blank" rel="noopener">فتح المنشور الأصلي ↗</a>
+        <a class="fbx-lb-open" target="_blank" rel="noopener">${ic('link')} فتح المنشور الأصلي</a>
       </div>`;
     lb.addEventListener('click', e => {
       if (e.target === lb) return closeLightbox();
@@ -308,7 +311,8 @@
     .fbx-lb-x:hover, .fbx-lb-nav:hover { background: rgba(255,255,255,.24); }
     .fbx-lb-bar { position: absolute; inset-block-end: 18px; inset-inline: 0; display: flex;
       align-items: center; justify-content: center; gap: 16px; color: #dfe9ee; font-size: .78rem; font-weight: 700; }
-    .fbx-lb-open { color: #dfe9ee; text-decoration: none; border: 1px solid rgba(255,255,255,.24);
+    .fbx-lb-open { display: inline-flex; align-items: center; gap: 6px;
+      color: #dfe9ee; text-decoration: none; border: 1px solid rgba(255,255,255,.24);
       border-radius: 999px; padding: 6px 16px; transition: background .18s ease; }
     .fbx-lb-open:hover { background: rgba(255,255,255,.14); }
     @media (max-width: 640px) {

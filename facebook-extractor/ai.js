@@ -175,9 +175,9 @@ ${pos}
     if (!res.ok) {
       let detail = '';
       try { const e = await res.json(); detail = e?.error?.message || ''; } catch (_) {}
-      if (res.status === 401) throw new Error('🔑 مفتاح النموذج غير صحيح — تحقق منه في صفحة الإعدادات.');
-      if (res.status === 429) throw new Error('⏳ تم تجاوز حد الطلبات — أعد المحاولة بعد قليل.');
-      if (res.status === 400 && /credit|balance/i.test(detail)) throw new Error('💳 رصيد حساب النموذج غير كافٍ.');
+      if (res.status === 401) throw new Error('مفتاح النموذج غير صحيح — تحقق منه في صفحة الإعدادات.');
+      if (res.status === 429) throw new Error('تم تجاوز حد الطلبات — أعد المحاولة بعد قليل.');
+      if (res.status === 400 && /credit|balance/i.test(detail)) throw new Error('رصيد حساب النموذج غير كافٍ.');
       throw new Error(`خطأ من واجهة النموذج (HTTP ${res.status})${detail ? ': ' + detail : ''}`);
     }
 
@@ -193,7 +193,7 @@ ${pos}
    * ============================================================ */
   async function classify(post, opts) {
     opts = opts || {};
-    if (!isEnabled()) throw new Error('لم يُضبط مفتاح النموذج بعد — اضبطه من صفحة الإعدادات ⚙️.');
+    if (!isEnabled()) throw new Error('لم يُضبط مفتاح النموذج بعد — اضبطه من صفحة الإعدادات.');
     const local = post.analysis || W.FBXAnalyzer.analyze(post);
     const out = await callModel(post, local, opts.signal);
     return toAnalysis(out, post, local);
@@ -248,7 +248,7 @@ ${pos}
         messages: [{ role: 'user', content: 'قل: جاهز' }]
       })
     });
-    if (res.status === 401) throw new Error('🔴 المفتاح غير صحيح أو منتهي الصلاحية.');
+    if (res.status === 401) throw new Error('المفتاح غير صحيح أو منتهي الصلاحية.');
     if (!res.ok) {
       let detail = '';
       try { const e = await res.json(); detail = e?.error?.message || ''; } catch (_) {}

@@ -22,7 +22,7 @@ function load() {
   const win = { document: undefined };
   win.window = win;
   const ctx = vm.createContext(win);
-  for (const f of ['analyzer.js', 'media.js', 'card.js']) {
+  for (const f of ['icons.js', 'analyzer.js', 'media.js', 'card.js']) {
     vm.runInContext(fs.readFileSync(path.join(__dirname, '..', f), 'utf8'), ctx, { filename: f });
   }
   return win;

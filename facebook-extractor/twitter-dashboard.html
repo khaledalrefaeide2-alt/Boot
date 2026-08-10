@@ -95,27 +95,27 @@
 <div class="app-shell">
   <aside class="sidebar">
     <a class="side-brand" href="index.html">
-      <div class="brand-logo">🍃</div>
+      <div class="brand-logo"><i class="ic" data-ic="logo"></i></div>
       <div>
         <h1>الإعلام الرقمي</h1>
         <p>استخراج وتحليل منشورات وحسابات</p>
       </div>
     </a>
     <nav class="side-nav">
-      <a href="index.html"><span class="ico">🔍</span><span class="label">استخراج فيسبوك</span></a>
-      <a href="dashboard.html"><span class="ico">📊</span><span class="label">رصد فيسبوك</span></a>
+      <a href="index.html"><span class="ico"><i class="ic" data-ic="search"></i></span><span class="label">استخراج فيسبوك</span></a>
+      <a href="dashboard.html"><span class="ico"><i class="ic" data-ic="chart"></i></span><span class="label">رصد فيسبوك</span></a>
       <a href="twitter.html"><span class="ico">𝕏</span><span class="label">استخراج X (تويتر)</span></a>
-      <a href="twitter-dashboard.html" class="active"><span class="ico">📡</span><span class="label">رصد X (تويتر)</span></a>
-      <a href="settings.html"><span class="ico">⚙️</span><span class="label">الإعدادات</span></a>
+      <a href="twitter-dashboard.html" class="active"><span class="ico"><i class="ic" data-ic="signal"></i></span><span class="label">رصد X (تويتر)</span></a>
+      <a href="settings.html"><span class="ico"><i class="ic" data-ic="settings"></i></span><span class="label">الإعدادات</span></a>
     </nav>
     <div class="side-foot">
-      <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري">🌙</button>
+      <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري"><i class="ic" data-ic="moon"></i></button>
     </div>
   </aside>
 
   <div class="main-col">
     <header class="page-header">
-      <span class="hero-badge">📡 رصد تلقائي · تحليل وتصنيف · رسوم بيانية تفاعلية</span>
+      <span class="hero-badge"><i class="ic" data-ic="signal"></i> رصد تلقائي · تحليل وتصنيف · رسوم بيانية تفاعلية</span>
       <h2>الرصد التلقائي <em>لتغريدات حساباتك</em> على X (تويتر)</h2>
       <p>أضف حسابات X الرسمية (واضبط مفتاحك من الإعدادات)، وسيستخرج الموقع أحدث تغريدة (أو أكثر) من كل حساب تلقائياً كل دورة، ثم يحلّلها ويصنّفها فوراً ويعرض كامل بياناتها — النص، الصور والفيديو، والتفاعلات — إلى جانب رسوم بيانية تفاعلية وتصفية حية حسب الحساب والفترة والتصنيف.</p>
     </header>
@@ -127,8 +127,8 @@
     <div class="panel-title"><span class="num">1</span> الإعداد — الحسابات المستهدَفة</div>
     <div class="row">
       <input class="input" type="text" id="newAccount" placeholder="https://x.com/ALsahmaLsaudi" dir="ltr" style="flex:1 1 280px">
-      <button class="btn btn-primary btn-sm" id="addAccountBtn">➕ إضافة حساب</button>
-      <button class="btn btn-ghost btn-sm" id="pickPagesBtn" type="button">📚 من الدليل</button>
+      <button class="btn btn-primary btn-sm" id="addAccountBtn"><i class="ic" data-ic="plus"></i> إضافة حساب</button>
+      <button class="btn btn-ghost btn-sm" id="pickPagesBtn" type="button"><i class="ic" data-ic="library"></i> من الدليل</button>
     </div>
     <div class="hint">أضف روابط حسابات X الرسمية التي تريد رصد تغريداتها (مثل <span dir="ltr">https://x.com/ALsahmaLsaudi</span>) — تُحفظ في متصفحك.</div>
     <div class="chips" id="accountChips"></div>
@@ -138,12 +138,12 @@
       <div>
         <label class="field-label" for="tweetsPerCycle">عدد التغريدات لكل دورة</label>
         <input class="input" type="number" id="tweetsPerCycle" min="1" max="20" value="3">
-        <div class="hint">🛡️ سقف استخراج إلزامي لكل حساب في كل دورة</div>
+        <div class="hint"><i class="ic" data-ic="shield"></i> سقف استخراج إلزامي لكل حساب في كل دورة</div>
       </div>
     </div>
 
-    <div class="hint" id="keyHint" style="display:none">⚠️ لم يُضبط مفتاح الاستخراج بعد — <a href="settings.html">اضبطه من صفحة الإعدادات ⚙️</a>.</div>
-    <div class="hint" style="margin-top:14px">💡 مفتاح الاستخراج وقاعدة البيانات يُضبطان من <a href="settings.html">صفحة الإعدادات ⚙️</a> ويُطبَّقان تلقائياً هنا.</div>
+    <div class="hint" id="keyHint" style="display:none"><i class="ic" data-ic="warning"></i> لم يُضبط مفتاح الاستخراج بعد — <a href="settings.html">اضبطه من صفحة الإعدادات <i class="ic" data-ic="settings"></i></a>.</div>
+    <div class="hint" style="margin-top:14px"><i class="ic" data-ic="bulb"></i> مفتاح الاستخراج وقاعدة البيانات يُضبطان من <a href="settings.html">صفحة الإعدادات <i class="ic" data-ic="settings"></i></a> ويُطبَّقان تلقائياً هنا.</div>
   </section>
 
   <!-- Control band -->
@@ -160,8 +160,8 @@
       <option value="180">كل 3 ساعات</option>
     </select>
     <div class="countdown" id="countdown">--:--</div>
-    <button class="btn btn-cream" id="toggleBtn">▶️ بدء الرصد</button>
-    <button class="btn btn-ghost btn-sm" id="runNowBtn" style="border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff">⚡ رصد فوري</button>
+    <button class="btn btn-cream" id="toggleBtn"><i class="ic" data-ic="play"></i> بدء الرصد</button>
+    <button class="btn btn-ghost btn-sm" id="runNowBtn" style="border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff"><i class="ic" data-ic="bolt"></i> رصد فوري</button>
     <div class="mini-status">
       <div class="mini-spinner" id="miniSpinner"></div>
       <span id="miniStatus">آخر رصد: لم يتم بعد</span>
@@ -196,19 +196,19 @@
 
     <div class="charts-grid">
       <div class="chart-card">
-        <h4>📈 نشاط النشر عبر الزمن</h4>
+        <h4><i class="ic" data-ic="chart"></i> نشاط النشر عبر الزمن</h4>
         <div class="chart-sub">عدد التغريدات المرصودة يومياً</div>
         <div class="chart-holder" id="timeHolder"></div>
       </div>
       <div class="chart-card">
-        <h4>🏆 التفاعل حسب الحساب</h4>
+        <h4><i class="ic" data-ic="trophy"></i> التفاعل حسب الحساب</h4>
         <div class="chart-sub">إجمالي (إعجابات + ردود + إعادة نشر)</div>
         <div class="chart-holder" id="platHolder"></div>
       </div>
     </div>
 
     <div class="feed-head">
-      <h3>📰 التغريدات <span class="feed-count" id="feedCount">0</span></h3>
+      <h3><i class="ic" data-ic="news"></i> التغريدات <span class="feed-count" id="feedCount">0</span></h3>
       <div class="search-wrap"><input class="input" type="search" id="searchInput" placeholder="ابحث في التغريدات..."></div>
       <select class="input" id="sortSelect">
         <option value="newest">الأحدث أولاً</option>
@@ -216,30 +216,31 @@
         <option value="engage">الأكثر تفاعلاً</option>
       </select>
       <div class="view-toggle">
-        <button id="gridViewBtn" class="active" title="عرض بطاقات">&#9638;</button>
-        <button id="listViewBtn" title="عرض جدول">&#9776;</button>
+        <button id="gridViewBtn" class="active" title="عرض بطاقات"><i class="ic" data-ic="grid"></i></button>
+        <button id="listViewBtn" title="عرض جدول"><i class="ic" data-ic="rows"></i></button>
       </div>
       <div class="spacer"></div>
-      <button class="btn btn-primary btn-sm" id="exportExcelBtn">📊 تصدير Excel</button>
-      <button class="btn btn-ghost btn-sm" id="exportBtn">⬇️ تصدير JSON</button>
-      <button class="btn btn-danger-ghost btn-sm" id="clearBtn">🗑️ مسح السجل</button>
+      <button class="btn btn-primary btn-sm" id="exportExcelBtn"><i class="ic" data-ic="chart"></i> تصدير Excel</button>
+      <button class="btn btn-ghost btn-sm" id="exportBtn"><i class="ic" data-ic="download"></i> تصدير JSON</button>
+      <button class="btn btn-danger-ghost btn-sm" id="clearBtn"><i class="ic" data-ic="trash"></i> مسح السجل</button>
     </div>
     <div class="feed" id="feed"></div>
-    <div class="empty-state" id="feedEmpty" style="display:none"><div class="big">🔎</div><p>لا تغريدات ضمن هذه التصفية</p></div>
+    <div class="empty-state" id="feedEmpty" style="display:none"><div class="big"><i class="ic" data-ic="search"></i></div><p>لا تغريدات ضمن هذه التصفية</p></div>
   </section>
 
   <div class="empty-state" id="bootEmpty">
-    <div class="big">📊</div>
-    <p>أضف حساباتك الرسمية (واضبط مفتاحك من الإعدادات ⚙️)، ثم اضغط «بدء الرصد» لتظهر لوحة التحليل التفاعلية هنا.</p>
+    <div class="big"><i class="ic" data-ic="chart"></i></div>
+    <p>أضف حساباتك الرسمية (واضبط مفتاحك من الإعدادات <i class="ic" data-ic="settings"></i>)، ثم اضغط «بدء الرصد» لتظهر لوحة التحليل التفاعلية هنا.</p>
   </div>
 
     </main>
 
-    <footer>الإعلام الرقمي — الرصد التلقائي لتغريدات X (تويتر) · صور وفيديو · تصدير Excel · الإصدار 4.1 🍃</footer>
+    <footer>الإعلام الرقمي — الرصد التلقائي لتغريدات X (تويتر) · صور وفيديو · تصدير Excel · الإصدار 4.1 <i class="ic" data-ic="logo"></i></footer>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="icons.js"></script>
 <script src="analyzer.js"></script>
 <script src="media.js"></script>
 <script src="card.js"></script>
@@ -323,15 +324,15 @@ function parseHandle(raw) {
 function addAccount() {
   const handle = parseHandle($('newAccount').value);
   if (!handle) return;
-  if (!/^[A-Za-z0-9_]{1,15}$/.test(handle)) return showToast('⚠️ أدخل اسم مستخدم صالحاً على X');
+  if (!/^[A-Za-z0-9_]{1,15}$/.test(handle)) return showToast('أدخل اسم مستخدم صالحاً على X');
   if (accounts.includes(handle)) return showToast('هذا الحساب مضاف مسبقاً');
   accounts.push(handle); save(ACCOUNTS_STORAGE, accounts); $('newAccount').value = '';
-  renderChips(); showToast('✅ تمت إضافة الحساب');
+  renderChips(); showToast('تمت إضافة الحساب');
 }
 function removeAccount(i) { accounts.splice(i, 1); save(ACCOUNTS_STORAGE, accounts); renderChips(); }
 function renderChips() {
   const box = $('accountChips');
-  box.innerHTML = accounts.map((u, i) => `<span class="chip"><span class="chip-url">@${esc(u)}</span><button data-i="${i}" title="حذف">✕</button></span>`).join('');
+  box.innerHTML = accounts.map((u, i) => `<span class="chip"><span class="chip-url">@${esc(u)}</span><button data-i="${i}" title="حذف">${FBXIcons.svg('close')}</button></span>`).join('');
   box.querySelectorAll('button').forEach(b => b.onclick = () => removeAccount(+b.dataset.i));
   $('noAccounts').style.display = accounts.length ? 'none' : 'block';
 }
@@ -350,23 +351,30 @@ $('toggleBtn').onclick = () => (monitorOn ? stopMonitor() : startMonitor());
 $('runNowBtn').onclick = () => runCycle(true);
 
 function startMonitor() {
-  if (!getToken()) { refreshKeyUi(); return showToast('⚠️ اضبط مفتاح الاستخراج من صفحة الإعدادات ⚙️'); }
-  if (!accounts.length) return showToast('⚠️ أضف حساباً واحداً على الأقل');
+  if (!getToken()) { refreshKeyUi(); return showToast('اضبط مفتاح الاستخراج من صفحة الإعدادات'); }
+  if (!accounts.length) return showToast('أضف حساباً واحداً على الأقل');
   monitorOn = true; localStorage.setItem(ON_STORAGE, '1'); refreshControlUi();
   if (Date.now() - lastRunAt >= intervalMs()) runCycle();
-  showToast('📡 بدأ الرصد الدوري');
+  showToast('بدأ الرصد الدوري');
 }
-function stopMonitor() { monitorOn = false; localStorage.setItem(ON_STORAGE, '0'); refreshControlUi(); showToast('⏹️ توقف الرصد'); }
+function stopMonitor() { monitorOn = false; localStorage.setItem(ON_STORAGE, '0'); refreshControlUi(); showToast('توقف الرصد'); }
 function refreshControlUi() {
   $('pulseDot').classList.toggle('on', monitorOn);
   $('monitorTitle').textContent = monitorOn ? 'الرصد نشط الآن' : 'الرصد متوقف';
-  $('toggleBtn').textContent = monitorOn ? '⏸️ إيقاف الرصد' : '▶️ بدء الرصد';
+  $('toggleBtn').innerHTML = monitorOn
+    ? FBXIcons.svg('pause') + ' إيقاف الرصد'
+    : FBXIcons.svg('play') + ' بدء الرصد';
   $('toggleBtn').classList.toggle('btn-stop', monitorOn);
   $('toggleBtn').classList.toggle('btn-cream', !monitorOn);
 }
+// بعد فشل دورة لا ننتظر دورة كاملة (قد تكون ساعة): نعيد المحاولة بعد دقيقتين.
+// ويبقى lastRunAt هو وقت آخر نجاح فعلي، فلا يكذب سطر «آخر رصد» على المستخدم.
+let nextRetryAt = 0;
+
 function tick() {
   if (monitorOn && !cycleRunning) {
-    const remaining = lastRunAt + intervalMs() - Date.now();
+    const dueAt = nextRetryAt || (lastRunAt + intervalMs());
+    const remaining = dueAt - Date.now();
     if (remaining <= 0) runCycle();
     else { const m = Math.floor(remaining / 60000), s = Math.floor((remaining % 60000) / 1000); $('countdown').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; }
   } else if (!monitorOn) $('countdown').textContent = '--:--';
@@ -376,13 +384,13 @@ function tick() {
 async function runCycle(manual) {
   if (cycleRunning) return;
   const token = getToken();
-  if (!token) { refreshKeyUi(); return showToast('⚠️ اضبط مفتاح الاستخراج من صفحة الإعدادات ⚙️'); }
-  if (!accounts.length) return showToast('⚠️ أضف حساباً واحداً على الأقل');
+  if (!token) { refreshKeyUi(); return showToast('اضبط مفتاح الاستخراج من صفحة الإعدادات'); }
+  if (!accounts.length) return showToast('أضف حساباً واحداً على الأقل');
 
   cycleRunning = true;
   $('bandAlert').style.display = 'none';
   $('miniSpinner').style.display = 'block';
-  $('countdown').textContent = '📡';
+  $('countdown').textContent = '···';
   $('miniStatus').textContent = manual ? 'رصد فوري قيد التنفيذ...' : 'دورة رصد قيد التنفيذ...';
   try {
     // هذه الأداة أداة بحث (query + mode + query_type)، وليست "جلب تايملاين حساب" مباشرة —
@@ -395,20 +403,20 @@ async function runCycle(manual) {
       max_results: tweetsPerCycle * accounts.length
     };
     const maxItems = tweetsPerCycle * accounts.length;
-    const startRes = await fetch(`${API_BASE}/acts/${ACTOR_ID}/runs?token=${encodeURIComponent(token)}&maxItems=${maxItems}`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(input)
-    });
+    const startRes = await apiPost(`${API_BASE}/acts/${ACTOR_ID}/runs?token=${encodeURIComponent(token)}&maxItems=${maxItems}`, input);
     if (!startRes.ok) throw await apiError(startRes);
     const run = (await startRes.json()).data;
     let status = run.status, datasetId = run.defaultDatasetId;
+    const deadline = Date.now() + 20 * 60000;
     while (['READY', 'RUNNING'].includes(status)) {
+      if (Date.now() > deadline) throw new Error('تجاوز التشغيل عشرين دقيقة دون أن ينتهي — أُلغيت الدورة وستُعاد المحاولة.');
       await sleep(4000);
-      const st = await fetch(`${API_BASE}/actor-runs/${run.id}?token=${encodeURIComponent(token)}`);
+      const st = await apiGet(`${API_BASE}/actor-runs/${run.id}?token=${encodeURIComponent(token)}`);
       if (!st.ok) throw await apiError(st);
       const d = (await st.json()).data; status = d.status; datasetId = d.defaultDatasetId;
     }
     if (status !== 'SUCCEEDED' && status !== 'ABORTED') throw new Error(`انتهى التشغيل بحالة "${status}". تحقق من الرصيد أو أسماء الحسابات.`);
-    const itemsRes = await fetch(`${API_BASE}/datasets/${datasetId}/items?clean=true&format=json&token=${encodeURIComponent(token)}`);
+    const itemsRes = await apiGet(`${API_BASE}/datasets/${datasetId}/items?clean=true&format=json&token=${encodeURIComponent(token)}`);
     if (!itemsRes.ok) throw await apiError(itemsRes);
     const items = await itemsRes.json();
 
@@ -425,16 +433,16 @@ async function runCycle(manual) {
     feed.sort((a, b) => (b.ts || b.seenAt || 0) - (a.ts || a.seenAt || 0));
     if (feed.length > FEED_CAP) feed = feed.slice(0, FEED_CAP);
     saveFeed();
-    lastRunAt = Date.now(); localStorage.setItem(LAST_STORAGE, String(lastRunAt));
-    $('miniStatus').textContent = `آخر رصد: ${new Date(lastRunAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })} · ` + (added ? `${added} تغريدة جديدة ✨` : 'لا جديد');
-    if (added) { showToast(`✨ ${added} تغريدة جديدة`); saveToDb(feed.filter(p => freshKeys.has(p.key)), 'monitor'); }
+    lastRunAt = Date.now(); nextRetryAt = 0; localStorage.setItem(LAST_STORAGE, String(lastRunAt));
+    $('miniStatus').textContent = `آخر رصد: ${new Date(lastRunAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })} · ` + (added ? `${added} تغريدة جديدة` : 'لا جديد');
+    if (added) { showToast(`${added} تغريدة جديدة`); saveToDb(feed.filter(p => freshKeys.has(p.key)), 'monitor'); }
     showDashboard();
     renderDashboard();
   } catch (err) {
     $('bandAlert').textContent = err.message || String(err);
     $('bandAlert').style.display = 'block';
-    $('miniStatus').textContent = 'فشلت الدورة — ستُعاد المحاولة لاحقاً';
-    lastRunAt = Date.now(); localStorage.setItem(LAST_STORAGE, String(lastRunAt));
+    $('miniStatus').textContent = 'فشلت الدورة — ستُعاد المحاولة بعد دقيقتين';
+    nextRetryAt = Date.now() + 120000;
   } finally { cycleRunning = false; $('miniSpinner').style.display = 'none'; }
 }
 
@@ -460,7 +468,11 @@ function normalizeTweet(raw, targetHandle) {
   })).filter(m => m.src);
   const firstImg = mediaList.find(m => m.type === 'image');
   const media = firstImg ? firstImg.src : (mediaList[0]?.src || '');
-  const key = url || `${screenName}|${idStr}`;
+  /* المفتاح يجب أن يبقى فريداً لكل تغريدة. حين تعيد أداة الاستخراج تغريدات بلا
+     رابط وبلا مُعرِّف، كان `${screenName}|${idStr}` ينهار إلى قيمة واحدة لكل
+     تغريدات الحساب — فتُهمَل جميعها إلا الأولى باعتبارها مكرَّرة، ويبدو الرصد
+     كأنه لا يعمل. فالبديل الأخير يتضمّن الوقت وبداية النص. */
+  const key = url || (idStr ? `${screenName}|${idStr}` : `${screenName}|${ts || ''}|${text.slice(0, 80)}`);
   const p = {
     key, text, url, ts, author, screenName,
     avatar: user.profile_image_url_https || user.profile_image_url || user.profilePicture || user.avatar || '',
@@ -529,29 +541,34 @@ function renderAccountFilter() {
   box.querySelectorAll('.pill').forEach(b => b.onclick = () => { filterAccount = b.dataset.plat; renderDashboard(); });
 }
 
+// نقطة ملوّنة صغيرة تسبق تسمية التصنيف — نفس دلالة الإيموجي بلون اللوحة وشكل ثابت
+const dot = tone => `<i class="ic tone-${tone}" data-ic="dot" style="font-size:.5em"></i> `;
+
 function renderClassFilter() {
   const box = $('classFilter');
   const opts = [
-    ['all', 'الكل'], ['NEGATIVE', '🔴 سلبي'], ['flagged', '🚩 مرفوع العلم'],
-    ['POSITIVE', '🟢 إيجابي'], ['NEUTRAL', '⚪ محايد']
+    ['all', 'الكل'],
+    ['NEGATIVE', dot('bad') + 'سلبي'], ['flagged', dot('warn') + 'مرفوع العلم'],
+    ['POSITIVE', dot('ok') + 'إيجابي'], ['NEUTRAL', dot('mute') + 'محايد']
   ];
   box.innerHTML = ['<span class="filter-label">التصنيف:</span>',
     ...opts.map(([id, label]) => `<button class="pill ${filterClass === id ? 'active' : ''}" data-cls="${id}">${label}</button>`)
   ].join('');
+  FBXIcons.hydrate(box);
   box.querySelectorAll('.pill').forEach(b => b.onclick = () => { filterClass = b.dataset.cls; renderDashboard(); });
 }
 
 function renderClassSummary(posts) {
   const g = FBXAnalyzer.aggregate(posts.map(p => ensureAnalysis(p).analysis));
   $('asumGrid').innerHTML = [
-    ['sev', '⛔', g.high, 'خطورة/أهمية عالية'],
-    ['pos', '🟢', g.positive, 'إيجابي'],
-    ['neg', '🔴', g.negative, 'سلبي'],
-    ['neu', '⚪', g.neutral, 'محايد'],
-    ['flag', '🚩', g.flagged, 'مرفوع العلم'],
-    ['esc', '🚨', g.needsDelete + g.needsReview, 'يتطلب حذف/مراجعة']
+    ['sev', g.high, 'خطورة/أهمية عالية'],
+    ['pos', g.positive, 'إيجابي'],
+    ['neg', g.negative, 'سلبي'],
+    ['neu', g.neutral, 'محايد'],
+    ['flag', g.flagged, 'مرفوع العلم'],
+    ['esc', g.needsDelete + g.needsReview, 'يتطلب حذف/مراجعة']
     // الرقم الكبير الملوّن + الشريط العلوي يحملان الدلالة، فلا حاجة لإيموجي يضيف ضجيجاً
-  ].map(([cls, , v, l]) => `<div class="asum-card ${cls}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+  ].map(([cls, v, l]) => `<div class="asum-card ${cls}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
 }
 
 function renderStats(posts) {
@@ -564,14 +581,14 @@ function renderStats(posts) {
   for (const [k, v] of Object.entries(byPlat)) if (v > topN) { topN = v; topPlat = k; }
   const lastStr = lastRunAt ? new Date(lastRunAt).toLocaleString('ar', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
   const tiles = [
-    ['📝', 'التغريدات', fmtNum(total), `حسابات: ${platformList().length}`],
-    ['💫', 'إجمالي التفاعل', fmtNum(eng), `متوسط: ${fmtNum(avg)}/تغريدة`],
-    ['🏆', 'الأنشط', `<div class="v small">@${esc(topPlat)}</div>`, `${fmtNum(topN)} تغريدة`, true],
-    ['🕓', 'آخر رصد', `<div class="v small">${lastStr}</div>`, monitorOn ? 'الرصد نشط' : 'الرصد متوقف', true]
+    ['edit', 'التغريدات', fmtNum(total), `حسابات: ${platformList().length}`],
+    ['sparkle', 'إجمالي التفاعل', fmtNum(eng), `متوسط: ${fmtNum(avg)}/تغريدة`],
+    ['trophy', 'الأنشط', `<div class="v small">@${esc(topPlat)}</div>`, `${fmtNum(topN)} تغريدة`, true],
+    ['clock', 'آخر رصد', `<div class="v small">${lastStr}</div>`, monitorOn ? 'الرصد نشط' : 'الرصد متوقف', true]
   ];
   $('statsGrid').innerHTML = tiles.map(([icon, label, val, sub, raw]) => `
     <div class="stat-tile">
-      <div class="stat-icon">${icon}</div>
+      <div class="stat-icon">${FBXIcons.svg(icon)}</div>
       <div class="stat-body">
         <div class="k">${label}</div>
         ${raw ? val : `<div class="v">${val}</div>`}
@@ -745,21 +762,21 @@ $('clearBtn').onclick = () => {
   if (!confirm('سيتم مسح جميع التغريدات المرصودة من المتصفح. متابعة؟')) return;
   feed = []; freshKeys = new Set(); saveFeed();
   $('dashboard').style.display = 'none'; $('bootEmpty').style.display = 'block';
-  showToast('🗑️ تم مسح السجل');
+  showToast('تم مسح السجل');
 };
 $('exportExcelBtn').onclick = () => {
   const list = filteredPosts();
   if (!list.length) return showToast('لا بيانات للتصدير');
   list.forEach(ensureAnalysis);
   const n = FBXExcel.exportPosts('رصد-تغريدات-X-' + new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') + '.xlsx', list, 'تغريدات X');
-  showToast(`📊 تم تصدير ${n} تغريدة إلى Excel`);
+  showToast(`تم تصدير ${n} تغريدة إلى Excel`);
 };
 $('exportBtn').onclick = () => {
   const list = filteredPosts();
   if (!list.length) return showToast('لا بيانات للتصدير');
   const blob = new Blob([JSON.stringify(list, null, 2)], { type: 'application/json' });
   const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'x-dashboard-tweets.json'; a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 3000); showToast('⬇️ تم التصدير');
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000); showToast('تم التصدير');
 };
 
 /* =============== Local database (configured in settings.html) =============== */
@@ -790,7 +807,7 @@ $('pickPagesBtn').onclick = () => FBXPages.openPicker({
       accounts.push(handle); added++;
     }
     save(ACCOUNTS_STORAGE, accounts); renderChips();
-    showToast(added ? `✅ أُضيف ${added} حساب للرصد` : 'كل ما اخترته مضاف مسبقاً');
+    showToast(added ? `أُضيف ${added} حساب للرصد` : 'كل ما اخترته مضاف مسبقاً');
   }
 });
 </script>

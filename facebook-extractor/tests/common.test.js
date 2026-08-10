@@ -195,3 +195,47 @@ test('normalizePost لا ينهار على عنصر شبه فارغ', () => {
   assert.strictEqual(p.likes, 0);
   assert.ok(p.analysis);
 });
+
+/* ============================================================
+ * مفتاح المنشور — انحدار حقيقي وقع فعلاً
+ * ------------------------------------------------------------
+ * عند توحيد normalizePost في common.js سقط الحقل `key` الذي كانت
+ * صفحتا الرصد تضبطانه بنفسيهما. النتيجة لم تكن عطلاً ظاهراً بل صمتاً:
+ * كل المنشورات صار مفتاحها undefined، فمجموعة «ما سبق رصده» تصير
+ * {undefined}، فيُطابقها كل منشور تالٍ ويُهمَل باعتباره مكرَّراً —
+ * أي أن الرصد التلقائي يتوقف عن إضافة أي شيء بعد أول منشور.
+ * هذه الاختبارات تحرس السلوك الذي انكسر بالضبط.
+ * ============================================================ */
+test('normalizePost يضبط مفتاحاً غير فارغ دائماً', () => {
+  const withUrl = C.normalizePost({ text: 'نص', url: 'https://facebook.com/1' }, 'facebook');
+  assert.ok(withUrl.key, 'المفتاح لا يجوز أن يكون فارغاً');
+  assert.strictEqual(withUrl.key, 'https://facebook.com/1', 'الرابط هو المفتاح الطبيعي');
+
+  const noUrl = C.normalizePost({ text: 'منشور بلا رابط', pageName: 'صفحة', time: 1700000000 }, 'facebook');
+  assert.ok(noUrl.key, 'حتى بلا رابط يجب أن يوجد مفتاح');
+  assert.ok(noUrl.key.includes('صفحة'), 'المفتاح البديل يُبنى من الحساب والوقت والنص');
+
+  const bare = C.normalizePost({}, 'facebook');
+  assert.ok(bare.key, 'العنصر الفارغ تماماً يجب أن ينال مفتاحاً كذلك');
+});
+
+test('منشورات مختلفة تنال مفاتيح مختلفة — وإلا توقّف الرصد', () => {
+  const items = [
+    { text: 'الأول', url: 'https://facebook.com/1' },
+    { text: 'الثاني', url: 'https://facebook.com/2' },
+    { text: 'الثالث', url: 'https://facebook.com/3' }
+  ].map(r => C.normalizePost(r, 'facebook'));
+  assert.strictEqual(new Set(items.map(p => p.key)).size, 3, 'ثلاثة منشورات ⇒ ثلاثة مفاتيح');
+
+  // محاكاة منطق منع التكرار في صفحتَي الرصد
+  const existing = new Set();
+  const added = items.filter(p => (existing.has(p.key) ? false : (existing.add(p.key), true)));
+  assert.strictEqual(added.length, 3, 'لا يجوز أن يبتلع منعُ التكرار منشورات مختلفة');
+});
+
+test('المنشور نفسه في دورة تالية يُعدّ مكرَّراً لا جديداً', () => {
+  const raw = { text: 'نفس المنشور', url: 'https://facebook.com/same' };
+  const first = C.normalizePost(raw, 'facebook');
+  const second = C.normalizePost(raw, 'facebook');
+  assert.strictEqual(first.key, second.key, 'نفس المنشور ⇒ نفس المفتاح بين الدورات');
+});

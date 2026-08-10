@@ -14,27 +14,27 @@
 <div class="app-shell">
   <aside class="sidebar">
     <a class="side-brand" href="index.html">
-      <div class="brand-logo">🍃</div>
+      <div class="brand-logo"><i class="ic" data-ic="logo"></i></div>
       <div>
         <h1>الإعلام الرقمي</h1>
         <p>استخراج وتحليل منشورات وحسابات</p>
       </div>
     </a>
     <nav class="side-nav">
-      <a href="index.html"><span class="ico">🔍</span><span class="label">استخراج فيسبوك</span></a>
-      <a href="dashboard.html"><span class="ico">📊</span><span class="label">رصد فيسبوك</span></a>
+      <a href="index.html"><span class="ico"><i class="ic" data-ic="search"></i></span><span class="label">استخراج فيسبوك</span></a>
+      <a href="dashboard.html"><span class="ico"><i class="ic" data-ic="chart"></i></span><span class="label">رصد فيسبوك</span></a>
       <a href="twitter.html"><span class="ico">𝕏</span><span class="label">استخراج X (تويتر)</span></a>
-      <a href="twitter-dashboard.html"><span class="ico">📡</span><span class="label">رصد X (تويتر)</span></a>
-      <a href="settings.html" class="active"><span class="ico">⚙️</span><span class="label">الإعدادات</span></a>
+      <a href="twitter-dashboard.html"><span class="ico"><i class="ic" data-ic="signal"></i></span><span class="label">رصد X (تويتر)</span></a>
+      <a href="settings.html" class="active"><span class="ico"><i class="ic" data-ic="settings"></i></span><span class="label">الإعدادات</span></a>
     </nav>
     <div class="side-foot">
-      <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري">🌙</button>
+      <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري"><i class="ic" data-ic="moon"></i></button>
     </div>
   </aside>
 
   <div class="main-col">
     <header class="page-header">
-      <span class="hero-badge">⚙️ مركز الإعدادات</span>
+      <span class="hero-badge"><i class="ic" data-ic="settings"></i> مركز الإعدادات</span>
       <h2>إعدادات الموقع</h2>
       <p>من هنا تضبط مفتاح واجهة الاستخراج وقاعدة البيانات المحلية مرة واحدة، وتُطبَّق تلقائياً على جميع صفحات الموقع (الاستخراج اليدوي، والرصد التلقائي).</p>
     </header>
@@ -43,31 +43,31 @@
 
   <!-- API key -->
   <section class="panel">
-    <div class="panel-title"><span class="num">🔑</span> مفتاح واجهة الاستخراج (API)</div>
+    <div class="panel-title"><span class="num"><i class="ic" data-ic="key"></i></span> مفتاح واجهة الاستخراج (API)</div>
     <div class="panel-sub">المفتاح الذي يستخدمه الموقع لاستخراج منشورات فيسبوك وتغريدات X. يُحفظ محلياً في متصفحك فقط ولا يُشارَك مع أي جهة أخرى.</div>
 
     <label class="field-label" for="apiKey">المفتاح <small>(محفوظ محلياً في هذا المتصفح)</small></label>
     <div class="input-wrap">
       <input class="input" type="password" id="apiKey" placeholder="أدخل مفتاح الاستخراج هنا" autocomplete="off" dir="ltr" style="padding-left:42px">
-      <button class="toggle-eye" id="eyeBtn" title="إظهار / إخفاء">👁️</button>
+      <button class="toggle-eye" id="eyeBtn" title="إظهار / إخفاء"><i class="ic" data-ic="eye"></i></button>
     </div>
     <div class="actions-row">
-      <button class="btn btn-primary btn-sm" id="saveKeyBtn">💾 حفظ المفتاح</button>
-      <button class="btn btn-ghost btn-sm" id="checkKeyBtn">🔌 فحص المفتاح</button>
-      <button class="btn btn-danger-ghost btn-sm" id="clearKeyBtn">🗑️ مسح المفتاح</button>
+      <button class="btn btn-primary btn-sm" id="saveKeyBtn"><i class="ic" data-ic="save"></i> حفظ المفتاح</button>
+      <button class="btn btn-ghost btn-sm" id="checkKeyBtn"><i class="ic" data-ic="plug"></i> فحص المفتاح</button>
+      <button class="btn btn-danger-ghost btn-sm" id="clearKeyBtn"><i class="ic" data-ic="trash"></i> مسح المفتاح</button>
     </div>
     <div class="status-line" id="keyStatus"></div>
   </section>
 
   <!-- Local database -->
   <section class="panel">
-    <div class="panel-title"><span class="num">🗄️</span> قاعدة البيانات المحلية <small style="font-weight:400;color:var(--text-2);font-size:.8rem">(اختياري)</small></div>
+    <div class="panel-title"><span class="num"><i class="ic" data-ic="database"></i></span> قاعدة البيانات المحلية <small style="font-weight:400;color:var(--text-2);font-size:.8rem">(اختياري)</small></div>
     <div class="panel-sub">عند تشغيل خادم قاعدة البيانات على جهازك، تُحفظ كل المنشورات المستخرجة والمحلَّلة تلقائياً في ملف SQLite دائم على حاسوبك بدون تكرار.</div>
 
     <label class="field-label" for="dbUrl">عنوان الخادم المحلي</label>
     <div class="actions-row" style="margin-top:0">
       <input class="input" type="url" id="dbUrl" dir="ltr" placeholder="http://localhost:3300" value="http://localhost:3300" style="flex:1 1 260px">
-      <button class="btn btn-ghost btn-sm" id="dbCheckBtn">🔌 فحص الاتصال</button>
+      <button class="btn btn-ghost btn-sm" id="dbCheckBtn"><i class="ic" data-ic="plug"></i> فحص الاتصال</button>
     </div>
     <div class="status-line" id="dbStatus"></div>
     <div class="hint">لتشغيل قاعدة البيانات: افتح مجلد <strong>local-server</strong> واضغط مرتين على <strong dir="ltr">START-DATABASE.bat</strong> (ويندوز) أو نفّذ <strong dir="ltr">bash run.sh</strong> (ماك/لينكس)، ثم اضغط «فحص الاتصال».<br>يتطلب تثبيت <a href="https://nodejs.org" target="_blank" rel="noopener">Node.js</a> إصدار 22.13 أو أحدث مرة واحدة على الجهاز — وإن لم يكن مثبتاً سيخبرك الملف بذلك ويفتح صفحة التحميل تلقائياً.</div>
@@ -75,17 +75,17 @@
 
   <!-- AI review layer -->
   <section class="panel">
-    <div class="panel-title"><span class="num">🧠</span> مراجعة التصنيف بالذكاء الاصطناعي <small style="font-weight:400;color:var(--text-2);font-size:.8rem">(اختياري)</small></div>
+    <div class="panel-title"><span class="num"><i class="ic" data-ic="brain"></i></span> مراجعة التصنيف بالذكاء الاصطناعي <small style="font-weight:400;color:var(--text-2);font-size:.8rem">(اختياري)</small></div>
     <div class="panel-sub">المحرك المحلي يطابق كلمات مفتاحية: سريع ومجاني، لكنه ينكسر أمام اللهجات والأخطاء الإملائية والسياق المعكوس («لا يجوز أن نقول إنهم خونة» ليست خطاب كراهية). تُراجع هذه الطبقة الحكم بنموذج لغوي يفهم السياق، وتضبط تحديداً الحالات الخاصة الثماني التي يصعب ضبطها بالكلمات وحدها.</div>
 
     <div class="hint" style="border-right:3px solid var(--gold-deep);background:var(--surface-2);margin:10px 0 14px">
-      ⚠️ <strong>تنبيه الخصوصية:</strong> عند تفعيل هذه الطبقة يُرسَل <strong>نص المنشور</strong> إلى واجهة النموذج لتحليله — وهذا خروج عن مبدأ «كل شيء محلي» الذي يعمل به باقي الموقع. المفتاح نفسه يبقى في متصفحك فقط. اتركها معطَّلة إن كانت السرّية شرطاً في عملك.
+      <i class="ic" data-ic="warning"></i> <strong>تنبيه الخصوصية:</strong> عند تفعيل هذه الطبقة يُرسَل <strong>نص المنشور</strong> إلى واجهة النموذج لتحليله — وهذا خروج عن مبدأ «كل شيء محلي» الذي يعمل به باقي الموقع. المفتاح نفسه يبقى في متصفحك فقط. اتركها معطَّلة إن كانت السرّية شرطاً في عملك.
     </div>
 
     <label class="field-label" for="aiKey">مفتاح واجهة النموذج <small>(محفوظ محلياً في هذا المتصفح)</small></label>
     <div class="input-wrap">
       <input class="input" type="password" id="aiKey" placeholder="sk-ant-..." autocomplete="off" dir="ltr" style="padding-left:42px">
-      <button class="toggle-eye" id="aiEyeBtn" title="إظهار / إخفاء">👁️</button>
+      <button class="toggle-eye" id="aiEyeBtn" title="إظهار / إخفاء"><i class="ic" data-ic="eye"></i></button>
     </div>
 
     <label class="field-label" for="aiModel" style="margin-top:12px">النموذج</label>
@@ -101,20 +101,21 @@
     </label>
 
     <div class="actions-row">
-      <button class="btn btn-primary btn-sm" id="saveAiBtn">💾 حفظ الإعدادات</button>
-      <button class="btn btn-ghost btn-sm" id="checkAiBtn">🔌 فحص المفتاح</button>
-      <button class="btn btn-danger-ghost btn-sm" id="clearAiBtn">🗑️ تعطيل ومسح المفتاح</button>
+      <button class="btn btn-primary btn-sm" id="saveAiBtn"><i class="ic" data-ic="save"></i> حفظ الإعدادات</button>
+      <button class="btn btn-ghost btn-sm" id="checkAiBtn"><i class="ic" data-ic="plug"></i> فحص المفتاح</button>
+      <button class="btn btn-danger-ghost btn-sm" id="clearAiBtn"><i class="ic" data-ic="trash"></i> تعطيل ومسح المفتاح</button>
     </div>
     <div class="status-line" id="aiStatus"></div>
   </section>
 
     </main>
 
-    <footer>الإعلام الرقمي — مركز الإعدادات · تحليل وتصنيف محلي · بياناتك لا تغادر متصفحك · الإصدار 4.1 🍃</footer>
+    <footer>الإعلام الرقمي — مركز الإعدادات · تحليل وتصنيف محلي · بياناتك لا تغادر متصفحك · الإصدار 4.1 <i class="ic" data-ic="logo"></i></footer>
   </div>
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="icons.js"></script>
 <script src="analyzer.js"></script>
 <script src="common.js"></script>
 <script src="ai.js"></script>
@@ -133,35 +134,35 @@ function setStatus(el, msg, ok) { el.textContent = msg; el.classList.add('show')
 
 /* ===== API key ===== */
 $('apiKey').value = localStorage.getItem(KEY_STORAGE) || '';
-if ($('apiKey').value) setStatus($('keyStatus'), '🟢 يوجد مفتاح محفوظ في هذا المتصفح.', true);
+if ($('apiKey').value) setStatus($('keyStatus'), 'يوجد مفتاح محفوظ في هذا المتصفح.', true);
 $('eyeBtn').onclick = () => { const i = $('apiKey'); i.type = i.type === 'password' ? 'text' : 'password'; };
 $('saveKeyBtn').onclick = () => {
   const v = $('apiKey').value.trim();
   if (!v) return showToast('أدخل المفتاح أولاً');
   localStorage.setItem(KEY_STORAGE, v);
-  setStatus($('keyStatus'), '✅ تم حفظ المفتاح. سيُستخدم في كل صفحات الموقع.', true);
-  showToast('✅ تم حفظ المفتاح');
+  setStatus($('keyStatus'), 'تم حفظ المفتاح. سيُستخدم في كل صفحات الموقع.', true);
+  showToast('تم حفظ المفتاح');
 };
 $('clearKeyBtn').onclick = () => {
   localStorage.removeItem(KEY_STORAGE); $('apiKey').value = '';
-  setStatus($('keyStatus'), '🗑️ تم مسح المفتاح.', false);
-  showToast('🗑️ تم مسح المفتاح');
+  setStatus($('keyStatus'), 'تم مسح المفتاح.', false);
+  showToast('تم مسح المفتاح');
 };
 $('checkKeyBtn').onclick = async () => {
   const v = $('apiKey').value.trim();
   if (!v) return showToast('أدخل المفتاح أولاً');
-  setStatus($('keyStatus'), '⏳ جارٍ فحص المفتاح...', null);
+  setStatus($('keyStatus'), 'جارٍ فحص المفتاح...', null);
   try {
     const r = await fetch(`${API_BASE}/users/me?token=${encodeURIComponent(v)}`, { signal: AbortSignal.timeout(8000) });
-    if (r.status === 401) { setStatus($('keyStatus'), '🔴 المفتاح غير صحيح أو منتهي الصلاحية.', false); return; }
+    if (r.status === 401) { setStatus($('keyStatus'), 'المفتاح غير صحيح أو منتهي الصلاحية.', false); return; }
     if (!r.ok) throw new Error('HTTP ' + r.status);
     const d = await r.json();
     const name = d?.data?.username || d?.data?.email || 'مستخدم';
     localStorage.setItem(KEY_STORAGE, v);
-    setStatus($('keyStatus'), `🟢 المفتاح صالح — الحساب: ${name}. تم الحفظ.`, true);
-    showToast('✅ المفتاح صالح');
+    setStatus($('keyStatus'), `المفتاح صالح — الحساب: ${name}. تم الحفظ.`, true);
+    showToast('المفتاح صالح');
   } catch (e) {
-    setStatus($('keyStatus'), '⚠️ تعذّر فحص المفتاح (قد يكون بسبب الاتصال). حُفظ المفتاح على أي حال.', false);
+    setStatus($('keyStatus'), 'تعذّر فحص المفتاح (قد يكون بسبب الاتصال). حُفظ المفتاح على أي حال.', false);
     localStorage.setItem(KEY_STORAGE, v);
   }
 };
@@ -171,17 +172,17 @@ $('dbUrl').value = localStorage.getItem(DB_URL_STORAGE) || 'http://localhost:330
 $('dbCheckBtn').onclick = async () => {
   const url = ($('dbUrl').value || '').trim().replace(/\/+$/, '');
   if (!url) return;
-  setStatus($('dbStatus'), '⏳ جارٍ فحص الاتصال...', null);
+  setStatus($('dbStatus'), 'جارٍ فحص الاتصال...', null);
   try {
     const r = await fetch(url + '/api/health', { signal: AbortSignal.timeout(4000) });
     const d = await r.json();
     if (!d.ok) throw new Error();
     localStorage.setItem(DB_URL_STORAGE, url);
-    setStatus($('dbStatus'), `🟢 متصلة — ${d.total} منشور محفوظ في قاعدة البيانات. تم حفظ العنوان.`, true);
-    showToast('✅ تم الاتصال بقاعدة البيانات');
+    setStatus($('dbStatus'), `متصلة — ${d.total} منشور محفوظ في قاعدة البيانات. تم حفظ العنوان.`, true);
+    showToast('تم الاتصال بقاعدة البيانات');
   } catch (_) {
-    setStatus($('dbStatus'), '🔴 غير متصلة — تأكد أن الخادم المحلي يعمل ثم أعد الفحص.', false);
-    showToast('⚠️ تعذر الاتصال بقاعدة البيانات');
+    setStatus($('dbStatus'), 'غير متصلة — تأكد أن الخادم المحلي يعمل ثم أعد الفحص.', false);
+    showToast('تعذر الاتصال بقاعدة البيانات');
   }
 };
 
@@ -191,8 +192,8 @@ const AI_KEY = FBXCommon.STORAGE.aiKey, AI_MODEL = FBXCommon.STORAGE.aiModel, AI
 $('aiKey').value = localStorage.getItem(AI_KEY) || '';
 $('aiModel').value = localStorage.getItem(AI_MODEL) || FBXAI.DEFAULT_MODEL;
 $('aiAuto').checked = localStorage.getItem(AI_AUTO) === '1';
-if ($('aiKey').value) setStatus($('aiStatus'), '🟢 الطبقة مفعَّلة — النموذج: ' + $('aiModel').value, true);
-else setStatus($('aiStatus'), '⚪ معطَّلة — يعمل المحرك المحلي وحده (بلا إرسال أي بيانات للخارج).', null);
+if ($('aiKey').value) setStatus($('aiStatus'), 'الطبقة مفعَّلة — النموذج: ' + $('aiModel').value, true);
+else setStatus($('aiStatus'), 'معطَّلة — يعمل المحرك المحلي وحده (بلا إرسال أي بيانات للخارج).', null);
 
 $('aiEyeBtn').onclick = () => { const i = $('aiKey'); i.type = i.type === 'password' ? 'text' : 'password'; };
 
@@ -202,35 +203,35 @@ $('saveAiBtn').onclick = () => {
   localStorage.setItem(AI_AUTO, $('aiAuto').checked ? '1' : '0');
   if (!v) {
     localStorage.removeItem(AI_KEY);
-    setStatus($('aiStatus'), '⚪ لا يوجد مفتاح — الطبقة معطَّلة.', null);
+    setStatus($('aiStatus'), 'لا يوجد مفتاح — الطبقة معطَّلة.', null);
     return showToast('حُفظت الإعدادات — الطبقة معطَّلة');
   }
   localStorage.setItem(AI_KEY, v);
-  setStatus($('aiStatus'), `✅ حُفظت الإعدادات — النموذج: ${$('aiModel').value}${$('aiAuto').checked ? ' · مراجعة تلقائية' : ' · مراجعة يدوية'}`, true);
-  showToast('✅ تم حفظ إعدادات الذكاء الاصطناعي');
+  setStatus($('aiStatus'), `حُفظت الإعدادات — النموذج: ${$('aiModel').value}${$('aiAuto').checked ? ' · مراجعة تلقائية' : ' · مراجعة يدوية'}`, true);
+  showToast('تم حفظ إعدادات الذكاء الاصطناعي');
 };
 
 $('clearAiBtn').onclick = () => {
   localStorage.removeItem(AI_KEY);
   localStorage.setItem(AI_AUTO, '0');
   $('aiKey').value = ''; $('aiAuto').checked = false;
-  setStatus($('aiStatus'), '🗑️ تم مسح المفتاح — الطبقة معطَّلة والتحليل محلي بالكامل.', false);
-  showToast('🗑️ تم تعطيل طبقة الذكاء الاصطناعي');
+  setStatus($('aiStatus'), 'تم مسح المفتاح — الطبقة معطَّلة والتحليل محلي بالكامل.', false);
+  showToast('تم تعطيل طبقة الذكاء الاصطناعي');
 };
 
 $('checkAiBtn').onclick = async () => {
   const v = $('aiKey').value.trim();
   if (!v) return showToast('أدخل المفتاح أولاً');
-  setStatus($('aiStatus'), '⏳ جارٍ فحص المفتاح...', null);
+  setStatus($('aiStatus'), 'جارٍ فحص المفتاح...', null);
   try {
     await FBXAI.testKey(v, $('aiModel').value);
     localStorage.setItem(AI_KEY, v);
     localStorage.setItem(AI_MODEL, $('aiModel').value);
-    setStatus($('aiStatus'), `🟢 المفتاح صالح والنموذج ${$('aiModel').value} يستجيب. تم الحفظ.`, true);
-    showToast('✅ المفتاح صالح');
+    setStatus($('aiStatus'), `المفتاح صالح والنموذج ${$('aiModel').value} يستجيب. تم الحفظ.`, true);
+    showToast('المفتاح صالح');
   } catch (e) {
     setStatus($('aiStatus'), String(e.message || e), false);
-    showToast('⚠️ تعذّر التحقق من المفتاح');
+    showToast('تعذّر التحقق من المفتاح');
   }
 };
 </script>

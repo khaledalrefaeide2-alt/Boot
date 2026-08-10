@@ -245,7 +245,7 @@
 
 <div class="toolbar">
   <span>المستند جاهز — اختر «الحفظ بصيغة PDF» في وجهة الطباعة</span>
-  <button onclick="window.print()">🖨️ طباعة / حفظ PDF</button>
+  <button onclick="window.print()">طباعة / حفظ PDF</button>
   <button class="ghost" onclick="window.close()">إغلاق</button>
 </div>
 <div class="spacer"></div>

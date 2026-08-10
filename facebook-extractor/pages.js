@@ -254,12 +254,12 @@
     overlay.innerHTML = `
       <div class="fbxp-modal" role="dialog" aria-modal="true">
         <div class="fbxp-head">
-          <span class="fbxp-title">📚 دليل الصفحات ${platform ? `— ${PLATFORM_LABEL[platform] || platform}` : ''}</span>
-          <button class="fbxp-close" title="إغلاق">✕</button>
+          <span class="fbxp-title">${ic('library')} دليل الصفحات ${platform ? `— ${PLATFORM_LABEL[platform] || platform}` : ''}</span>
+          <button class="fbxp-close" title="إغلاق">${ic('close')}</button>
         </div>
         <div class="fbxp-tools">
           <input class="input" type="search" id="fbxpSearch" placeholder="ابحث بالاسم أو الرابط أو التصنيف...">
-          <button class="btn btn-ghost btn-sm" id="fbxpImport">📥 استيراد من Excel</button>
+          <button class="btn btn-ghost btn-sm" id="fbxpImport">${ic('inbox')} استيراد من Excel</button>
           <button class="btn btn-ghost btn-sm" id="fbxpAll">تحديد الكل</button>
           <button class="btn btn-ghost btn-sm" id="fbxpNone">إلغاء التحديد</button>
           <input type="file" class="fbxp-file" id="fbxpFile" accept=".xlsx">
@@ -268,7 +268,7 @@
         <div class="fbxp-foot">
           <span class="fbxp-count" id="fbxpCount"></span>
           <button class="btn btn-ghost btn-sm" id="fbxpCancel">إلغاء</button>
-          <button class="btn btn-primary btn-sm" id="fbxpOk">✅ استخدام المحدَّد</button>
+          <button class="btn btn-primary btn-sm" id="fbxpOk">${ic('check')} استخدام المحدَّد</button>
         </div>
       </div>`;
     document.body.appendChild(overlay);
@@ -297,7 +297,7 @@
       if (!all.length) {
         body.innerHTML = `<div class="fbxp-empty">
           لا توجد صفحات محفوظة بعد.<br>
-          اضغط <strong>«📥 استيراد من Excel»</strong> واختر ملفك — سيُقرأ محلياً في متصفحك ويُحفظ في قاعدة بياناتك.
+          اضغط <strong>«استيراد من Excel»</strong> واختر ملفك — سيُقرأ محلياً في متصفحك ويُحفظ في قاعدة بياناتك.
         </div>`;
         return;
       }
@@ -311,7 +311,7 @@
           </span>
           ${p.category ? `<span class="fbxp-tag">${esc(p.category)}</span>` : ''}
           ${p.platform ? `<span class="fbxp-tag">${esc(PLATFORM_LABEL[p.platform] || p.platform)}</span>` : ''}
-          <button class="fbxp-del" title="حذف من الدليل" data-del="${esc(p.key)}">🗑</button>
+          <button class="fbxp-del" title="حذف من الدليل" data-del="${esc(p.key)}">${ic('trash')}</button>
         </label>`).join('');
     }
 
@@ -346,7 +346,7 @@
       if (!file) return;
       const btn = $$('fbxpImport');
       const label = btn.textContent;
-      btn.disabled = true; btn.textContent = '⏳ جارٍ القراءة...';
+      btn.disabled = true; btn.textContent = 'جارٍ القراءة...';
       try {
         const wb = await W.FBXExcelImport.readFile(file);
         // نجمع كل الأوراق — بعض الملفات تقسّم الصفحات على أوراق حسب التصنيف
@@ -359,11 +359,11 @@
           const withPlatform = pages.map(p => ({ ...p, platform: p.platform || platform || '' }));
           const d = await savePages(withPlatform);
           await load();
-          alert(`✅ استُوردت ${d.saved} صفحة.\nإجمالي الدليل الآن: ${d.total}` +
+          alert(`استُوردت ${d.saved} صفحة.\nإجمالي الدليل الآن: ${d.total}` +
                 (skipped ? `\n(تُخطّيت ${skipped} صفاً بلا رابط صالح أو مكرّراً)` : ''));
         }
       } catch (err) {
-        alert('⚠️ تعذّرت قراءة الملف:\n' + (err.message || err));
+        alert('تعذّرت قراءة الملف:\n' + (err.message || err));
       } finally {
         btn.disabled = false; btn.textContent = label; e.target.value = '';
       }
@@ -384,7 +384,7 @@
     };
 
     async function load() {
-      body.innerHTML = `<div class="fbxp-empty">⏳ جارٍ تحميل الدليل...</div>`;
+      body.innerHTML = `<div class="fbxp-empty">جارٍ تحميل الدليل...</div>`;
       try {
         const d = await apiGet({ platform });
         all = d.pages || [];
@@ -393,7 +393,7 @@
       } catch (err) {
         all = [];
         body.innerHTML = `<div class="fbxp-empty">
-          ⚠️ قاعدة البيانات المحلية غير متصلة.<br>
+          ${ic('warning')} قاعدة البيانات المحلية غير متصلة.<br>
           شغّل <strong dir="ltr">START-DATABASE.bat</strong> من مجلد <strong>local-server</strong>،
           ثم اضغط «فحص الاتصال» في صفحة الإعدادات وأعد المحاولة.
         </div>`;
