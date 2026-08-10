@@ -227,10 +227,13 @@
 <div class="toast" id="toast"></div>
 
 <script src="analyzer.js"></script>
+<script src="media.js"></script>
 <script src="xlsx-export.js"></script>
+<script src="common.js"></script>
 <script>
 'use strict';
 FBXAnalyzer.injectStyles();
+FBXMedia.injectStyles();
 
 /* =============== Constants =============== */
 const ACTOR_ID = 'pzMmk1t7AZ8OKJhfU';
@@ -254,31 +257,15 @@ let aborted = false;
 let currentRunId = null;
 
 /* =============== Theme =============== */
-function applyTheme(t) {
-  document.documentElement.dataset.theme = t;
-  $('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙';
-}
-applyTheme(localStorage.getItem(THEME_STORAGE) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-$('themeBtn').onclick = () => {
-  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-  localStorage.setItem(THEME_STORAGE, next);
-  applyTheme(next);
-};
+initTheme();
 
 $('heroCta').onclick = () => document.querySelector('main .panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
 /* =============== API key (managed from settings.html) =============== */
-function getToken() { return (localStorage.getItem(KEY_STORAGE) || '').trim(); }
 function refreshSetupNotice() {
   $('setupPanel').style.display = getToken() ? 'none' : 'block';
 }
 
-function showToast(msg) {
-  toast.textContent = msg;
-  toast.classList.add('show');
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => toast.classList.remove('show'), 2600);
-}
 
 /* =============== Form =============== */
 $('resetBtn').onclick = () => {
@@ -318,7 +305,6 @@ $('abortBtn').onclick = async () => {
   runBtn.disabled = false;
 };
 
-function validDate(v) { return v && !isNaN(new Date(v).getTime()); }
 
 async function startExtraction() {
   formError.style.display = 'none';
@@ -443,16 +429,6 @@ async function startExtraction() {
   }
 }
 
-async function apiError(res) {
-  let msg = `خطأ من خدمة الاستخراج (HTTP ${res.status})`;
-  try {
-    const body = await res.json();
-    if (body?.error?.message) msg += `: ${body.error.message}`;
-  } catch (_) {}
-  if (res.status === 401) msg = '🔑 مفتاح الاستخراج غير صحيح أو منتهي. تحقق منه في صفحة الإعدادات ⚙️.';
-  if (res.status === 402) msg = '💳 رصيد حساب الاستخراج غير كافٍ لتشغيل هذه العملية.';
-  return new Error(msg);
-}
 
 function setStatus(main, sub, done) {
   statusText.textContent = main;
@@ -460,7 +436,6 @@ function setStatus(main, sub, done) {
   if (done) spinner.style.display = 'none';
 }
 
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 /* =============== Normalization =============== */
 // خرائط حقول دفاعية: مخطط مخرجات الأداة غير مؤكَّد رسمياً، فتُغطّى عدة تسميات شائعة معاً
@@ -488,7 +463,7 @@ function normalizeTweet(raw, targetHandle) {
     date: ts ? new Date(ts) : null,
     author, screenName,
     avatar: user.profile_image_url_https || user.profile_image_url || user.profilePicture || user.avatar || '',
-    media, mediaList, isRetweet,
+    media, mediaList, isRetweet, platform: 'twitter',
     retweetedFrom: isRetweet ? (raw.user?.screen_name || raw.user?.username || raw.username || raw.user?.name || '') : '',
     likes: num(source.favorite_count ?? source.favouriteCount ?? source.likeCount ?? source.likes),
     comments: num(source.reply_count ?? source.replyCount ?? source.repliesCount ?? source.comments),
@@ -501,22 +476,7 @@ function normalizeTweet(raw, targetHandle) {
   p.analysis = FBXAnalyzer.analyze(p);
   return p;
 }
-function num(v) {
-  if (typeof v === 'number') return v;
-  if (typeof v === 'string') { const n = parseInt(v.replace(/[^\d]/g, ''), 10); return isNaN(n) ? 0 : n; }
-  return 0;
-}
 // لون الشريط الجانبي للبطاقة: يعكس التصنيف ومستوى الخطورة فوراً
-function sevAccent(a) {
-  if (!a) return 'var(--border)';
-  if (a.classification === 'NEGATIVE') {
-    if (a.level === 'HIGH') return 'var(--danger)';
-    if (a.level === 'MEDIUM') return 'var(--gold-deep)';
-    return '#c98a7a';
-  }
-  if (a.classification === 'POSITIVE') return 'var(--success)';
-  return 'var(--text-2)';
-}
 
 /* =============== Rendering =============== */
 function renderResults() {
@@ -566,14 +526,6 @@ function getVisiblePosts() {
   return posts;
 }
 
-function twMediaHtml(p) {
-  if (!p.mediaList.length) return '';
-  return `<div class="tw-media">${p.mediaList.slice(0, 4).map(m => `
-    <a href="${escapeAttr(m.src)}" target="_blank" rel="noopener">
-      <img src="${escapeAttr(m.src)}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'">
-      ${m.type === 'video' ? '<span class="vid-badge">🎬 فيديو</span>' : ''}
-    </a>`).join('')}</div>`;
-}
 
 function renderPosts() {
   const posts = getVisiblePosts();
@@ -600,7 +552,7 @@ function renderPosts() {
         ${p.isRetweet ? `<span class="rt-tag">🔁 إعادة نشر من @${escapeHtml(p.retweetedFrom)}</span>` : ''}
         <div class="post-text ${longText ? 'clamped' : ''}" id="txt-${i}">${escapeHtml(p.text) || '<em style="color:var(--text-2)">— تغريدة بدون نص —</em>'}</div>
         ${longText ? `<button class="read-more" data-target="txt-${i}">عرض المزيد ▾</button>` : ''}
-        ${twMediaHtml(p)}
+        ${FBXMedia.galleryHtml(p)}
         ${FBXAnalyzer.badges(p.analysis)}
         <button class="fbx-toggle" data-panel="pan-${i}" title="عرض التحليل الكامل">🧠</button>
         <div id="pan-${i}" style="display:none">${FBXAnalyzer.panel(p.analysis)}</div>
@@ -634,15 +586,6 @@ function renderPosts() {
   });
 }
 
-function fmtNum(n) {
-  if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
-  if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
-  return String(n);
-}
-function escapeHtml(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-function escapeAttr(s) { return escapeHtml(s); }
 
 /* =============== Toolbar events =============== */
 searchInput.addEventListener('input', renderPosts);
@@ -680,67 +623,12 @@ $('exportCsvBtn').onclick = () => {
 
 /* =============== Local database (configured in settings.html) =============== */
 const DB_URL_STORAGE = 'fbx_db_url';
-let dbUrl = (localStorage.getItem(DB_URL_STORAGE) || '').trim().replace(/\/+$/, '');
-let dbOnline = false;
 
-async function dbCheck(silent) {
-  if (!dbUrl) return;
-  try {
-    const r = await fetch(dbUrl + '/api/health', { signal: AbortSignal.timeout(4000) });
-    const d = await r.json();
-    if (!d.ok) throw new Error();
-    dbOnline = true;
-    if (!silent) showToast('✅ تم الاتصال بقاعدة البيانات المحلية');
-  } catch (_) {
-    dbOnline = false;
-    if (!silent) showToast('⚠️ تعذر الاتصال بقاعدة البيانات — اضبطها من صفحة الإعدادات');
-  }
-}
-if (dbUrl) dbCheck(true);
+if (FBXCommon.db.url) dbCheck(true);
 
-async function saveToDb(posts, source, silent) {
-  if (!posts.length) return;
-  if (!dbOnline) { if (!silent) showToast('⚠️ قاعدة البيانات غير متصلة — فعّلها من صفحة الإعدادات ⚙️'); return; }
-  try {
-    const payload = posts.map(p => {
-      const a = p.analysis || FBXAnalyzer.analyze(p);
-      return {
-        key: p.url || `${p.screenName}|${p.ts || ''}|${(p.text || '').slice(0, 80)}`, text: p.text, url: p.url, ts: p.ts,
-        author: p.author, avatar: p.avatar, media: p.media,
-        likes: p.likes, comments: p.comments, shares: p.shares, source,
-        sentiment: a.classification, emotion: a.subCategory, intent: a.levelLabel,
-        domain: '', severity: a.level === 'HIGH' ? 3 : a.level === 'MEDIUM' ? 2 : 1, action: a.action,
-        flagged: a.flagged ? 1 : 0, analysis: JSON.stringify(a)
-      };
-    });
-    const r = await fetch(dbUrl + '/api/posts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ posts: payload })
-    });
-    const d = await r.json();
-    if (!d.ok) throw new Error(d.error || '');
-    showToast(`💾 حُفظ ${d.saved} تغريدة في قاعدة البيانات`);
-  } catch (_) {
-    dbOnline = false;
-    if (!silent) showToast('⚠️ فشل الحفظ في قاعدة البيانات');
-  }
-}
 $('saveDbBtn').onclick = () => saveToDb(getVisiblePosts(), 'extract', false);
 refreshSetupNotice();
 
-function csvCell(v) {
-  const s = String(v ?? '');
-  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-}
-function download(content, filename, type) {
-  const blob = new Blob([content], { type });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
-}
 </script>
 </body>
 </html>

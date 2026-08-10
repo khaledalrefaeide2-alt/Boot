@@ -83,6 +83,7 @@
 </div>
 <div class="toast" id="toast"></div>
 
+<script src="common.js"></script>
 <script>
 'use strict';
 const KEY_STORAGE = 'fbx_apify_key';
@@ -92,12 +93,8 @@ const API_BASE = 'https://api.apify.com/v2';
 const $ = id => document.getElementById(id);
 const toast = $('toast');
 
-/* Theme */
-function applyTheme(t) { document.documentElement.dataset.theme = t; $('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙'; }
-applyTheme(localStorage.getItem(THEME_STORAGE) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-$('themeBtn').onclick = () => { const n = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark'; localStorage.setItem(THEME_STORAGE, n); applyTheme(n); };
-
-function showToast(msg) { toast.textContent = msg; toast.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => toast.classList.remove('show'), 2600); }
+/* السمة والتنبيهات — من common.js */
+initTheme();
 function setStatus(el, msg, ok) { el.textContent = msg; el.classList.add('show'); el.classList.toggle('status-ok', !!ok); el.classList.toggle('status-err', ok === false); }
 
 /* ===== API key ===== */

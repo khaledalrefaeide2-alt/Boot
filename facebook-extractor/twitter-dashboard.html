@@ -234,10 +234,13 @@
 <div class="toast" id="toast"></div>
 
 <script src="analyzer.js"></script>
+<script src="media.js"></script>
 <script src="xlsx-export.js"></script>
+<script src="common.js"></script>
 <script>
 'use strict';
 FBXAnalyzer.injectStyles();
+FBXMedia.injectStyles();
 
 /* =============== Constants =============== */
 const ACTOR_ID = 'pzMmk1t7AZ8OKJhfU';
@@ -258,18 +261,7 @@ const $ = id => document.getElementById(id);
 const toast = $('toast');
 
 /* =============== Theme =============== */
-function applyTheme(t) {
-  document.documentElement.dataset.theme = t;
-  $('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙';
-}
-applyTheme(localStorage.getItem(THEME_STORAGE) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-$('themeBtn').onclick = () => {
-  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-  localStorage.setItem(THEME_STORAGE, next);
-  applyTheme(next);
-  if (feed.length) renderDashboard();
-};
-function showToast(msg) { toast.textContent = msg; toast.classList.add('show'); clearTimeout(toast._t); toast._t = setTimeout(() => toast.classList.remove('show'), 2600); }
+initTheme();
 
 /* =============== State =============== */
 let accounts = load(ACCOUNTS_STORAGE, []);
@@ -302,7 +294,6 @@ function saveFeed() {
     }
   }
 }
-function getToken() { return (localStorage.getItem(KEY_STORAGE) || '').trim(); }
 
 /* =============== API key (managed from settings.html) =============== */
 function refreshKeyUi() {
@@ -437,14 +428,6 @@ async function runCycle(manual) {
   } finally { cycleRunning = false; $('miniSpinner').style.display = 'none'; }
 }
 
-async function apiError(res) {
-  let msg = `خطأ من خدمة الاستخراج (HTTP ${res.status})`;
-  try { const b = await res.json(); if (b?.error?.message) msg += `: ${b.error.message}`; } catch (_) {}
-  if (res.status === 401) msg = '🔑 مفتاح الاستخراج غير صحيح أو منتهي. تحقق منه في الإعدادات ⚙️.';
-  if (res.status === 402) msg = '💳 رصيد حساب الاستخراج غير كافٍ.';
-  return new Error(msg);
-}
-const sleep = ms => new Promise(r => setTimeout(r, ms));
 
 /* =============== Normalization =============== */
 // خرائط حقول دفاعية: مخطط مخرجات الأداة غير مؤكَّد رسمياً، فتُغطّى عدة تسميات شائعة معاً
@@ -471,7 +454,7 @@ function normalizeTweet(raw, targetHandle) {
   const p = {
     key, text, url, ts, author, screenName,
     avatar: user.profile_image_url_https || user.profile_image_url || user.profilePicture || user.avatar || '',
-    media, mediaList, isRetweet,
+    media, mediaList, isRetweet, platform: 'twitter',
     retweetedFrom: isRetweet ? (raw.user?.screen_name || raw.user?.username || raw.username || raw.user?.name || '') : '',
     likes: num(source.favorite_count ?? source.favouriteCount ?? source.likeCount ?? source.likes),
     comments: num(source.reply_count ?? source.replyCount ?? source.repliesCount ?? source.comments),
@@ -484,19 +467,8 @@ function normalizeTweet(raw, targetHandle) {
   return p;
 }
 function ensureAnalysis(p) { if (!p.analysis || !p.analysis.classification) p.analysis = FBXAnalyzer.analyze(p); return p; }
-function num(v) { if (typeof v === 'number') return v; if (typeof v === 'string') { const n = parseInt(v.replace(/[^\d]/g, ''), 10); return isNaN(n) ? 0 : n; } return 0; }
 function engagement(p) { return (p.likes || 0) + (p.comments || 0) + (p.shares || 0); }
 // لون الشريط الجانبي للبطاقة: يعكس التصنيف ومستوى الخطورة فوراً
-function sevAccent(a) {
-  if (!a) return 'var(--border)';
-  if (a.classification === 'NEGATIVE') {
-    if (a.level === 'HIGH') return 'var(--danger)';
-    if (a.level === 'MEDIUM') return 'var(--gold-deep)';
-    return '#c98a7a';
-  }
-  if (a.classification === 'POSITIVE') return 'var(--success)';
-  return 'var(--text-2)';
-}
 
 /* =============== Dashboard visibility =============== */
 function showDashboard() { $('dashboard').style.display = 'block'; $('bootEmpty').style.display = 'none'; }
@@ -720,14 +692,6 @@ function svgPoint(svg, ev) {
 }
 
 /* =============== Feed =============== */
-function twMediaHtml(p) {
-  if (!p.mediaList.length) return '';
-  return `<div class="tw-media">${p.mediaList.slice(0, 4).map(m => `
-    <a href="${esc(m.src)}" target="_blank" rel="noopener">
-      <img src="${esc(m.src)}" alt="" loading="lazy" onerror="this.parentElement.style.display='none'">
-      ${m.type === 'video' ? '<span class="vid-badge">🎬 فيديو</span>' : ''}
-    </a>`).join('')}</div>`;
-}
 
 function renderFeed(posts) {
   let list = posts.slice();
@@ -756,7 +720,7 @@ function renderFeed(posts) {
       <div class="post-body">
       ${p.isRetweet ? `<span class="rt-tag">🔁 إعادة نشر من @${esc(p.retweetedFrom)}</span>` : ''}
       <div class="post-text ${longText ? 'clamped' : ''}" id="dtxt-${i}">${esc(p.text) || '<em style="color:var(--text-2)">— تغريدة بدون نص —</em>'}</div>${longText ? `<button class="read-more" data-target="dtxt-${i}">عرض المزيد ▾</button>` : ''}
-      ${twMediaHtml(p)}
+      ${FBXMedia.galleryHtml(p)}
       ${FBXAnalyzer.badges(a)}<button class="fbx-toggle" data-panel="dpan-${i}" title="عرض التحليل الكامل">🧠</button><div id="dpan-${i}" style="display:none">${FBXAnalyzer.panel(a)}</div></div>
       <div class="post-foot" style="justify-content:flex-end">${p.url ? `<a class="post-link" href="${esc(p.url)}" target="_blank" rel="noopener">فتح التغريدة ↗</a>` : ''}</div>
     </article>`;
@@ -803,31 +767,8 @@ $('exportBtn').onclick = () => {
 };
 
 /* =============== Local database (configured in settings.html) =============== */
-let dbUrl = (localStorage.getItem(DB_URL_STORAGE) || '').trim().replace(/\/+$/, '');
-let dbOnline = false;
-async function dbCheck(silent) {
-  if (!dbUrl) return;
-  try {
-    const r = await fetch(dbUrl + '/api/health', { signal: AbortSignal.timeout(4000) });
-    const d = await r.json(); if (!d.ok) throw new Error();
-    dbOnline = true;
-    if (!silent) showToast('✅ تم الاتصال بقاعدة البيانات');
-  } catch (_) {
-    dbOnline = false;
-    if (!silent) showToast('⚠️ تعذر الاتصال بقاعدة البيانات — اضبطها من الإعدادات');
-  }
-}
-async function saveToDb(posts, source) {
-  if (!dbOnline || !posts.length) return;
-  try {
-    const payload = posts.map(p => { const a = ensureAnalysis(p).analysis; return { key: p.key, text: p.text, url: p.url, ts: p.ts, author: p.author, avatar: p.avatar, media: p.media, likes: p.likes, comments: p.comments, shares: p.shares, source, sentiment: a.classification, emotion: a.subCategory, intent: a.levelLabel, domain: '', severity: a.level === 'HIGH' ? 3 : a.level === 'MEDIUM' ? 2 : 1, action: a.action, flagged: a.flagged ? 1 : 0, analysis: JSON.stringify(a) }; });
-    const r = await fetch(dbUrl + '/api/posts', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ posts: payload }) });
-    const d = await r.json(); if (!d.ok) throw new Error();
-  } catch (_) { dbOnline = false; }
-}
 
 /* =============== Utils =============== */
-function fmtNum(n) { if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M'; if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K'; return String(n); }
 function clip(s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
 function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
 
@@ -836,7 +777,7 @@ renderChips();
 refreshKeyUi();
 refreshControlUi();
 $('intervalSelect').value = String(intervalMin);
-if (dbUrl) dbCheck(true);
+if (FBXCommon.db.url) dbCheck(true);
 if (lastRunAt) $('miniStatus').textContent = `آخر رصد: ${new Date(lastRunAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}`;
 if (feed.length) { showDashboard(); renderDashboard(); }
 tick();

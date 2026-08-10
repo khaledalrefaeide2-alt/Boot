@@ -222,6 +222,7 @@
 <script src="analyzer.js"></script>
 <script src="media.js"></script>
 <script src="xlsx-export.js"></script>
+<script src="common.js"></script>
 <script>
 'use strict';
 FBXAnalyzer.injectStyles();
@@ -249,16 +250,7 @@ let aborted = false;
 let currentRunId = null;
 
 /* =============== Theme =============== */
-function applyTheme(t) {
-  document.documentElement.dataset.theme = t;
-  $('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙';
-}
-applyTheme(localStorage.getItem(THEME_STORAGE) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-$('themeBtn').onclick = () => {
-  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-  localStorage.setItem(THEME_STORAGE, next);
-  applyTheme(next);
-};
+initTheme();
 
 $('heroCta').onclick = () => document.querySelector('main .panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 
@@ -266,13 +258,6 @@ $('heroCta').onclick = () => document.querySelector('main .panel').scrollIntoVie
 // إن لم يُضبط المفتاح بعد، أظهِر تنبيهاً يوجّه إلى صفحة الإعدادات.
 function refreshSetupNotice() {
   $('setupPanel').style.display = getToken() ? 'none' : 'block';
-}
-
-function showToast(msg) {
-  toast.textContent = msg;
-  toast.classList.add('show');
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => toast.classList.remove('show'), 2600);
 }
 
 /* =============== Form =============== */
@@ -301,10 +286,6 @@ $('abortBtn').onclick = async () => {
   }
   setStatus('تم إيقاف العملية', 'يمكنك بدء عملية جديدة في أي وقت', true);
 };
-
-function getToken() { return (localStorage.getItem(KEY_STORAGE) || '').trim(); }
-
-function validDate(v) { return v && !isNaN(new Date(v).getTime()); }
 
 async function startExtraction() {
   formError.style.display = 'none';
@@ -392,7 +373,7 @@ async function startExtraction() {
     }
 
     const scrapedCount = items.length;
-    allPosts = items.map(normalizePost).filter(p => p.text || p.url);
+    allPosts = items.map(r => normalizePost(r, 'facebook')).filter(p => p.text || p.url);
     // Client-side date filter as a safety net on top of the actor's own filter
     if (validDate(from)) {
       const f = new Date(from).getTime();
@@ -428,68 +409,10 @@ async function startExtraction() {
   }
 }
 
-async function apiError(res) {
-  let msg = `خطأ من خدمة الاستخراج (HTTP ${res.status})`;
-  try {
-    const body = await res.json();
-    if (body?.error?.message) msg += `: ${body.error.message}`;
-  } catch (_) {}
-  if (res.status === 401) msg = '🔑 مفتاح الاستخراج غير صحيح أو منتهي. تحقق منه في صفحة الإعدادات ⚙️.';
-  if (res.status === 402) msg = '💳 رصيد حساب الاستخراج غير كافٍ لتشغيل هذه العملية.';
-  return new Error(msg);
-}
-
 function setStatus(main, sub, done) {
   statusText.textContent = main;
   statusSub.textContent = sub || '';
   if (done) spinner.style.display = 'none';
-}
-
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-/* =============== Normalization =============== */
-function normalizePost(raw) {
-  const text = raw.text || raw.message || raw.postText || '';
-  const url = raw.url || raw.postUrl || raw.topLevelUrl || '';
-  const timeVal = raw.time || raw.date || raw.publishedTime || raw.timestamp || null;
-  let ts = null;
-  if (typeof timeVal === 'number') ts = timeVal > 1e12 ? timeVal : timeVal * 1000;
-  else if (timeVal) { const d = new Date(timeVal); if (!isNaN(d)) ts = d.getTime(); }
-  const author = raw.user?.name || raw.pageName || raw.author || raw.user?.id || 'صفحة فيسبوك';
-  const avatar = raw.user?.profilePic || raw.pageProfilePic || '';
-  const mediaList = FBXMedia.extract(raw);
-  const firstImg = mediaList.find(m => m.type === 'image');
-  const media = firstImg ? firstImg.src : (mediaList[0]?.thumb || '');
-  const p = {
-    text, url, ts,
-    date: ts ? new Date(ts) : null,
-    author, avatar, media, mediaList,
-    likes: num(raw.likes ?? raw.likesCount ?? raw.reactions ?? raw.reactionsCount),
-    comments: num(raw.comments ?? raw.commentsCount),
-    shares: num(raw.shares ?? raw.sharesCount),
-    views: num(raw.viewsCount ?? raw.videoViewCount ?? raw.views ?? 0),
-    postId: raw.postId || raw.id || raw.post_id || '',
-    pageUrl: raw.pageUrl || raw.user?.profileUrl || '',
-    raw
-  };
-  p.analysis = FBXAnalyzer.analyze(p);   // تحليل وتصنيف فوري
-  return p;
-}
-function num(v) {
-  if (typeof v === 'number') return v;
-  if (typeof v === 'string') { const n = parseInt(v.replace(/[^\d]/g, ''), 10); return isNaN(n) ? 0 : n; }
-  return 0;
-}
-// لون الشريط الجانبي للبطاقة: يعكس التصنيف ومستوى الخطورة فوراً
-function sevAccent(a) {
-  if (!a) return 'var(--border)';
-  if (a.classification === 'NEGATIVE') {
-    if (a.level === 'HIGH') return 'var(--danger)';
-    if (a.level === 'MEDIUM') return 'var(--gold-deep)';
-    return '#c98a7a';
-  }
-  if (a.classification === 'POSITIVE') return 'var(--success)';
-  return 'var(--text-2)';
 }
 
 /* =============== Rendering =============== */
@@ -599,15 +522,6 @@ function renderPosts() {
   });
 }
 
-function fmtNum(n) {
-  if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
-  if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
-  return String(n);
-}
-function escapeHtml(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-function escapeAttr(s) { return escapeHtml(s); }
 
 /* =============== Toolbar events =============== */
 searchInput.addEventListener('input', renderPosts);
@@ -643,73 +557,12 @@ $('exportCsvBtn').onclick = () => {
   download('﻿' + [header.join(','), ...rows].join('\r\n'), 'facebook-posts.csv', 'text/csv;charset=utf-8');
   showToast('⬇️ تم تنزيل ملف CSV');
 };
-/* =============== Local database (configured in settings.html) =============== */
-const DB_URL_STORAGE = 'fbx_db_url';
-let dbUrl = (localStorage.getItem(DB_URL_STORAGE) || '').trim().replace(/\/+$/, '');
-let dbOnline = false;
+/* =============== Local database (shared helpers in common.js) =============== */
+if (FBXCommon.db.url) dbCheck(true);
 
-function postKey(p) {
-  return p.key || p.url || `${p.author}|${p.ts || ''}|${(p.text || '').slice(0, 80)}`;
-}
-
-async function dbCheck(silent) {
-  if (!dbUrl) return;
-  try {
-    const r = await fetch(dbUrl + '/api/health', { signal: AbortSignal.timeout(4000) });
-    const d = await r.json();
-    if (!d.ok) throw new Error();
-    dbOnline = true;
-    if (!silent) showToast('✅ تم الاتصال بقاعدة البيانات المحلية');
-  } catch (_) {
-    dbOnline = false;
-    if (!silent) showToast('⚠️ تعذر الاتصال بقاعدة البيانات — اضبطها من صفحة الإعدادات');
-  }
-}
-if (dbUrl) dbCheck(true);
-
-async function saveToDb(posts, source, silent) {
-  if (!posts.length) return;
-  if (!dbOnline) { if (!silent) showToast('⚠️ قاعدة البيانات غير متصلة — فعّلها من صفحة الإعدادات ⚙️'); return; }
-  try {
-    const payload = posts.map(p => {
-      const a = p.analysis || FBXAnalyzer.analyze(p);
-      return {
-        key: postKey(p), text: p.text, url: p.url, ts: p.ts,
-        author: p.author, avatar: p.avatar, media: p.media,
-        likes: p.likes, comments: p.comments, shares: p.shares, source,
-        sentiment: a.classification, emotion: a.subCategory, intent: a.levelLabel,
-        domain: '', severity: a.level === 'HIGH' ? 3 : a.level === 'MEDIUM' ? 2 : 1, action: a.action,
-        flagged: a.flagged ? 1 : 0, analysis: JSON.stringify(a)
-      };
-    });
-    const r = await fetch(dbUrl + '/api/posts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ posts: payload })
-    });
-    const d = await r.json();
-    if (!d.ok) throw new Error(d.error || '');
-    showToast(`💾 حُفظ ${d.saved} منشور في قاعدة البيانات`);
-  } catch (_) {
-    dbOnline = false;
-    if (!silent) showToast('⚠️ فشل الحفظ في قاعدة البيانات');
-  }
-}
 $('saveDbBtn').onclick = () => saveToDb(getVisiblePosts(), 'extract', false);
 refreshSetupNotice();
 
-function csvCell(v) {
-  const s = String(v ?? '');
-  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-}
-function download(content, filename, type) {
-  const blob = new Blob([content], { type });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
-}
 </script>
 </body>
 </html>
