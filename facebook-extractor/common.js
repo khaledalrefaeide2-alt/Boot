@@ -112,7 +112,7 @@
     if (!a) return 'var(--border)';
     if (a.classification === 'NEGATIVE') {
       if (a.level === 'HIGH') return 'var(--danger)';
-      if (a.level === 'MEDIUM') return 'var(--gold-deep)';
+      if (a.level === 'MEDIUM') return 'var(--warn)';
       return '#c98a7a';
     }
     if (a.classification === 'POSITIVE') return 'var(--success)';

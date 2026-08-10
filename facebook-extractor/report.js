@@ -42,13 +42,13 @@
   h1, h2, h3 { margin: 0; line-height: 1.35; }
   .sheet { max-width: 190mm; margin: 0 auto; padding: 6mm 0; }
 
-  .cover { border-bottom: 3px solid #6d28d9; padding-bottom: 14px; margin-bottom: 18px; }
-  .cover .eyebrow { color: #6d28d9; font-weight: 900; font-size: 10pt; letter-spacing: .3px; }
+  .cover { border-bottom: 3px solid #1a5164; padding-bottom: 14px; margin-bottom: 18px; }
+  .cover .eyebrow { color: #1a5164; font-weight: 900; font-size: 10pt; letter-spacing: .3px; }
   .cover h1 { font-size: 22pt; font-weight: 900; margin: 6px 0 4px; }
   .cover .meta { color: #5b6470; font-size: 9.5pt; display: flex; flex-wrap: wrap; gap: 4px 16px; margin-top: 8px; }
 
   h2.sec { font-size: 13pt; font-weight: 900; margin: 22px 0 10px; padding-right: 10px;
-    border-right: 4px solid #6d28d9; }
+    border-right: 4px solid #1a5164; }
 
   .cards { display: flex; flex-wrap: wrap; gap: 8px; }
   .card { flex: 1 1 88px; border: 1px solid #dfe3e8; border-radius: 8px; padding: 9px 11px; background: #fbfbfd; }
@@ -98,7 +98,7 @@
     padding: 9px 14px; display: flex; gap: 10px; align-items: center; justify-content: center;
     font-size: 10pt; z-index: 99; }
   .toolbar button { font: inherit; font-weight: 800; cursor: pointer; border: 0; border-radius: 8px;
-    padding: 7px 15px; background: #7c3aed; color: #fff; }
+    padding: 7px 15px; background: #1f6178; color: #fff; }
   .toolbar button.ghost { background: transparent; border: 1px solid #ffffff55; }
   .spacer { height: 46px; }
   @media print { .toolbar, .spacer { display: none !important; } .case { border-right-width: 3px; } }

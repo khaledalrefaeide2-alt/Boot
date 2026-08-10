@@ -6,34 +6,37 @@
 <title>الإعلام الرقمي — مستخرج منشورات فيسبوك</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme.css">
 <style>
   /* ================= Features band (unique to this page) ================= */
+  /* شريط الميزات: لوح أزرق باهت بنص كحلي — يتنفّس مع بقية الصفحة بدل كتلة داكنة ثقيلة */
   .features-band {
     margin-top: 18px;
-    background: linear-gradient(150deg, var(--green-800), var(--green-950));
+    background: linear-gradient(150deg, var(--sage-soft), var(--cream));
+    border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    padding: 20px 18px;
+    padding: 30px 26px;
     display: grid; gap: 16px;
     grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
-    color: #e9efe2;
+    color: var(--text);
   }
   .feature { text-align: center; padding: 0 6px; position: relative; }
   .feature + .feature::before {
     content: '';
     position: absolute; inset-inline-end: -8px; top: 14%;
     height: 72%; width: 1px;
-    background: linear-gradient(180deg, transparent, rgba(255,255,255,.18), transparent);
+    background: linear-gradient(180deg, transparent, var(--border), transparent);
   }
   .feature-icon {
     width: 40px; height: 40px; margin: 0 auto 8px;
     border-radius: var(--radius-sm);
-    background: rgba(255,255,255,.08);
+    background: var(--surface); border: 1px solid var(--border);
+    box-shadow: var(--shadow-xs);
     display: grid; place-items: center; font-size: 18px;
   }
-  .feature h3 { font-size: .82rem; font-weight: 800; margin-bottom: 4px; }
-  .feature p { font-size: .7rem; line-height: 1.6; opacity: .7; }
+  .feature h3 { font-family: var(--font-display); font-size: 1rem; font-weight: 700; margin-bottom: 5px; }
+  .feature p { font-size: .7rem; line-height: 1.7; color: var(--text-2); }
 
   /* ================= Status (extraction progress — unique to this page) ================= */
   #statusPanel { display: none; }

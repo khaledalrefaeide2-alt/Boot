@@ -216,8 +216,8 @@
     .fbxp-row { display: flex; align-items: center; gap: 10px; padding: 8px 10px; border-radius: 10px;
       cursor: pointer; border: 1px solid transparent; }
     .fbxp-row:hover { background: var(--surface-2, #f3f1fa); }
-    .fbxp-row.on { background: var(--primary-soft, #efe9fd); border-color: var(--primary, #7c3aed); }
-    .fbxp-row input { width: 17px; height: 17px; flex: none; cursor: pointer; accent-color: var(--primary, #7c3aed); }
+    .fbxp-row.on { background: var(--primary-soft, #e4eff3); border-color: var(--primary, #1a5164); }
+    .fbxp-row input { width: 17px; height: 17px; flex: none; cursor: pointer; accent-color: var(--primary, #1a5164); }
     .fbxp-name { font-weight: 800; font-size: .88rem; }
     .fbxp-sub { font-size: .72rem; color: var(--text-2, #667); word-break: break-all; }
     .fbxp-tag { font-size: .64rem; font-weight: 800; padding: 2px 8px; border-radius: 999px;

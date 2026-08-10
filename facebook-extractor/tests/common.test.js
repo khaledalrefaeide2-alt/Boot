@@ -107,7 +107,7 @@ test('النص العربي يمرّ دون تشويه', () => {
  * ============================================================ */
 test('sevAccent يعطي لوناً مميزاً لكل مستوى', () => {
   assert.strictEqual(C.sevAccent({ classification: 'NEGATIVE', level: 'HIGH' }), 'var(--danger)');
-  assert.strictEqual(C.sevAccent({ classification: 'NEGATIVE', level: 'MEDIUM' }), 'var(--gold-deep)');
+  assert.strictEqual(C.sevAccent({ classification: 'NEGATIVE', level: 'MEDIUM' }), 'var(--warn)');
   assert.strictEqual(C.sevAccent({ classification: 'POSITIVE', level: 'HIGH' }), 'var(--success)');
   assert.strictEqual(C.sevAccent({ classification: 'NEUTRAL', level: 'LOW' }), 'var(--text-2)');
   assert.strictEqual(C.sevAccent(null), 'var(--border)');
