@@ -4,9 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>الرصد التلقائي لتغريدات X (تويتر) — الإعلام الرقمي</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme.css">
 <style>
   /* ============ Control band (unique to this page) ============ */
@@ -62,18 +59,23 @@
 
   /* ============ Classification summary ============ */
   .asum-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 18px 0 4px; }
+  /* بطاقات الملخّص: خلفية باهتة ونصّ ملوّن بدل تدرّجات مشبعة — تُقرأ الأرقام
+     بوضوح أعلى، ولا تتنافس ستّ مربّعات صارخة على انتباه العين. */
   .asum-card {
-    border-radius: var(--radius); padding: 12px 13px; text-align: center;
-    color: #f6f2e7; box-shadow: var(--shadow-xs); position: relative; overflow: hidden;
+    border-radius: var(--radius); padding: 13px; text-align: center;
+    background: var(--surface); border: 1px solid var(--border);
+    box-shadow: var(--shadow-xs); position: relative; overflow: hidden;
   }
-  .asum-card .v { font-size: 1.15rem; font-weight: 800; line-height: 1.1; }
-  .asum-card .l { font-size: .68rem; font-weight: 700; opacity: .9; margin-top: 3px; }
-  .asum-card.pos { background: linear-gradient(155deg, #7ea562, #4f7c3f); }
-  .asum-card.neg { background: linear-gradient(155deg, #c65b46, #8f2f1c); }
-  .asum-card.neu { background: linear-gradient(155deg, #6d7c6e, #46514a); }
-  .asum-card.flag { background: linear-gradient(155deg, #dba342, #b57a1f); color: #2c1f10; }
-  .asum-card.esc { background: linear-gradient(155deg, #8f1f1f, #5c1212); }
-  .asum-card.sev { background: linear-gradient(155deg, var(--green-700), var(--green-950)); }
+  .asum-card::before { content: ''; position: absolute; inset-inline: 0; top: 0; height: 3px; background: currentColor; opacity: .85; }
+  .asum-card .v { font-size: 1.32rem; font-weight: 800; line-height: 1.1; color: currentColor; }
+  .asum-card .l { font-size: .68rem; font-weight: 700; color: var(--text-2); margin-top: 4px; }
+  .asum-card.pos  { color: var(--success); background: var(--success-soft); }
+  .asum-card.neg  { color: var(--danger);  background: var(--danger-soft); }
+  .asum-card.neu  { color: var(--text-2);  background: var(--surface-2); }
+  .asum-card.flag { color: var(--warn);    background: var(--warn-soft); }
+  .asum-card.esc  { color: var(--danger);  background: var(--danger-soft); }
+  .asum-card.sev  { color: var(--green-700); background: var(--primary-soft); }
+  [data-theme="dark"] .asum-card.sev { color: var(--sage); }
 
   /* ============ Tweet cards ============ */
   .rt-tag { font-size: .68rem; font-weight: 800; padding: 2px 9px; border-radius: 99px; background: rgba(219, 163, 66, .18); color: #a5750e; display: inline-block; margin-bottom: 8px; }
@@ -213,6 +215,10 @@
         <option value="oldest">الأقدم أولاً</option>
         <option value="engage">الأكثر تفاعلاً</option>
       </select>
+      <div class="view-toggle">
+        <button id="gridViewBtn" class="active" title="عرض بطاقات">&#9638;</button>
+        <button id="listViewBtn" title="عرض جدول">&#9776;</button>
+      </div>
       <div class="spacer"></div>
       <button class="btn btn-primary btn-sm" id="exportExcelBtn">📊 تصدير Excel</button>
       <button class="btn btn-ghost btn-sm" id="exportBtn">⬇️ تصدير JSON</button>
@@ -236,6 +242,7 @@
 
 <script src="analyzer.js"></script>
 <script src="media.js"></script>
+<script src="card.js"></script>
 <script src="xlsx-export.js"></script>
 <script src="common.js"></script>
 <script src="xlsx-import.js"></script>
@@ -543,7 +550,8 @@ function renderClassSummary(posts) {
     ['neu', '⚪', g.neutral, 'محايد'],
     ['flag', '🚩', g.flagged, 'مرفوع العلم'],
     ['esc', '🚨', g.needsDelete + g.needsReview, 'يتطلب حذف/مراجعة']
-  ].map(([cls, icon, v, l]) => `<div class="asum-card ${cls}"><div class="v">${icon} ${v}</div><div class="l">${l}</div></div>`).join('');
+    // الرقم الكبير الملوّن + الشريط العلوي يحملان الدلالة، فلا حاجة لإيموجي يضيف ضجيجاً
+  ].map(([cls, , v, l]) => `<div class="asum-card ${cls}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
 }
 
 function renderStats(posts) {
@@ -703,40 +711,25 @@ function renderFeed(posts) {
     if (sortMode === 'engage') return engagement(b) - engagement(a);
     return (b.ts || b.seenAt || 0) - (a.ts || a.seenAt || 0);
   });
+  list.forEach(ensureAnalysis);
   $('feedCount').textContent = list.length;
   $('feedEmpty').style.display = list.length ? 'none' : 'block';
-  $('feed').innerHTML = list.map((p, i) => {
-    const a = ensureAnalysis(p).analysis;
-    const dateStr = p.ts ? new Date(p.ts).toLocaleDateString('ar', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : 'تاريخ غير معروف';
-    const initial = esc((p.author || '?').charAt(0));
-    const avatar = p.avatar ? `<img class="avatar" src="${esc(p.avatar)}" alt="" onerror="this.outerHTML='<div class=avatar>${initial}</div>'">` : `<div class="avatar">${initial}</div>`;
-    const longText = (p.text || '').length > 260;
-    const fresh = freshKeys.has(p.key);
-    return `<article class="post-card ${fresh ? 'fresh' : ''}" style="--acc:${sevAccent(a)};animation-delay:${Math.min(i * 25, 300)}ms">
-      <div class="post-head">${avatar}<div class="post-head-text"><div class="post-author">${esc(p.author)} ${fresh ? '<span class="badge-new">جديد</span>' : ''}</div><div class="post-date">@${esc(p.screenName)} · 🕓 ${dateStr}</div></div></div>
-      <div class="post-stats">
-        <span class="stat-pill">❤️ ${fmtNum(p.likes)}</span>
-        <span class="stat-pill">💬 ${fmtNum(p.comments)}</span>
-        <span class="stat-pill">🔁 ${fmtNum(p.shares)}</span>
-        <span class="stat-pill">👁️ ${fmtNum(p.views)}</span>
-      </div>
-      <div class="post-body">
-      ${p.isRetweet ? `<span class="rt-tag">🔁 إعادة نشر من @${esc(p.retweetedFrom)}</span>` : ''}
-      <div class="post-text ${longText ? 'clamped' : ''}" id="dtxt-${i}">${esc(p.text) || '<em style="color:var(--text-2)">— تغريدة بدون نص —</em>'}</div>${longText ? `<button class="read-more" data-target="dtxt-${i}">عرض المزيد ▾</button>` : ''}
-      ${FBXMedia.galleryHtml(p)}
-      ${FBXAnalyzer.badges(a)}<button class="fbx-toggle" data-panel="dpan-${i}" title="عرض التحليل الكامل">🧠</button><div id="dpan-${i}" style="display:none">${FBXAnalyzer.panel(a)}</div></div>
-      <div class="post-foot" style="justify-content:flex-end">${p.url ? `<a class="post-link" href="${esc(p.url)}" target="_blank" rel="noopener">فتح التغريدة ↗</a>` : ''}</div>
-    </article>`;
-  }).join('');
-  $('feed').querySelectorAll('.read-more').forEach(btn => btn.onclick = () => {
-    const el = $(btn.dataset.target); const c = el.classList.toggle('clamped');
-    btn.textContent = c ? 'عرض المزيد ▾' : 'عرض أقل ▴';
+  FBXCard.render($('feed'), list, {
+    view: viewMode, prefix: 'd',
+    isFresh: p => freshKeys.has(p.key),
+    openLabel: 'التغريدة', emptyLabel: 'تغريدة بدون نص'
   });
-  $('feed').querySelectorAll('.fbx-toggle').forEach(btn => btn.onclick = () => {
-    const el = $(btn.dataset.panel); const open = el.style.display === 'none';
-    el.style.display = open ? 'block' : 'none';
-    btn.classList.toggle('open', open); btn.title = open ? 'إخفاء التحليل' : 'عرض التحليل الكامل';
-  });
+}
+
+/* تبديل نموذج العرض: بطاقات للتصفّح البصري، جدول للفرز السريع لمئات المنشورات */
+let viewMode = 'cards';
+$('gridViewBtn').onclick = () => setView('cards');
+$('listViewBtn').onclick = () => setView('table');
+function setView(mode) {
+  viewMode = mode;
+  $('gridViewBtn').classList.toggle('active', mode === 'cards');
+  $('listViewBtn').classList.toggle('active', mode === 'table');
+  renderDashboard();
 }
 
 /* filters wiring */

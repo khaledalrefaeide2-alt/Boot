@@ -377,19 +377,35 @@
     </div>`;
   }
 
+  /* أيقونات اللوحة رسوم SVG لا إيموجي: الإيموجي يختلف شكله بين الأنظمة،
+     ولا يأخذ لون الحالة، ويُفقد الواجهة طابعها الرسمي. */
+  const P_ICON = {
+    pin: '<path d="M12 21v-7"/><path d="M8.5 3h7l-1 6.2 3 3.3v1.5H6.5v-1.5l3-3.3Z"/>',
+    scale: '<path d="M12 4v17"/><path d="M6 21h12"/><path d="M3 8h18"/><path d="m6.5 8-3 6h6Z"/><path d="m17.5 8-3 6h6Z"/>',
+    compass: '<circle cx="12" cy="12" r="9"/><path d="m15.5 8.5-2 5.5-5.5 2 2-5.5Z"/>',
+    book: '<path d="M4 4.5A2 2 0 0 1 6 3h13v16H6a2 2 0 0 0-2 2Z"/><path d="M4 18.5h15"/>',
+    check: '<circle cx="12" cy="12" r="9"/><path d="m8.5 12 2.5 2.5 4.5-5"/>',
+    ban: '<circle cx="12" cy="12" r="9"/><path d="m6 6 12 12"/>',
+    search: '<circle cx="11" cy="11" r="6.5"/><path d="m16 16 4.5 4.5"/>',
+    user: '<circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>'
+  };
+  const pIcon = (n, size) => `<svg viewBox="0 0 24 24" width="${size || 14}" height="${size || 14}" fill="none"
+    stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${P_ICON[n] || ''}</svg>`;
+  const ACTION_SVG = { KEEP: 'check', DELETE: 'ban', REVIEW: 'search' };
+
   // اللوحة الكاملة — مسار تسلسلي بصري (Chain of Thought) بشكل خط زمني مرقَّم
   function panel(a) {
     if (!a) return '';
     const steps = [
-      { icon: '📌', k: 'التصنيف النهائي', dot: `fbx-${a.classification.toLowerCase()}`,
-        v: `<span class="fbx-step-v fbx-${a.classification.toLowerCase()}">${a.classificationIcon} ${esc(a.classificationLabel)}</span>` },
-      { icon: '⚖️', k: 'مستوى الخطورة/الأهمية', dot: a.levelClass,
+      { icon: pIcon('pin'), k: 'التصنيف النهائي', dot: `fbx-${a.classification.toLowerCase()}`,
+        v: `<span class="fbx-step-v fbx-${a.classification.toLowerCase()}">${esc(a.classificationLabel)}</span>` },
+      { icon: pIcon('scale'), k: 'مستوى الخطورة/الأهمية', dot: a.levelClass,
         v: `<span class="fbx-step-v ${a.levelClass}">${esc(a.levelLabel)}</span>` },
-      { icon: '🧭', k: 'التحليل السياقي (لماذا؟)', dot: 'fbx-info',
+      { icon: pIcon('compass'), k: 'التحليل السياقي (لماذا؟)', dot: 'fbx-info',
         v: `<p class="fbx-text">${esc(a.contextualAnalysis)}</p>` },
-      { icon: '📖', k: 'الاستناد القانوني والأخلاقي', dot: 'fbx-info',
+      { icon: pIcon('book'), k: 'الاستناد القانوني والأخلاقي', dot: 'fbx-info',
         v: `<p class="fbx-text">${esc(a.legalBasis)}</p>` },
-      { icon: a.actionIcon, k: 'الإجراء الموصى به', dot: a.levelClass,
+      { icon: pIcon(ACTION_SVG[a.action] || 'check'), k: 'الإجراء الموصى به', dot: a.levelClass,
         v: `<div class="fbx-rec-box ${a.levelClass}"><strong>${esc(a.actionLabel)}</strong></div>` }
     ];
     const stepsHtml = steps.map((s, i) => `
@@ -406,7 +422,7 @@
     return `<div class="fbx-analysis">
       ${stepsHtml}
       <div class="fbx-source-row">
-        <span>👤 ${esc(a.source.account)}</span><span>·</span><span>${esc(a.source.type)}</span><span>·</span>
+        <span class="fbx-src-who">${pIcon('user', 13)}${esc(a.source.account)}</span><span>·</span><span>${esc(a.source.type)}</span><span>·</span>
         <span>${esc(a.source.credibility)}</span><span>·</span><span>تفاعل: ${a.source.engagement}</span>
       </div>
     </div>`;
@@ -425,14 +441,14 @@
     .fbx-badge:hover { transform:translateY(-1px); box-shadow:0 3px 8px rgba(0,0,0,.1); }
     .fbx-badge-main { font-size:.66rem; padding:3.5px 10px; }
     .fbx-soft { background:var(--surface-2,#eef1ea); color:var(--text,#1c2a22); border-color:var(--border,#dfe4d8); }
-    .fbx-positive { background:#e1f2e5; color:#1c6b39; border-color:#aedcb9; }
-    .fbx-negative { background:#fbe2de; color:#a3341f; border-color:#f0b6aa; }
-    .fbx-neutral { background:#e9ecea; color:#4c5550; border-color:#d3d8d4; }
+    .fbx-positive { background:var(--success-soft,#e2f3ea); color:var(--success,#157f4d); border-color:color-mix(in srgb, var(--success,#157f4d) 25%, transparent); }
+    .fbx-negative { background:var(--danger-soft,#fbeae8); color:var(--danger,#c8372c); border-color:color-mix(in srgb, var(--danger,#c8372c) 25%, transparent); }
+    .fbx-neutral { background:var(--surface-2,#edf3f5); color:var(--text-2,#5d7484); border-color:var(--border,#e0eaee); }
     .fbx-flag { background:linear-gradient(155deg,#ffe1ab,#f2cf8a); color:#7a4c00; border-color:#e0b662; }
     .fbx-exc { background:#e2ecfb; color:#215a9c; border-color:#b7d2f0; }
-    .fbx-badge.lv-low { background:#e5f2e8; color:#2f7a49; border-color:#b7ddc2; }
-    .fbx-badge.lv-mid { background:#fff2cf; color:#8a6100; border-color:#f0d68a; }
-    .fbx-badge.lv-high { background:#fbe0d3; color:#a1471d; border-color:#f0b596; }
+    .fbx-badge.lv-low { background:var(--success-soft,#e2f3ea); color:var(--success,#157f4d); border-color:color-mix(in srgb, var(--success,#157f4d) 25%, transparent); }
+    .fbx-badge.lv-mid { background:var(--warn-soft,#fbf1e2); color:var(--warn,#a8620d); border-color:color-mix(in srgb, var(--warn,#a8620d) 25%, transparent); }
+    .fbx-badge.lv-high { background:var(--danger-soft,#fbeae8); color:var(--danger,#c8372c); border-color:color-mix(in srgb, var(--danger,#c8372c) 25%, transparent); }
     [data-theme="dark"] .fbx-soft { background:var(--surface-2,#182620); color:var(--text,#e6ece6); border-color:var(--border,#23342b); }
     [data-theme="dark"] .fbx-positive { background:#173425; color:#7fcf9c; border-color:#28543a; }
     [data-theme="dark"] .fbx-negative { background:#3a2019; color:#e8917c; border-color:#5a3327; }
@@ -471,12 +487,12 @@
     .fbx-step-body { flex:1; min-width:0; padding-top:2px; }
     .fbx-step-k { font-size:.71rem; font-weight:800; color:var(--text-2,#667167); margin-bottom:3px; }
     .fbx-step-v { display:inline-block; font-size:.85rem; font-weight:900; padding:2px 11px; border-radius:999px; }
-    .fbx-step-v.fbx-positive, .fbx-step-dot.fbx-positive { background:#e1f2e5; color:#1c6b39; border-color:#aedcb9; }
-    .fbx-step-v.fbx-negative, .fbx-step-dot.fbx-negative { background:#fbe2de; color:#a3341f; border-color:#f0b6aa; }
-    .fbx-step-v.fbx-neutral, .fbx-step-dot.fbx-neutral   { background:#e9ecea; color:#4c5550; border-color:#d3d8d4; }
-    .fbx-step-v.lv-low, .fbx-step-dot.lv-low  { background:#e5f2e8; color:#2f7a49; border-color:#b7ddc2; }
-    .fbx-step-v.lv-mid, .fbx-step-dot.lv-mid  { background:#fff2cf; color:#8a6100; border-color:#f0d68a; }
-    .fbx-step-v.lv-high, .fbx-step-dot.lv-high { background:#fbe0d3; color:#a1471d; border-color:#f0b596; }
+    .fbx-step-v.fbx-positive, .fbx-step-dot.fbx-positive { background:var(--success-soft,#e2f3ea); color:var(--success,#157f4d); border-color:color-mix(in srgb, var(--success,#157f4d) 25%, transparent); }
+    .fbx-step-v.fbx-negative, .fbx-step-dot.fbx-negative { background:var(--danger-soft,#fbeae8); color:var(--danger,#c8372c); border-color:color-mix(in srgb, var(--danger,#c8372c) 25%, transparent); }
+    .fbx-step-v.fbx-neutral, .fbx-step-dot.fbx-neutral   { background:var(--surface-2,#edf3f5); color:var(--text-2,#5d7484); border-color:var(--border,#e0eaee); }
+    .fbx-step-v.lv-low, .fbx-step-dot.lv-low  { background:var(--success-soft,#e2f3ea); color:var(--success,#157f4d); border-color:color-mix(in srgb, var(--success,#157f4d) 25%, transparent); }
+    .fbx-step-v.lv-mid, .fbx-step-dot.lv-mid  { background:var(--warn-soft,#fbf1e2); color:var(--warn,#a8620d); border-color:color-mix(in srgb, var(--warn,#a8620d) 25%, transparent); }
+    .fbx-step-v.lv-high, .fbx-step-dot.lv-high { background:var(--danger-soft,#fbeae8); color:var(--danger,#c8372c); border-color:color-mix(in srgb, var(--danger,#c8372c) 25%, transparent); }
     [data-theme="dark"] .fbx-step-v.fbx-positive, [data-theme="dark"] .fbx-step-dot.fbx-positive { background:#173425; color:#7fcf9c; border-color:#28543a; }
     [data-theme="dark"] .fbx-step-v.fbx-negative, [data-theme="dark"] .fbx-step-dot.fbx-negative { background:#3a2019; color:#e8917c; border-color:#5a3327; }
     [data-theme="dark"] .fbx-step-v.fbx-neutral,  [data-theme="dark"] .fbx-step-dot.fbx-neutral  { background:#232b27; color:#adb7b0; border-color:#374039; }
@@ -486,14 +502,15 @@
 
     .fbx-text { font-size:.78rem; line-height:1.7; color:var(--text,#1c2a22); }
     .fbx-rec-box { border-radius:10px; padding:10px 13px; border:1px solid var(--border,#dfe4d8); background:var(--surface-2,#eef1ea); font-size:.84rem; }
-    .fbx-rec-box.lv-high { background:#fbe8e0; border-color:#f0b596; }
-    .fbx-rec-box.lv-mid { background:#fff6e2; border-color:#f0d68a; }
-    .fbx-rec-box.lv-low { background:#e9f5ec; border-color:#b7ddc2; }
+    .fbx-rec-box.lv-high { background:var(--danger-soft,#fbeae8); border-color:color-mix(in srgb, var(--danger,#c8372c) 25%, transparent); }
+    .fbx-rec-box.lv-mid { background:var(--warn-soft,#fbf1e2); border-color:color-mix(in srgb, var(--warn,#a8620d) 25%, transparent); }
+    .fbx-rec-box.lv-low { background:var(--success-soft,#e2f3ea); border-color:color-mix(in srgb, var(--success,#157f4d) 25%, transparent); }
     [data-theme="dark"] .fbx-rec-box { background:var(--surface-2,#182620); border-color:var(--border,#23342b); }
     [data-theme="dark"] .fbx-rec-box.lv-high { background:#332019; border-color:#523527; }
     [data-theme="dark"] .fbx-rec-box.lv-mid { background:#332c19; border-color:#524a27; }
     [data-theme="dark"] .fbx-rec-box.lv-low { background:#182b20; border-color:#28543a; }
 
+    .fbx-src-who { display:inline-flex; align-items:center; gap:5px; }
     .fbx-source-row { display:flex; flex-wrap:wrap; gap:6px; align-items:center;
       font-size:.74rem; color:var(--text-2,#667167); margin-top:2px; padding-top:12px; border-top:1px solid var(--border,#dfe4d8); }
     `;

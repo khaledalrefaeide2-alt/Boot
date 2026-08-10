@@ -4,9 +4,6 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>الإعلام الرقمي — مستخرج تغريدات X (تويتر)</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&family=Amiri:wght@400;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="theme.css">
 <style>
   /* ================= Features band (unique to this page) ================= */
@@ -236,6 +233,7 @@
 
 <script src="analyzer.js"></script>
 <script src="media.js"></script>
+<script src="card.js"></script>
 <script src="xlsx-export.js"></script>
 <script src="common.js"></script>
 <script src="xlsx-import.js"></script>
@@ -265,6 +263,7 @@ const usernamesInput = $('usernames'),
       spinner = $('spinner'), toast = $('toast');
 
 let allPosts = [];
+let viewMode = 'cards';   // 'cards' | 'table'
 let aborted = false;
 let currentRunId = null;
 
@@ -504,17 +503,18 @@ function renderStats() {
   const likes = allPosts.reduce((s, p) => s + p.likes, 0);
   const shares = allPosts.reduce((s, p) => s + p.shares, 0);
   const g = FBXAnalyzer.aggregate(allPosts.map(p => p.analysis));
+  // نقطة ملوّنة بدل الإيموجي: تحمل نفس الدلالة، وتأخذ لون اللوحة، ولا تتغيّر بين الأنظمة
   const cards = [
-    ['📝', 'إجمالي التغريدات', total],
-    ['🟢', 'إيجابي', g.positive],
-    ['🔴', 'سلبي', g.negative],
-    ['🚩', 'مرفوع العلم', g.flagged],
-    ['⛔', 'خطورة/أهمية عالية', g.high],
-    ['🚨', 'حذف/مراجعة', g.needsDelete + g.needsReview]
+    ['neutral', 'إجمالي التغريدات', total],
+    ['pos', 'إيجابي', g.positive],
+    ['neg', 'سلبي', g.negative],
+    ['warn', 'مرفوع العلم', g.flagged],
+    ['neg', 'خطورة/أهمية عالية', g.high],
+    ['warn', 'حذف/مراجعة', g.needsDelete + g.needsReview]
   ];
-  statsGrid.innerHTML = cards.map(([icon, label, val]) => `
-    <div class="stat-tile">
-      <div class="stat-icon">${icon}</div>
+  statsGrid.innerHTML = cards.map(([tone, label, val]) => `
+    <div class="stat-tile tone-${tone}">
+      <span class="stat-dot"></span>
       <div class="stat-body">
         <div class="k">${label}</div>
         <div class="v">${typeof val === 'number' ? fmtNum(val) : val}</div>
@@ -543,59 +543,8 @@ function getVisiblePosts() {
 function renderPosts() {
   const posts = getVisiblePosts();
   emptyState.style.display = posts.length ? 'none' : 'block';
-  postsGrid.innerHTML = posts.map((p, i) => {
-    const dateStr = p.date
-      ? p.date.toLocaleDateString('ar', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-      : 'تاريخ غير معروف';
-    const initial = escapeHtml((p.author || '?').charAt(0));
-    const avatar = p.avatar
-      ? `<img class="avatar" src="${escapeAttr(p.avatar)}" alt="" onerror="this.outerHTML='<div class=avatar>${initial}</div>'">`
-      : `<div class="avatar">${initial}</div>`;
-    const longText = p.text.length > 320;
-    return `
-    <article class="post-card" style="--acc:${sevAccent(p.analysis)};animation-delay:${Math.min(i * 40, 400)}ms">
-      <div class="post-head">
-        ${avatar}
-        <div class="post-head-text">
-          <div class="post-author">${escapeHtml(p.author)}</div>
-          <div class="post-date">@${escapeHtml(p.screenName)} · 🕓 ${dateStr}</div>
-        </div>
-      </div>
-      <div class="post-body">
-        ${p.isRetweet ? `<span class="rt-tag">🔁 إعادة نشر من @${escapeHtml(p.retweetedFrom)}</span>` : ''}
-        <div class="post-text ${longText ? 'clamped' : ''}" id="txt-${i}">${escapeHtml(p.text) || '<em style="color:var(--text-2)">— تغريدة بدون نص —</em>'}</div>
-        ${longText ? `<button class="read-more" data-target="txt-${i}">عرض المزيد ▾</button>` : ''}
-        ${FBXMedia.galleryHtml(p)}
-        ${FBXAnalyzer.badges(p.analysis)}
-        <button class="fbx-toggle" data-panel="pan-${i}" title="عرض التحليل الكامل">🧠</button>
-        <div id="pan-${i}" style="display:none">${FBXAnalyzer.panel(p.analysis)}</div>
-      </div>
-      <div class="post-foot">
-        <div class="reactions">
-          <span>❤️ ${fmtNum(p.likes)}</span>
-          <span>💬 ${fmtNum(p.comments)}</span>
-          <span>🔁 ${fmtNum(p.shares)}</span>
-          ${p.views ? `<span>👁️ ${fmtNum(p.views)}</span>` : ''}
-        </div>
-        ${p.url ? `<a class="post-link" href="${escapeAttr(p.url)}" target="_blank" rel="noopener">فتح التغريدة ↗</a>` : ''}
-      </div>
-    </article>`;
-  }).join('');
-
-  postsGrid.querySelectorAll('.read-more').forEach(btn => {
-    btn.onclick = () => {
-      const el = document.getElementById(btn.dataset.target);
-      const clamped = el.classList.toggle('clamped');
-      btn.textContent = clamped ? 'عرض المزيد ▾' : 'عرض أقل ▴';
-    };
-  });
-  postsGrid.querySelectorAll('.fbx-toggle').forEach(btn => {
-    btn.onclick = () => {
-      const el = document.getElementById(btn.dataset.panel);
-      const open = el.style.display === 'none';
-      el.style.display = open ? 'block' : 'none';
-      btn.classList.toggle('open', open); btn.title = open ? 'إخفاء التحليل' : 'عرض التحليل الكامل';
-    };
+  FBXCard.render(postsGrid, posts, {
+    view: viewMode, prefix: 'p', openLabel: 'التغريدة', emptyLabel: 'تغريدة بدون نص'
   });
 }
 
@@ -603,12 +552,13 @@ function renderPosts() {
 /* =============== Toolbar events =============== */
 searchInput.addEventListener('input', renderPosts);
 sortSelect.addEventListener('change', () => { if (allPosts.length) renderPosts(); });
-$('gridViewBtn').onclick = () => setView(false);
-$('listViewBtn').onclick = () => setView(true);
-function setView(list) {
-  postsGrid.classList.toggle('list-view', list);
-  $('gridViewBtn').classList.toggle('active', !list);
-  $('listViewBtn').classList.toggle('active', list);
+$('gridViewBtn').onclick = () => setView('cards');
+$('listViewBtn').onclick = () => setView('table');
+function setView(mode) {
+  viewMode = mode;
+  $('gridViewBtn').classList.toggle('active', mode === 'cards');
+  $('listViewBtn').classList.toggle('active', mode === 'table');
+  if (allPosts.length) renderPosts();
 }
 
 /* =============== Export =============== */

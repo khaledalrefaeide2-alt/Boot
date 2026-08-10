@@ -37,7 +37,7 @@
   const CSS = `
   @page { size: A4; margin: 14mm 12mm; }
   * { box-sizing: border-box; }
-  body { font-family: "Cairo", "Segoe UI", "Tahoma", "Arial", sans-serif;
+  body { font-family: Arial, "Liberation Sans", "Segoe UI", Tahoma, sans-serif;
     margin: 0; color: #14181c; background: #fff; line-height: 1.6; font-size: 11pt; }
   h1, h2, h3 { margin: 0; line-height: 1.35; }
   .sheet { max-width: 190mm; margin: 0 auto; padding: 6mm 0; }
@@ -241,7 +241,6 @@
 
     return `<!DOCTYPE html><html lang="ar" dir="rtl"><head><meta charset="UTF-8">
 <title>${esc(title)}</title>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;700;900&display=swap" rel="stylesheet">
 <style>${CSS}</style></head><body>
 
 <div class="toolbar">

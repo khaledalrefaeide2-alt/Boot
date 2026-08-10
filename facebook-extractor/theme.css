@@ -1,10 +1,10 @@
 /* ===========================================================
    الإعلام الرقمي — نظام التصميم المشترك (theme.css)
    ---------------------------------------------------------
-   طراز تحريري هادئ: أزرق مائي باهت + كحلي عميق، عناوين بخط مشبك
-   (Amiri)، مساحات بيضاء واسعة، حدود شبه غير مرئية، وأزرار «حبّة»
-   كحلية صلبة. الهدف: هيبة من التنفّس والتسلسل الهرمي لا من الزخرفة،
-   مع بقاء بطاقات المنشورات مدمجة وكثافة المعلومات عالية.
+   طراز تحريري هادئ: أزرق مائي باهت + كحلي عميق، خط Arial في كل النصوص،
+   مساحات بيضاء واسعة، حدود شبه غير مرئية، وأزرار «حبّة» كحلية صلبة.
+   الهدف: هيبة من التنفّس والتسلسل الهرمي لا من الزخرفة، مع بقاء بطاقات
+   المنشورات مدمجة وكثافة المعلومات عالية.
    يُحمَّل في كل صفحات الموقع؛ الأنماط الخاصة بصفحة واحدة (الرسوم
    البيانية، شريط التحكم بالرصد، شريط الميزات) تبقى داخل كل ملف.
    =========================================================== */
@@ -52,9 +52,11 @@
   --radius: 20px;
   --radius-lg: 28px;
 
-  /* خط العناوين: رقعة عربية بمحارف مشبكة (Serif) تعطي طابعاً تحريرياً، مع Cairo للنص */
-  --font-body: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
-  --font-display: 'Amiri', 'Cairo', Georgia, serif;
+  /* خط الموقع بالكامل: Arial. وهو خط نظام متوفّر على ويندوز وماك بلا تحميل،
+     فلا يحتاج الموقع أي اتصال بخوادم خطوط خارجية. البدائل لأنظمة لينكس/أندرويد
+     مرتّبة بحيث تبقى المقاسات متطابقة تقريباً. */
+  --font-body: Arial, 'Liberation Sans', 'Segoe UI', Tahoma, sans-serif;
+  --font-display: var(--font-body);
 
   /* ألوان الرسوم البيانية (تُستخدم في dashboard.html) */
   --c-surface: var(--surface);
@@ -107,8 +109,8 @@ body {
   transition: background .25s, color .25s;
   font-size: 15px;
 }
-/* العناوين الكبيرة بخط مشبك (Amiri) وتباعد أحرف مضغوط قليلاً — الطابع التحريري للنموذج المرجعي */
-.display { font-family: var(--font-display); font-weight: 700; letter-spacing: 0; line-height: 1.5; }
+/* العناوين الكبيرة: نفس الخط، والتمييز يأتي من الوزن والمقاس لا من عائلة أخرى */
+.display { font-family: var(--font-display); font-weight: 700; letter-spacing: -.2px; line-height: 1.5; }
 
 /* ================= هيكل الصفحة: قائمة جانبية + عمود المحتوى ================= */
 .app-shell { display: flex; align-items: stretch; min-height: 100vh; }
@@ -318,6 +320,16 @@ textarea.input { resize: vertical; min-height: 76px; line-height: 1.7; }
   width: 34px; height: 34px; border-radius: var(--radius-sm); flex: none;
   background: var(--primary-soft); display: grid; place-items: center; font-size: 16px;
 }
+/* نقطة الحالة: نفس دلالة الإيموجي بلا اختلاف شكله بين الأنظمة، وبلون اللوحة */
+.stat-tile .stat-dot {
+  width: 10px; height: 10px; border-radius: 50%; flex: none;
+  background: var(--tone, var(--text-2));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tone, var(--text-2)) 16%, transparent);
+}
+.stat-tile.tone-pos     { --tone: var(--success); }
+.stat-tile.tone-neg     { --tone: var(--danger); }
+.stat-tile.tone-warn    { --tone: var(--warn); }
+.stat-tile.tone-neutral { --tone: var(--green-600); }
 .stat-tile .stat-body { min-width: 0; }
 .stat-tile .k { font-size: .7rem; font-weight: 700; color: var(--text-2); }
 .stat-tile .v { font-size: 1.18rem; font-weight: 800; line-height: 1.25; }
@@ -342,76 +354,9 @@ textarea.input { resize: vertical; min-height: 76px; line-height: 1.7; }
 .feed-count { background: var(--green-700); color: #eff6f8; border-radius: 999px; padding: 2px 10px; font-size: .7rem; font-weight: 800; }
 .feed-head .spacer { flex: 1; }
 
-.feed, .posts-grid { display: grid; gap: 16px; grid-template-columns: repeat(auto-fill, minmax(288px, 1fr)); }
-.posts-grid.list-view, .feed.list-view { grid-template-columns: 1fr; }
-
-/* كل بطاقة تحمل شريطاً جانبياً بلون يعكس تصنيفها وخطورتها فوراً (--acc تُضبط من الجافاسكربت) */
-.post-card {
-  --acc: var(--border);
-  position: relative;
-  background: var(--surface); border: 1px solid var(--border);
-  border-inline-start: 4px solid var(--acc);
-  border-radius: var(--radius); box-shadow: var(--shadow-xs);
-  display: flex; flex-direction: column; overflow: hidden;
-  transition: box-shadow .25s ease, transform .25s ease, border-color .25s ease;
-  animation: fadeUp .45s cubic-bezier(.22, .8, .28, 1) both;
-}
-.post-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); }
-@keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
-.post-card.fresh { box-shadow: 0 0 0 2px var(--sage-soft), var(--shadow-md); }
-.post-card.fresh::after {
-  content: ''; position: absolute; inset-inline-end: 13px; top: 13px; width: 8px; height: 8px;
-  border-radius: 50%; background: var(--sage); box-shadow: 0 0 0 4px var(--sage-soft);
-}
-
-.post-head { display: flex; align-items: flex-start; gap: 8px; padding: 8px 11px 0; }
-.avatar {
-  width: 26px; height: 26px; border-radius: 50%; flex: none; object-fit: cover;
-  background: linear-gradient(155deg, var(--green-600), var(--green-900)); color: #eff6f8;
-  display: grid; place-items: center; font-weight: 800; font-size: .68rem;
-  box-shadow: 0 0 0 2px var(--surface), 0 0 0 3px var(--acc);
-  transition: box-shadow .25s ease;
-}
-.post-head-text { min-width: 0; flex: 1; }
-.post-author { font-weight: 800; font-size: .78rem; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; line-height: 1.2; }
-.badge-new {
-  background: linear-gradient(155deg, var(--sage), var(--green-600)); color: #0b1820;
-  border-radius: 999px; padding: 1px 8px; font-size: .58rem; font-weight: 800; letter-spacing: .2px;
-}
-.post-date { font-size: .64rem; color: var(--text-2); }
-
-.post-stats { display: flex; flex-wrap: wrap; gap: 4px; padding: 4px 11px 0; }
-.stat-pill, .reactions span {
-  display: inline-flex; align-items: center; gap: 3px;
-  background: var(--surface-2); border: 1px solid var(--border); color: var(--text);
-  border-radius: 999px; padding: 2px 7px; font-size: .62rem; font-weight: 700;
-  transition: background .15s, border-color .15s;
-}
-.post-card:hover .stat-pill, .post-card:hover .reactions span { border-color: color-mix(in srgb, var(--acc) 45%, var(--border)); }
-.reactions { display: flex; gap: 4px; flex-wrap: wrap; font-size: .62rem; }
-
-.post-body { padding: 5px 11px 6px; flex: 1; }
-.post-text { font-size: .76rem; line-height: 1.48; color: var(--text); white-space: pre-wrap; word-break: break-word; letter-spacing: .1px; }
-.post-text.clamped { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.read-more {
-  border: none; background: none; color: var(--green-700); font-family: inherit; font-weight: 800;
-  font-size: .68rem; cursor: pointer; padding: 3px 0 0; display: inline-flex; align-items: center; gap: 3px;
-  transition: gap .15s;
-}
-.read-more:hover { gap: 6px; }
-[data-theme="dark"] .read-more { color: var(--sage); }
-
-.post-foot {
-  display: flex; align-items: center; justify-content: space-between; gap: 6px; flex-wrap: wrap;
-  padding: 6px 11px; border-top: 1px solid var(--border); background: var(--surface-2);
-}
-.post-link {
-  font-size: .68rem; font-weight: 800; color: var(--green-700); text-decoration: none;
-  display: inline-flex; align-items: center; gap: 4px; padding: 4px 10px; border-radius: 999px;
-  background: var(--surface); border: 1px solid var(--border); transition: all .18s ease; white-space: nowrap;
-}
-.post-link:hover { border-color: var(--green-500); box-shadow: var(--shadow-xs); transform: translateX(-2px); }
-[data-theme="dark"] .post-link { color: var(--sage); }
+/* قوالب المنشورات نفسها انتقلت إلى card.js (FBXCard) — لكل من عرض البطاقات
+   وعرض الجدول — فلا تُعرَّف هنا. ما يبقى في هذا الملف هو ما تشترك فيه كل
+   الصفحات: الهيكل، اللوحات، الأزرار، الشرائح، وشريط الأدوات. */
 
 .empty-state { text-align: center; padding: 44px 18px; color: var(--text-2); }
 .empty-state .big { font-size: 40px; margin-bottom: 10px; }
