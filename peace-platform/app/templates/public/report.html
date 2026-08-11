@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block content %}
+
+<header class="stack">
+  <h1>{{ t('report.title') }}</h1>
+  <p class="note note-critical"><strong>{{ t('report.warning') }}</strong></p>
+</header>
+
+<form class="card stack" method="post" action="/report">
+  {% if form_error %}<p class="form-error" role="alert">{{ form_error }}</p>{% endif %}
+
+  <div class="field">
+    <label for="report_type">{{ t('report.type') }} <span class="req" aria-hidden="true">*</span></label>
+    <select id="report_type" name="report_type" required>
+      {% for value in ['emergency', 'service_issue', 'rumor', 'information_request', 'other'] %}
+      <option value="{{ value }}">{{ t('report.type.' ~ value) }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <div class="field">
+    <label for="description">{{ t('report.description') }} <span class="req" aria-hidden="true">*</span></label>
+    <textarea id="description" name="description" required minlength="10" maxlength="4000"></textarea>
+  </div>
+
+  <div class="field">
+    <label for="location_text">{{ t('report.location') }}</label>
+    <span class="hint" id="loc-hint">{{ t('report.location.help') }}</span>
+    <input id="location_text" type="text" name="location_text" maxlength="255" aria-describedby="loc-hint">
+  </div>
+
+  <div class="field check">
+    <input id="is_emergency" type="checkbox" name="is_emergency">
+    <label for="is_emergency">{{ t('report.is_emergency') }}</label>
+  </div>
+
+  <div class="field">
+    <label for="contact">{{ t('report.contact') }}</label>
+    <span class="hint" id="contact-hint">{{ t('report.contact.help') }}</span>
+    <input id="contact" type="text" name="contact" maxlength="255" aria-describedby="contact-hint"
+           autocomplete="off">
+  </div>
+
+  <button class="btn btn-block" type="submit">{{ t('report.submit') }}</button>
+</form>
+
+{% endblock %}

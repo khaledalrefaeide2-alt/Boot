@@ -1,0 +1,74 @@
+{% extends "dash/base.html" %}
+{% block dash_content %}
+
+<section class="stat-grid">
+  {% for key, label, attention in [
+    ('total',              'Questions asked',      false),
+    ('answered',           'Answered',             false),
+    ('low_confidence',     'Low confidence',       true),
+    ('retrieval_failures', 'Retrieval failures',   true),
+    ('corrected',          'Corrected by a person',false),
+    ('helpful',            'Marked helpful',       false),
+    ('not_helpful',        'Marked unhelpful',     true)
+  ] %}
+  <div class="stat {{ 'attention' if attention and metrics[key] > 0 }}">
+    <div class="value tabular">{{ metrics[key] }}</div>
+    <div class="label">{{ label }}</div>
+  </div>
+  {% endfor %}
+  <div class="stat">
+    <div class="value tabular">{{ (metrics.answered_rate * 100)|round|int }}%</div>
+    <div class="label">Answer rate</div>
+  </div>
+  <div class="stat">
+    <div class="value tabular">{{ metrics.avg_confidence }}</div>
+    <div class="label">Mean confidence</div>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head">Topics with no verified answer</div>
+  <div class="panel-body">
+    {% if metrics.unanswered_topics %}
+    <ul class="mb-0">
+      {% for topic in metrics.unanswered_topics %}
+      <li><strong class="tabular">×{{ topic.count }}</strong> — {{ topic.question }}</li>
+      {% endfor %}
+    </ul>
+    {% else %}<p class="muted mb-0">Nothing outstanding.</p>{% endif %}
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head">Answers awaiting human correction</div>
+  <div class="panel-body">
+    {% if low_confidence %}
+    <div class="stack">
+      {% for row in low_confidence %}
+      <article class="card stack">
+        <div class="card-meta">
+          <strong>{{ row.question }}</strong>
+          <span class="badge badge-warn tabular">confidence {{ row.confidence or 0 }}</span>
+          <span class="small muted">{{ relative_time(row.created_at) }}</span>
+          {% if row.retrieval_failed %}<span class="badge badge-critical">no sources found</span>{% endif %}
+        </div>
+        {% if row.answer_text %}
+          <p class="small muted mb-0">{{ row.answer_text[:300] }}</p>
+        {% endif %}
+        {% if 'faqs.manage' in permissions %}
+        <form class="search-row" method="post" action="/dash/ai/quality/{{ row.id }}/correct">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+          <label class="visually-hidden" for="corr-{{ row.id }}">Correction</label>
+          <input id="corr-{{ row.id }}" type="text" name="correction" required
+                 placeholder="What the answer should have been">
+          <button class="btn btn-sm" type="submit">Record</button>
+        </form>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </div>
+    {% else %}<p class="muted mb-0">Nothing flagged.</p>{% endif %}
+  </div>
+</section>
+
+{% endblock %}

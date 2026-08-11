@@ -1,0 +1,44 @@
+{# The single most important block on the site: what is happening, how bad,
+   and when we last knew something. #}
+
+{% if crisis %}
+<section class="crisis-status severity-{{ crisis.severity }} emergency-priority"
+         aria-labelledby="crisis-heading">
+  <div class="row-between">
+    <h1 class="crisis-title" id="crisis-heading">{{ crisis.title }}</h1>
+    {% if crisis.is_demo %}
+      <span class="badge badge-demo">{{ t('demo.banner') }}</span>
+    {% endif %}
+  </div>
+
+  <div class="crisis-meta">
+    <span>
+      {{ t('crisis.severity') }}:
+      <span class="badge {{ 'badge-critical' if crisis.severity == 'high'
+                            else 'badge-warn' if crisis.severity == 'medium'
+                            else 'badge-good' }}">
+        {{ t('crisis.severity.' ~ crisis.severity) }}
+      </span>
+    </span>
+    <span>
+      {{ t('crisis.status') }}:
+      <span class="badge badge-neutral">{{ t('crisis.status.' ~ crisis.status) }}</span>
+    </span>
+    <span>
+      {{ t('crisis.updated') }}:
+      <time datetime="{{ crisis.updated_at.isoformat() }}">{{ relative_time(crisis.updated_at) }}</time>
+    </span>
+  </div>
+
+  {% if crisis.description %}
+    {% for block in crisis.description|paragraphs %}<p>{{ block }}</p>{% endfor %}
+  {% endif %}
+
+  <div class="crisis-calm"><p>{{ t('crisis.calm') }}</p></div>
+</section>
+{% else %}
+<section class="crisis-status severity-low" aria-labelledby="crisis-heading">
+  <h1 class="crisis-title" id="crisis-heading">{{ t('crisis.none') }}</h1>
+  <p class="mb-0 muted">{{ t('crisis.none.body') }}</p>
+</section>
+{% endif %}

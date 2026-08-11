@@ -1,0 +1,93 @@
+{% extends "dash/base.html" %}
+{% block dash_content %}
+
+<p class="note">
+  Changing a role or suspending an account revokes that user's live sessions
+  immediately — permissions are read from the account on every request, so a
+  demoted user does not keep old access until their session expires.
+</p>
+
+{% if 'users.manage' in permissions %}
+<details class="disclosure">
+  <summary>New account</summary>
+  <div>
+    <form class="stack" method="post" action="/dash/users/create">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="filters">
+        <div class="field">
+          <label for="u-name">Name</label>
+          <input id="u-name" type="text" name="name" required maxlength="160">
+        </div>
+        <div class="field">
+          <label for="u-email">Email</label>
+          <input id="u-email" type="email" name="email" required dir="ltr">
+        </div>
+        <div class="field">
+          <label for="u-role">Role</label>
+          <select id="u-role" name="role">
+            {% for role in roles %}<option value="{{ role }}">{{ role }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="field">
+        <label for="u-pass">Initial password</label>
+        <input id="u-pass" type="password" name="password" required minlength="12" dir="ltr"
+               autocomplete="new-password">
+        <span class="hint">
+          At least 12 characters, mixing three of: lowercase, uppercase, digits, symbols.
+        </span>
+      </div>
+      <button class="btn" type="submit">Create</button>
+    </form>
+  </div>
+</details>
+{% endif %}
+
+<div class="table-scroll">
+  <table>
+    <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last login</th><th></th></tr></thead>
+    <tbody>
+      {% for account in users %}
+      <tr>
+        <td>{{ account.name }}</td>
+        <td class="ltr small">{{ account.email }}</td>
+        <td>
+          {% if 'users.manage' in permissions %}
+          <form method="post" action="/dash/users/{{ account.id }}/role">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <select name="role" aria-label="Role for {{ account.name }}">
+              {% for role in roles %}
+              <option value="{{ role }}" {% if role == account.role %}selected{% endif %}>{{ role }}</option>
+              {% endfor %}
+            </select>
+            <button class="btn btn-sm btn-secondary" type="submit">Set</button>
+          </form>
+          {% else %}<span class="badge badge-neutral">{{ account.role }}</span>{% endif %}
+        </td>
+        <td>
+          <span class="badge {{ 'badge-good' if account.status == 'active' else 'badge-critical' }}">
+            {{ account.status }}
+          </span>
+        </td>
+        <td class="small muted">
+          {{ relative_time(account.last_login_at) if account.last_login_at else '—' }}
+        </td>
+        <td>
+          {% if 'users.manage' in permissions %}
+          <form method="post" action="/dash/users/{{ account.id }}/status"
+                data-confirm="Change this account's status? Active sessions will be revoked.">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="status" value="{{ 'suspended' if account.status == 'active' else 'active' }}">
+            <button class="btn btn-sm btn-secondary" type="submit">
+              {{ 'Suspend' if account.status == 'active' else 'Reactivate' }}
+            </button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

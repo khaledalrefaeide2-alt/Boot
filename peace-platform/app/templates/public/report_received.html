@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="card stack">
+  <h1>{{ t('report.received') }}</h1>
+
+  {# Stated plainly and first: nothing was dispatched anywhere. #}
+  <p class="note note-warn"><strong>{{ t('report.no_dispatch') }}</strong></p>
+
+  <p>{{ t(routing.message_key) }}</p>
+
+  {% if routing.route == 'emergency_services' and emergency_services %}
+  <div class="note note-critical stack">
+    <p class="mb-0"><strong>{{ t('assistant.emergency_directory') }}</strong></p>
+    <ul class="mb-0">
+      {% for service in emergency_services %}
+      <li>
+        {{ service.organization }}:
+        <a class="ltr" href="tel:{{ service.phone|replace(' ', '') }}">{{ service.phone }}</a>
+        {% if service.is_demo %}<span class="badge badge-demo">{{ t('demo.number') }}</span>{% endif %}
+      </li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <div class="row">
+    {% if routing.route == 'rumor_verification' %}
+      <a class="btn" href="/rumors/submit">{{ t('rumors.submit.title') }}</a>
+    {% endif %}
+    <a class="btn btn-secondary" href="/services">{{ t('services.title') }}</a>
+    <a class="btn btn-secondary" href="/">{{ t('nav.home') }}</a>
+  </div>
+</section>
+
+{% endblock %}

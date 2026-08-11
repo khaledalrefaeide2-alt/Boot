@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+
+<header class="stack">
+  <h1>{{ t('home.search') }}</h1>
+  <form class="search-row" method="get" action="/search" role="search">
+    <label class="visually-hidden" for="q">{{ t('home.search') }}</label>
+    <input id="q" type="search" name="q" value="{{ query }}" placeholder="{{ t('home.search.placeholder') }}">
+    <button class="btn" type="submit">{{ t('home.search.button') }}</button>
+  </form>
+</header>
+
+{% if query %}
+  {% if has_results %}
+    {% if updates %}
+    <section aria-labelledby="r-updates">
+      <h2 id="r-updates">{{ t('updates.title') }}</h2>
+      <ul class="item-list">
+        {% for update in updates %}<li>{% include "partials/update_card.html" %}</li>{% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+
+    {% if faqs %}
+    <section aria-labelledby="r-faqs">
+      <h2 id="r-faqs">{{ t('faq.title') }}</h2>
+      <div class="stack">
+        {% for faq in faqs %}
+        <details class="disclosure">
+          <summary>{{ faq.question }}</summary>
+          <div>{% for block in faq.answer|paragraphs %}<p>{{ block }}</p>{% endfor %}</div>
+        </details>
+        {% endfor %}
+      </div>
+    </section>
+    {% endif %}
+
+    {% if rumors %}
+    <section aria-labelledby="r-rumors">
+      <h2 id="r-rumors">{{ t('rumors.title') }}</h2>
+      <ul class="item-list">
+        {% for rumor in rumors %}
+        <li class="card">
+          <span class="badge {{ 'badge-critical' if rumor.status == 'false'
+                                else 'badge-warn' if rumor.status == 'misleading'
+                                else 'badge-good' }}">
+            {{ t('rumors.status.' ~ rumor.status) }}
+          </span>
+          <p class="mb-0"><a href="/rumors/{{ rumor.id }}">{{ rumor.claim[:140] }}</a></p>
+        </li>
+        {% endfor %}
+      </ul>
+    </section>
+    {% endif %}
+  {% else %}
+    <div class="empty-state stack">
+      <p>{{ t('ui.empty') }}</p>
+      <p><a class="btn" href="/assistant">{{ t('action.assistant') }}</a></p>
+    </div>
+  {% endif %}
+{% endif %}
+
+{% endblock %}

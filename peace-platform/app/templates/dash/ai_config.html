@@ -1,0 +1,91 @@
+{% extends "dash/base.html" %}
+{% block dash_content %}
+
+<section class="panel">
+  <div class="panel-head">Active provider</div>
+  <div class="panel-body">
+    <div class="card-meta">
+      <span>Provider: <strong>{{ provider_name }}</strong></span>
+      <span>Model: <strong class="ltr">{{ model_name }}</strong></span>
+    </div>
+    {% if not llm_configured %}
+    <p class="note note-warn mt-4 mb-0">
+      No API key is configured, so the platform is running the offline
+      extractive provider. Answers are verbatim quotations from official
+      sources — safe, but noticeably less fluent. Set
+      <code class="ltr">ANTHROPIC_API_KEY</code> to enable the model.
+    </p>
+    {% endif %}
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head">Configuration</div>
+  <div class="panel-body">
+    {% if 'ai.config' in permissions %}
+    <form class="stack" method="post" action="/dash/ai/config">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <div class="filters">
+        <div class="field">
+          <label for="c-style">Response style</label>
+          <select id="c-style" name="response_style">
+            {% for style in ['official', 'simple', 'calm'] %}
+            <option value="{{ style }}" {% if ai_config.response_style == style %}selected{% endif %}>{{ style }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="c-conf">Minimum confidence</label>
+          <input id="c-conf" type="number" name="min_confidence" min="0" max="1" step="0.05"
+                 value="{{ ai_config.min_confidence }}">
+          <span class="hint">Below this, the answer is replaced with the insufficient-evidence message.</span>
+        </div>
+        <div class="field">
+          <label for="c-trust">Minimum source trust</label>
+          <input id="c-trust" type="number" name="min_source_trust" min="1" max="5"
+                 value="{{ ai_config.min_source_trust }}">
+        </div>
+        <div class="field">
+          <label for="c-chunks">Max context passages</label>
+          <input id="c-chunks" type="number" name="max_context_chunks" min="1" max="20"
+                 value="{{ ai_config.max_context_chunks }}">
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="c-topics">Restricted topics (comma separated)</label>
+        <input id="c-topics" type="text" name="restricted_topics"
+               value="{{ ai_config.restricted_topics|join(', ') }}">
+        <span class="hint">Questions matching these are referred to an official service instead of answered.</span>
+      </div>
+
+      <div class="field check">
+        <input id="c-cite" type="checkbox" name="require_citations"
+               {% if ai_config.require_citations %}checked{% endif %}>
+        <label for="c-cite">Require at least one citation for every answer</label>
+      </div>
+
+      <div class="field check">
+        <input id="c-enabled" type="checkbox" name="assistant_enabled"
+               {% if ai_config.assistant_enabled %}checked{% endif %}>
+        <label for="c-enabled">Assistant enabled for citizens</label>
+      </div>
+
+      <p class="note small">
+        Human approval of AI-suggested public content is a platform guarantee
+        and cannot be switched off here. Attempting to disable it is rejected
+        by the settings service.
+      </p>
+
+      <button class="btn" type="submit">Save configuration</button>
+    </form>
+    {% else %}
+      <p class="muted mb-0">You have read-only access to AI configuration.</p>
+    {% endif %}
+  </div>
+</section>
+
+<p><a href="/dash/ai/playground">Retrieval inspector →</a> · <a href="/dash/ai/quality">Answer quality →</a></p>
+
+{% endblock %}

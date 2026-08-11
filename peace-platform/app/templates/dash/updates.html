@@ -1,0 +1,121 @@
+{% extends "dash/base.html" %}
+{% block dash_content %}
+
+{% if 'updates.create' in permissions %}
+<details class="disclosure">
+  <summary>New official update</summary>
+  <div>
+    <form class="stack" method="post" action="/dash/updates/create">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="field">
+        <label for="u-title">Title</label>
+        <input id="u-title" type="text" name="title" required maxlength="255">
+      </div>
+      <div class="field">
+        <label for="u-content">Official text (verbatim from the source)</label>
+        <textarea id="u-content" name="content" required></textarea>
+      </div>
+      <div class="filters">
+        <div class="field">
+          <label for="u-category">Category</label>
+          <select id="u-category" name="category">
+            {% for category in categories %}<option value="{{ category }}">{{ t('category.' ~ category) }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="u-importance">Importance</label>
+          <select id="u-importance" name="importance">
+            {% for importance in importances %}<option value="{{ importance }}">{{ t('importance.' ~ importance) }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="u-source">Official source</label>
+          <select id="u-source" name="source_id">
+            <option value="">—</option>
+            {% for source in sources %}<option value="{{ source.id }}">{{ source.name }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="filters">
+        <div class="field">
+          <label for="u-url">Source URL</label>
+          <input id="u-url" type="url" name="source_url" dir="ltr">
+        </div>
+        <div class="field">
+          <label for="u-sched">Schedule for (optional)</label>
+          <input id="u-sched" type="datetime-local" name="scheduled_for">
+        </div>
+      </div>
+      <button class="btn" type="submit">Save as draft</button>
+    </form>
+  </div>
+</details>
+{% endif %}
+
+<nav>
+  <ul class="chips">
+    <li><a class="chip {{ 'is-active' if not active_status }}" href="/dash/updates">All</a></li>
+    {% for status in statuses %}
+    <li><a class="chip {{ 'is-active' if active_status == status }}" href="/dash/updates?status={{ status }}">{{ status }}</a></li>
+    {% endfor %}
+  </ul>
+</nav>
+
+<div class="table-scroll">
+  <table>
+    <thead>
+      <tr><th>Title</th><th>Status</th><th>Category</th><th>Source</th><th>Updated</th><th>Actions</th></tr>
+    </thead>
+    <tbody>
+      {% for update in updates %}
+      <tr>
+        <td>
+          {{ update.title }}
+          {% if update.citizen_summary %}
+            <br><span class="badge {{ 'badge-good' if update.citizen_summary_approved else 'badge-warn' }}">
+              AI summary {{ 'approved' if update.citizen_summary_approved else 'awaiting approval' }}
+            </span>
+          {% endif %}
+        </td>
+        <td><span class="badge badge-neutral">{{ update.status }}</span></td>
+        <td>{{ t('category.' ~ update.category) }}</td>
+        <td>{{ update.organization or '—' }}</td>
+        <td class="small muted">{{ relative_time(update.updated_at) }}</td>
+        <td>
+          {% if 'updates.edit' in permissions %}
+          <form method="post" action="/dash/updates/{{ update.id }}/suggest-summary">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="btn btn-sm btn-secondary" type="submit">Draft summary</button>
+          </form>
+          {% endif %}
+          {% if 'updates.publish' in permissions %}
+            {% if update.citizen_summary and not update.citizen_summary_approved %}
+            <form method="post" action="/dash/updates/{{ update.id }}/approve-summary">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button class="btn btn-sm btn-secondary" type="submit">Approve summary</button>
+            </form>
+            {% endif %}
+            {% if update.status != 'published' %}
+            <form method="post" action="/dash/updates/{{ update.id }}/publish"
+                  data-confirm="Publish this update to the public site?">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+              <button class="btn btn-sm" type="submit">Publish</button>
+            </form>
+            {% endif %}
+          {% endif %}
+          {% if 'updates.archive' in permissions and update.status != 'archived' %}
+          <form method="post" action="/dash/updates/{{ update.id }}/archive">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="btn btn-sm btn-secondary" type="submit">Archive</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No updates yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

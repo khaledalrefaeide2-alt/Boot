@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+
+<header class="stack">
+  <h1>{{ t('guidance.title') }}</h1>
+  <p class="muted">{{ t('guidance.intro') }}</p>
+</header>
+
+{% set has_any = guidance.values()|map('length')|sum > 0 %}
+{% for phase in phases %}
+  {% set audiences = guidance.get(phase, {}) %}
+  {% set phase_items = audiences.values()|map('length')|sum %}
+  {% if phase_items %}
+  <section aria-labelledby="phase-{{ phase }}">
+    <h2 id="phase-{{ phase }}">{{ t('guidance.phase.' ~ phase) }}</h2>
+    {% for audience, items in audiences.items() %}
+      {% if items %}
+      <section aria-labelledby="phase-{{ phase }}-{{ audience }}">
+        <h3 id="phase-{{ phase }}-{{ audience }}">{{ t('guidance.audience.' ~ audience) }}</h3>
+        <div class="grid grid-2">
+          {% for item in items %}
+          <article class="card">
+            <div class="row-between">
+              <h4 class="card-title mb-0">{{ item.title }}</h4>
+              {% if item.kind != 'info' %}
+                <span class="badge {{ 'badge-good' if item.kind == 'do' else 'badge-critical' }}">
+                  {{ t('guidance.kind.' ~ item.kind) }}
+                </span>
+              {% endif %}
+            </div>
+            {% for block in item.body|paragraphs %}<p>{{ block }}</p>{% endfor %}
+          </article>
+          {% endfor %}
+        </div>
+      </section>
+      {% endif %}
+    {% endfor %}
+  </section>
+  {% endif %}
+{% endfor %}
+
+{% if not has_any %}
+  <p class="empty-state">{{ t('guidance.empty') }}</p>
+{% endif %}
+
+{% endblock %}

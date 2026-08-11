@@ -1,0 +1,129 @@
+{% extends "dash/base.html" %}
+{% block dash_content %}
+
+{% if emergency_mode.enabled %}
+<p class="note note-critical"><strong>{{ t('emergency.active') }}</strong>
+  {% if emergency_mode.activated_by %} — {{ emergency_mode.activated_by }}{% endif %}
+</p>
+{% endif %}
+
+<section class="stat-grid">
+  {% for key, label, attention in [
+    ('published_updates',     'Published updates',       false),
+    ('draft_updates',         'Drafts awaiting action',  false),
+    ('incoming_rumors',       'New rumors',              true),
+    ('pending_reviews',       'Pending review',          true),
+    ('published_rumors',      'Published verifications', false),
+    ('low_confidence_answers','Low-confidence answers',  true),
+    ('unanswered_questions',  'Unanswered questions',    false),
+    ('new_reports',           'New reports',             true),
+    ('emergency_reports',     'Emergency reports',       true)
+  ] %}
+  <div class="stat {{ 'attention' if attention and counts[key] > 0 }}">
+    <div class="value tabular">{{ counts[key] }}</div>
+    <div class="label">{{ label }}</div>
+  </div>
+  {% endfor %}
+</section>
+
+<div class="grid grid-sidebar">
+  <div class="stack">
+    <section class="panel">
+      <div class="panel-head">Most frequent citizen questions</div>
+      <div class="panel-body">
+        {% if frequent_questions %}
+        <div class="table-scroll">
+          <table>
+            <thead><tr><th>Question</th><th>Asked</th><th>Answered</th></tr></thead>
+            <tbody>
+              {% for row in frequent_questions %}
+              <tr>
+                <td>{{ row.question }}</td>
+                <td class="tabular">{{ row.count }}</td>
+                <td class="tabular">{{ (row.answered_ratio * 100)|round|int }}%</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}<p class="muted mb-0">No questions recorded yet.</p>{% endif %}
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">Information gaps — repeated questions with no verified answer</div>
+      <div class="panel-body">
+        {% if information_gaps %}
+          <ul class="mb-0">
+            {% for gap in information_gaps %}
+            <li><strong class="tabular">×{{ gap.count }}</strong> — {{ gap.question }}</li>
+            {% endfor %}
+          </ul>
+          <p class="note small mt-4 mb-0">
+            High demand with no official material. Consider publishing an update
+            or an FAQ entry for these.
+          </p>
+        {% else %}<p class="muted mb-0">No gaps detected.</p>{% endif %}
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        AI answers below the confidence threshold ({{ confidence_threshold }})
+      </div>
+      <div class="panel-body">
+        {% if low_confidence_answers %}
+        <ul class="mb-0">
+          {% for row in low_confidence_answers %}
+          <li>
+            {{ row.question }}
+            <span class="badge badge-warn tabular">{{ row.confidence or 0 }}</span>
+          </li>
+          {% endfor %}
+        </ul>
+        <p class="mt-4 mb-0"><a href="/dash/ai/quality">Review all →</a></p>
+        {% else %}<p class="muted mb-0">Nothing flagged.</p>{% endif %}
+      </div>
+    </section>
+  </div>
+
+  <aside class="stack">
+    <section class="panel">
+      <div class="panel-head">{{ t('crisis.status') }}</div>
+      <div class="panel-body">
+        {% if crisis %}
+          <p><strong>{{ crisis.title }}</strong></p>
+          <p class="card-meta mb-0">
+            <span class="badge {{ 'badge-critical' if crisis.severity == 'high'
+                                  else 'badge-warn' if crisis.severity == 'medium'
+                                  else 'badge-good' }}">
+              {{ t('crisis.severity.' ~ crisis.severity) }}
+            </span>
+            <span class="badge badge-neutral">{{ t('crisis.status.' ~ crisis.status) }}</span>
+          </p>
+          <p class="mt-4 mb-0"><a href="/dash/crisis">{{ t('dash.crisis') }} →</a></p>
+        {% else %}
+          <p class="muted mb-0">{{ t('crisis.none') }}</p>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">Recent activity</div>
+      <div class="panel-body">
+        <ul class="mb-0 small">
+          {% for entry in recent_activity %}
+          <li>
+            <code class="ltr">{{ entry.action }}</code>
+            <span class="muted">— {{ entry.user_email or 'system' }}, {{ relative_time(entry.created_at) }}</span>
+          </li>
+          {% else %}
+          <li class="muted">No activity yet.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </section>
+  </aside>
+</div>
+
+{% endblock %}

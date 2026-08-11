@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{# The dashboard replaces the public navigation with a role-filtered sidebar:
+   a link the user cannot act on is never rendered, and the route behind it
+   403s independently. #}
+{% block nav %}
+<nav class="site-nav" aria-label="{{ t('nav.menu') }}">
+  <ul>
+    <li><a href="/">{{ t('nav.home') }}</a></li>
+    <li>
+      <form class="inline-form" method="post" action="/dash/logout">
+        <button class="chip" type="submit">{{ t('dash.logout') }}</button>
+      </form>
+    </li>
+  </ul>
+</nav>
+{% endblock %}
+
+{% block content %}
+<div class="dash-layout">
+  <nav class="dash-nav" aria-label="{{ t('nav.dashboard') }}">
+    <ul>
+      {% for path, key, permission in [
+        ('/dash',           'dash.overview',  'dashboard.view'),
+        ('/dash/crisis',    'dash.crisis',    'dashboard.view'),
+        ('/dash/updates',   'dash.updates',   'updates.view'),
+        ('/dash/rumors',    'dash.rumors',    'rumors.view'),
+        ('/dash/faqs',      'dash.faqs',      'faqs.view'),
+        ('/dash/services',  'dash.services',  'services.view'),
+        ('/dash/alerts',    'dash.alerts',    'alerts.view'),
+        ('/dash/reports',   'dash.reports',   'reports.view'),
+        ('/dash/sources',   'dash.sources',   'sources.view'),
+        ('/dash/knowledge', 'dash.knowledge', 'knowledge.view'),
+        ('/dash/ai',        'dash.ai',        'ai.quality.view'),
+        ('/dash/ai/quality','dash.quality',   'ai.quality.view'),
+        ('/dash/users',     'dash.users',     'users.view'),
+        ('/dash/audit',     'dash.audit',     'audit.view')
+      ] %}
+        {% if permission in permissions %}
+        <li>
+          <a href="{{ path }}" {% if current_path == path %}aria-current="page"{% endif %}>
+            {{ t(key) }}
+          </a>
+        </li>
+        {% endif %}
+      {% endfor %}
+    </ul>
+  </nav>
+
+  <div class="stack-lg">
+    <header class="row-between">
+      <h1>{{ t(title_key) }}</h1>
+      <p class="small muted mb-0">
+        {{ user.name }} · <span class="badge badge-neutral">{{ user.role }}</span>
+      </p>
+    </header>
+
+    {% if request.query_params.get('ok') %}
+      <p class="form-ok" role="status">{{ request.query_params.get('ok') }}</p>
+    {% endif %}
+    {% if request.query_params.get('error') %}
+      <p class="form-error" role="alert">{{ request.query_params.get('error') }}</p>
+    {% endif %}
+
+    {% block dash_content %}{% endblock %}
+  </div>
+</div>
+{% endblock %}

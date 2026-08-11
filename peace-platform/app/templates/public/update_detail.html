@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block title %}{{ update.title }} — {{ t('site.short') }}{% endblock %}
+{% block content %}
+
+<p><a href="/updates">← {{ t('updates.back') }}</a></p>
+
+<article class="card stack">
+  <header class="stack">
+    <h1>{{ update.title }}</h1>
+    <div class="card-meta">
+      {% if update.verified %}<span class="badge badge-good">{{ t('updates.verified') }}</span>{% endif %}
+      <span class="badge badge-neutral">{{ t('category.' ~ update.category) }}</span>
+      {% if update.importance != 'normal' %}
+        <span class="badge {{ 'badge-critical' if update.importance == 'critical' else 'badge-warn' }}">
+          {{ t('importance.' ~ update.importance) }}
+        </span>
+      {% endif %}
+      <time datetime="{{ update.published_at.isoformat() if update.published_at else '' }}">
+        {{ format_datetime(update.published_at) }}
+      </time>
+      {% if update.is_demo %}<span class="badge badge-demo">{{ t('demo.banner') }}</span>{% endif %}
+    </div>
+  </header>
+
+  {# A plain-language rendering is shown only when a human approved it, and the
+     official text always stays on the page directly below it. #}
+  {% if update.citizen_summary and update.citizen_summary_approved %}
+  <section class="note">
+    <h2>{{ t('updates.simplified') }}</h2>
+    {% for block in update.citizen_summary|paragraphs %}<p>{{ block }}</p>{% endfor %}
+    <p class="small mb-0"><em>{{ t('updates.simplified.note') }}</em></p>
+  </section>
+  {% endif %}
+
+  <section>
+    <h2>{{ t('updates.original') }}</h2>
+    {% for block in update.content|paragraphs %}<p>{{ block }}</p>{% endfor %}
+  </section>
+
+  <footer class="card-meta">
+    {% if update.organization %}
+      <span>{{ t('updates.source') }}: <strong>{{ update.organization }}</strong></span>
+    {% endif %}
+    {% if update.source_url %}
+      <a href="{{ update.source_url }}" rel="noopener noreferrer">{{ t('updates.source_link') }} ↗</a>
+    {% endif %}
+  </footer>
+</article>
+
+{% if source %}
+<section class="card">
+  <h2>{{ t('sources.why') }}</h2>
+  <p class="mb-0">{{ source.why_trusted or source.name }}</p>
+</section>
+{% endif %}
+
+{% endblock %}

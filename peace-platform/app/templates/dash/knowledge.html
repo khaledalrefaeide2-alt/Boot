@@ -1,0 +1,126 @@
+{% extends "dash/base.html" %}
+{% block dash_content %}
+
+<p class="note">
+  Everything indexed here is treated as <strong>untrusted data</strong>. Text
+  that looks like an instruction to the model is flagged on ingest, excluded
+  from citizen answers, and labelled in the prompt.
+</p>
+
+{% if 'knowledge.manage' in permissions %}
+<div class="grid grid-2">
+  <details class="disclosure" open>
+    <summary>Add text source</summary>
+    <div>
+      <form class="stack" method="post" action="/dash/knowledge/add-text">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="field">
+          <label for="k-title">Title</label>
+          <input id="k-title" type="text" name="title" required maxlength="255">
+        </div>
+        <div class="field">
+          <label for="k-body">Text</label>
+          <textarea id="k-body" name="body" required></textarea>
+        </div>
+        <div class="filters">
+          <div class="field">
+            <label for="k-source">Official source</label>
+            <select id="k-source" name="source_id">
+              <option value="">—</option>
+              {% for source in sources %}<option value="{{ source.id }}">{{ source.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label for="k-trust">Trust level</label>
+            <input id="k-trust" type="number" name="trust_level" min="1" max="5" value="3">
+          </div>
+          <div class="field">
+            <label for="k-topic">Topic</label>
+            <input id="k-topic" type="text" name="topic" maxlength="120">
+          </div>
+        </div>
+        <button class="btn" type="submit">Index</button>
+      </form>
+    </div>
+  </details>
+
+  <details class="disclosure">
+    <summary>Upload document (PDF / TXT / MD)</summary>
+    <div>
+      <form class="stack" method="post" action="/dash/knowledge/upload" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <div class="field">
+          <label for="k-utitle">Title</label>
+          <input id="k-utitle" type="text" name="title" required maxlength="255">
+        </div>
+        <div class="field">
+          <label for="k-file">File</label>
+          <input id="k-file" type="file" name="file" accept=".pdf,.txt,.md" required>
+          <span class="hint">
+            Type, declared MIME and magic bytes must all agree. Stored outside
+            the web root and never served back.
+          </span>
+        </div>
+        <div class="filters">
+          <div class="field">
+            <label for="k-usource">Official source</label>
+            <select id="k-usource" name="source_id">
+              <option value="">—</option>
+              {% for source in sources %}<option value="{{ source.id }}">{{ source.name }}</option>{% endfor %}
+            </select>
+          </div>
+          <div class="field">
+            <label for="k-utrust">Trust level</label>
+            <input id="k-utrust" type="number" name="trust_level" min="1" max="5" value="3">
+          </div>
+        </div>
+        <button class="btn" type="submit">Upload and index</button>
+      </form>
+    </div>
+  </details>
+</div>
+{% endif %}
+
+<p><a href="/dash/ai/playground">Retrieval inspector →</a></p>
+
+<div class="table-scroll">
+  <table>
+    <thead><tr><th>Title</th><th>Organisation</th><th>Trust</th><th>Chunks</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for document in documents %}
+      <tr>
+        <td>
+          {{ document.title }}
+          {% if document.injection_flagged %}
+            <br><span class="badge badge-critical">injection-flagged</span>
+          {% endif %}
+          {% if document.error %}<br><span class="small muted">{{ document.error }}</span>{% endif %}
+        </td>
+        <td>{{ document.organization or '—' }}</td>
+        <td class="tabular">{{ document.trust_level }}/5</td>
+        <td class="tabular">{{ document.chunk_count }}</td>
+        <td>
+          <span class="badge {{ 'badge-good' if document.status == 'indexed'
+                                else 'badge-critical' if document.status == 'failed'
+                                else 'badge-neutral' }}">{{ document.status }}</span>
+        </td>
+        <td>
+          {% if 'knowledge.manage' in permissions %}
+          <form method="post" action="/dash/knowledge/{{ document.id }}/status">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <input type="hidden" name="status" value="{{ 'indexed' if document.status == 'disabled' else 'disabled' }}">
+            <button class="btn btn-sm btn-secondary" type="submit">
+              {{ 'Enable' if document.status == 'disabled' else 'Disable' }}
+            </button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No knowledge sources indexed.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

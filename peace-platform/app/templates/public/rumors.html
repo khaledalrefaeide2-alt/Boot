@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+
+<header class="stack">
+  <h1>{{ t('rumors.title') }}</h1>
+  <p class="muted">{{ t('rumors.intro') }}</p>
+  <p class="note small">{{ t('rumors.governance') }}</p>
+  <p><a class="btn" href="/rumors/submit">{{ t('rumors.submit.title') }}</a></p>
+</header>
+
+{% if rumors %}
+<ul class="item-list">
+  {% for rumor in rumors %}
+  <li>
+    <article class="verdict-card verdict-{{ rumor.status }}">
+      <div class="verdict-head">{{ t('rumors.status.' ~ rumor.status) }}</div>
+      <div class="verdict-body stack">
+        <p class="verdict-claim mb-0">{{ rumor.claim }}</p>
+        {% if rumor.correction %}
+          <div>
+            <h3>{{ t('rumors.correction') }}</h3>
+            {% for block in rumor.correction|paragraphs %}<p>{{ block }}</p>{% endfor %}
+          </div>
+        {% endif %}
+        <p class="mb-0"><a href="/rumors/{{ rumor.id }}">{{ t('ui.more') }} →</a></p>
+      </div>
+      <div class="verdict-footer">
+        <span>{{ t('rumors.checked_at') }}: {{ format_datetime(rumor.checked_at) }}</span>
+        {% if rumor.is_demo %}<span class="badge badge-demo">{{ t('demo.banner') }}</span>{% endif %}
+      </div>
+    </article>
+  </li>
+  {% endfor %}
+</ul>
+{% else %}
+<p class="empty-state">{{ t('rumors.empty') }}</p>
+{% endif %}
+
+{% endblock %}

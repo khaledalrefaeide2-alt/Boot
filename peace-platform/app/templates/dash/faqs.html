@@ -1,0 +1,82 @@
+{% extends "dash/base.html" %}
+{% block dash_content %}
+
+{% if gaps %}
+<section class="panel">
+  <div class="panel-head">Information gaps — citizens keep asking, we have no answer</div>
+  <div class="panel-body">
+    <ul class="mb-0">
+      {% for gap in gaps %}
+      <li><strong class="tabular">×{{ gap.count }}</strong> — {{ gap.question }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+</section>
+{% endif %}
+
+{% if 'faqs.manage' in permissions %}
+<details class="disclosure">
+  <summary>New FAQ entry</summary>
+  <div>
+    <form class="stack" method="post" action="/dash/faqs/create">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="field">
+        <label for="f-question">Question</label>
+        <input id="f-question" type="text" name="question" required maxlength="500">
+      </div>
+      <div class="field">
+        <label for="f-answer">Answer</label>
+        <textarea id="f-answer" name="answer" required></textarea>
+      </div>
+      <div class="filters">
+        <div class="field">
+          <label for="f-category">Category</label>
+          <select id="f-category" name="category">
+            {% for category in categories %}
+            <option value="{{ category }}">{{ t('faq.category.' ~ category) }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="field check">
+          <input id="f-publish" type="checkbox" name="publish">
+          <label for="f-publish">Publish immediately</label>
+        </div>
+      </div>
+      <button class="btn" type="submit">Save</button>
+    </form>
+  </div>
+</details>
+{% endif %}
+
+<div class="table-scroll">
+  <table>
+    <thead><tr><th>Question</th><th>Category</th><th>Asked</th><th>Status</th><th></th></tr></thead>
+    <tbody>
+      {% for faq in faqs %}
+      <tr>
+        <td>{{ faq.question }}</td>
+        <td>{{ t('faq.category.' ~ faq.category) }}</td>
+        <td class="tabular">{{ faq.frequency }}</td>
+        <td><span class="badge badge-neutral">{{ faq.status }}</span></td>
+        <td>
+          {% if 'faqs.manage' in permissions %}
+          <form method="post" action="/dash/faqs/{{ faq.id }}/status">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <select name="status" aria-label="Status for {{ faq.question[:40] }}">
+              {% for status in statuses %}
+              <option value="{{ status }}" {% if status == faq.status %}selected{% endif %}>{{ status }}</option>
+              {% endfor %}
+            </select>
+            <button class="btn btn-sm btn-secondary" type="submit">Apply</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No FAQ entries yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

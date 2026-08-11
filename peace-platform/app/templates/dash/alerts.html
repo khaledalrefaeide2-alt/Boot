@@ -1,0 +1,66 @@
+{% extends "dash/base.html" %}
+{% block dash_content %}
+
+{% if 'alerts.manage' in permissions %}
+<details class="disclosure" open>
+  <summary>New alert</summary>
+  <div>
+    <form class="stack" method="post" action="/dash/alerts/create">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="filters">
+        <div class="field">
+          <label for="a-type">Type</label>
+          <select id="a-type" name="type">
+            {% for alert_type in alert_types %}<option value="{{ alert_type }}">{{ alert_type }}</option>{% endfor %}
+          </select>
+        </div>
+        <div class="field">
+          <label for="a-ends">Ends at (optional)</label>
+          <input id="a-ends" type="datetime-local" name="ends_at">
+        </div>
+      </div>
+      <div class="field">
+        <label for="a-message">Message</label>
+        <textarea id="a-message" name="message" required maxlength="600"></textarea>
+        <span class="hint">
+          Urgent alerts appear on every page in red. Use sparingly — an alert
+          that is always on stops being read.
+        </span>
+      </div>
+      <button class="btn" type="submit">Publish alert</button>
+    </form>
+  </div>
+</details>
+{% endif %}
+
+<div class="table-scroll">
+  <table>
+    <thead><tr><th>Type</th><th>Message</th><th>Active</th><th>Created</th><th></th></tr></thead>
+    <tbody>
+      {% for alert in alerts %}
+      <tr>
+        <td>
+          <span class="badge {{ 'badge-critical' if alert.type == 'urgent'
+                                else 'badge-warn' if alert.type == 'important'
+                                else 'badge-neutral' }}">{{ alert.type }}</span>
+        </td>
+        <td>{{ alert.message }}</td>
+        <td>{{ 'yes' if alert.active else 'no' }}</td>
+        <td class="small muted">{{ relative_time(alert.created_at) }}</td>
+        <td>
+          {% if 'alerts.manage' in permissions and alert.active %}
+          <form method="post" action="/dash/alerts/{{ alert.id }}/deactivate">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <button class="btn btn-sm btn-secondary" type="submit">Deactivate</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No alerts.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

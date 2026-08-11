@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block content %}
+
+<header class="stack">
+  <h1>{{ t('assistant.title') }}</h1>
+  <p class="muted">{{ t('assistant.intro') }}</p>
+</header>
+
+<form class="card stack" method="post" action="/assistant" data-assistant-form>
+  <div class="field mb-0">
+    <label for="question">{{ t('assistant.placeholder') }}</label>
+    <input id="question" type="text" name="question" value="{{ question }}"
+           required maxlength="500" autocomplete="off" enterkeyhint="send">
+  </div>
+  <button class="btn btn-block" type="submit">{{ t('assistant.ask') }}</button>
+</form>
+
+<section aria-labelledby="suggest-heading">
+  <h2 id="suggest-heading" class="small muted">{{ t('assistant.suggested') }}</h2>
+  <ul class="chips">
+    {% for suggestion in suggestions %}
+    <li>
+      <button type="button" class="chip" data-suggestion="{{ t(suggestion.key) }}">
+        {{ t(suggestion.key) }}
+      </button>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+
+{# aria-live so the enhanced path announces an answer that arrives without a
+   page load; the no-JS path renders the same markup server-side. #}
+<div data-assistant-result aria-live="polite" aria-atomic="true">
+{% if response %}
+  {% if response.is_answer %}
+    <div class="assistant-answer stack">
+      <h2>{{ t('assistant.answer') }}</h2>
+      <div class="answer-text">{{ response.answer }}</div>
+
+      {% set level = 'high' if response.confidence >= 0.7 else ('medium' if response.confidence >= 0.45 else 'low') %}
+      <div class="confidence">
+        <span>{{ t('assistant.confidence') }}: {{ t('assistant.confidence.' ~ level) }}</span>
+        <span class="confidence-bar">
+          <span class="confidence-fill {{ 'low' if level == 'low' }}"
+                data-pct="{{ ((response.confidence * 100 / 5)|round|int) * 5 }}"></span>
+        </span>
+      </div>
+
+      {% if response.conflicts %}
+        <p class="note note-warn">{{ t('assistant.conflict') }}</p>
+      {% endif %}
+
+      {% if response.citations %}
+        <h3>{{ t('assistant.sources') }}</h3>
+        <ul class="citation-list">
+          {% for citation in response.citations %}
+          <li>
+            <span class="citation-label">{{ citation.label }}</span>
+            <strong>{{ citation.title }}</strong>
+            {% if citation.organization %} — {{ citation.organization }}{% endif %}
+            {% if citation.published_at %}
+              <span class="muted small">{{ citation.published_at[:10] }}</span>
+            {% endif %}
+            {% if citation.url %}
+              <a href="{{ citation.url }}" rel="noopener noreferrer nofollow">↗</a>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+
+      {% include "partials/assistant_emergency.html" %}
+      <p class="note small">{{ t('assistant.disclaimer') }}</p>
+    </div>
+  {% else %}
+    <div class="assistant-answer {{ 'is-blocked' if response.verdict == 'blocked' else 'is-insufficient' }} stack">
+      <p>{{ t(response.message_key or 'assistant.insufficient') }}</p>
+      {% include "partials/assistant_emergency.html" %}
+      <p class="small muted mb-0">{{ t('assistant.insufficient.next') }}</p>
+      <div class="row">
+        <a class="btn btn-secondary btn-sm" href="/updates">{{ t('updates.title') }}</a>
+        <a class="btn btn-secondary btn-sm" href="/services">{{ t('services.title') }}</a>
+      </div>
+    </div>
+  {% endif %}
+{% endif %}
+</div>
+
+{% endblock %}

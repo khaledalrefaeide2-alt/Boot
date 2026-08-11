@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% block content %}
+
+<header class="stack">
+  <h1>{{ t('faq.title') }}</h1>
+  <p class="muted">{{ t('faq.intro') }}</p>
+</header>
+
+<form class="card filters" method="get" action="/faq" role="search">
+  <div class="field">
+    <label for="faq-q">{{ t('faq.search') }}</label>
+    <input id="faq-q" type="search" name="q" value="{{ query }}">
+  </div>
+  <div class="field">
+    <label for="faq-cat">{{ t('updates.filter.category') }}</label>
+    <select id="faq-cat" name="category">
+      <option value="">{{ t('updates.filter.all') }}</option>
+      {% for category in categories %}
+      <option value="{{ category }}" {% if category == active_category %}selected{% endif %}>
+        {{ t('faq.category.' ~ category) }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="btn" type="submit">{{ t('home.search.button') }}</button>
+</form>
+
+{% if popular and not query %}
+<section aria-labelledby="popular-heading">
+  <h2 id="popular-heading">{{ t('faq.popular') }}</h2>
+  <ul class="chips">
+    {% for faq in popular %}
+    <li><a class="chip" href="#faq-{{ faq.id }}">{{ faq.question[:60] }}</a></li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if faqs %}
+<div class="stack">
+  {% for faq in faqs %}
+  <details class="disclosure" id="faq-{{ faq.id }}">
+    <summary>{{ faq.question }}</summary>
+    <div>
+      {% for block in faq.answer|paragraphs %}<p>{{ block }}</p>{% endfor %}
+      <p class="card-meta mb-0">
+        <span class="badge badge-neutral">{{ t('faq.category.' ~ faq.category) }}</span>
+      </p>
+    </div>
+  </details>
+  {% endfor %}
+</div>
+{% else %}
+<p class="empty-state">{{ t('faq.empty') }}</p>
+{% endif %}
+
+{% endblock %}

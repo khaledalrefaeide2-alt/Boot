@@ -1,0 +1,17 @@
+{# Verified emergency contacts, shown whenever a question looks urgent.
+   These numbers come from the audited services directory, never from
+   generated text. #}
+{% if response.recommend_emergency_contact and response.emergency_services %}
+<div class="note note-critical stack">
+  <p class="mb-0"><strong>{{ t('assistant.emergency_directory') }}</strong></p>
+  <ul class="mb-0">
+    {% for service in response.emergency_services %}
+    <li>
+      {{ service.organization }}:
+      <a class="ltr" href="tel:{{ service.phone|replace(' ', '') }}">{{ service.phone }}</a>
+      {% if service.is_demo %}<span class="badge badge-demo">{{ t('demo.number') }}</span>{% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}

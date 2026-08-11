@@ -1,0 +1,100 @@
+{% extends "dash/base.html" %}
+{% block dash_content %}
+
+<p class="note note-warn">
+  Emergency contact details are the highest-risk data here. Every change is
+  written to the audit log with the previous value.
+</p>
+
+{% if 'services.manage' in permissions %}
+<details class="disclosure">
+  <summary>Add a service</summary>
+  <div>
+    <form class="stack" method="post" action="/dash/services/create">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="filters">
+        <div class="field">
+          <label for="s-org">Organisation</label>
+          <input id="s-org" type="text" name="organization" required maxlength="160">
+        </div>
+        <div class="field">
+          <label for="s-phone">Phone</label>
+          <input id="s-phone" type="tel" name="phone" required dir="ltr">
+        </div>
+        <div class="field">
+          <label for="s-type">Service type</label>
+          <select id="s-type" name="service_type">
+            {% for service_type in service_types %}
+            <option value="{{ service_type }}">{{ t('service_type.' ~ service_type) }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="filters">
+        <div class="field">
+          <label for="s-hours">Hours</label>
+          <input id="s-hours" type="text" name="hours" maxlength="160">
+        </div>
+        <div class="field">
+          <label for="s-web">Website</label>
+          <input id="s-web" type="url" name="website" dir="ltr">
+        </div>
+        <div class="field">
+          <label for="s-loc">Location</label>
+          <input id="s-loc" type="text" name="location" maxlength="255">
+        </div>
+      </div>
+      <button class="btn" type="submit">Add</button>
+    </form>
+  </div>
+</details>
+{% endif %}
+
+<div class="table-scroll">
+  <table>
+    <thead><tr><th>Organisation</th><th>Type</th><th>Phone / hours / status</th></tr></thead>
+    <tbody>
+      {% for service in services %}
+      <tr>
+        <td>
+          {{ service.organization }}
+          {% if service.is_demo %}<br><span class="badge badge-demo">demo</span>{% endif %}
+        </td>
+        <td>{{ t('service_type.' ~ service.service_type) }}</td>
+        <td>
+          {% if 'services.manage' in permissions %}
+          <form class="filters" method="post" action="/dash/services/{{ service.id }}/edit"
+                data-confirm="Change this emergency contact? The change is audited.">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div class="field">
+              <label class="visually-hidden" for="p-{{ service.id }}">Phone</label>
+              <input id="p-{{ service.id }}" type="tel" name="phone" value="{{ service.phone }}" dir="ltr" required>
+            </div>
+            <div class="field">
+              <label class="visually-hidden" for="h-{{ service.id }}">Hours</label>
+              <input id="h-{{ service.id }}" type="text" name="hours" value="{{ service.hours }}">
+            </div>
+            <div class="field">
+              <label class="visually-hidden" for="st-{{ service.id }}">Status</label>
+              <select id="st-{{ service.id }}" name="status">
+                {% for status in statuses %}
+                <option value="{{ status }}" {% if status == service.status %}selected{% endif %}>{{ status }}</option>
+                {% endfor %}
+              </select>
+            </div>
+            <button class="btn btn-sm" type="submit">Save</button>
+          </form>
+          {% else %}
+            <span class="ltr">{{ service.phone }}</span> — {{ service.hours }}
+            <span class="badge badge-neutral">{{ service.status }}</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="3" class="muted">No services registered.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

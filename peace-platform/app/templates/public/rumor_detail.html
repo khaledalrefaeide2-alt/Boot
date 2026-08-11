@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}{{ t('rumors.status.' ~ rumor.status) }} — {{ t('site.short') }}{% endblock %}
+{% block content %}
+
+<p><a href="/rumors">← {{ t('rumors.title') }}</a></p>
+
+{# The shareable verification card. Self-contained on purpose: a screenshot of
+   this block carries the verdict, the correction, the date and the platform
+   name, so it stays meaningful when it is passed on without the link. #}
+<article class="verdict-card verdict-{{ rumor.status }}">
+  {# The verdict is the page's heading: it is what the reader came for, and it
+     is what a screen reader should announce first. #}
+  <h1 class="verdict-head">{{ t('rumors.status.' ~ rumor.status) }}</h1>
+  <div class="verdict-body stack">
+    <section>
+      <h2>{{ t('rumors.claim') }}</h2>
+      <p class="verdict-claim">{{ rumor.claim }}</p>
+    </section>
+
+    {% if rumor.correction %}
+    <section>
+      <h2>{{ t('rumors.correction') }}</h2>
+      {% for block in rumor.correction|paragraphs %}<p>{{ block }}</p>{% endfor %}
+    </section>
+    {% endif %}
+
+    {% if rumor.explanation %}
+    <section>
+      <h2>{{ t('rumors.explanation') }}</h2>
+      {% for block in rumor.explanation|paragraphs %}<p>{{ block }}</p>{% endfor %}
+    </section>
+    {% endif %}
+
+    <div class="card-meta">
+      <span>
+        {{ t('rumors.spread') }}:
+        <strong class="tabular">{{ (rumor.spread_score * 100)|round|int }}%</strong>
+      </span>
+      {% if rumor.evidence_url %}
+        <a href="{{ rumor.evidence_url }}" rel="noopener noreferrer">{{ t('rumors.source') }} ↗</a>
+      {% endif %}
+    </div>
+    <p class="small muted mb-0">{{ t('rumors.spread.note') }}</p>
+  </div>
+  <div class="verdict-footer">
+    <span>{{ t('rumors.checked_at') }}: {{ format_datetime(rumor.checked_at) }}</span>
+    <span>{{ t('site.short') }}</span>
+    {% if rumor.is_demo %}<span class="badge badge-demo">{{ t('demo.banner') }}</span>{% endif %}
+  </div>
+</article>
+
+<p class="note small">{{ t('rumors.governance') }}</p>
+
+{% endblock %}

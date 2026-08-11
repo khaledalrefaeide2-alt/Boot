@@ -1,0 +1,126 @@
+{% extends "base.html" %}
+{% block content %}
+
+{% include "partials/crisis_status.html" %}
+
+<section aria-labelledby="search-heading">
+  <h2 id="search-heading">{{ t('home.search') }}</h2>
+  <form class="search-row" method="get" action="/search" role="search">
+    <label class="visually-hidden" for="site-search">{{ t('home.search') }}</label>
+    <input id="site-search" type="search" name="q" placeholder="{{ t('home.search.placeholder') }}"
+           autocomplete="off" enterkeyhint="search">
+    <button class="btn" type="submit">{{ t('home.search.button') }}</button>
+  </form>
+</section>
+
+<section aria-labelledby="actions-heading">
+  <h2 id="actions-heading">{{ t('home.actions') }}</h2>
+  <div class="grid grid-2 grid-3">
+    {% for path, label, desc in [
+      ('/updates',       'action.updates',  'action.updates.desc'),
+      ('/rumors/submit', 'action.verify',   'action.verify.desc'),
+      ('/services',      'action.services', 'action.services.desc'),
+      ('/faq',           'action.faq',      'action.faq.desc'),
+      ('/assistant',     'action.assistant','action.assistant.desc'),
+      ('/report',        'action.report',   'action.report.desc')
+    ] %}
+    <a class="action-card" href="{{ path }}">
+      <span class="label">{{ t(label) }}</span>
+      <span class="desc">{{ t(desc) }}</span>
+    </a>
+    {% endfor %}
+  </div>
+</section>
+
+{% if emergency_services %}
+<section aria-labelledby="numbers-heading" class="emergency-priority">
+  <h2 id="numbers-heading">{{ t('services.title') }}</h2>
+  <div class="grid grid-2">
+    {% for service in emergency_services %}
+    <div class="card service-card">
+      <div class="row-between">
+        <strong>{{ service.organization }}</strong>
+        {% if service.is_demo %}<span class="badge badge-demo">{{ t('demo.number') }}</span>{% endif %}
+      </div>
+      <a class="btn btn-call" href="tel:{{ service.phone|replace(' ', '') }}">{{ service.phone }}</a>
+    </div>
+    {% endfor %}
+  </div>
+  <p class="mt-4"><a href="/services">{{ t('services.title') }} →</a></p>
+</section>
+{% endif %}
+
+{% if latest_updates %}
+<section aria-labelledby="latest-heading">
+  <div class="row-between">
+    <h2 id="latest-heading">{{ t('home.latest') }}</h2>
+    <a href="/updates">{{ t('updates.title') }} →</a>
+  </div>
+  <ul class="item-list">
+    {% for update in latest_updates %}<li>{% include "partials/update_card.html" %}</li>{% endfor %}
+  </ul>
+</section>
+{% endif %}
+
+{% if trending_rumors %}
+<section aria-labelledby="trending-heading">
+  <div class="row-between">
+    <h2 id="trending-heading">{{ t('home.trending') }}</h2>
+    <a href="/rumors">{{ t('rumors.title') }} →</a>
+  </div>
+  <div class="grid grid-3">
+    {% for rumor in trending_rumors %}
+    <article class="card stack">
+      <span class="badge {{ 'badge-critical' if rumor.status == 'false'
+                            else 'badge-warn' if rumor.status == 'misleading'
+                            else 'badge-good' }}">
+        {{ t('rumors.status.' ~ rumor.status) }}
+      </span>
+      <p class="mb-0"><a href="/rumors/{{ rumor.id }}">{{ rumor.claim[:120] }}{% if rumor.claim|length > 120 %}…{% endif %}</a></p>
+      <p class="small muted mb-0">
+        {{ t('rumors.checked_at') }}: {{ format_datetime(rumor.checked_at) }}
+      </p>
+    </article>
+    {% endfor %}
+  </div>
+  <p class="note small mt-4">{{ t('rumors.governance') }}</p>
+</section>
+{% endif %}
+
+{% if popular_faqs and not (low_data and emergency_mode.hide_nonessential) %}
+<section aria-labelledby="faq-heading">
+  <div class="row-between">
+    <h2 id="faq-heading">{{ t('faq.popular') }}</h2>
+    <a href="/faq">{{ t('faq.title') }} →</a>
+  </div>
+  <div class="stack">
+    {% for faq in popular_faqs %}
+    <details class="disclosure">
+      <summary>{{ faq.question }}</summary>
+      <div>{% for block in faq.answer|paragraphs %}<p>{{ block }}</p>{% endfor %}</div>
+    </details>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% if sources and not emergency_mode.hide_nonessential %}
+<section aria-labelledby="sources-heading">
+  <div class="row-between">
+    <h2 id="sources-heading">{{ t('home.sources') }}</h2>
+    <a href="/sources">{{ t('sources.title') }} →</a>
+  </div>
+  <div class="grid grid-3">
+    {% for source in sources %}
+    <div class="card">
+      <strong>{{ source.name }}</strong>
+      {% if source.url %}
+        <p class="small mb-0"><a href="{{ source.url }}" rel="noopener noreferrer">{{ t('sources.visit') }}</a></p>
+      {% endif %}
+    </div>
+    {% endfor %}
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

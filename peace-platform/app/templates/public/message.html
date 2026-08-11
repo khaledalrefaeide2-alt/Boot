@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="card stack">
+  <h1>{{ t(message_key) }}</h1>
+  {% if incident %}
+    <p class="small muted">
+      {{ t('ui.error') }}
+      <code class="ltr">{{ incident }}</code>
+    </p>
+  {% endif %}
+  <div class="row">
+    <a class="btn" href="/">{{ t('nav.home') }}</a>
+    <a class="btn btn-secondary" href="/services">{{ t('services.title') }}</a>
+  </div>
+</section>
+
+{% endblock %}

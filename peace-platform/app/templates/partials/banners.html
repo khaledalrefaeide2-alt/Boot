@@ -1,0 +1,26 @@
+{# Site-wide banners, in order of urgency. Emergency mode outranks alerts,
+   alerts outrank the demonstration-data notice. #}
+
+{% if emergency_mode.enabled %}
+<div class="banner banner-emergency" role="status">
+  <div class="wrap">
+    <strong>{{ t('emergency.active') }}</strong>
+    {% if emergency_mode.headline %} — {{ emergency_mode.headline }}{% endif %}
+  </div>
+</div>
+{% endif %}
+
+{% for alert in alerts %}
+<div class="banner banner-alert-{{ alert.type }}"
+     role="{{ 'alert' if alert.type == 'urgent' else 'status' }}">
+  <div class="wrap">{{ alert.message }}</div>
+</div>
+{% endfor %}
+
+{% if demo_mode %}
+<div class="banner banner-demo">
+  <div class="wrap">
+    <strong>{{ t('demo.banner') }}</strong> — {{ t('demo.explain') }}
+  </div>
+</div>
+{% endif %}

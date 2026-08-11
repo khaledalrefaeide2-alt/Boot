@@ -1,0 +1,127 @@
+{% extends "dash/base.html" %}
+{% block dash_content %}
+
+<p><a href="/dash/rumors">← {{ t('dash.rumors') }}</a></p>
+
+<section class="panel">
+  <div class="panel-head">Submitted claim</div>
+  <div class="panel-body stack">
+    <p class="verdict-claim">{{ rumor.claim }}</p>
+    <div class="card-meta">
+      <span>Platform: {{ rumor.source_platform or '—' }}</span>
+      <span>Reports: <strong class="tabular">{{ rumor.report_count }}</strong></span>
+      <span>Spread: <strong class="tabular">{{ rumor.spread_score }}</strong></span>
+      <span>Risk: <strong class="tabular">{{ rumor.risk_score }}</strong></span>
+      <span>Received: {{ format_datetime(rumor.created_at) }}</span>
+    </div>
+  </div>
+</section>
+
+{% if 'rumors.review' in permissions %}
+<section class="panel">
+  <div class="panel-head">AI assessment — advisory only</div>
+  <div class="panel-body stack">
+    {% if rumor.ai_rationale %}
+      <div class="card-meta">
+        <span>Suggested class:
+          <strong>{{ rumor.ai_classification or 'none — insufficient evidence' }}</strong>
+        </span>
+        <span>Confidence: <strong class="tabular">{{ rumor.ai_confidence or 0 }}</strong></span>
+      </div>
+      <div>
+        <h3 class="small">Rationale</h3>
+        {% for block in rumor.ai_rationale|paragraphs %}<p class="small">{{ block }}</p>{% endfor %}
+      </div>
+      {% if rumor.ai_correction %}
+      <div>
+        <h3 class="small">Draft correction (not published)</h3>
+        <p class="small">{{ rumor.ai_correction }}</p>
+      </div>
+      {% endif %}
+      {% if rumor.ai_citations %}
+      <div>
+        <h3 class="small">Cited sources</h3>
+        <ul class="small mb-0">
+          {% for citation in rumor.ai_citations %}
+          <li>[{{ citation.label }}] {{ citation.title }} — {{ citation.organization }}</li>
+          {% endfor %}
+        </ul>
+      </div>
+      {% endif %}
+    {% else %}
+      <p class="muted">No assessment has been run for this claim.</p>
+    {% endif %}
+
+    <form method="post" action="/dash/rumors/{{ rumor.id }}/analyze">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <button class="btn btn-secondary" type="submit">Run assessment</button>
+    </form>
+  </div>
+</section>
+
+<section class="panel">
+  <div class="panel-head">Human review — required before publication</div>
+  <div class="panel-body">
+    <form class="stack" method="post" action="/dash/rumors/{{ rumor.id }}/review">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+      <div class="field">
+        <label for="r-status">Verdict</label>
+        <select id="r-status" name="status" required>
+          {% for status in statuses %}
+          <option value="{{ status }}" {% if status == rumor.status %}selected{% endif %}>
+            {{ status }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="r-correction">Correction shown to citizens</label>
+        <span class="hint">Required for any concluded verdict. State what is actually true.</span>
+        <textarea id="r-correction" name="correction">{{ rumor.correction or '' }}</textarea>
+      </div>
+
+      <div class="field">
+        <label for="r-explanation">Explanation (optional)</label>
+        <textarea id="r-explanation" name="explanation">{{ rumor.explanation or '' }}</textarea>
+      </div>
+
+      <div class="field">
+        <label for="r-evidence">Official evidence URL</label>
+        <input id="r-evidence" type="url" name="evidence_url" dir="ltr"
+               value="{{ rumor.evidence_url or '' }}">
+      </div>
+
+      <button class="btn" type="submit">Record review</button>
+    </form>
+  </div>
+</section>
+{% endif %}
+
+{% if 'rumors.publish' in permissions %}
+<section class="panel">
+  <div class="panel-head">Publication</div>
+  <div class="panel-body row">
+    {% if rumor.published %}
+      <form method="post" action="/dash/rumors/{{ rumor.id }}/unpublish"
+            data-confirm="Withdraw this verification from the public site?">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="hidden" name="reason" value="withdrawn by reviewer">
+        <button class="btn btn-danger" type="submit">Withdraw from site</button>
+      </form>
+    {% else %}
+      <form method="post" action="/dash/rumors/{{ rumor.id }}/publish"
+            data-confirm="Publish this verification to the public site?">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button class="btn" type="submit">Publish verification</button>
+      </form>
+      <p class="small muted mb-0">
+        Requires a concluded verdict and correction text recorded by a person.
+      </p>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

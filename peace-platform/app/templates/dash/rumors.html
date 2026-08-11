@@ -1,0 +1,54 @@
+{% extends "dash/base.html" %}
+{% block dash_content %}
+
+<p class="note">
+  AI classifications and draft corrections are <strong>suggestions</strong>. A
+  rumor becomes public only after a person records a verdict with correction
+  text and then explicitly publishes it.
+</p>
+
+<nav>
+  <ul class="chips">
+    <li><a class="chip {{ 'is-active' if not active_status }}" href="/dash/rumors">All</a></li>
+    {% for status in statuses %}
+    <li><a class="chip {{ 'is-active' if active_status == status }}" href="/dash/rumors?status={{ status }}">{{ status }}</a></li>
+    {% endfor %}
+  </ul>
+</nav>
+
+<div class="table-scroll">
+  <table>
+    <thead>
+      <tr><th>Claim</th><th>Status</th><th>Risk</th><th>Spread</th><th>Reports</th><th>Public</th><th></th></tr>
+    </thead>
+    <tbody>
+      {% for rumor in rumors %}
+      <tr>
+        <td>{{ rumor.claim[:140] }}{% if rumor.claim|length > 140 %}…{% endif %}</td>
+        <td><span class="badge badge-neutral">{{ rumor.status }}</span></td>
+        <td class="tabular">
+          <span class="badge {{ 'badge-critical' if rumor.risk_score >= 0.6
+                                else 'badge-warn' if rumor.risk_score >= 0.3
+                                else 'badge-neutral' }}">
+            {{ rumor.risk_score }}
+          </span>
+        </td>
+        <td class="tabular">{{ rumor.spread_score }}</td>
+        <td class="tabular">{{ rumor.report_count }}</td>
+        <td>
+          {% if rumor.published %}
+            <span class="badge badge-good">public</span>
+          {% else %}
+            <span class="badge badge-neutral">not public</span>
+          {% endif %}
+        </td>
+        <td><a class="btn btn-sm btn-secondary" href="/dash/rumors/{{ rumor.id }}">Review</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="7" class="muted">No rumors submitted yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

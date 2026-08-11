@@ -1,0 +1,62 @@
+{% extends "dash/base.html" %}
+{% block dash_content %}
+
+<p class="note">
+  Shows exactly which passages a question retrieves, with their scores. Use it
+  to check that a newly indexed source is actually reachable before relying on
+  the assistant to find it.
+</p>
+
+<form class="card search-row" method="get" action="/dash/ai/playground">
+  <label class="visually-hidden" for="pg-q">Test question</label>
+  <input id="pg-q" type="search" name="q" value="{{ query }}" placeholder="Test question">
+  <button class="btn" type="submit">Retrieve</button>
+</form>
+
+{% if query %}
+<section class="panel">
+  <div class="panel-head">
+    Confidence: <strong class="tabular">{{ confidence }}</strong>
+    (threshold {{ threshold }}) —
+    {% if confidence >= threshold %}
+      <span class="badge badge-good">would answer</span>
+    {% else %}
+      <span class="badge badge-warn">would return insufficient evidence</span>
+    {% endif %}
+  </div>
+  <div class="panel-body">
+    {% if conflicts %}
+    <p class="note note-warn">
+      Conflicting sources detected:
+      {% for conflict in conflicts %}
+        [{{ conflict.labels|join('] vs [') }}] {{ conflict.reason }}{{ ", " if not loop.last }}
+      {% endfor %}
+    </p>
+    {% endif %}
+
+    {% if chunks %}
+    <ol class="mb-0">
+      {% for chunk in chunks %}
+      <li class="mb-5">
+        <div class="card-meta">
+          <span class="citation-label">{{ chunk.label }}</span>
+          <strong>{{ chunk.title }}</strong>
+          <span>{{ chunk.organization }}</span>
+          <span>trust {{ chunk.trust_level }}/5</span>
+          <span>score <span class="tabular">{{ chunk.score }}</span></span>
+          {% if chunk.injection_flagged %}
+            <span class="badge badge-critical">injection-flagged — excluded from answers</span>
+          {% endif %}
+        </div>
+        <p class="small muted">{{ chunk.text[:400] }}{% if chunk.text|length > 400 %}…{% endif %}</p>
+      </li>
+      {% endfor %}
+    </ol>
+    {% else %}
+      <p class="muted mb-0">No passages retrieved. The assistant would return insufficient evidence.</p>
+    {% endif %}
+  </div>
+</section>
+{% endif %}
+
+{% endblock %}

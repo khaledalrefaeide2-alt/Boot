@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block content %}
+
+<header class="stack">
+  <h1>{{ t('rumors.submit.title') }}</h1>
+  <p class="note small">{{ t('rumors.governance') }}</p>
+</header>
+
+<form class="card stack" method="post" action="/rumors/submit">
+  {% if form_error %}<p class="form-error" role="alert">{{ form_error }}</p>{% endif %}
+
+  <div class="field">
+    <label for="claim">{{ t('rumors.submit.claim') }} <span class="req" aria-hidden="true">*</span></label>
+    <span class="hint" id="claim-hint">{{ t('rumors.submit.claim.help') }}</span>
+    <textarea id="claim" name="claim" required minlength="10" maxlength="4000"
+              aria-describedby="claim-hint"></textarea>
+  </div>
+
+  <div class="field">
+    <label for="source_platform">{{ t('rumors.submit.platform') }}</label>
+    <span class="hint" id="platform-hint">{{ t('rumors.submit.platform.help') }} ({{ t('ui.optional') }})</span>
+    <input id="source_platform" type="text" name="source_platform" maxlength="120"
+           aria-describedby="platform-hint">
+  </div>
+
+  <div class="field">
+    <label for="seen_where">{{ t('report.location') }}</label>
+    <span class="hint">{{ t('ui.optional') }}</span>
+    <input id="seen_where" type="text" name="seen_where" maxlength="255">
+  </div>
+
+  <div class="field check">
+    <input id="related" type="checkbox" name="related_to_crisis" checked>
+    <label for="related">{{ t('rumors.submit.related') }}</label>
+  </div>
+
+  <button class="btn btn-block" type="submit">{{ t('rumors.submit.button') }}</button>
+</form>
+
+{% endblock %}

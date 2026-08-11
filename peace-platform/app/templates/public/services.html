@@ -1,0 +1,63 @@
+{% extends "base.html" %}
+{% block content %}
+
+<header class="stack">
+  <h1>{{ t('services.title') }}</h1>
+  <p class="muted">{{ t('services.intro') }}</p>
+</header>
+
+<nav aria-label="{{ t('services.title') }}">
+  <ul class="chips">
+    <li><a class="chip {{ 'is-active' if not active_type }}" href="/services">{{ t('updates.filter.all') }}</a></li>
+    {% for service_type in service_types %}
+    <li>
+      <a class="chip {{ 'is-active' if active_type == service_type }}" href="/services?type={{ service_type }}">
+        {{ t('service_type.' ~ service_type) }}
+      </a>
+    </li>
+    {% endfor %}
+  </ul>
+</nav>
+
+{% if grouped_services %}
+  {% for service_type, services in grouped_services.items() %}
+  <section aria-labelledby="type-{{ service_type }}">
+    <h2 id="type-{{ service_type }}">{{ t('service_type.' ~ service_type) }}</h2>
+    <div class="grid grid-2">
+      {% for service in services %}
+      <article class="card service-card">
+        <div class="row-between">
+          <strong>{{ service.organization }}</strong>
+          <span class="badge {{ 'badge-good' if service.status == 'active'
+                                else 'badge-warn' if service.status == 'degraded'
+                                else 'badge-neutral' }}">
+            {{ t('services.status.' ~ service.status) }}
+          </span>
+        </div>
+
+        <a class="btn btn-call btn-block" href="tel:{{ service.phone|replace(' ', '') }}">
+          {{ t('services.call') }}: {{ service.phone }}
+        </a>
+
+        {% if service.is_demo %}
+          <p class="mb-0"><span class="badge badge-demo">{{ t('demo.number') }}</span></p>
+        {% endif %}
+
+        <p class="card-meta mb-0">
+          {% if service.hours %}<span>{{ t('services.hours') }}: {{ service.hours }}</span>{% endif %}
+          {% if service.location %}<span>{{ service.location }}</span>{% endif %}
+        </p>
+
+        {% if service.website %}
+          <p class="small mb-0"><a href="{{ service.website }}" rel="noopener noreferrer">{{ t('services.website') }} ↗</a></p>
+        {% endif %}
+      </article>
+      {% endfor %}
+    </div>
+  </section>
+  {% endfor %}
+{% else %}
+  <p class="empty-state">{{ t('services.empty') }}</p>
+{% endif %}
+
+{% endblock %}

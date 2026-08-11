@@ -1,0 +1,63 @@
+{% extends "dash/base.html" %}
+{% block dash_content %}
+
+<p class="note">
+  Trust level drives retrieval ranking: when official sources disagree, the
+  higher-trust and fresher one wins, and comparable sources are surfaced as a
+  conflict rather than silently resolved.
+</p>
+
+{% if 'sources.manage' in permissions %}
+<details class="disclosure">
+  <summary>Register a source</summary>
+  <div>
+    <form class="stack" method="post" action="/dash/sources/create">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+      <div class="filters">
+        <div class="field">
+          <label for="src-name">Name</label>
+          <input id="src-name" type="text" name="name" required maxlength="160">
+        </div>
+        <div class="field">
+          <label for="src-slug">Slug</label>
+          <input id="src-slug" type="text" name="slug" required dir="ltr" maxlength="160">
+        </div>
+        <div class="field">
+          <label for="src-trust">Trust level (1–5)</label>
+          <input id="src-trust" type="number" name="trust_level" min="1" max="5" value="3">
+        </div>
+      </div>
+      <div class="field">
+        <label for="src-url">Official URL</label>
+        <input id="src-url" type="url" name="url" dir="ltr">
+      </div>
+      <div class="field">
+        <label for="src-why">Why this source is trusted</label>
+        <textarea id="src-why" name="why_trusted"></textarea>
+      </div>
+      <button class="btn" type="submit">Register</button>
+    </form>
+  </div>
+</details>
+{% endif %}
+
+<div class="table-scroll">
+  <table>
+    <thead><tr><th>Name</th><th>Trust</th><th>Type</th><th>URL</th><th>Active</th></tr></thead>
+    <tbody>
+      {% for source in sources %}
+      <tr>
+        <td>{{ source.name }}{% if source.is_demo %} <span class="badge badge-demo">demo</span>{% endif %}</td>
+        <td class="tabular">{{ source.trust_level }}/5</td>
+        <td>{{ source.type }}</td>
+        <td class="ltr small">{{ source.url or '—' }}</td>
+        <td>{{ 'yes' if source.is_active else 'no' }}</td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No sources registered.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

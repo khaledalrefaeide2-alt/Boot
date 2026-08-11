@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="{{ locale }}" dir="{{ dir }}">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>{% block title %}{{ t(title_key) if title_key else t('site.name') }} — {{ t('site.short') }}{% endblock %}</title>
+  <meta name="description" content="{{ t('site.tagline') }}">
+  {# Referrer and robots hints; the dashboard is never indexed. #}
+  {% if current_path.startswith('/dash') %}<meta name="robots" content="noindex, nofollow">{% endif %}
+  <link rel="stylesheet" href="/static/css/app.css">
+  <link rel="icon" href="/static/favicon.svg" type="image/svg+xml">
+</head>
+<body
+  class="{% if low_data %}low-data {% endif %}{% if emergency_mode.enabled %}emergency-mode{% endif %}"
+  data-i18n='{{ js_strings|tojson }}'>
+
+  <a class="skip-link" href="#main">{{ t('nav.skip') }}</a>
+
+  {% include "partials/banners.html" %}
+
+  <header class="site-header">
+    <div class="wrap">
+      <div class="header-row">
+        <a class="brand" href="/">
+          <span class="brand-mark" aria-hidden="true">◈</span>
+          <span>{{ t('site.short') }}</span>
+        </a>
+        <div class="header-tools">
+          <a href="/prefs/lang/{{ other_locale }}?next={{ current_path }}">{{ t('lang.switch') }}</a>
+          {% if signed_in_user %}
+            <a href="/dash">{{ t('nav.dashboard') }}</a>
+          {% endif %}
+        </div>
+      </div>
+      {% block nav %}
+      <nav class="site-nav" aria-label="{{ t('nav.menu') }}">
+        <ul>
+          {% for path, key in [
+            ('/', 'nav.home'),
+            ('/updates', 'nav.updates'),
+            ('/rumors', 'nav.rumors'),
+            ('/assistant', 'nav.assistant'),
+            ('/services', 'nav.services'),
+            ('/guidance', 'nav.guidance'),
+            ('/faq', 'nav.faq'),
+            ('/report', 'nav.report'),
+            ('/sources', 'nav.sources'),
+            ('/about', 'nav.about')
+          ] %}
+          <li>
+            <a href="{{ path }}"
+               {% if current_path == path or (path != '/' and current_path.startswith(path)) %}aria-current="page"{% endif %}>
+              {{ t(key) }}
+            </a>
+          </li>
+          {% endfor %}
+        </ul>
+      </nav>
+      {% endblock %}
+    </div>
+  </header>
+
+  <p class="banner banner-alert-important" data-offline-notice hidden>
+    <span class="wrap">{{ t('ui.error.offline') }}</span>
+  </p>
+
+  <main id="main" tabindex="-1">
+    <div class="wrap stack-lg">
+      {% block content %}{% endblock %}
+    </div>
+  </main>
+
+  <footer class="site-footer">
+    <div class="wrap">
+      <ul class="footer-links">
+        <li><a href="/about">{{ t('nav.about') }}</a></li>
+        <li><a href="/about/governance">{{ t('footer.governance') }}</a></li>
+        <li><a href="/about/privacy">{{ t('footer.privacy') }}</a></li>
+        <li><a href="/about/terms">{{ t('footer.terms') }}</a></li>
+        <li><a href="/sources">{{ t('nav.sources') }}</a></li>
+      </ul>
+      <div class="row-between">
+        <p class="mb-0">{{ t('footer.rights') }}</p>
+        <form class="footer-form" method="post" action="/prefs/low-data">
+          <input type="hidden" name="enable" value="{{ '0' if low_data else '1' }}">
+          <button type="submit">
+            {{ t('footer.lowdata.off') if low_data else t('footer.lowdata.on') }}
+          </button>
+        </form>
+      </div>
+    </div>
+  </footer>
+
+  <script src="/static/js/app.js" defer></script>
+</body>
+</html>

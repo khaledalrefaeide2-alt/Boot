@@ -1,0 +1,50 @@
+{% extends "dash/base.html" %}
+{% block dash_content %}
+
+<p class="note">
+  Append-only. The application has no route that edits or deletes an audit
+  entry — see docs/SECURITY.md for enforcing that at the database level too.
+</p>
+
+<form class="card filters" method="get" action="/dash/audit">
+  <div class="field">
+    <label for="a-action">Action</label>
+    <input id="a-action" type="text" name="action" value="{{ active_action or '' }}"
+           dir="ltr" placeholder="rumor.publish">
+  </div>
+  <div class="field">
+    <label for="a-object">Object type</label>
+    <input id="a-object" type="text" name="object_type" value="{{ active_object_type or '' }}"
+           dir="ltr" placeholder="rumor">
+  </div>
+  <button class="btn" type="submit">Filter</button>
+</form>
+
+<div class="table-scroll">
+  <table>
+    <thead><tr><th>When</th><th>Who</th><th>Action</th><th>Object</th><th>Before → after</th></tr></thead>
+    <tbody>
+      {% for entry in entries %}
+      <tr>
+        <td class="small muted">{{ format_datetime(entry.created_at) }}</td>
+        <td class="small">
+          {{ entry.user_email or 'anonymous' }}
+          <br><span class="badge badge-neutral">{{ entry.role }}</span>
+        </td>
+        <td><code class="ltr small">{{ entry.action }}</code></td>
+        <td class="small">
+          {% if entry.object_type %}{{ entry.object_type }}#{{ entry.object_id }}{% else %}—{% endif %}
+        </td>
+        <td class="small ltr">
+          {% if entry.old_value %}<div class="muted">{{ entry.old_value }}</div>{% endif %}
+          {% if entry.new_value %}<div>{{ entry.new_value }}</div>{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="5" class="muted">No entries.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

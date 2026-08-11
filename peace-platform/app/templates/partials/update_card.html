@@ -1,0 +1,21 @@
+{# One official update in a list. `update` must be in scope. #}
+<article class="card update-item importance-{{ update.importance }}">
+  <h3><a href="/updates/{{ update.id }}">{{ update.title }}</a></h3>
+  <p class="muted">{{ update.content[:200] }}{% if update.content|length > 200 %}…{% endif %}</p>
+  <div class="card-meta">
+    {% if update.verified %}
+      <span class="badge badge-good">{{ t('updates.verified') }}</span>
+    {% endif %}
+    <span class="badge badge-neutral">{{ t('category.' ~ update.category) }}</span>
+    {% if update.importance != 'normal' %}
+      <span class="badge {{ 'badge-critical' if update.importance == 'critical' else 'badge-warn' }}">
+        {{ t('importance.' ~ update.importance) }}
+      </span>
+    {% endif %}
+    {% if update.organization %}<span>{{ update.organization }}</span>{% endif %}
+    <time datetime="{{ update.published_at.isoformat() if update.published_at else '' }}">
+      {{ relative_time(update.published_at) }}
+    </time>
+    {% if update.is_demo %}<span class="badge badge-demo">{{ t('demo.banner') }}</span>{% endif %}
+  </div>
+</article>

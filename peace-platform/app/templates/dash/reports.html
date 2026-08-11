@@ -1,0 +1,55 @@
+{% extends "dash/base.html" %}
+{% block dash_content %}
+
+<p class="note note-warn">
+  Reports arrive here only. The platform tells citizens plainly that nothing is
+  forwarded to an authority automatically — do not change that wording unless a
+  real integration exists.
+</p>
+
+<nav>
+  <ul class="chips">
+    <li><a class="chip {{ 'is-active' if not active_status }}" href="/dash/reports">All</a></li>
+    {% for status in statuses %}
+    <li><a class="chip {{ 'is-active' if active_status == status }}" href="/dash/reports?status={{ status }}">{{ status }}</a></li>
+    {% endfor %}
+  </ul>
+</nav>
+
+<div class="table-scroll">
+  <table>
+    <thead><tr><th>Type</th><th>Description</th><th>Location</th><th>Status</th><th>Received</th><th></th></tr></thead>
+    <tbody>
+      {% for report in reports %}
+      <tr>
+        <td>
+          {{ t('report.type.' ~ report.report_type) }}
+          {% if report.is_emergency %}<br><span class="badge badge-critical">emergency</span>{% endif %}
+        </td>
+        <td>{{ report.description[:180] }}{% if report.description|length > 180 %}…{% endif %}</td>
+        <td>{{ report.location_text or '—' }}</td>
+        <td><span class="badge badge-neutral">{{ report.status }}</span></td>
+        <td class="small muted">{{ relative_time(report.created_at) }}</td>
+        <td>
+          {% if 'reports.manage' in permissions %}
+          <form method="post" action="/dash/reports/{{ report.id }}/triage">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <select name="status" aria-label="Status for report {{ report.id }}">
+              {% for status in statuses %}
+              <option value="{{ status }}" {% if status == report.status %}selected{% endif %}>{{ status }}</option>
+              {% endfor %}
+            </select>
+            <input type="text" name="triage_note" placeholder="Note" maxlength="2000">
+            <button class="btn btn-sm" type="submit">Apply</button>
+          </form>
+          {% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="muted">No reports.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% endblock %}

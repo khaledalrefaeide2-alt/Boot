@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="card stack">
+  <h1>{{ t('rumors.submit.received') }}</h1>
+  <p>{{ t('rumors.submit.received.body') }}</p>
+  {% if not is_new %}
+    <p class="note">{{ t('rumors.submit.duplicate') }}</p>
+  {% endif %}
+  <div class="row">
+    <a class="btn" href="/rumors">{{ t('rumors.title') }}</a>
+    <a class="btn btn-secondary" href="/">{{ t('nav.home') }}</a>
+  </div>
+</section>
+
+{% endblock %}

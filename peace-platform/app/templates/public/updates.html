@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block content %}
+
+<header class="stack">
+  <h1>{{ t('updates.title') }}</h1>
+  <p class="muted">{{ t('updates.intro') }}</p>
+</header>
+
+<form class="card filters" method="get" action="/updates" role="search">
+  <div class="field">
+    <label for="f-q">{{ t('updates.search') }}</label>
+    <input id="f-q" type="search" name="q" value="{{ query }}">
+  </div>
+  <div class="field">
+    <label for="f-category">{{ t('updates.filter.category') }}</label>
+    <select id="f-category" name="category">
+      <option value="">{{ t('updates.filter.all') }}</option>
+      {% for category in categories %}
+      <option value="{{ category }}" {% if category == active_category %}selected{% endif %}>
+        {{ t('category.' ~ category) }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="field">
+    <label for="f-importance">{{ t('updates.filter.importance') }}</label>
+    <select id="f-importance" name="importance">
+      <option value="">{{ t('updates.filter.all') }}</option>
+      {% for importance in importances %}
+      <option value="{{ importance }}" {% if importance == active_importance %}selected{% endif %}>
+        {{ t('importance.' ~ importance) }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <button class="btn" type="submit">{{ t('home.search.button') }}</button>
+</form>
+
+{% if updates %}
+  <ul class="item-list">
+    {% for update in updates %}<li>{% include "partials/update_card.html" %}</li>{% endfor %}
+  </ul>
+
+  {% if page > 1 or has_next %}
+  <nav class="row" aria-label="pagination">
+    {% if page > 1 %}
+      <a class="btn btn-secondary" href="?page={{ page - 1 }}{% if active_category %}&category={{ active_category }}{% endif %}{% if query %}&q={{ query }}{% endif %}">← {{ t('ui.back') }}</a>
+    {% endif %}
+    <span class="muted small tabular">{{ page }} / {{ ((total - 1) // per_page) + 1 }}</span>
+    {% if has_next %}
+      <a class="btn btn-secondary" href="?page={{ page + 1 }}{% if active_category %}&category={{ active_category }}{% endif %}{% if query %}&q={{ query }}{% endif %}">{{ t('ui.more') }} →</a>
+    {% endif %}
+  </nav>
+  {% endif %}
+{% else %}
+  <p class="empty-state">{{ t('updates.empty') }}</p>
+{% endif %}
+
+{% endblock %}
