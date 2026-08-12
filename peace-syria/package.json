@@ -1,0 +1,37 @@
+{
+  "name": "salam-fi-suriya",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "سلام في سوريا — منصة رقمية لبناء السلام باستخدام الذكاء الاصطناعي",
+  "scripts": {
+    "dev": "cross-env NODE_ENV=development tsx watch --clear-screen=false server.ts",
+    "build": "vite build",
+    "start": "cross-env NODE_ENV=production tsx server.ts",
+    "preview": "npm run build && npm run start",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@google/genai": "^2.16.0",
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1",
+    "lucide-react": "^1.31.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^7.18.2"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^22.10.5",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^6.0.5",
+    "autoprefixer": "^10.4.21",
+    "cross-env": "^10.1.0",
+    "postcss": "^8.5.6",
+    "tailwindcss": "^3.4.19",
+    "tsx": "^4.23.12",
+    "typescript": "^5.9.3",
+    "vite": "^8.2.1"
+  }
+}

@@ -1,0 +1,82 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    color-scheme: light;
+  }
+
+  html {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased;
+    font-feature-settings: 'kern', 'liga';
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Arabic numerals inside latin-ish contexts stay readable in RTL */
+  .nums {
+    font-variant-numeric: tabular-nums;
+    direction: ltr;
+    unicode-bidi: isolate;
+  }
+
+  *:focus-visible {
+    @apply outline-none ring-2 ring-teal-500 ring-offset-2 ring-offset-white;
+  }
+
+  ::selection {
+    @apply bg-teal-200 text-teal-950;
+  }
+}
+
+@layer components {
+  .card {
+    @apply rounded-3xl border border-slate-200/80 bg-white shadow-soft;
+  }
+
+  .btn {
+    @apply inline-flex select-none items-center justify-center gap-2 rounded-2xl px-4 py-2.5 text-sm font-semibold transition
+           disabled:cursor-not-allowed disabled:opacity-60;
+  }
+
+  .btn-primary {
+    @apply btn bg-teal-600 text-white shadow-sm hover:bg-teal-700 active:scale-[0.98];
+  }
+
+  .btn-secondary {
+    @apply btn border border-slate-200 bg-white text-slate-700 hover:border-slate-300 hover:bg-slate-50 active:scale-[0.98];
+  }
+
+  .btn-ghost {
+    @apply btn text-slate-600 hover:bg-slate-100 active:scale-[0.98];
+  }
+
+  .btn-danger {
+    @apply btn bg-red-600 text-white hover:bg-red-700 active:scale-[0.98];
+  }
+
+  .input {
+    @apply w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-900 placeholder:text-slate-400
+           transition focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10;
+  }
+
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold;
+  }
+
+  .skeleton {
+    @apply animate-pulse rounded-2xl bg-slate-200/70;
+  }
+}
+
+/* Scrollbars that don't fight the soft UI */
+@media (min-width: 1024px) {
+  * {
+    scrollbar-width: thin;
+    scrollbar-color: rgb(203 213 225) transparent;
+  }
+}
