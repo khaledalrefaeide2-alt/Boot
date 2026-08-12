@@ -1,1063 +1,410 @@
 <!DOCTYPE html>
-<html lang="ar" dir="rtl">
+<html lang="ar" dir="rtl" data-theme="ink">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>FB Extractor — مستخرج منشورات فيسبوك</title>
+<title>سلام — منصة رصد منشورات التحقق</title>
+<meta name="description" content="منصة سلام لرصد منشورات صفحات التحقق على فيسبوك آلياً عبر Apify، وعرضها بشفافية وموثوقية.">
+<meta name="color-scheme" content="dark light">
+<link rel="icon" href="assets/salam-mark.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;900&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --bg: #edeee1;
-    --surface: #faf8ef;
-    --surface-2: #f0eddd;
-    --text: #22372e;
-    --text-2: #6d7c6e;
-    --border: #dcdcc6;
-
-    --green-950: #122c23;
-    --green-900: #16382c;
-    --green-700: #23553f;
-    --green-500: #47775a;
-    --sage: #8fae70;
-    --sage-soft: #dfe8cf;
-    --brown-700: #55402f;
-    --brown-500: #7d5a41;
-    --tan: #d9b58a;
-    --cream: #f0dcc0;
-    --gold: #e8c9a0;
-
-    --primary: var(--green-700);
-    --primary-soft: #e3ecdd;
-    --danger: #b3422f;
-
-    --shadow: 0 2px 6px rgba(34, 55, 46, .07), 0 14px 34px rgba(34, 55, 46, .10);
-    --shadow-lg: 0 24px 60px rgba(18, 44, 35, .22);
-    --radius: 24px;
-  }
-  [data-theme="dark"] {
-    --bg: #0f1a14;
-    --surface: #17251d;
-    --surface-2: #1e2f25;
-    --text: #e9efe2;
-    --text-2: #96a894;
-    --border: #2a3b2f;
-    --primary-soft: #21382b;
-    --sage-soft: #23392a;
-    --cream: #d9bd97;
-    --shadow: 0 2px 6px rgba(0, 0, 0, .35), 0 14px 34px rgba(0, 0, 0, .35);
-    --shadow-lg: 0 24px 60px rgba(0, 0, 0, .55);
-  }
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  html { scroll-behavior: smooth; }
-  body {
-    font-family: 'Cairo', 'Segoe UI', Tahoma, sans-serif;
-    background:
-      radial-gradient(1100px 500px at 90% -100px, rgba(143, 174, 112, .14), transparent 60%),
-      var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    transition: background .3s, color .3s;
-  }
-
-  /* ================= Hero ================= */
-  .hero-wrap {
-    position: relative;
-    overflow: hidden;
-    color: #f3efe2;
-    background:
-      radial-gradient(900px 460px at 12% -60px, rgba(232, 201, 160, .16), transparent 55%),
-      radial-gradient(1200px 700px at 105% 115%, rgba(20, 60, 46, .9), transparent 60%),
-      linear-gradient(148deg, #35735a 0%, #24564240 45%, transparent 70%),
-      linear-gradient(160deg, #2c6a51 0%, #1d4b3a 48%, #143427 100%);
-    border-bottom-left-radius: 46px;
-    border-bottom-right-radius: 46px;
-    box-shadow: var(--shadow-lg);
-  }
-  /* soft organic ridges, like paper-cut waves */
-  .hero-wrap::before {
-    content: '';
-    position: absolute; inset: 0;
-    background:
-      radial-gradient(60% 90% at 110% 20%, rgba(255,255,255,.05), transparent 60%),
-      radial-gradient(50% 70% at -10% 90%, rgba(90, 62, 44, .55), transparent 62%);
-    pointer-events: none;
-  }
-  .leaves {
-    position: absolute; inset-inline-start: -30px; top: -40px;
-    width: 330px; height: 330px; pointer-events: none; opacity: .95;
-  }
-  .leaves.small { inset-inline-start: auto; inset-inline-end: -60px; top: auto; bottom: -70px; width: 240px; height: 240px; opacity: .5; }
-  .nav {
-    position: relative; z-index: 2;
-    max-width: 1160px; margin: 0 auto;
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 22px 28px 0;
-  }
-  .brand { display: flex; align-items: center; gap: 13px; }
-  .brand-logo {
-    width: 50px; height: 50px; border-radius: 50%;
-    background: linear-gradient(145deg, var(--gold), #caa06f);
-    color: #3d2c1d;
-    display: grid; place-items: center; font-size: 24px;
-    box-shadow: 0 8px 22px rgba(0, 0, 0, .28);
-  }
-  .brand h1 { font-size: 1.3rem; font-weight: 900; letter-spacing: -.3px; }
-  .brand p { font-size: .78rem; opacity: .82; }
-  .icon-btn {
-    width: 44px; height: 44px; border-radius: 50%; border: 1px solid rgba(255,255,255,.25); cursor: pointer;
-    background: rgba(255,255,255,.1); color: #fff; font-size: 18px;
-    display: grid; place-items: center;
-    backdrop-filter: blur(6px);
-    transition: background .2s, transform .15s;
-  }
-  .icon-btn:hover { background: rgba(255,255,255,.22); transform: translateY(-1px); }
-  .nav-link {
-    display: inline-flex; align-items: center; gap: 8px;
-    border: 1px solid rgba(255,255,255,.3); border-radius: 999px;
-    background: rgba(255,255,255,.1); color: #fff;
-    padding: 10px 20px; font-size: .85rem; font-weight: 700;
-    text-decoration: none; backdrop-filter: blur(6px);
-    transition: background .2s;
-  }
-  .nav-link:hover { background: rgba(255,255,255,.22); }
-
-  .hero {
-    position: relative; z-index: 2;
-    max-width: 1160px; margin: 0 auto;
-    padding: 64px 28px 108px;
-    text-align: right;
-  }
-  .hero-badge {
-    display: inline-flex; align-items: center; gap: 8px;
-    background: rgba(232, 201, 160, .16);
-    border: 1px solid rgba(232, 201, 160, .4);
-    color: var(--gold);
-    border-radius: 999px; padding: 7px 18px;
-    font-size: .8rem; font-weight: 700;
-    margin-bottom: 22px;
-  }
-  .hero h2 {
-    font-size: clamp(1.9rem, 4.6vw, 3.1rem);
-    font-weight: 900; line-height: 1.45;
-    max-width: 640px;
-  }
-  .hero h2 em { font-style: normal; color: var(--gold); }
-  .hero p {
-    margin-top: 16px; max-width: 560px;
-    opacity: .85; line-height: 2.05; font-size: .98rem;
-  }
-  .hero-cta {
-    display: inline-flex; align-items: center; gap: 10px;
-    margin-top: 30px;
-    background: linear-gradient(145deg, #f0dcc0, #dfb98b);
-    color: #3d2c1d;
-    border: none; border-radius: 999px;
-    padding: 15px 38px; font-family: inherit;
-    font-size: 1rem; font-weight: 900; cursor: pointer;
-    box-shadow: 0 14px 30px rgba(0, 0, 0, .3);
-    transition: transform .18s, box-shadow .2s;
-  }
-  .hero-cta:hover { transform: translateY(-3px); box-shadow: 0 20px 40px rgba(0, 0, 0, .38); }
-
-  /* ================= Features band ================= */
-  main { max-width: 1160px; margin: 0 auto; padding: 0 28px 70px; }
-  .features-band {
-    position: relative; z-index: 3;
-    margin-top: -64px;
-    background: linear-gradient(160deg, #1e4a3b, #14352a);
-    border-radius: 28px;
-    box-shadow: var(--shadow-lg);
-    padding: 34px 26px;
-    display: grid; gap: 22px;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    color: #e9efe2;
-  }
-  .feature { text-align: center; padding: 0 10px; position: relative; }
-  .feature + .feature::before {
-    content: '';
-    position: absolute; inset-inline-end: -11px; top: 12%;
-    height: 76%; width: 1px;
-    background: linear-gradient(180deg, transparent, rgba(255,255,255,.22), transparent);
-  }
-  .feature-icon {
-    width: 58px; height: 58px; margin: 0 auto 12px;
-    border-radius: 50%;
-    border: 1.6px solid rgba(233, 239, 226, .55);
-    display: grid; place-items: center; font-size: 24px;
-  }
-  .feature h3 { font-size: .95rem; font-weight: 900; margin-bottom: 6px; }
-  .feature p { font-size: .78rem; line-height: 1.9; opacity: .75; }
-
-  /* ================= Panels ================= */
-  .panel {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    box-shadow: var(--shadow);
-    padding: 30px;
-    margin-top: 28px;
-    transition: background .3s, border-color .3s;
-  }
-  .panel-title {
-    display: flex; align-items: center; gap: 12px;
-    font-size: 1.08rem; font-weight: 900; margin-bottom: 22px;
-  }
-  .panel-title .num {
-    width: 36px; height: 36px; border-radius: 50%; flex: none;
-    background: linear-gradient(145deg, var(--green-500), var(--green-700));
-    color: #f3efe2;
-    display: grid; place-items: center; font-size: .9rem; font-weight: 900;
-    box-shadow: 0 6px 14px rgba(35, 85, 63, .35);
-  }
-
-  .grid { display: grid; gap: 18px; }
-  .grid-2 { grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
-  .grid-4 { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); }
-
-  label.field-label {
-    display: block; font-size: .86rem; font-weight: 700;
-    margin-bottom: 8px; color: var(--text);
-  }
-  label.field-label small { font-weight: 400; color: var(--text-2); }
-  .input, select.input {
-    width: 100%; padding: 13px 16px;
-    border: 1.5px solid var(--border); border-radius: 16px;
-    background: var(--surface-2); color: var(--text);
-    font-family: inherit; font-size: .93rem;
-    transition: border-color .2s, box-shadow .2s;
-  }
-  .input:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 0 4px var(--primary-soft); }
-  textarea.input { resize: vertical; min-height: 88px; line-height: 1.8; }
-  .input-wrap { position: relative; }
-  .input-wrap .toggle-eye {
-    position: absolute; left: 12px; top: 50%; transform: translateY(-50%);
-    border: none; background: none; cursor: pointer; font-size: 16px; color: var(--text-2);
-  }
-  .hint { font-size: .78rem; color: var(--text-2); margin-top: 7px; line-height: 1.7; }
-  .hint a { color: var(--green-700); text-decoration: none; font-weight: 700; }
-  [data-theme="dark"] .hint a { color: var(--sage); }
-
-  .btn {
-    display: inline-flex; align-items: center; justify-content: center; gap: 9px;
-    padding: 13px 30px; border: none; border-radius: 999px; cursor: pointer;
-    font-family: inherit; font-size: .95rem; font-weight: 900;
-    transition: transform .15s, box-shadow .2s, background .2s, opacity .2s;
-  }
-  .btn:active { transform: scale(.98); }
-  .btn-primary {
-    background: linear-gradient(145deg, var(--green-500), var(--green-900));
-    color: #f3efe2; box-shadow: 0 10px 24px rgba(22, 56, 44, .38);
-  }
-  .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 16px 32px rgba(22, 56, 44, .48); }
-  .btn-primary:disabled { opacity: .55; cursor: not-allowed; transform: none; }
-  .btn-ghost {
-    background: var(--surface-2); color: var(--text);
-    border: 1.5px solid var(--border);
-  }
-  .btn-ghost:hover { border-color: var(--green-500); color: var(--green-700); }
-  [data-theme="dark"] .btn-ghost:hover { color: var(--sage); }
-  .btn-danger-ghost { background: transparent; border: 1.5px solid var(--danger); color: var(--danger); }
-  .btn-sm { padding: 9px 20px; font-size: .85rem; }
-
-  .actions-row { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 24px; }
-
-  /* ================= Status ================= */
-  #statusPanel { display: none; }
-  .status-row { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
-  .spinner {
-    width: 28px; height: 28px; flex: none;
-    border: 3px solid var(--sage-soft); border-top-color: var(--green-500);
-    border-radius: 50%; animation: spin .8s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .status-text { font-weight: 900; }
-  .status-sub { font-size: .82rem; color: var(--text-2); }
-  .progress-track {
-    height: 9px; border-radius: 99px; background: var(--surface-2);
-    overflow: hidden; margin-top: 16px;
-  }
-  .progress-bar {
-    height: 100%; width: 15%; border-radius: 99px;
-    background: linear-gradient(90deg, var(--green-500), var(--sage), var(--gold));
-    transition: width .6s ease;
-  }
-  .alert {
-    border-radius: 16px; padding: 14px 18px; font-size: .9rem; line-height: 1.8;
-    margin-top: 14px; display: none;
-  }
-  .alert-error { background: rgba(179, 66, 47, .1); color: var(--danger); border: 1px solid rgba(179, 66, 47, .3); }
-
-  /* ================= Stats ================= */
-  #resultsSection { display: none; }
-  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 18px; margin: 34px 0 26px; }
-  .stat-card {
-    border-radius: 22px; padding: 24px 18px 20px;
-    color: #f6f2e7; text-align: center;
-    box-shadow: 0 16px 34px rgba(18, 44, 35, .22);
-    position: relative; overflow: hidden;
-    transition: transform .2s;
-  }
-  .stat-card:hover { transform: translateY(-4px); }
-  .stat-card::after {
-    content: '';
-    position: absolute; inset: 0;
-    background: radial-gradient(120% 90% at 85% -10%, rgba(255,255,255,.14), transparent 55%);
-    pointer-events: none;
-  }
-  .stat-card.c1 { background: linear-gradient(155deg, #8fae70, #5f8348); }
-  .stat-card.c2 { background: linear-gradient(155deg, #6b4e39, #4a3627); }
-  .stat-card.c3 { background: linear-gradient(155deg, #d9b58a, #b58e60); color: #3d2c1d; }
-  .stat-card.c4 { background: linear-gradient(155deg, #2c6a51, #16382c); }
-  .stat-icon {
-    width: 54px; height: 54px; border-radius: 50%;
-    margin: 0 auto 12px;
-    background: rgba(255, 255, 255, .18);
-    display: grid; place-items: center; font-size: 24px;
-    box-shadow: 0 8px 18px rgba(0, 0, 0, .18);
-  }
-  .stat-card.c3 .stat-icon { background: rgba(61, 44, 29, .14); }
-  .stat-value { font-size: 1.5rem; font-weight: 900; line-height: 1.2; }
-  .stat-label { font-size: .78rem; font-weight: 700; opacity: .85; margin-top: 3px; }
-
-  /* ================= Toolbar ================= */
-  .toolbar {
-    display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
-    margin-bottom: 24px;
-  }
-  .toolbar .search-wrap { position: relative; flex: 1 1 240px; }
-  .toolbar .search-wrap input { padding-right: 42px; }
-  .toolbar .search-wrap::before {
-    content: '🔍'; position: absolute; right: 15px; top: 50%;
-    transform: translateY(-50%); font-size: 14px; pointer-events: none;
-  }
-  .view-toggle { display: flex; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 999px; overflow: hidden; }
-  .view-toggle button {
-    border: none; background: none; padding: 10px 16px; cursor: pointer;
-    color: var(--text-2); font-size: 16px; transition: background .2s, color .2s;
-  }
-  .view-toggle button.active { background: var(--green-700); color: #f3efe2; }
-
-  /* ================= Posts ================= */
-  .posts-grid { display: grid; gap: 22px; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
-  .posts-grid.list-view { grid-template-columns: 1fr; }
-  .post-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: var(--radius); box-shadow: var(--shadow);
-    display: flex; flex-direction: column; overflow: hidden;
-    transition: transform .2s, box-shadow .25s;
-    animation: fadeUp .45s ease both;
-  }
-  .post-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-lg); }
-  @keyframes fadeUp { from { opacity: 0; transform: translateY(14px); } to { opacity: 1; transform: none; } }
-  .post-head { display: flex; align-items: center; gap: 12px; padding: 18px 20px 0; }
-  .avatar {
-    width: 46px; height: 46px; border-radius: 50%; flex: none; object-fit: cover;
-    background: linear-gradient(145deg, var(--green-500), var(--green-900));
-    color: #f3efe2; display: grid; place-items: center; font-weight: 900; font-size: 1.05rem;
-    box-shadow: 0 6px 14px rgba(22, 56, 44, .28);
-  }
-  .post-author { font-weight: 900; font-size: .93rem; }
-  .post-date { font-size: .76rem; color: var(--text-2); }
-  .post-body { padding: 14px 20px; flex: 1; }
-  .post-text { font-size: .9rem; line-height: 1.95; color: var(--text); white-space: pre-wrap; word-break: break-word; }
-  .post-text.clamped { display: -webkit-box; -webkit-line-clamp: 5; -webkit-box-orient: vertical; overflow: hidden; }
-  .read-more { border: none; background: none; color: var(--green-700); font-family: inherit; font-weight: 900; font-size: .82rem; cursor: pointer; padding: 6px 0 0; }
-  [data-theme="dark"] .read-more { color: var(--sage); }
-  .post-media { width: 100%; max-height: 260px; object-fit: cover; display: block; background: var(--surface-2); }
-  .post-foot {
-    display: flex; align-items: center; justify-content: space-between;
-    padding: 13px 20px; border-top: 1px solid var(--border);
-    background: var(--sage-soft);
-  }
-  .reactions { display: flex; gap: 14px; font-size: .8rem; color: var(--text); font-weight: 700; opacity: .85; }
-  .reactions span { display: inline-flex; align-items: center; gap: 5px; }
-  .post-link { font-size: .8rem; font-weight: 900; color: var(--green-700); text-decoration: none; }
-  [data-theme="dark"] .post-link { color: var(--sage); }
-  .post-link:hover { text-decoration: underline; }
-
-  .empty-state { text-align: center; padding: 60px 20px; color: var(--text-2); }
-  .empty-state .big { font-size: 52px; margin-bottom: 14px; }
-
-  footer {
-    text-align: center; padding: 30px 20px 36px;
-    color: var(--text-2); font-size: .82rem;
-  }
-
-  .toast {
-    position: fixed; bottom: 26px; right: 50%; transform: translate(50%, 20px);
-    background: var(--green-900); color: #f3efe2;
-    padding: 13px 26px; border-radius: 999px; font-size: .88rem; font-weight: 700;
-    opacity: 0; pointer-events: none; transition: opacity .3s, transform .3s;
-    z-index: 99; box-shadow: var(--shadow-lg);
-  }
-  .toast.show { opacity: 1; transform: translate(50%, 0); }
-
-  @media (max-width: 720px) {
-    .panel { padding: 22px; }
-    .hero { padding: 46px 24px 96px; }
-    .feature + .feature::before { display: none; }
-    .actions-row .btn { flex: 1; }
-    .leaves { width: 210px; height: 210px; }
-  }
-</style>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/salam.css">
 </head>
 <body>
 
-<div class="hero-wrap">
-  <!-- decorative paper-cut leaves -->
-  <svg class="leaves" viewBox="0 0 300 300" aria-hidden="true">
-    <g transform="translate(70 40) rotate(35)">
-      <path d="M0 90 Q 8 8 78 0 Q 86 74 22 96 Q 8 100 0 90 Z" fill="#8fae70"/>
-      <path d="M4 88 Q 40 44 74 6" stroke="#5f8348" stroke-width="3" fill="none"/>
-    </g>
-    <g transform="translate(160 10) rotate(75)">
-      <path d="M0 100 Q 10 10 88 0 Q 96 82 24 106 Q 8 110 0 100 Z" fill="#4f7c5e"/>
-      <path d="M5 97 Q 44 48 83 7" stroke="#35604628" stroke-width="4" fill="none"/>
-    </g>
-    <g transform="translate(30 150) rotate(-15)">
-      <path d="M0 78 Q 7 7 68 0 Q 75 64 19 84 Q 7 88 0 78 Z" fill="#a9834f"/>
-      <path d="M4 75 Q 34 38 64 5" stroke="#7d5a41" stroke-width="3" fill="none"/>
-    </g>
-    <g transform="translate(150 140) rotate(20)">
-      <path d="M0 66 Q 6 6 58 0 Q 64 54 16 71 Q 6 74 0 66 Z" fill="#d9b58a"/>
-      <path d="M3 63 Q 29 32 54 4" stroke="#b58e60" stroke-width="2.5" fill="none"/>
-    </g>
-  </svg>
-  <svg class="leaves small" viewBox="0 0 300 300" aria-hidden="true">
-    <g transform="translate(60 60) rotate(200)">
-      <path d="M0 100 Q 10 10 88 0 Q 96 82 24 106 Q 8 110 0 100 Z" fill="#8fae70"/>
-    </g>
-    <g transform="translate(170 120) rotate(160)">
-      <path d="M0 78 Q 7 7 68 0 Q 75 64 19 84 Q 7 88 0 78 Z" fill="#d9b58a"/>
-    </g>
-  </svg>
-
-  <nav class="nav">
+<!-- ============================ Top bar ============================ -->
+<header class="topbar">
+  <div class="wrap topbar-inner">
     <div class="brand">
-      <div class="brand-logo">🍃</div>
-      <div>
-        <h1>FB Extractor</h1>
-        <p>مستخرج منشورات فيسبوك عبر Apify</p>
+      <img class="brand-mark" src="assets/salam-mark.svg" alt="شعار سلام">
+      <div class="brand-text">
+        <h1>سلام <span>·</span> منصة رصد منشورات التحقق</h1>
+        <p>رصد آلي لصفحات التحقق على فيسبوك — بشفافية كاملة</p>
       </div>
     </div>
-    <div style="display:flex;align-items:center;gap:10px">
-      <a class="nav-link" href="dashboard.html">📊 لوحة الرصد</a>
-      <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري">🌙</button>
-    </div>
-  </nav>
 
-  <div class="hero">
-    <span class="hero-badge">✦ مدعوم بمنصة Apify</span>
-    <h2>استخرج منشورات أي صفحة فيسبوك <em>بضغطة زر</em> وبتحكم كامل</h2>
-    <p>اربط مفتاح Apify الخاص بك، حدّد الفترة الزمنية وعدد المنشورات بسقف فوترة مضمون، واحصل على النتائج بعرض عصري أنيق مع التصدير إلى JSON أو CSV.</p>
-    <button class="hero-cta" id="heroCta">ابدأ الاستخراج الآن ↓</button>
+    <button class="live-pill" id="livePill" title="حالة الرصد الآلي">
+      <span class="dot"></span>
+      <span>الدورة القادمة</span>
+      <span class="cd" id="countdown">--:--</span>
+    </button>
+
+    <button class="btn btn-icon btn-ghost" id="themeBtn" title="تبديل المظهر" aria-label="تبديل المظهر"></button>
   </div>
-</div>
 
-<main>
+  <div class="wrap">
+    <nav class="tabs" role="tablist" aria-label="أقسام المنصة">
+      <button class="tab active" data-view="monitor" role="tab">الرصد الآلي</button>
+      <button class="tab" data-view="posts" role="tab">المنشورات <span class="badge" id="postsBadge" style="display:none">0</span></button>
+      <button class="tab" data-view="analytics" role="tab">التحليلات</button>
+      <button class="tab" data-view="control" role="tab">لوحة التحكم</button>
+      <button class="tab" data-view="log" role="tab">سجل الشفافية</button>
+    </nav>
+  </div>
+  <div class="tab-strip"></div>
+</header>
 
-  <!-- Features band -->
-  <section class="features-band">
-    <div class="feature">
-      <div class="feature-icon">🔑</div>
-      <h3>اربط مفتاحك</h3>
-      <p>مفتاح Apify يُحفظ محلياً في متصفحك فقط ولا يُرسل إلا إلى Apify مباشرة</p>
-    </div>
-    <div class="feature">
-      <div class="feature-icon">🗓️</div>
-      <h3>فلاتر دقيقة</h3>
-      <p>حدّد الفترة الزمنية وعدد المنشورات مع سقف فوترة إلزامي يحميك من الاستهلاك الزائد</p>
-    </div>
-    <div class="feature">
-      <div class="feature-icon">📰</div>
-      <h3>عرض عصري</h3>
-      <p>بطاقات أنيقة مع الإحصائيات والتفاعلات، وبحث وفرز فوري داخل النتائج</p>
-    </div>
-    <div class="feature">
-      <div class="feature-icon">⬇️</div>
-      <h3>تصدير مرن</h3>
-      <p>نزّل نتائجك بصيغة JSON أو CSV متوافقة مع Excel واللغة العربية</p>
-    </div>
-  </section>
+<main class="wrap">
 
-  <!-- API Key -->
-  <section class="panel" id="setupPanel">
-    <div class="panel-title"><span class="num">1</span> مفتاح Apify API</div>
-    <div class="grid grid-2">
-      <div>
-        <label class="field-label" for="apiKey">المفتاح <small>(يُحفظ محلياً في متصفحك فقط)</small></label>
-        <div class="input-wrap">
-          <input class="input" type="password" id="apiKey" placeholder="apify_api_XXXXXXXXXXXX" autocomplete="off" style="padding-left:42px">
-          <button class="toggle-eye" id="eyeBtn" title="إظهار / إخفاء">👁️</button>
+  <!-- ============================ View: monitor ============================ -->
+  <section class="view active" id="view-monitor">
+
+    <div id="alertBox" class="alert alert-bad" style="display:none;margin-bottom:18px"></div>
+
+    <div class="card crest" style="margin-bottom:18px">
+      <div class="card-head">
+        <div class="ttl"><span style="color:var(--live)">◉</span> غرفة الرصد</div>
+        <div class="spacer"></div>
+        <span class="chip" id="monitorState">الرصد الآلي متوقف</span>
+      </div>
+
+      <div class="grid grid-4" style="margin-bottom:18px">
+        <div>
+          <div class="hint" style="margin:0 0 4px">دورة الرصد</div>
+          <div style="font-weight:900;font-size:1.05rem" id="cycleEvery">كل ٣٠ دقيقة</div>
         </div>
-        <div class="hint">احصل على مفتاحك من <a href="https://console.apify.com/settings/integrations" target="_blank" rel="noopener">لوحة تحكم Apify ← Integrations</a></div>
+        <div>
+          <div class="hint" style="margin:0 0 4px">آخر دورة</div>
+          <div style="font-weight:900;font-size:1.05rem" id="lastRunAt">لم تبدأ بعد</div>
+        </div>
+        <div>
+          <div class="hint" style="margin:0 0 4px">الدورة القادمة</div>
+          <div style="font-weight:900;font-size:1.05rem" id="nextRunAt">—</div>
+        </div>
+        <div>
+          <div class="hint" style="margin:0 0 4px">المنصات المفعّلة</div>
+          <div style="font-weight:900;font-size:1.05rem" class="num" id="coverCount">0 / 0</div>
+        </div>
       </div>
-      <div style="display:flex;align-items:flex-end;gap:10px;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" id="saveKeyBtn">💾 حفظ المفتاح</button>
-        <button class="btn btn-danger-ghost btn-sm" id="clearKeyBtn">🗑️ مسح المفتاح</button>
+
+      <div id="cycleBanner" class="alert alert-info" style="display:none;margin-bottom:14px">
+        <span class="spinner"></span><span id="cycleBannerText">جارٍ الرصد…</span>
       </div>
+
+      <div class="btn-row">
+        <button class="btn btn-cyan" id="toggleMonitor">تشغيل الرصد الآلي</button>
+        <button class="btn btn-gold" id="runNow">رصد فوري الآن</button>
+        <button class="btn btn-ghost" data-goto="control">إدارة المنصات</button>
+      </div>
+
+      <div class="hint" style="margin-top:14px">
+        يعمل الرصد ما دامت هذه الصفحة مفتوحة في المتصفح. عند فتحها بعد انقطاع، تُنفَّذ دورة تعويضية فوراً إذا انقضى وقت الدورة.
+      </div>
+    </div>
+
+    <div class="grid grid-4" id="statGrid" style="margin-bottom:22px"></div>
+
+    <!-- Manual run -->
+    <div class="card" style="margin-bottom:22px">
+      <div class="card-head">
+        <div class="ttl">استخراج مخصّص</div>
+        <div class="sub">تشغيل خارج الدورة الآلية — لمنصة واحدة أو للجميع، مع تحديد فترة زمنية وعدد المنشورات.</div>
+      </div>
+      <form id="manualForm">
+        <div class="grid grid-4">
+          <div class="field">
+            <label class="label" for="manualTargets">المنصة المستهدفة</label>
+            <select class="select" id="manualTargets"></select>
+          </div>
+          <div class="field">
+            <label class="label" for="manualCount">عدد المنشورات لكل منصة</label>
+            <input class="input" type="number" id="manualCount" min="1" max="200" value="10">
+          </div>
+          <div class="field">
+            <label class="label" for="manualFrom">من تاريخ <span class="opt">(اختياري)</span></label>
+            <input class="input" type="date" id="manualFrom">
+          </div>
+          <div class="field">
+            <label class="label" for="manualTo">إلى تاريخ <span class="opt">(اختياري)</span></label>
+            <input class="input" type="date" id="manualTo">
+          </div>
+        </div>
+        <button class="btn btn-gold" type="submit">تشغيل الاستخراج</button>
+        <div class="hint">
+          يُمرَّر العدد المطلوب إلى Apify كسقف فوترة إلزامي، فلن تُحاسَب على أكثر من (العدد × عدد المنصات) في أي تشغيل.
+        </div>
+      </form>
+    </div>
+
+    <h2 class="section-title">أحدث ما رصده سلام</h2>
+    <div class="feed" id="latestFeed"></div>
+    <div style="display:flex;justify-content:center;margin-top:20px">
+      <button class="btn btn-ghost" data-goto="posts">عرض كل المنشورات ←</button>
     </div>
   </section>
 
-  <!-- Search form -->
-  <section class="panel">
-    <div class="panel-title"><span class="num">2</span> إعدادات الاستخراج والفلاتر</div>
+  <!-- ============================ View: posts ============================ -->
+  <section class="view" id="view-posts">
+    <h2 class="section-title">المنشورات المرصودة <span class="chip gold" id="feedCount">0 منشور</span></h2>
 
-    <label class="field-label" for="pageUrls">روابط صفحات فيسبوك <small>(رابط واحد في كل سطر)</small></label>
-    <textarea class="input" id="pageUrls" placeholder="https://www.facebook.com/nasa&#10;https://www.facebook.com/bbcnews"></textarea>
-
-    <div class="grid grid-4" style="margin-top:18px">
-      <div>
-        <label class="field-label" for="postsLimit">عدد المنشورات <small>(لكل صفحة)</small></label>
-        <input class="input" type="number" id="postsLimit" min="1" max="1000" value="20">
-        <div class="hint">🛡️ يُفرض هذا العدد كسقف فوترة إلزامي على Apify — لن تُحاسَب على أكثر منه</div>
-      </div>
-      <div>
-        <label class="field-label" for="dateFrom">من تاريخ <small>(اختياري)</small></label>
-        <input class="input" type="date" id="dateFrom">
-      </div>
-      <div>
-        <label class="field-label" for="dateTo">إلى تاريخ <small>(اختياري)</small></label>
-        <input class="input" type="date" id="dateTo">
-      </div>
-      <div>
-        <label class="field-label" for="sortSelect">ترتيب النتائج</label>
-        <select class="input" id="sortSelect">
+    <div class="card" style="margin-bottom:20px">
+      <div class="toolbar" style="margin-bottom:12px">
+        <div class="input-wrap grow">
+          <input class="input" type="search" id="searchInput" placeholder="ابحث في نصوص المنشورات وأسماء المنصات…">
+        </div>
+        <select class="select" id="filterPlatform" style="flex:0 1 220px"></select>
+        <select class="select" id="sortSelect" style="flex:0 1 190px">
           <option value="newest">الأحدث أولاً</option>
           <option value="oldest">الأقدم أولاً</option>
+          <option value="engagement">الأعلى تفاعلاً</option>
           <option value="likes">الأكثر إعجاباً</option>
           <option value="comments">الأكثر تعليقاً</option>
-          <option value="shares">الأكثر مشاركة</option>
         </select>
       </div>
+      <div class="toolbar" style="margin-bottom:0">
+        <button class="filter-chip active" data-range="0">كل الفترات</button>
+        <button class="filter-chip" data-range="1">٢٤ ساعة</button>
+        <button class="filter-chip" data-range="7">٧ أيام</button>
+        <button class="filter-chip" data-range="30">٣٠ يوماً</button>
+        <label class="switch" style="margin-inline-start:8px">
+          <input type="checkbox" id="mediaOnly"><span class="track"></span>
+          <span class="txt">ذات وسائط فقط</span>
+        </label>
+        <div class="spacer" style="margin-inline-start:auto"></div>
+        <button class="btn btn-sm btn-ghost" id="resetFilters">إعادة الضبط</button>
+        <button class="btn btn-sm btn-ghost" id="exportJson">تصدير JSON</button>
+        <button class="btn btn-sm btn-ghost" id="exportCsv">تصدير CSV</button>
+      </div>
     </div>
 
-    <div class="actions-row">
-      <button class="btn btn-primary" id="runBtn">🚀 بدء الاستخراج</button>
-      <button class="btn btn-ghost" id="resetBtn">↺ إعادة تعيين</button>
+    <div class="card" id="feedEmpty" style="display:none">
+      <div class="empty">
+        <img class="mascot" src="assets/salam-mascot.svg" alt="سلام">
+        <h3>لا منشورات بعد</h3>
+        <p>سجّل منصات التحقق في لوحة التحكم وشغّل الرصد الآلي — ستظهر المنشورات هنا فور وصولها، مع مصدرها وتوقيتها ورابطها الأصلي.</p>
+        <button class="btn btn-gold" data-goto="control">فتح لوحة التحكم</button>
+      </div>
     </div>
-    <div class="alert alert-error" id="formError"></div>
+
+    <div class="feed" id="feed"></div>
+    <div id="loadMoreWrap" style="display:none;justify-content:center;margin-top:22px">
+      <button class="btn btn-ghost" id="loadMore">عرض المزيد</button>
+    </div>
   </section>
 
-  <!-- Local database -->
-  <section class="panel">
-    <div class="panel-title"><span class="num">3</span> قاعدة البيانات المحلية <small style="font-weight:400;color:var(--text-2);font-size:.8rem">(اختياري)</small></div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap">
-      <input class="input" type="url" id="dbUrl" dir="ltr" placeholder="http://localhost:3300" value="http://localhost:3300" style="flex:1 1 260px">
-      <button class="btn btn-ghost btn-sm" id="dbCheckBtn">🔌 فحص الاتصال</button>
+  <!-- ============================ View: analytics ============================ -->
+  <section class="view" id="view-analytics">
+    <h2 class="section-title">التحليلات</h2>
+
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-head">
+        <div class="ttl">نشاط النشر خلال ١٤ يوماً</div>
+        <div class="sub">عدد المنشورات المرصودة يومياً عبر كل المنصات المسجّلة.</div>
+      </div>
+      <div class="chart-box" id="activityChart"></div>
+      <div class="chart-legend"><span><i style="background:linear-gradient(180deg,#3FD8E6,#0E93A6)"></i>منشورات مرصودة</span></div>
     </div>
-    <div class="hint" id="dbStatus">⚪ غير متصلة — شغّل الخادم المحلي ثم اضغط «فحص الاتصال»</div>
-    <div class="hint">لتشغيل قاعدة البيانات على جهازك: افتح مجلد <strong>local-server</strong> وشغّل <strong>تشغيل-قاعدة-البيانات.bat</strong> (ويندوز) أو <strong>run.sh</strong> (ماك/لينكس). عند الاتصال تُحفظ نتائج كل استخراج تلقائياً في ملف SQLite دائم على جهازك.</div>
+
+    <div class="grid grid-2" style="margin-bottom:18px">
+      <div class="card">
+        <div class="card-head"><div class="ttl">التفاعل حسب المنصة</div></div>
+        <div class="bar-list" id="platformBars"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="ttl">حجم النشر حسب المنصة</div></div>
+        <div class="bar-list" id="rateBars"></div>
+      </div>
+    </div>
+
+    <div class="grid grid-2">
+      <div class="card">
+        <div class="card-head"><div class="ttl">أعلى ٥ منشورات تفاعلاً</div></div>
+        <div id="topPosts"></div>
+      </div>
+      <div class="card">
+        <div class="card-head"><div class="ttl">مؤشرات عامة</div></div>
+        <dl class="kv" id="analyticsKv"></dl>
+      </div>
+    </div>
   </section>
 
-  <!-- Status -->
-  <section class="panel" id="statusPanel">
-    <div class="status-row">
-      <div class="spinner" id="spinner"></div>
-      <div>
-        <div class="status-text" id="statusText">جارٍ تشغيل عملية الاستخراج...</div>
-        <div class="status-sub" id="statusSub">قد تستغرق العملية من ثوانٍ إلى دقائق حسب عدد المنشورات</div>
+  <!-- ============================ View: control ============================ -->
+  <section class="view" id="view-control">
+    <h2 class="section-title">لوحة التحكم</h2>
+
+    <!-- Apify key -->
+    <div class="card crest">
+      <div class="card-head">
+        <div class="ttl">الربط بحساب Apify</div>
+        <div class="sub">يُستخدم المفتاح لتشغيل «Facebook Posts Scraper». يُحفظ في متصفحك وحده ولا يُرسل إلا إلى <span class="ltr">api.apify.com</span> مباشرة.</div>
       </div>
-      <button class="btn btn-danger-ghost btn-sm" id="abortBtn" style="margin-inline-start:auto">⛔ إيقاف</button>
+      <div id="keyState" class="alert alert-warn" style="margin-bottom:14px"></div>
+      <div class="field">
+        <label class="label" for="apiKey">مفتاح Apify API</label>
+        <div class="input-wrap">
+          <input class="input ltr" type="password" id="apiKey" placeholder="apify_api_XXXXXXXXXXXXXXXX" autocomplete="off" spellcheck="false">
+          <button class="btn btn-sm btn-ghost tail" id="toggleKeyVis" type="button" title="إظهار/إخفاء">إظهار</button>
+        </div>
+        <div class="hint">احصل على المفتاح من <a href="https://console.apify.com/settings/integrations" target="_blank" rel="noopener">Apify Console ← Settings ← Integrations</a>.</div>
+      </div>
+      <div class="btn-row">
+        <button class="btn btn-cyan" id="saveKey">تحقّق واحفظ</button>
+        <button class="btn btn-danger" id="clearKey">حذف المفتاح</button>
+      </div>
     </div>
-    <div class="progress-track"><div class="progress-bar" id="progressBar"></div></div>
-    <div class="alert alert-error" id="runError"></div>
+
+    <!-- Platforms -->
+    <div class="card">
+      <div class="card-head">
+        <div class="ttl">منصات التحقق تحت الرصد</div>
+        <div class="sub">كل منصة تُضيفها هنا تدخل ضمن دورة الرصد الآلي. يمكنك تعطيل أي منصة مؤقتاً دون حذف منشوراتها.</div>
+      </div>
+
+      <form id="addPlatformForm">
+        <div class="grid grid-3">
+          <div class="field">
+            <label class="label" for="platName">اسم المنصة <span class="opt">(يُستنتج تلقائياً إن تُرك فارغاً)</span></label>
+            <input class="input" type="text" id="platName" placeholder="مثال: منصة تحقق">
+          </div>
+          <div class="field">
+            <label class="label" for="platUrl">رابط صفحة فيسبوك</label>
+            <input class="input ltr" type="text" id="platUrl" placeholder="https://www.facebook.com/page-name" required>
+          </div>
+          <div class="field">
+            <label class="label" for="platType">تصنيف المصدر</label>
+            <select class="select" id="platType">
+              <option value="fact">منصة تحقق</option>
+              <option value="news">وكالة أنباء</option>
+              <option value="gov">جهة رسمية</option>
+              <option value="other">مصدر آخر</option>
+            </select>
+          </div>
+        </div>
+        <button class="btn btn-gold" type="submit">إضافة إلى قائمة الرصد</button>
+      </form>
+
+      <div class="divider"></div>
+
+      <div class="field">
+        <label class="label" for="bulkUrls">إضافة جماعية <span class="opt">(رابط في كل سطر)</span></label>
+        <textarea class="textarea ltr" id="bulkUrls" placeholder="https://www.facebook.com/first-page&#10;https://www.facebook.com/second-page"></textarea>
+      </div>
+      <button class="btn btn-ghost" id="bulkAdd">إضافة كل الروابط</button>
+
+      <div class="divider"></div>
+      <div id="platformList"></div>
+    </div>
+
+    <!-- Monitoring settings -->
+    <div class="card">
+      <div class="card-head">
+        <div class="ttl">إعدادات الرصد الآلي</div>
+        <div class="sub">كل دورة تُنفَّذ كتشغيل واحد على Apify يشمل جميع المنصات المفعّلة.</div>
+      </div>
+      <div class="grid grid-2">
+        <div class="field">
+          <label class="label" for="setInterval">مدة الدورة</label>
+          <select class="select" id="setInterval">
+            <option value="15">كل ١٥ دقيقة</option>
+            <option value="30">كل ٣٠ دقيقة (الافتراضي)</option>
+            <option value="60">كل ساعة</option>
+            <option value="120">كل ساعتين</option>
+            <option value="360">كل ٦ ساعات</option>
+            <option value="720">كل ١٢ ساعة</option>
+          </select>
+          <div class="hint">كلما قصرت الدورة زاد استهلاك رصيد Apify.</div>
+        </div>
+        <div class="field">
+          <label class="label" for="setPerPlatform">عدد المنشورات من كل منصة في الدورة</label>
+          <input class="input" type="number" id="setPerPlatform" min="1" max="50" value="5">
+          <div class="hint">سقف الفوترة لكل دورة = هذا العدد × عدد المنصات المفعّلة.</div>
+        </div>
+      </div>
+      <div class="btn-row" style="gap:20px">
+        <label class="switch"><input type="checkbox" id="setAutoStart"><span class="track"></span><span class="txt">بدء الرصد تلقائياً عند فتح الموقع</span></label>
+        <label class="switch"><input type="checkbox" id="setNotify"><span class="track"></span><span class="txt">إشعار المتصفح عند وصول منشور جديد</span></label>
+      </div>
+    </div>
+
+    <!-- Local database -->
+    <div class="card">
+      <div class="card-head">
+        <div class="ttl">قاعدة البيانات المحلية</div>
+        <div class="sub">خادم SQLite صغير على جهازك (مجلد <span class="ltr">local-server</span>) يحفظ المنشورات بشكل دائم بلا تكرار.</div>
+        <div class="spacer"></div>
+        <span class="chip" id="dbState">غير متصل</span>
+      </div>
+      <div class="field">
+        <label class="label" for="setDbUrl">عنوان الخادم المحلي</label>
+        <input class="input ltr" type="text" id="setDbUrl" placeholder="http://localhost:3300">
+      </div>
+      <label class="switch" style="margin-bottom:14px"><input type="checkbox" id="setDbSync"><span class="track"></span><span class="txt">حفظ كل منشور جديد في قاعدة البيانات تلقائياً</span></label>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="pingDb">فحص الاتصال</button>
+        <button class="btn btn-ghost" id="pushAllDb">رفع كل المنشورات المحفوظة</button>
+      </div>
+    </div>
+
+    <!-- Data -->
+    <div class="card">
+      <div class="card-head">
+        <div class="ttl">البيانات والنسخ الاحتياطي</div>
+        <div class="sub">كل شيء مخزّن في متصفحك — لا خادم وسيط ولا حساب مستخدم.</div>
+      </div>
+      <dl class="kv" id="storageInfo" style="margin-bottom:16px"></dl>
+      <div class="btn-row">
+        <button class="btn btn-ghost" id="exportBackup">تنزيل نسخة احتياطية</button>
+        <label class="btn btn-ghost" for="importBackup" style="cursor:pointer">استعادة نسخة احتياطية</label>
+        <input type="file" id="importBackup" accept="application/json" class="sr">
+        <button class="btn btn-danger" id="clearPosts">مسح كل المنشورات</button>
+        <button class="btn btn-danger" id="clearLog">مسح السجل</button>
+      </div>
+    </div>
   </section>
 
-  <!-- Results -->
-  <section id="resultsSection">
-    <div class="stats-grid" id="statsGrid"></div>
+  <!-- ============================ View: log ============================ -->
+  <section class="view" id="view-log">
+    <h2 class="section-title">سجل الشفافية</h2>
 
-    <div class="toolbar">
-      <div class="search-wrap">
-        <input class="input" type="search" id="searchInput" placeholder="ابحث داخل النتائج...">
+    <div class="card" style="margin-bottom:18px">
+      <div class="card-head">
+        <div class="ttl">كيف يعمل سلام — بوضوح</div>
       </div>
-      <div class="view-toggle">
-        <button id="gridViewBtn" class="active" title="عرض شبكي">▦</button>
-        <button id="listViewBtn" title="عرض قائمة">☰</button>
+      <div class="grid grid-2">
+        <div class="alert alert-info">
+          <span>🔒</span>
+          <span><strong>مفتاحك يبقى عندك.</strong> يُخزَّن مفتاح Apify في ذاكرة متصفحك فقط، وتذهب كل الطلبات من جهازك إلى <span class="ltr">api.apify.com</span> مباشرة، بلا خادم وسيط.</span>
+        </div>
+        <div class="alert alert-info">
+          <span>🧾</span>
+          <span><strong>كل دورة مسجَّلة.</strong> لكل عملية رصد سطر في السجل أدناه: وقتها، المنصات المشمولة، عدد العناصر المجلوبة والجديدة، مدتها، ومعرّف التشغيل في Apify للمراجعة.</span>
+        </div>
+        <div class="alert alert-info">
+          <span>🔗</span>
+          <span><strong>لا محتوى بلا مصدر.</strong> كل منشور يُعرض باسم منصته ووقت نشره ووقت رصده ورابطه الأصلي على فيسبوك للتحقق المباشر.</span>
+        </div>
+        <div class="alert alert-info">
+          <span>⚖️</span>
+          <span><strong>لا تعديل على المحتوى.</strong> تُعرض النصوص كما وردت من المصدر دون اختصار أو إعادة صياغة، ولا يُحذف منشور تلقائياً بعد رصده.</span>
+        </div>
       </div>
-      <button class="btn btn-ghost btn-sm" id="exportJsonBtn">⬇️ JSON</button>
-      <button class="btn btn-ghost btn-sm" id="exportCsvBtn">⬇️ CSV</button>
-      <button class="btn btn-ghost btn-sm" id="saveDbBtn">💾 حفظ في قاعدة البيانات</button>
     </div>
 
-    <div class="posts-grid" id="postsGrid"></div>
-    <div class="empty-state" id="emptyState" style="display:none">
-      <div class="big">🔎</div>
-      <p>لا توجد نتائج مطابقة لبحثك</p>
+    <div class="card">
+      <div class="card-head">
+        <div class="ttl">سجل عمليات الرصد</div>
+        <div class="sub">أحدث ١٢٠ عملية.</div>
+      </div>
+      <div class="trail" id="logTrail"></div>
     </div>
   </section>
 
 </main>
 
-<footer>FB Extractor — يعمل عبر <strong>Apify Facebook Posts Scraper</strong> · مفتاحك لا يغادر متصفحك إلا نحو Apify مباشرة · الإصدار 2.0 🍃</footer>
-<div class="toast" id="toast"></div>
+<footer class="site-foot wrap">
+  <div class="brand-line">
+    <img src="assets/salam-mark.svg" alt="" width="26" height="26">
+    <span>سلام — منصة رصد منشورات التحقق</span>
+  </div>
+  <div>الشفافية والموثوقية أساس كل ما يُعرض هنا · تعمل المنصة بالكامل داخل متصفحك</div>
+  <div>الاستخراج عبر <a href="https://apify.com/apify/facebook-posts-scraper" target="_blank" rel="noopener" style="color:var(--live);text-decoration:none">Apify Facebook Posts Scraper</a> · الإصدار ٢٫٠</div>
+</footer>
 
-<script>
-'use strict';
+<div class="toast-host" id="toastHost"></div>
 
-/* =============== Constants =============== */
-const ACTOR_ID = 'apify~facebook-posts-scraper';
-const API_BASE = 'https://api.apify.com/v2';
-const KEY_STORAGE = 'fbx_apify_key';
-const THEME_STORAGE = 'fbx_theme';
-
-/* =============== Elements =============== */
-const $ = id => document.getElementById(id);
-const apiKeyInput = $('apiKey'), pageUrlsInput = $('pageUrls'),
-      postsLimitInput = $('postsLimit'), dateFromInput = $('dateFrom'), dateToInput = $('dateTo'),
-      sortSelect = $('sortSelect'), runBtn = $('runBtn'),
-      statusPanel = $('statusPanel'), statusText = $('statusText'), statusSub = $('statusSub'),
-      progressBar = $('progressBar'), runError = $('runError'), formError = $('formError'),
-      resultsSection = $('resultsSection'), postsGrid = $('postsGrid'),
-      statsGrid = $('statsGrid'), searchInput = $('searchInput'), emptyState = $('emptyState'),
-      spinner = $('spinner'), toast = $('toast');
-
-let allPosts = [];
-let aborted = false;
-let currentRunId = null;
-
-/* =============== Theme =============== */
-function applyTheme(t) {
-  document.documentElement.dataset.theme = t;
-  $('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙';
-}
-applyTheme(localStorage.getItem(THEME_STORAGE) || (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'));
-$('themeBtn').onclick = () => {
-  const next = document.documentElement.dataset.theme === 'dark' ? 'light' : 'dark';
-  localStorage.setItem(THEME_STORAGE, next);
-  applyTheme(next);
-};
-
-$('heroCta').onclick = () => $('setupPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
-
-/* =============== API key handling =============== */
-apiKeyInput.value = localStorage.getItem(KEY_STORAGE) || '';
-$('eyeBtn').onclick = () => {
-  apiKeyInput.type = apiKeyInput.type === 'password' ? 'text' : 'password';
-};
-$('saveKeyBtn').onclick = () => {
-  if (!apiKeyInput.value.trim()) return showToast('أدخل المفتاح أولاً');
-  localStorage.setItem(KEY_STORAGE, apiKeyInput.value.trim());
-  showToast('✅ تم حفظ المفتاح في المتصفح');
-};
-$('clearKeyBtn').onclick = () => {
-  localStorage.removeItem(KEY_STORAGE);
-  apiKeyInput.value = '';
-  showToast('🗑️ تم مسح المفتاح');
-};
-
-function showToast(msg) {
-  toast.textContent = msg;
-  toast.classList.add('show');
-  clearTimeout(toast._t);
-  toast._t = setTimeout(() => toast.classList.remove('show'), 2600);
-}
-
-/* =============== Form =============== */
-$('resetBtn').onclick = () => {
-  pageUrlsInput.value = '';
-  postsLimitInput.value = 20;
-  dateFromInput.value = '';
-  dateToInput.value = '';
-  formError.style.display = 'none';
-};
-
-function showFormError(msg) {
-  formError.textContent = msg;
-  formError.style.display = 'block';
-  formError.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-
-/* =============== Run flow =============== */
-runBtn.onclick = startExtraction;
-$('abortBtn').onclick = async () => {
-  aborted = true;
-  if (currentRunId) {
-    try {
-      await fetch(`${API_BASE}/actor-runs/${currentRunId}/abort?token=${encodeURIComponent(getToken())}`, { method: 'POST' });
-    } catch (_) {}
-  }
-  setStatus('تم إيقاف العملية', 'يمكنك بدء عملية جديدة في أي وقت', true);
-};
-
-function getToken() { return apiKeyInput.value.trim(); }
-
-function validDate(v) { return v && !isNaN(new Date(v).getTime()); }
-
-async function startExtraction() {
-  formError.style.display = 'none';
-  runError.style.display = 'none';
-
-  const token = getToken();
-  if (!token) return showFormError('⚠️ أدخل مفتاح Apify API أولاً.');
-
-  const urls = pageUrlsInput.value.split('\n').map(u => u.trim()).filter(Boolean);
-  if (!urls.length) return showFormError('⚠️ أدخل رابط صفحة فيسبوك واحدة على الأقل.');
-  const badUrl = urls.find(u => !/^https?:\/\/(www\.|m\.|web\.)?facebook\.com\//i.test(u));
-  if (badUrl) return showFormError(`⚠️ الرابط التالي ليس رابط فيسبوك صالحاً: ${badUrl}`);
-
-  const limit = Math.max(1, Math.min(1000, parseInt(postsLimitInput.value, 10) || 20));
-  const from = dateFromInput.value, to = dateToInput.value;
-  if (validDate(from) && validDate(to) && new Date(from) > new Date(to)) {
-    return showFormError('⚠️ تاريخ البداية يجب أن يكون قبل تاريخ النهاية.');
-  }
-
-  const input = {
-    startUrls: urls.map(url => ({ url })),
-    resultsLimit: limit
-  };
-  if (validDate(from)) input.onlyPostsNewerThan = from;
-  if (validDate(to)) input.onlyPostsOlderThan = to;
-
-  aborted = false;
-  currentRunId = null;
-  runBtn.disabled = true;
-  statusPanel.style.display = 'block';
-  resultsSection.style.display = 'none';
-  spinner.style.display = 'block';
-  $('abortBtn').style.display = 'inline-flex';
-  progressBar.style.width = '10%';
-  setStatus('جارٍ بدء عملية الاستخراج...', 'الاتصال بخوادم Apify');
-  statusPanel.scrollIntoView({ behavior: 'smooth', block: 'center' });
-
-  // Hard billing cap enforced by the Apify platform itself: the run is stopped
-  // and never charges for more than maxItems dataset items, regardless of how
-  // many the scraper crawls. resultsLimit alone is only approximate.
-  const maxItems = limit * urls.length;
-
-  try {
-    // 1) Start the actor run
-    const startRes = await fetch(`${API_BASE}/acts/${ACTOR_ID}/runs?token=${encodeURIComponent(token)}&maxItems=${maxItems}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(input)
-    });
-    if (!startRes.ok) throw await apiError(startRes);
-    const run = (await startRes.json()).data;
-    currentRunId = run.id;
-
-    // 2) Poll until finished
-    progressBar.style.width = '25%';
-    setStatus('جارٍ استخراج المنشورات...', 'قد تستغرق العملية عدة دقائق حسب حجم الطلب');
-    let status = run.status, datasetId = run.defaultDatasetId, elapsed = 0;
-    while (['READY', 'RUNNING'].includes(status)) {
-      if (aborted) return;
-      await sleep(4000);
-      elapsed += 4;
-      progressBar.style.width = Math.min(85, 25 + elapsed * 1.2) + '%';
-      statusSub.textContent = `مضى ${elapsed} ثانية · الحالة: قيد التشغيل`;
-      const st = await fetch(`${API_BASE}/actor-runs/${currentRunId}?token=${encodeURIComponent(token)}`);
-      if (!st.ok) throw await apiError(st);
-      const d = (await st.json()).data;
-      status = d.status;
-      datasetId = d.defaultDatasetId;
-    }
-    if (aborted) return;
-    // When the maxItems billing cap is hit, the platform stops the run itself —
-    // that can surface as ABORTED even though results were collected normally.
-    if (status !== 'SUCCEEDED' && status !== 'ABORTED') {
-      throw new Error(`انتهى التشغيل بحالة "${status}". تحقق من رصيدك في Apify أو من صحة الروابط.`);
-    }
-
-    // 3) Fetch dataset items
-    progressBar.style.width = '92%';
-    setStatus('جارٍ تحميل النتائج...', 'قراءة البيانات المستخرجة');
-    const itemsRes = await fetch(`${API_BASE}/datasets/${datasetId}/items?clean=true&format=json&token=${encodeURIComponent(token)}`);
-    if (!itemsRes.ok) throw await apiError(itemsRes);
-    const items = await itemsRes.json();
-    if (status === 'ABORTED' && !items.length) {
-      throw new Error('توقف التشغيل قبل جمع أي نتائج. تحقق من رصيدك في Apify أو من صحة الروابط.');
-    }
-
-    const scrapedCount = items.length;
-    allPosts = items.map(normalizePost).filter(p => p.text || p.url);
-    // Client-side date filter as a safety net on top of the actor's own filter
-    if (validDate(from)) {
-      const f = new Date(from).getTime();
-      allPosts = allPosts.filter(p => !p.ts || p.ts >= f);
-    }
-    if (validDate(to)) {
-      const t = new Date(to).getTime() + 86399999; // include the whole end day
-      allPosts = allPosts.filter(p => !p.ts || p.ts <= t);
-    }
-
-    progressBar.style.width = '100%';
-    spinner.style.display = 'none';
-    $('abortBtn').style.display = 'none';
-    const hidden = scrapedCount - allPosts.length;
-    setStatus(
-      `✅ اكتمل الاستخراج — ${allPosts.length} منشور`,
-      hidden > 0
-        ? `استُخرج ${scrapedCount} منشوراً من Apify، أُخفي ${hidden} منها لوقوعها خارج الفترة الزمنية المحددة`
-        : 'يمكنك البحث والفرز والتصدير من الأسفل',
-      true
-    );
-    renderResults();
-    // Auto-archive every extraction into the local database when connected
-    saveToDb(allPosts, 'extract', true);
-  } catch (err) {
-    spinner.style.display = 'none';
-    $('abortBtn').style.display = 'none';
-    setStatus('❌ فشلت العملية', '', true);
-    runError.textContent = err.message || String(err);
-    runError.style.display = 'block';
-  } finally {
-    runBtn.disabled = false;
-  }
-}
-
-async function apiError(res) {
-  let msg = `خطأ من Apify (HTTP ${res.status})`;
-  try {
-    const body = await res.json();
-    if (body?.error?.message) msg += `: ${body.error.message}`;
-  } catch (_) {}
-  if (res.status === 401) msg = '🔑 مفتاح API غير صحيح أو منتهي. تحقق من المفتاح في لوحة تحكم Apify.';
-  if (res.status === 402) msg = '💳 رصيد حساب Apify غير كافٍ لتشغيل هذه العملية.';
-  return new Error(msg);
-}
-
-function setStatus(main, sub, done) {
-  statusText.textContent = main;
-  statusSub.textContent = sub || '';
-  if (done) spinner.style.display = 'none';
-}
-
-const sleep = ms => new Promise(r => setTimeout(r, ms));
-
-/* =============== Normalization =============== */
-function normalizePost(raw) {
-  const text = raw.text || raw.message || raw.postText || '';
-  const url = raw.url || raw.postUrl || raw.topLevelUrl || '';
-  const timeVal = raw.time || raw.date || raw.publishedTime || raw.timestamp || null;
-  let ts = null;
-  if (typeof timeVal === 'number') ts = timeVal > 1e12 ? timeVal : timeVal * 1000;
-  else if (timeVal) { const d = new Date(timeVal); if (!isNaN(d)) ts = d.getTime(); }
-  const author = raw.user?.name || raw.pageName || raw.author || raw.user?.id || 'صفحة فيسبوك';
-  const avatar = raw.user?.profilePic || raw.pageProfilePic || '';
-  let media = '';
-  if (Array.isArray(raw.media) && raw.media.length) {
-    const m = raw.media.find(x => x?.thumbnail || x?.photo_image?.uri || x?.image?.uri || (typeof x?.url === 'string' && /\.(jpg|jpeg|png|webp)/i.test(x.url)));
-    media = m?.thumbnail || m?.photo_image?.uri || m?.image?.uri || m?.url || '';
-  }
-  return {
-    text, url, ts,
-    date: ts ? new Date(ts) : null,
-    author, avatar, media,
-    likes: num(raw.likes ?? raw.likesCount ?? raw.reactions ?? raw.reactionsCount),
-    comments: num(raw.comments ?? raw.commentsCount),
-    shares: num(raw.shares ?? raw.sharesCount),
-    raw
-  };
-}
-function num(v) {
-  if (typeof v === 'number') return v;
-  if (typeof v === 'string') { const n = parseInt(v.replace(/[^\d]/g, ''), 10); return isNaN(n) ? 0 : n; }
-  return 0;
-}
-
-/* =============== Rendering =============== */
-function renderResults() {
-  resultsSection.style.display = 'block';
-  renderStats();
-  renderPosts();
-  resultsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
-
-function renderStats() {
-  const total = allPosts.length;
-  const likes = allPosts.reduce((s, p) => s + p.likes, 0);
-  const comments = allPosts.reduce((s, p) => s + p.comments, 0);
-  const shares = allPosts.reduce((s, p) => s + p.shares, 0);
-  const cards = [
-    ['📝', 'إجمالي المنشورات', total, 'c1'],
-    ['👍', 'إجمالي الإعجابات', likes, 'c2'],
-    ['💬', 'إجمالي التعليقات', comments, 'c3'],
-    ['🔁', 'إجمالي المشاركات', shares, 'c4']
-  ];
-  statsGrid.innerHTML = cards.map(([icon, label, val, cls]) => `
-    <div class="stat-card ${cls}">
-      <div class="stat-icon">${icon}</div>
-      <div class="stat-value">${fmtNum(val)}</div>
-      <div class="stat-label">${label}</div>
-    </div>`).join('');
-}
-
-function getVisiblePosts() {
-  const q = searchInput.value.trim().toLowerCase();
-  let posts = allPosts.filter(p =>
-    !q || p.text.toLowerCase().includes(q) || p.author.toLowerCase().includes(q)
-  );
-  const sort = sortSelect.value;
-  posts = posts.slice().sort((a, b) => {
-    if (sort === 'newest') return (b.ts || 0) - (a.ts || 0);
-    if (sort === 'oldest') return (a.ts || 0) - (b.ts || 0);
-    if (sort === 'likes') return b.likes - a.likes;
-    if (sort === 'comments') return b.comments - a.comments;
-    if (sort === 'shares') return b.shares - a.shares;
-    return 0;
-  });
-  return posts;
-}
-
-function renderPosts() {
-  const posts = getVisiblePosts();
-  emptyState.style.display = posts.length ? 'none' : 'block';
-  postsGrid.innerHTML = posts.map((p, i) => {
-    const dateStr = p.date
-      ? p.date.toLocaleDateString('ar', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-      : 'تاريخ غير معروف';
-    const initial = escapeHtml((p.author || '?').charAt(0));
-    const avatar = p.avatar
-      ? `<img class="avatar" src="${escapeAttr(p.avatar)}" alt="" onerror="this.outerHTML='<div class=avatar>${initial}</div>'">`
-      : `<div class="avatar">${initial}</div>`;
-    const media = p.media ? `<img class="post-media" loading="lazy" src="${escapeAttr(p.media)}" alt="" onerror="this.remove()">` : '';
-    const longText = p.text.length > 320;
-    return `
-    <article class="post-card" style="animation-delay:${Math.min(i * 40, 400)}ms">
-      <div class="post-head">
-        ${avatar}
-        <div>
-          <div class="post-author">${escapeHtml(p.author)}</div>
-          <div class="post-date">🕓 ${dateStr}</div>
-        </div>
-      </div>
-      <div class="post-body">
-        <div class="post-text ${longText ? 'clamped' : ''}" id="txt-${i}">${escapeHtml(p.text) || '<em style="color:var(--text-2)">— منشور بدون نص —</em>'}</div>
-        ${longText ? `<button class="read-more" data-target="txt-${i}">عرض المزيد ▾</button>` : ''}
-      </div>
-      ${media}
-      <div class="post-foot">
-        <div class="reactions">
-          <span>👍 ${fmtNum(p.likes)}</span>
-          <span>💬 ${fmtNum(p.comments)}</span>
-          <span>🔁 ${fmtNum(p.shares)}</span>
-        </div>
-        ${p.url ? `<a class="post-link" href="${escapeAttr(p.url)}" target="_blank" rel="noopener">فتح المنشور ↗</a>` : ''}
-      </div>
-    </article>`;
-  }).join('');
-
-  postsGrid.querySelectorAll('.read-more').forEach(btn => {
-    btn.onclick = () => {
-      const el = document.getElementById(btn.dataset.target);
-      const clamped = el.classList.toggle('clamped');
-      btn.textContent = clamped ? 'عرض المزيد ▾' : 'عرض أقل ▴';
-    };
-  });
-}
-
-function fmtNum(n) {
-  if (n >= 1e6) return (n / 1e6).toFixed(1).replace(/\.0$/, '') + 'M';
-  if (n >= 1e3) return (n / 1e3).toFixed(1).replace(/\.0$/, '') + 'K';
-  return String(n);
-}
-function escapeHtml(s) {
-  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-}
-function escapeAttr(s) { return escapeHtml(s); }
-
-/* =============== Toolbar events =============== */
-searchInput.addEventListener('input', renderPosts);
-sortSelect.addEventListener('change', () => { if (allPosts.length) renderPosts(); });
-$('gridViewBtn').onclick = () => setView(false);
-$('listViewBtn').onclick = () => setView(true);
-function setView(list) {
-  postsGrid.classList.toggle('list-view', list);
-  $('gridViewBtn').classList.toggle('active', !list);
-  $('listViewBtn').classList.toggle('active', list);
-}
-
-/* =============== Export =============== */
-$('exportJsonBtn').onclick = () => {
-  const posts = getVisiblePosts().map(p => p.raw);
-  download(JSON.stringify(posts, null, 2), 'facebook-posts.json', 'application/json');
-  showToast('⬇️ تم تنزيل ملف JSON');
-};
-$('exportCsvBtn').onclick = () => {
-  const posts = getVisiblePosts();
-  const header = ['author', 'date', 'text', 'likes', 'comments', 'shares', 'url'];
-  const rows = posts.map(p => [
-    p.author, p.date ? p.date.toISOString() : '', p.text,
-    p.likes, p.comments, p.shares, p.url
-  ].map(csvCell).join(','));
-  // BOM so Excel opens Arabic text correctly
-  download('﻿' + [header.join(','), ...rows].join('\r\n'), 'facebook-posts.csv', 'text/csv;charset=utf-8');
-  showToast('⬇️ تم تنزيل ملف CSV');
-};
-/* =============== Local database =============== */
-const DB_URL_STORAGE = 'fbx_db_url';
-let dbUrl = localStorage.getItem(DB_URL_STORAGE) || '';
-let dbOnline = false;
-
-function dbSetStatus(msg) { $('dbStatus').textContent = msg; }
-function postKey(p) {
-  return p.key || p.url || `${p.author}|${p.ts || ''}|${(p.text || '').slice(0, 80)}`;
-}
-
-async function dbCheck(silent) {
-  const url = ($('dbUrl').value || '').trim().replace(/\/+$/, '');
-  if (!url) return;
-  dbSetStatus('⏳ جارٍ فحص الاتصال...');
-  try {
-    const r = await fetch(url + '/api/health', { signal: AbortSignal.timeout(4000) });
-    const d = await r.json();
-    if (!d.ok) throw new Error();
-    dbOnline = true;
-    dbUrl = url;
-    localStorage.setItem(DB_URL_STORAGE, url);
-    dbSetStatus(`🟢 متصلة — ${d.total} منشور محفوظ في قاعدة البيانات`);
-    if (!silent) showToast('✅ تم الاتصال بقاعدة البيانات المحلية');
-  } catch (_) {
-    dbOnline = false;
-    dbSetStatus('🔴 غير متصلة — تأكد أن الخادم المحلي يعمل ثم اضغط «فحص الاتصال»');
-    if (!silent) showToast('⚠️ تعذر الاتصال بقاعدة البيانات');
-  }
-}
-$('dbCheckBtn').onclick = () => dbCheck(false);
-if (dbUrl) { $('dbUrl').value = dbUrl; dbCheck(true); }
-
-async function saveToDb(posts, source, silent) {
-  if (!posts.length) return;
-  if (!dbOnline) { if (!silent) showToast('⚠️ قاعدة البيانات غير متصلة — افحص الاتصال أولاً'); return; }
-  try {
-    const payload = posts.map(p => ({
-      key: postKey(p), text: p.text, url: p.url, ts: p.ts,
-      author: p.author, avatar: p.avatar, media: p.media,
-      likes: p.likes, comments: p.comments, shares: p.shares, source
-    }));
-    const r = await fetch(dbUrl + '/api/posts', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ posts: payload })
-    });
-    const d = await r.json();
-    if (!d.ok) throw new Error(d.error || '');
-    dbSetStatus(`🟢 متصلة — ${d.total} منشور محفوظ في قاعدة البيانات`);
-    showToast(`💾 حُفظ ${d.saved} منشور في قاعدة البيانات`);
-  } catch (_) {
-    dbOnline = false;
-    dbSetStatus('🔴 انقطع الاتصال بقاعدة البيانات — أعد فحص الاتصال');
-    if (!silent) showToast('⚠️ فشل الحفظ في قاعدة البيانات');
-  }
-}
-$('saveDbBtn').onclick = () => saveToDb(getVisiblePosts(), 'extract', false);
-
-function csvCell(v) {
-  const s = String(v ?? '');
-  return /[",\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
-}
-function download(content, filename, type) {
-  const blob = new Blob([content], { type });
-  const a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = filename;
-  a.click();
-  setTimeout(() => URL.revokeObjectURL(a.href), 3000);
-}
-</script>
+<script src="assets/salam-core.js"></script>
+<script src="assets/salam-ui.js"></script>
 </body>
 </html>

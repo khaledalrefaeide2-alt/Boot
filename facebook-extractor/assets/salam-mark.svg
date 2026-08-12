@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="120" height="120" role="img" aria-label="سلام">
+  <defs>
+    <linearGradient id="mShell" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBF6EC"/><stop offset="1" stop-color="#DDCDAE"/>
+    </linearGradient>
+    <linearGradient id="mFez" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#C33346"/><stop offset="1" stop-color="#7E1524"/>
+    </linearGradient>
+    <linearGradient id="mGold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F3E2B4"/><stop offset=".5" stop-color="#D9B455"/><stop offset="1" stop-color="#A98221"/>
+    </linearGradient>
+  </defs>
+  <path d="M34 40 L38 14 Q60 8 82 14 L86 40 Q60 48 34 40 Z" fill="url(#mFez)"/>
+  <path d="M35.6 29 Q60 36 84.4 29 L85.4 35 Q60 42 34.6 35 Z" fill="url(#mGold)"/>
+  <ellipse cx="60" cy="13.5" rx="22" ry="4.6" fill="#C33346"/>
+  <circle cx="80" cy="13" r="3.4" fill="url(#mGold)"/>
+  <path d="M80 16 q7 9 6 19 q-1 16 2 28 q-4 4 -8 0 q3 -14 1 -29 q-1 -10 -1 -18 Z" fill="#12181C"/>
+  <rect x="22" y="36" width="76" height="62" rx="25" fill="url(#mShell)" stroke="#C6B085" stroke-width="1.4"/>
+  <circle cx="22" cy="68" r="9.5" fill="url(#mGold)"/><circle cx="22" cy="68" r="5.4" fill="#0B141A"/><circle cx="22" cy="68" r="3.2" fill="#3FD8E6"/>
+  <circle cx="98" cy="68" r="9.5" fill="url(#mGold)"/><circle cx="98" cy="68" r="5.4" fill="#0B141A"/><circle cx="98" cy="68" r="3.2" fill="#3FD8E6"/>
+  <rect x="32" y="49" width="56" height="40" rx="17" fill="#0A1319" stroke="#B9A47C" stroke-width="1.5"/>
+  <g fill="none" stroke="#3FD8E6" stroke-width="5.4" stroke-linecap="round">
+    <path d="M44 68 q6 -8 12 0"/><path d="M64 68 q6 -8 12 0"/>
+    <path d="M51 79 q9 8 18 0" stroke-width="4.6"/>
+  </g>
+</svg>

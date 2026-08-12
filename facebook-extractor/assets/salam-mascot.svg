@@ -1,0 +1,88 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 240" width="200" height="240" role="img" aria-label="سلام — المساعد الرقمي">
+  <defs>
+    <linearGradient id="shell" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FBF6EC"/>
+      <stop offset=".55" stop-color="#EFE3CC"/>
+      <stop offset="1" stop-color="#D9C9A9"/>
+    </linearGradient>
+    <linearGradient id="fez" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#C33346"/>
+      <stop offset=".5" stop-color="#A3182A"/>
+      <stop offset="1" stop-color="#7E1524"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#F3E2B4"/>
+      <stop offset=".45" stop-color="#D9B455"/>
+      <stop offset="1" stop-color="#A98221"/>
+    </linearGradient>
+    <linearGradient id="visor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#16232A"/>
+      <stop offset="1" stop-color="#050B0F"/>
+    </linearGradient>
+    <radialGradient id="cyanGlow" cx=".5" cy=".5" r=".5">
+      <stop offset="0" stop-color="#86EAF3"/>
+      <stop offset="1" stop-color="#23BACB" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <!-- ===== Fez (طربوش) ===== -->
+  <g>
+    <path d="M62 58 L68 22 Q100 14 132 22 L138 58 Q100 68 62 58 Z" fill="url(#fez)"/>
+    <path d="M64.6 43 Q100 52 135.4 43 L136.8 51 Q100 60 63.2 51 Z" fill="url(#gold)" opacity=".95"/>
+    <g fill="none" stroke="#EBCF83" stroke-width="1.5" opacity=".75" stroke-linecap="round">
+      <path d="M78 30 q6 -5 12 0 t12 0 t12 0"/>
+      <path d="M74 36 q8 5 16 0 t16 0 t14 0"/>
+    </g>
+    <ellipse cx="100" cy="21" rx="32" ry="6.5" fill="#C33346"/>
+    <ellipse cx="100" cy="20.4" rx="24" ry="4.2" fill="none" stroke="#EBCF83" stroke-width="1.3" opacity=".8"/>
+    <!-- tassel (شرابة) -->
+    <circle cx="131" cy="20" r="4.6" fill="url(#gold)"/>
+    <path d="M131 24 q9 12 8 26" stroke="#12181C" stroke-width="2.6" fill="none" stroke-linecap="round"/>
+    <path d="M139 50 q7 22 3 44 q-6 6 -12 0 q-4 -22 3 -44 Z" fill="#12181C"/>
+    <g stroke="#2A343A" stroke-width="1" opacity=".8">
+      <path d="M136 54 v38"/><path d="M140 54 v40"/><path d="M144 54 v36"/>
+    </g>
+  </g>
+
+  <!-- ===== Head ===== -->
+  <g>
+    <rect x="46" y="52" width="108" height="86" rx="34" fill="url(#shell)" stroke="#C6B085" stroke-width="1.4"/>
+    <path d="M52 66 Q100 56 148 66" fill="none" stroke="url(#gold)" stroke-width="3" stroke-linecap="round" opacity=".9"/>
+    <!-- side discs (أذنان) -->
+    <circle cx="46" cy="96" r="13" fill="url(#gold)"/>
+    <circle cx="46" cy="96" r="7.5" fill="#0B141A"/>
+    <circle cx="46" cy="96" r="4.6" fill="#3FD8E6"/>
+    <circle cx="154" cy="96" r="13" fill="url(#gold)"/>
+    <circle cx="154" cy="96" r="7.5" fill="#0B141A"/>
+    <circle cx="154" cy="96" r="4.6" fill="#3FD8E6"/>
+    <!-- visor -->
+    <rect x="60" y="70" width="80" height="56" rx="24" fill="url(#visor)" stroke="#B9A47C" stroke-width="1.6"/>
+    <!-- eyes + smile -->
+    <g fill="none" stroke="#3FD8E6" stroke-width="7" stroke-linecap="round">
+      <path d="M76 96 q8 -11 16 0"/>
+      <path d="M108 96 q8 -11 16 0"/>
+      <path d="M86 110 q14 12 28 0" stroke-width="6"/>
+    </g>
+    <ellipse cx="100" cy="100" rx="42" ry="30" fill="url(#cyanGlow)" opacity=".18"/>
+  </g>
+
+  <!-- ===== Torso with the eight-pointed star emblem ===== -->
+  <g>
+    <path d="M74 140 h52 a26 26 0 0 1 26 26 v44 a12 12 0 0 1 -12 12 H60 a12 12 0 0 1 -12 -12 v-44 a26 26 0 0 1 26 -26 Z" fill="url(#shell)" stroke="#C6B085" stroke-width="1.4"/>
+    <!-- crimson vest panels -->
+    <path d="M74 140 h14 l-6 82 H60 a12 12 0 0 1 -12 -12 v-44 a26 26 0 0 1 26 -26 Z" fill="url(#fez)"/>
+    <path d="M126 140 h-14 l6 82 h22 a12 12 0 0 0 12 -12 v-44 a26 26 0 0 0 -26 -26 Z" fill="url(#fez)"/>
+    <g fill="none" stroke="#EBCF83" stroke-width="1.4" opacity=".7">
+      <path d="M60 156 q8 8 4 18 t2 20"/>
+      <path d="M140 156 q-8 8 -4 18 t-2 20"/>
+    </g>
+    <!-- emblem -->
+    <g transform="translate(100 178)">
+      <path d="M0 -22 L6.5 -6.5 L22 0 L6.5 6.5 L0 22 L-6.5 6.5 L-22 0 L-6.5 -6.5 Z" fill="url(#gold)"/>
+      <circle r="9" fill="#0B141A"/>
+      <circle r="5.6" fill="#3FD8E6"/>
+      <circle r="9" fill="none" stroke="#EBCF83" stroke-width="1.2"/>
+    </g>
+    <circle cx="100" cy="145" r="3" fill="#3FD8E6"/>
+  </g>
+</svg>
