@@ -263,10 +263,11 @@
   /* المشهد على الحاوية لا على البطاقة: perspective على كل بطاقة يجعل نقطة
      التلاشي في مركزها هي، فتبدو كلٌّ منها في عالم منفصل. على الحاوية يشترك
      الجميع في نقطة تلاشٍ واحدة، وهذا ما يجعل العمق يبدو حقيقياً. */
-  /* align-items: start حتى تأخذ كل بطاقة ارتفاع محتواها. الافتراضي (stretch)
-     يمطّ بطاقة بلا وسائط إلى ارتفاع جارتها المصوّرة، فيتخلّف فراغ كبير في
-     منتصفها بلا سبب. */
-  .fx-list.fx-cards { display: grid; gap: 18px; align-items: start;
+  /* البطاقات متساوية الارتفاع داخل الصف (stretch، وهو الافتراضي). جرّبتُ
+     align-items: start لتأخذ كلٌّ ارتفاع محتواها، فحلّ ذلك فراغاً واحداً
+     وأنتج ما هو أسوأ: شبكة مسنّنة تبدأ فيها كل بطاقة عند ارتفاع مختلف.
+     الحلّ الصحيح ليس ترك التساوي بل توزيع الفائض داخل البطاقة (أسفله). */
+  .fx-list.fx-cards { display: grid; gap: 18px;
     grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
     perspective: var(--persp, 1100px); perspective-origin: 50% 0; }
   .fx-list.fx-table { display: flex; flex-direction: column; gap: 8px; }
@@ -329,10 +330,19 @@
     padding: 3px 10px; font-size: var(--fs-2xs); font-weight: 700; }
   [data-theme="dark"] .fx-rt { color: var(--sage); }
 
-  /* الجسم */
-  .fx-body { padding: 11px 13px 13px; flex: 1; display: flex; flex-direction: column; gap: 9px; }
-  .fx-text { font-size: var(--fs-sm); line-height: 1.75; word-break: break-word; white-space: pre-wrap; margin: 0; }
+  /* الجسم — هنا يُوزَّع الفائض الناتج عن تساوي الارتفاعات:
+     • النصّ يحجز ثلاثة أسطر دائماً، فلا يقفز موضع ما تحته بين بطاقة وأخرى.
+     • الفئة والقدم مثبّتتان في الأسفل، والفائض يتجمّع فوقهما. */
+  .fx-body { padding: 11px 13px 13px; flex: 1; display: flex; flex-direction: column; gap: 9px; min-height: 0; }
+  /* flex: none ضروري: النصّ عنصر مرن داخل عمود مرن، وبلا هذا يضغطه فليكس
+     إلى الحدّ الأدنى (ثلاثة أسطر) فيبطل توسيع القصّ في البطاقات بلا وسائط. */
+  .fx-text { font-size: var(--fs-sm); line-height: 1.75; word-break: break-word; white-space: pre-wrap; margin: 0;
+    flex: none; min-height: calc(3 * 1.75 * var(--fs-sm)); }
   .fx-clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  /* بطاقة بلا وسائط تملك المساحة التي كانت الصورة ستشغلها. تركها بيضاء هدر:
+     تُصرف على نصّ أكثر بدل الهواء، فتتساوى البطاقات وتزيد الفائدة معاً.
+     :has غير مدعوم في المتصفحات القديمة، وحينها يبقى القصّ عند ثلاثة أسطر — تدهور لطيف. */
+  .fx-card:not(:has(.fx-media)) .fx-text { -webkit-line-clamp: 11; }
   .fx-notext { color: var(--text-2); }
   .fx-more { align-self: flex-start; border: none; background: none; cursor: pointer; padding: var(--s1) 0;
     font-family: inherit; font-size: var(--fs-xs); font-weight: 700; color: var(--green-600);
@@ -342,11 +352,14 @@
   .fx-more:hover { text-decoration: underline; }
 
   /* الوسائط داخل الجسم بحوافّ مستديرة ومسافة عن أطراف البطاقة — إطار حول
-     الصورة بدل لصقها بالحافة، وهو ما يعطي الإحساس العصري بالبطاقة المطبوعة. */
-  .fx-media { margin-top: 1px; }
+     الصورة بدل لصقها بالحافة، وهو ما يعطي الإحساس العصري بالبطاقة المطبوعة.
+     ولا تتمدّد: إطارها محكوم بنسبة أبعاد ثابتة حتى يبقى ارتفاع البطاقة
+     دالةً لعرضها وحده. الفائض الناتج عن تساوي الصف يتجمّع فوق سطر الفئة
+     (margin-top: auto) فلا يظهر كفجوة في منتصف المحتوى. */
+  .fx-media { margin-top: 1px; flex: none; }
 
   /* سطر الفئة والإجراء */
-  .fx-tags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding-top: 2px; }
+  .fx-tags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding-top: 2px; margin-top: auto; }
   .fx-vd-sub { font-size: var(--fs-2xs); color: var(--text-2); background: var(--surface-2);
     border-radius: 999px; padding: 3px 10px; overflow: hidden; text-overflow: ellipsis;
     white-space: nowrap; min-width: 0; }
