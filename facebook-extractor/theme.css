@@ -10,122 +10,187 @@
    =========================================================== */
 
 :root {
-  /* سطوح فاتحة بلمسة زرقاء باردة — مساحات بيضاء واسعة وحدود شبه غير مرئية */
-  --bg: #f1f5f7;
+  /* ── الأسطح: أبيض نقي فوق رمادي أزرق بارد ── */
+  --bg: #eef2f7;
   --surface: #ffffff;
-  --surface-2: #edf3f5;
-  --text: #12222d;
-  --text-2: #57697a;   /* كان #5d7484 = 4.46:1 على الخلفية — دون حدّ WCAG 4.5:1 */
-  --border: #e0eaee;
+  --surface-2: #f2f6fa;
+  --text: #0b1220;
+  --text-2: #55647a;      /* مقيس: ‎5.2:1 فأعلى على الأسطح الثلاثة */
+  --border: #dde5ee;
 
-  /* هوية الموقع: أزرق مائي هادئ متدرّج نحو الكحلي العميق (طراز تحريري) */
-  --green-950: #0b1820;
-  --green-900: #10222c;
-  --green-800: #17303d;
-  --green-700: #1a5164;
-  --green-600: #2b7f97;
-  --green-500: #6fadc0;
-  --sage: #a8c9d4;
-  --sage-soft: #e7f1f4;
-  --gold: #7ab3c6;
-  --gold-deep: #1f6178;
-  --tan: #cfe2e9;
-  --cream: #f5fafb;
+  /* ── سلّم الهوية: كحلي ليلي متدرّج نحو سماوي كهربائي ──
+     السماوي مقصود: يجب أن يبقى لون العلامة متميّزاً عن الأخضر والأحمر
+     والكهرماني، فتلك الثلاثة محجوزة لدلالات التصنيف وحدها. */
+  --green-950: #020617;
+  --green-900: #070d1c;
+  --green-800: #111a2e;
+  --green-700: #0e6f8c;
+  --green-600: #0e8fae;
+  --green-500: #35b7d4;
+  --sage: #67e8f9;
+  --sage-soft: #e2f6fb;
+  --gold: #35b7d4;
+  --gold-deep: #0e6f8c;
+  --tan: #c9e9f2;
+  --cream: #f3fbfd;
 
   --primary: var(--green-700);
-  --primary-soft: #e4eff3;
-  --danger: #c8372c;
-  --danger-soft: #fbeae8;
+  --primary-soft: #e2f2f7;
+  --danger: #c2352b;
+  --danger-soft: #fceceb;
   /* ألوان دلالية بحتة — لدرجات الخطورة في محرك التحليل فقط، منفصلة عن هوية العلامة */
-  --warn: #a8620d;
-  --warn-soft: #fbf1e2;
-  --success: #157f4d;
-  --success-soft: #e2f3ea;
+  --warn: #9c5c0b;
+  --warn-soft: #fbf1e0;
+  --success: #12784a;
+  --success-soft: #e3f4ea;
 
-  /* ظلال ناعمة بلمسة زرقاء — حدّ 1px هو المُعرِّف الأساسي للبطاقة، والظل للعمق والانسيابية */
-  --shadow-xs: 0 1px 2px rgba(16, 42, 56, .04);
-  --shadow: 0 1px 2px rgba(16, 42, 56, .04), 0 4px 12px rgba(16, 42, 56, .05);
-  --shadow-md: 0 4px 14px rgba(16, 42, 56, .08);
-  --shadow-lg: 0 12px 32px rgba(16, 42, 56, .12);
+  /* ── الزجاج: أسطح الإطار (شريط جانبي، رأس، شريط تحكّم، عارض) ──
+     المهارة تصنّف الزجاجية cost:low|drivers:none — عمق حقيقي بلا مكتبة
+     وبلا كلفة رسم تُذكر، خلافاً للـ 3D الكامل (cost:high|risk:high). */
+  --glass-bg: rgba(255, 255, 255, .72);
+  --glass-brd: rgba(255, 255, 255, .7);
+  --glass-blur: 18px;
+  --glass-sat: 1.7;
 
-  /* ---- مقياس المسافات: مضاعفات 4px. كل حشوة وفجوة في الموقع تُشتق منه،
-     فينشأ إيقاع بصري منتظم بدل أرقام تُختار بالحدس (13px هنا و9px هناك). ---- */
+  /* ── العمق: ظلال متعدّدة الطبقات تحاكي مصدر ضوء واحد من الأعلى ── */
+  --e1: 0 1px 2px rgba(8, 20, 45, .05);
+  --e2: 0 1px 2px rgba(8, 20, 45, .05), 0 6px 16px rgba(8, 20, 45, .07);
+  --e3: 0 2px 6px rgba(8, 20, 45, .07), 0 12px 28px rgba(8, 20, 45, .1);
+  --e4: 0 8px 20px rgba(8, 20, 45, .13), 0 28px 64px rgba(8, 20, 45, .18);
+  --shadow-xs: var(--e1);
+  --shadow: var(--e2);
+  --shadow-md: var(--e3);
+  --shadow-lg: var(--e4);
+
+  /* ── الحركة: مقاسات المهارة — 200-300ms للتفاعل، وتسارع power2.out ──
+     الخروج أسرع من الدخول دائماً، فيبقى الردّ فورياً في الإحساس. */
+  --dur-1: 130ms;   /* لمسات دقيقة: لون، شفافية */
+  --dur-2: 220ms;   /* المرور والضغط */
+  --dur-3: 340ms;   /* الدخول والظهور */
+  --ease: cubic-bezier(.22, 1, .36, 1);          /* ≈ power2.out */
+  --ease-soft: cubic-bezier(.65, 0, .35, 1);
+  --persp: 1100px;  /* بُعد المشهد ثلاثي الأبعاد */
+
+  /* ---- مقياس المسافات: مضاعفات 4px ---- */
   --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
   --s5: 20px; --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px;
 
-  /* ---- مقياس الخط: أدوار محدَّدة لا مقاسات حرّة ---- */
-  --fs-display: 1.6rem;   /* عنوان الصفحة */
-  --fs-title: 1.05rem;    /* عنوان لوحة أو قسم */
+  /* ---- مقياس الخط ---- */
+  --fs-display: 1.6rem;
+  --fs-title: 1.05rem;
   --fs-body: .9rem;       /* 14.4px */
   --fs-sm: .85rem;        /* 13.6px */
   --fs-xs: .8rem;         /* 12.8px */
-  --fs-2xs: .75rem;       /* 12px — الأرضية: لا نصّ أصغر منها في الموقع.
-                             القياس السابق (.66rem = 10.6px) كان دون حدّ المقروئية،
-                             والعربية أشدّ حساسية له من اللاتينية لكثرة نقاطها. */
+  --fs-2xs: .75rem;       /* 12px — الأرضية: لا نصّ أصغر منها في الموقع */
   --lh-tight: 1.35;
   --lh: 1.7;
 
-  /* ---- أنصاف الأقطار: أضيق من السابق. الاستدارة الواسعة توحي بالمرح،
-     والأداة المهنية تُقرأ أدقّ بحوافّ محسوبة. ---- */
   --radius-sm: 10px;
   --radius: 14px;
   --radius-lg: 20px;
   --radius-pill: 999px;
-
-  /* ---- الحدّ الشعري (hairline) هو المُعرِّف الأساسي للسطح، والظل مساعد فقط ---- */
   --hair: 1px solid var(--border);
 
-  /* أيقونة البحث داخل الحقل تُرسم كقناع، فتأخذ لون النص وتتبع السمة */
   --ic-search: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%3E%3Ccircle%20cx%3D%2211%22%20cy%3D%2211%22%20r%3D%226.5%22%2F%3E%3Cpath%20d%3D%22m16%2016%204.5%204.5%22%2F%3E%3C%2Fsvg%3E");
 
-  /* خط الموقع بالكامل: Arial. وهو خط نظام متوفّر على ويندوز وماك بلا تحميل،
-     فلا يحتاج الموقع أي اتصال بخوادم خطوط خارجية. البدائل لأنظمة لينكس/أندرويد
-     مرتّبة بحيث تبقى المقاسات متطابقة تقريباً. */
   --font-body: Arial, 'Liberation Sans', 'Segoe UI', Tahoma, sans-serif;
   --font-display: var(--font-body);
 
-  /* ألوان الرسوم البيانية (تُستخدم في dashboard.html) */
   --c-surface: var(--surface);
   --c-text: var(--text);
   --c-text-2: var(--text-2);
-  --c-muted: #8ba1ad;
-  --c-grid: #e3edf1;
-  --c-accent: #2b7f97;
-  --c-accent-2: #7ab3c6;
-  --c-fill-top: rgba(43, 127, 151, .20);
-  --c-fill-bot: rgba(43, 127, 151, .02);
+  --c-muted: #8394a8;
+  --c-grid: #e3eaf2;
+  --c-accent: #0e8fae;
+  --c-accent-2: #35b7d4;
+  --c-fill-top: rgba(14, 143, 174, .22);
+  --c-fill-bot: rgba(14, 143, 174, .02);
 }
+
+/* ══ السمة الداكنة (OLED) — هي الاتجاه الأساسي للهوية الجديدة ══
+   أسود شبه مطلق يوفّر طاقة شاشات OLED ويجعل الأسطح الزجاجية والعمق
+   يظهران بأوضح ما يكون، إذ يحتاج الزجاج خلفية غنية ليُقرأ كزجاج. */
 [data-theme="dark"] {
-  --bg: #0a141a;
-  --surface: #111e26;
-  --surface-2: #16262f;
-  --text: #e9f1f4;
-  --text-2: #9bb0bc;
-  --border: #23353f;
-  --primary-soft: #143140;
-  --sage-soft: #16303b;
-  --cream: #143140;
-  --danger-soft: #3a1f1d;
-  --warn-soft: #392b14;
-  --success-soft: #133021;
+  --bg: #020617;
+  --surface: #0b1120;
+  --surface-2: #131b2e;
+  --text: #f2f7fc;
+  --text-2: #9aabc0;
+  --border: #1f2b41;
+  --primary-soft: #0d2b38;
+  --sage-soft: #0f2a35;
+  --cream: #0d2b38;
+  --danger: #f0655a;
+  --danger-soft: #33191a;
+  --warn: #dfa03a;
+  --warn-soft: #33260f;
+  --success: #34c98a;
+  --success-soft: #0f2b21;
 
-  --shadow-xs: 0 1px 2px rgba(0, 0, 0, .28);
-  --shadow: 0 2px 6px rgba(0, 0, 0, .32), 0 10px 26px rgba(0, 0, 0, .3);
-  --shadow-md: 0 6px 20px rgba(0, 0, 0, .36);
-  --shadow-lg: 0 20px 44px rgba(0, 0, 0, .48);
+  --glass-bg: rgba(19, 27, 46, .6);
+  --glass-brd: rgba(255, 255, 255, .09);
 
-  --c-surface: var(--surface);
-  --c-text: var(--text);
-  --c-text-2: var(--text-2);
-  --c-muted: #7c95a3;
-  --c-grid: #23353f;
-  --c-accent: #7ec5d8;
-  --c-accent-2: #a8c9d4;
-  --c-fill-top: rgba(126, 197, 216, .24);
-  --c-fill-bot: rgba(126, 197, 216, .02);
+  --e1: 0 1px 2px rgba(0, 0, 0, .5);
+  --e2: 0 1px 2px rgba(0, 0, 0, .5), 0 6px 18px rgba(0, 0, 0, .5);
+  --e3: 0 2px 8px rgba(0, 0, 0, .55), 0 14px 34px rgba(0, 0, 0, .55);
+  --e4: 0 10px 26px rgba(0, 0, 0, .6), 0 32px 72px rgba(0, 0, 0, .7);
+
+  --c-muted: #74879e;
+  --c-grid: #1f2b41;
+  --c-accent: #35b7d4;
+  --c-accent-2: #67e8f9;
+  --c-fill-top: rgba(53, 183, 212, .26);
+  --c-fill-bot: rgba(53, 183, 212, .02);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ================= طبقة العمق والحركة =================
+   «ثلاثي الأبعاد» هنا مبنيّ على تحويلات CSS ثلاثية المحاور (perspective +
+   translate3d + rotate) لا على WebGL. المهارة تصنّف الواجهة ثلاثية الأبعاد
+   الكاملة cost:high|risk:high وتتطلّب Three.js — وهي مكتبة خارجية تكسر
+   ضمانة أن هذا الموقع لا يطلب أي ملف من الإنترنت، وتُثقل قائمة فيها مئات
+   البطاقات. أما الزجاجية فـ cost:low|drivers:none، فتعطي العمق نفسه مجاناً.
+
+   كل حركة تلتزم بمقاسات المهارة: 200-300ms للتفاعل، وتسارع power2.out،
+   والخروج أسرع من الدخول، وتحريك transform/opacity وحدهما (لا width/height
+   ولا top/left) حتى تبقى الحركة على بطاقة الرسم بلا إعادة تخطيط. */
+
+/* المشهد: يمنح الأبناء عمقاً حقيقياً بدل محاكاته بالظل */
+.scene-3d { perspective: var(--persp); perspective-origin: 50% 20%; }
+
+/* ارتفاع تفاعلي: العنصر يقترب من الناظر عند المرور، ويعود بنفس المنحنى */
+.lift {
+  transition: transform var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease),
+              border-color var(--dur-2) var(--ease);
+  will-change: transform;
+}
+.lift:hover { transform: translate3d(0, -4px, 24px); box-shadow: var(--e4); }
+.lift:active { transform: translate3d(0, -1px, 6px); transition-duration: var(--dur-1); }
+
+/* الظهور عند دخول العنصر إطار الشاشة — يُفعَّل من common.js عبر IntersectionObserver.
+   البداية مائلة قليلاً حول المحور الأفقي فتُقرأ كصفحة تنهض نحو الناظر. */
+.reveal { opacity: 0; transform: translate3d(0, 14px, -40px) rotateX(4deg); }
+.reveal.in {
+  opacity: 1; transform: none;
+  transition: opacity var(--dur-3) var(--ease), transform var(--dur-3) var(--ease);
+}
+
+/* ================= احترام تقليل الحركة =================
+   كل نتيجة حركة في المهارة تشترط هذا. النظام يُبلِّغ عن تفضيل المستخدم،
+   ومن يعاني اضطراب الدهليز قد تسبّب له الحركة دواراً حقيقياً — فتُلغى
+   الحركة كلّها وتُعرض الحالة النهائية فوراً بدل إبطائها. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+  .lift:hover { transform: none; }
+  .scene-3d { perspective: none; }
+}
 
 /* ================= حلقة التركيز =================
    لم تكن في الموقع أي قاعدة :focus-visible، فمن يتنقّل بلوحة المفاتيح وحدها
@@ -160,8 +225,9 @@ body {
 .app-shell { display: flex; align-items: stretch; min-height: 100vh; }
 .sidebar {
   width: 232px; flex: none;
-  background: var(--green-950);           /* لون مصمت لا تدرّج: أهدأ وأدقّ */
-  border-inline-end: 1px solid rgba(255,255,255,.07);
+  background: linear-gradient(185deg, #0a1224 0%, var(--green-950) 60%);
+  border-inline-end: 1px solid rgba(255,255,255,.06);
+  box-shadow: 1px 0 0 rgba(255,255,255,.03), var(--e3);
   color: #dbe7ec;
   display: flex; flex-direction: column;
   padding: var(--s5) var(--s3) var(--s3);
@@ -228,9 +294,10 @@ body {
    أثناء التمرير فلا يضيع السياق داخل قوائم طويلة. */
 .page-header {
   position: sticky; top: 0; z-index: 15;
-  background: color-mix(in srgb, var(--surface) 86%, transparent);
-  backdrop-filter: saturate(1.6) blur(10px);
-  border-bottom: var(--hair);
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: saturate(var(--glass-sat)) blur(var(--glass-blur));
+  backdrop-filter: saturate(var(--glass-sat)) blur(var(--glass-blur));
+  border-bottom: 1px solid var(--glass-brd);
   color: var(--text);
   padding: var(--s5) var(--s8);
   display: flex; align-items: flex-end; justify-content: space-between;
@@ -254,9 +321,12 @@ body {
   display: inline-flex; align-items: center; gap: var(--s2); flex: none;
   background: var(--green-900); color: #eff6f8; border: none; border-radius: var(--radius-sm);
   padding: var(--s3) var(--s5); font-family: inherit; font-size: var(--fs-sm); font-weight: 700;
-  cursor: pointer; transition: background .16s ease;
+  cursor: pointer; box-shadow: var(--e2);
+  transition: background var(--dur-2) var(--ease), transform var(--dur-2) var(--ease),
+              box-shadow var(--dur-2) var(--ease);
 }
-.hero-cta:hover { background: var(--green-800); }
+.hero-cta:hover { background: var(--green-800); transform: translate3d(0, -2px, 12px); box-shadow: var(--e3); }
+.hero-cta:active { transform: translate3d(0, 1px, 0) scale(.985); }
 [data-theme="dark"] .hero-cta { background: var(--sage); color: #0b1820; }
 [data-theme="dark"] .hero-cta:hover { background: #bcd8e1; }
 
@@ -292,9 +362,10 @@ main { max-width: 1200px; margin: 0 auto; padding: var(--s8) var(--s8) var(--s12
    ضجيجاً بصرياً وتُسطّح التسلسل الهرمي بدل أن تبنيه. */
 .panel {
   background: var(--surface); border: var(--hair);
-  border-radius: var(--radius); box-shadow: var(--shadow-xs);
+  border-radius: var(--radius); box-shadow: var(--e2);
   padding: var(--s6); margin-top: var(--s5);
-  transition: background .25s, border-color .25s;
+  transition: background var(--dur-3) var(--ease), border-color var(--dur-3) var(--ease),
+              box-shadow var(--dur-2) var(--ease);
 }
 .panel-title {
   display: flex; align-items: center; gap: var(--s3);
@@ -370,10 +441,13 @@ textarea.input { resize: vertical; min-height: 76px; line-height: var(--lh); }
   padding: var(--s2) var(--s4); border: 1px solid transparent; border-radius: var(--radius-sm);
   cursor: pointer; font-family: inherit; font-size: var(--fs-sm); font-weight: 700;
   line-height: 1.5; white-space: nowrap;
-  transition: background .15s, border-color .15s, color .15s, opacity .15s;
+  transition: background var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease),
+              color var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease),
+              transform var(--dur-1) var(--ease);
 }
-.btn:active { transform: translateY(.5px); }
-.btn-primary { background: var(--green-900); color: #eff6f8; }
+.btn:active { transform: translate3d(0, 1px, 0) scale(.985); }
+.btn-primary { background: var(--green-900); color: #eff6f8; box-shadow: var(--e2); }
+.btn-primary:hover { box-shadow: var(--e3); }
 .btn-primary:hover { background: var(--green-800); }
 .btn-primary:disabled { opacity: .4; cursor: not-allowed; }
 [data-theme="dark"] .btn-primary { background: var(--sage); color: #0b1820; }
@@ -406,7 +480,10 @@ textarea.input { resize: vertical; min-height: 76px; line-height: var(--lh); }
 /* شريط التحكّم: سطح واحد محدود يجمع البحث والمرشِّحات وطريقة العرض والإجراءات،
    بدل ثلاثة صفوف سائبة تطفو فوق الخلفية بلا رابط بينها. */
 .controls {
-  background: var(--surface); border: var(--hair); border-radius: var(--radius);
+  background: var(--glass-bg); border: 1px solid var(--glass-brd); border-radius: var(--radius);
+  -webkit-backdrop-filter: saturate(var(--glass-sat)) blur(var(--glass-blur));
+  backdrop-filter: saturate(var(--glass-sat)) blur(var(--glass-blur));
+  box-shadow: var(--e2);
   padding: var(--s3) var(--s4); margin: var(--s5) 0 var(--s4);
   display: flex; flex-direction: column; gap: var(--s3);
 }
@@ -420,9 +497,10 @@ textarea.input { resize: vertical; min-height: 76px; line-height: var(--lh); }
   border: 1px solid transparent; background: transparent; color: var(--text-2);
   border-radius: var(--radius-pill); padding: var(--s1) var(--s3);
   font-family: inherit; font-size: var(--fs-xs); font-weight: 600; cursor: pointer;
-  transition: background .15s, color .15s; white-space: nowrap;
+  transition: background var(--dur-2) var(--ease), color var(--dur-2) var(--ease),
+              transform var(--dur-2) var(--ease); white-space: nowrap;
 }
-.pill:hover { background: var(--surface-2); color: var(--text); }
+.pill:hover { background: var(--surface-2); color: var(--text); transform: translateY(-1px); }
 .pill.active { background: var(--primary-soft); color: var(--green-700); font-weight: 700; }
 [data-theme="dark"] .pill.active { color: var(--sage); }
 .filters .spacer { flex: 1; }
@@ -432,7 +510,10 @@ textarea.input { resize: vertical; min-height: 76px; line-height: var(--lh); }
 .stat-tile {
   background: var(--surface); border: var(--hair); border-radius: var(--radius);
   padding: var(--s4); display: flex; align-items: center; gap: var(--s3);
+  box-shadow: var(--e1);
+  transition: transform var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease);
 }
+.stat-tile:hover { transform: translate3d(0, -2px, 14px); box-shadow: var(--e3); }
 .stat-tile .stat-icon {
   width: 32px; height: 32px; border-radius: var(--radius-sm); flex: none;
   background: var(--surface-2); color: var(--green-600);

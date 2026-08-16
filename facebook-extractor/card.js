@@ -255,7 +255,11 @@
   .fx-i { flex: none; vertical-align: -2px; }
 
   /* ===================== الحاويات ===================== */
-  .fx-list.fx-cards { display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr)); }
+  /* المشهد على الحاوية لا على البطاقة: perspective على كل بطاقة يجعل نقطة
+     التلاشي في مركزها هي، فتبدو كلٌّ منها في عالم منفصل. على الحاوية يشترك
+     الجميع في نقطة تلاشٍ واحدة، وهذا ما يجعل العمق يبدو حقيقياً. */
+  .fx-list.fx-cards { display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+    perspective: var(--persp, 1100px); perspective-origin: 50% 0; }
   .fx-list.fx-table { display: flex; flex-direction: column; gap: 8px; }
 
   /* ===================== البطاقة ===================== */
@@ -264,11 +268,27 @@
     position: relative; display: flex; flex-direction: column;
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius); overflow: hidden; box-shadow: var(--shadow-xs);
-    transition: box-shadow .28s ease, transform .28s ease, border-color .28s ease;
-    animation: fxUp .45s cubic-bezier(.22,.8,.28,1) both;
+    box-shadow: var(--e2);
+    transform-style: preserve-3d;
+    transition: box-shadow var(--dur-2) var(--ease), transform var(--dur-2) var(--ease),
+                border-color var(--dur-2) var(--ease);
+    will-change: transform;
+    /* fill-mode: backwards لا both. مع both تبقى القيمة الأخيرة للحركة مطبَّقة
+       بعد انتهائها، وقيم الحركة تعلو على التصريحات العادية في سلّم الأسلوب —
+       فكان transform النهائي (none) يُلغي تحويل :hover إلى الأبد ويقتل العمق. */
+    animation: fxUp var(--dur-3) var(--ease) backwards;
   }
-  @keyframes fxUp { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
-  .fx-card:hover { box-shadow: var(--shadow-lg); transform: translateY(-3px); }
+  /* الدخول من العمق لا من الأسفل فقط */
+  @keyframes fxUp {
+    from { opacity: 0; transform: translate3d(0, 12px, -60px) rotateX(5deg); }
+    to   { opacity: 1; transform: none; }
+  }
+  /* المرور يقرّب البطاقة من الناظر ويميلها قليلاً — والخروج بنفس المنحنى */
+  .fx-card:hover { box-shadow: var(--e4); transform: translate3d(0, -5px, 34px) rotateX(1.6deg); }
+  .fx-card:active { transform: translate3d(0, -1px, 8px); transition-duration: var(--dur-1); }
+  /* الغلاف يتقدّم على مستوى الجسم فيُقرأ ارتفاعه فوقه */
+  .fx-card:hover .fx-cover { transform: translateZ(14px); }
+  .fx-cover { transition: transform var(--dur-2) var(--ease); }
   /* شريط الحكم أعلى البطاقة — أوضح من حدّ جانبي رفيع، ولا يزاحم النص */
   .fx-card::before { content: ''; position: absolute; inset-inline: 0; top: 0; height: 3px; background: var(--acc); z-index: 4; }
   .fx-fresh { box-shadow: 0 0 0 2px var(--sage-soft), var(--shadow-md); }
@@ -347,9 +367,11 @@
     border: 1px solid var(--border); background: var(--surface); color: var(--text);
     border-radius: 999px; padding: 6px 9px; cursor: pointer;
     font-family: inherit; font-size: var(--fs-xs); font-weight: 700; text-decoration: none;
-    transition: border-color .18s ease, color .18s ease, background .18s ease;
+    transition: border-color var(--dur-2) var(--ease), color var(--dur-2) var(--ease),
+                background var(--dur-2) var(--ease), transform var(--dur-2) var(--ease),
+                box-shadow var(--dur-2) var(--ease);
   }
-  .fx-btn:hover { border-color: var(--green-500); color: var(--green-700); }
+  .fx-btn:hover { border-color: var(--green-500); color: var(--green-700); transform: translateY(-1px); box-shadow: var(--e2); }
   .fx-btn.on { background: var(--primary-soft); border-color: var(--green-500); color: var(--green-700); }
   [data-theme="dark"] .fx-btn:hover, [data-theme="dark"] .fx-btn.on { color: var(--sage); }
   .fx-panel { border-top: 1px solid var(--border); padding: 0 14px 12px; }
@@ -363,10 +385,12 @@
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius-sm); padding: 9px 12px 9px 12px;
     padding-inline-start: 15px;
-    transition: box-shadow .2s ease, border-color .2s ease;
+    transition: box-shadow var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease),
+                transform var(--dur-2) var(--ease);
   }
   .fx-row::before { content: ''; position: absolute; inset-block: 0; inset-inline-start: 0; width: 4px; background: var(--acc); }
-  .fx-row:hover { box-shadow: var(--shadow); }
+  .fx-row:hover { box-shadow: var(--e3); transform: translate3d(0, -1px, 10px); border-color: color-mix(in srgb, var(--acc) 30%, var(--border)); }
+  .fx-list.fx-table { perspective: var(--persp, 1100px); }
   .fx-row-thumb { position: relative; width: 54px; height: 40px; border-radius: 8px; overflow: hidden;
     background: var(--surface-2); display: grid; place-items: center; }
   .fx-row-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
@@ -387,6 +411,11 @@
   @media (max-width: 1024px) {
     .fx-row { grid-template-columns: 54px minmax(0, 1fr) auto auto; }
     .fx-row-metrics, .fx-row-date { display: none; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .fx-card { animation: none; }
+    .fx-card:hover, .fx-row:hover, .fx-card:hover .fx-cover { transform: none; }
+    .fx-list.fx-cards, .fx-list.fx-table { perspective: none; }
   }
   @media (max-width: 620px) {
     .fx-list.fx-cards { grid-template-columns: 1fr; }

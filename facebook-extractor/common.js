@@ -323,12 +323,55 @@
   }
 
   /* ============================================================
+   * الظهور التدريجي عند التمرير
+   * ------------------------------------------------------------
+   * المهارة تقترح Parallax عبر GSAP، لكن GSAP مكتبة خارجية تكسر ضمانة أن
+   * هذا الموقع لا يطلب أي ملف من الإنترنت. IntersectionObserver مدمج في
+   * المتصفح ويؤدّي الغرض نفسه بلا بايت واحد إضافي، ويستيقظ عند التقاطع
+   * فقط بدل الإصغاء لكل حدث تمرير — وهو ما تحذّر منه ملاحظات الأداء.
+   *
+   * العناصر تُكشف مرة واحدة ثم يتوقّف مراقبتها، فلا يتراكم عمل مع طول الصفحة.
+   * ============================================================ */
+  function initReveal(root) {
+    const scope = root || (typeof document !== 'undefined' ? document : null);
+    if (!scope || typeof scope.querySelectorAll !== 'function') return;   // خارج المتصفح
+    if (!('IntersectionObserver' in W)) return;   // متصفح قديم: المحتوى ظاهر أصلاً
+    // من طلب تقليل الحركة يرى المحتوى مباشرة بلا أي تدرّج
+    if (typeof W.matchMedia === 'function' && W.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    const targets = scope.querySelectorAll('.panel, .stat-tile, .chart-card, .features-band .feature, .notice');
+    if (!targets.length) return;
+
+    const io = new IntersectionObserver((entries, obs) => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        e.target.classList.add('in');
+        obs.unobserve(e.target);      // مرة واحدة فقط
+      });
+    }, { rootMargin: '0px 0px -8% 0px', threshold: 0.06 });
+
+    targets.forEach((el, i) => {
+      if (el.dataset.revealed) return;
+      el.dataset.revealed = '1';
+      el.classList.add('reveal');
+      // تدرّج زمني بسيط داخل الدفعة الواحدة، بسقف حتى لا ينتظر أحد طويلاً
+      el.style.transitionDelay = Math.min(i * 40, 220) + 'ms';
+      io.observe(el);
+    });
+  }
+
+  if (typeof document !== 'undefined' && typeof document.addEventListener === 'function') {
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => initReveal());
+    else initReveal();
+  }
+
+  /* ============================================================
    * التصدير إلى window
    * ============================================================ */
   const api = {
     STORAGE, $, sleep, escapeHtml, escapeAttr: escapeHtml, fmtNum, num, validDate,
     getToken, postKey, applyTheme, initTheme, showToast, sevAccent, apiError,
-    apiFetch, apiPost, apiGet, isNetworkError, NET_HINT,
+    apiFetch, apiPost, apiGet, isNetworkError, NET_HINT, initReveal,
     csvCell, download, exportCsv, normalizePost, db, dbCheck, saveToDb
   };
   W.FBXCommon = api;

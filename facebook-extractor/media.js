@@ -271,14 +271,24 @@
        مِرآة (matte) بتدرّج ألوان الهوية بدل السواد، وتُعرض كاملة (contain) بلا فقد للمحتوى. */
     .media-item { position: relative; display: block; width: 100%; height: 100%; padding: 0;
       overflow: hidden; border: none; cursor: pointer; text-decoration: none; font: inherit;
-      background: radial-gradient(130% 130% at 25% 15%, var(--sage, #a8c9d4) 0%, var(--green-600, #2b7f97) 55%, var(--green-800, #17303d) 100%); }
+      /* مِرآة خلف الصورة تحلّ محل الأسود عند وجود حواف. تُبنى من الطرف الداكن
+         للسلّم لا من الطرف المضيء: السماوي الكهربائي خلف كل صورة يسرق الانتباه
+         من المحتوى نفسه، والمِرآة يجب أن تُنسى لا أن تُرى. */
+      background: radial-gradient(120% 120% at 30% 10%,
+        color-mix(in srgb, var(--green-600, #0e8fae) 40%, var(--green-900, #070d1c)) 0%,
+        var(--green-800, #111a2e) 55%, var(--green-950, #020617) 100%); }
     .media-item:focus-visible { outline: 2px solid var(--green-600, #2b7f97); outline-offset: -2px; }
     img.media-el { position: relative; z-index: 1; width: 100%; height: 100%;
-      object-fit: contain; display: block; transition: transform .4s cubic-bezier(.22,.8,.28,1); }
+      object-fit: contain; display: block; transition: transform var(--dur-3, 340ms) var(--ease, ease); }
     /* بعد نجاح القصّ الآلي لم تعد هناك حواف يجب حمايتها بـ contain، فتُملأ الخانة بالكامل. */
     img.media-el.fbx-cropped { object-fit: cover; }
     .media-item.no-img img.media-el { display: none; }
-    .media-item:hover img.media-el { transform: scale(1.05); }
+    .media-item:hover img.media-el { transform: scale(1.06); }
+    @media (prefers-reduced-motion: reduce) {
+      .fbx-lb, .fbx-lb-stage img, .fbx-lb-stage video { animation: none; }
+      .media-item:hover img.media-el { transform: none; }
+      .fbx-lb { perspective: none; }
+    }
     .media-blank { position: relative; z-index: 1; display: grid; place-items: center;
       width: 100%; height: 100%; font-size: 20px; opacity: .85; }
     .media-play { position: absolute; z-index: 2; inset: 0; margin: auto; width: 34px; height: 34px;
@@ -292,15 +302,19 @@
 
     /* ===== العارض المكبّر ===== */
     .fbx-lb { position: fixed; inset: 0; z-index: 9999; display: grid; place-items: center;
-      background: rgba(8, 18, 24, .93); backdrop-filter: blur(6px); padding: 60px 68px;
-      animation: fbxLbIn .2s ease both; }
+      background: rgba(2, 6, 23, .82);
+      -webkit-backdrop-filter: saturate(1.4) blur(16px); backdrop-filter: saturate(1.4) blur(16px);
+      padding: 60px 68px; perspective: 1200px;
+      animation: fbxLbIn var(--dur-2, 220ms) var(--ease, ease) both; }
     .fbx-lb[hidden] { display: none; }
     @keyframes fbxLbIn { from { opacity: 0; } to { opacity: 1; } }
     .fbx-lb-stage { max-width: 100%; max-height: 100%; display: grid; place-items: center; }
     .fbx-lb-stage img, .fbx-lb-stage video { max-width: 100%; max-height: calc(100vh - 130px);
       border-radius: 12px; display: block; box-shadow: 0 24px 60px rgba(0,0,0,.55);
-      animation: fbxLbZoom .25s cubic-bezier(.22,.8,.28,1) both; }
-    @keyframes fbxLbZoom { from { opacity: 0; transform: scale(.96); } to { opacity: 1; transform: none; } }
+      animation: fbxLbZoom var(--dur-3, 340ms) var(--ease, ease) both; }
+    @keyframes fbxLbZoom {
+      from { opacity: 0; transform: translate3d(0, 10px, -140px) rotateX(6deg); }
+      to   { opacity: 1; transform: none; } }
     .fbx-lb-x { position: absolute; top: 16px; inset-inline-end: 18px; width: 40px; height: 40px; }
     .fbx-lb-nav { position: absolute; top: 50%; transform: translateY(-50%); width: 44px; height: 44px; font-size: 22px; }
     .fbx-lb-nav.prev { inset-inline-end: 16px; }
