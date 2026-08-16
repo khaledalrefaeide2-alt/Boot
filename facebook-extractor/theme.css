@@ -15,7 +15,7 @@
   --surface: #ffffff;
   --surface-2: #edf3f5;
   --text: #12222d;
-  --text-2: #5d7484;
+  --text-2: #57697a;   /* كان #5d7484 = 4.46:1 على الخلفية — دون حدّ WCAG 4.5:1 */
   --border: #e0eaee;
 
   /* هوية الموقع: أزرق مائي هادئ متدرّج نحو الكحلي العميق (طراز تحريري) */
@@ -55,11 +55,13 @@
 
   /* ---- مقياس الخط: أدوار محدَّدة لا مقاسات حرّة ---- */
   --fs-display: 1.6rem;   /* عنوان الصفحة */
-  --fs-title: 1.02rem;    /* عنوان لوحة أو قسم */
-  --fs-body: .875rem;
-  --fs-sm: .8rem;
-  --fs-xs: .72rem;
-  --fs-2xs: .66rem;
+  --fs-title: 1.05rem;    /* عنوان لوحة أو قسم */
+  --fs-body: .9rem;       /* 14.4px */
+  --fs-sm: .85rem;        /* 13.6px */
+  --fs-xs: .8rem;         /* 12.8px */
+  --fs-2xs: .75rem;       /* 12px — الأرضية: لا نصّ أصغر منها في الموقع.
+                             القياس السابق (.66rem = 10.6px) كان دون حدّ المقروئية،
+                             والعربية أشدّ حساسية له من اللاتينية لكثرة نقاطها. */
   --lh-tight: 1.35;
   --lh: 1.7;
 
@@ -124,6 +126,24 @@
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ================= حلقة التركيز =================
+   لم تكن في الموقع أي قاعدة :focus-visible، فمن يتنقّل بلوحة المفاتيح وحدها
+   كان يعتمد على حلقة المتصفح الافتراضية — وهي تختفي فعلياً فوق الشريط الجانبي
+   الكحلي. هنا حلقة واحدة معرَّفة لكل عنصر تفاعلي، بلون يتغيّر مع السطح.
+   :where() تُبقي الأولوية صفراً فلا تزاحم أنماط المكوّنات. */
+:root { --focus: #1a5164; }
+[data-theme="dark"] { --focus: #a8c9d4; }
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+/* فوق الأسطح الداكنة تُقلب إلى لون فاتح حتى تبقى مرئية */
+.sidebar :where(a, button):focus-visible,
+.control-band :where(a, button, select):focus-visible,
+.fx-scrim :where(a, button):focus-visible,
+.fbx-lb :where(a, button):focus-visible { outline-color: #eaf3f6; }
+/* من يستخدم الفأرة لا يرى الحلقة — وهذا سلوك :focus-visible القياسي */
 html { scroll-behavior: smooth; }
 body {
   font-family: var(--font-body);
@@ -167,7 +187,7 @@ body {
 .nav-group { margin-bottom: var(--s4); display: flex; flex-direction: column; gap: 1px; }
 .nav-label {
   font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .6px;
-  color: rgba(255,255,255,.34); padding: 0 var(--s3) var(--s2);
+  color: rgba(255,255,255,.5); padding: 0 var(--s3) var(--s2);   /* .34 = 3.1:1 — دون الحد */
 }
 .side-nav a {
   display: flex; align-items: center; gap: var(--s3);
@@ -190,7 +210,7 @@ body {
   border-top: 1px solid rgba(255,255,255,.08);
   display: flex; align-items: center; justify-content: space-between; gap: var(--s2);
 }
-.side-ver { font-size: var(--fs-2xs); color: rgba(255,255,255,.32); padding-inline-start: var(--s2); }
+.side-ver { font-size: var(--fs-2xs); color: rgba(255,255,255,.5);   /* .32 = 2.89:1 — دون الحد */ padding-inline-start: var(--s2); }
 .icon-btn {
   width: 32px; height: 32px; border-radius: var(--radius-sm); flex: none;
   border: 1px solid rgba(255,255,255,.14); cursor: pointer;
@@ -219,7 +239,7 @@ body {
 .ph-text { min-width: 0; display: flex; flex-direction: column; gap: var(--s1); }
 .hero-badge {
   display: inline-flex; align-items: center; gap: var(--s2); align-self: flex-start;
-  color: var(--green-600); font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .4px;
+  color: var(--green-700); font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .4px;   /* green-600 = 4.53:1، يمرّ بلا هامش */
 }
 [data-theme="dark"] .hero-badge { color: var(--sage); }
 .page-header h2 {
@@ -308,7 +328,7 @@ main { max-width: 1200px; margin: 0 auto; padding: var(--s8) var(--s8) var(--s12
 
 /* ================= حقول الإدخال ================= */
 label.field-label { display: block; font-size: var(--fs-xs); font-weight: 700; margin-bottom: var(--s2); color: var(--text); }
-label.field-label small { font-weight: 400; color: var(--text-2); }
+label.field-label small { font-weight: 400; color: var(--text-2); font-size: var(--fs-2xs); }
 .input, select.input {
   width: 100%; padding: var(--s3) var(--s3);
   border: var(--hair); border-radius: var(--radius-sm);
@@ -319,6 +339,10 @@ label.field-label small { font-weight: 400; color: var(--text-2); }
 .input::placeholder { color: var(--text-2); opacity: .7; }
 .input:hover { border-color: color-mix(in srgb, var(--green-500) 45%, var(--border)); }
 .input:focus { outline: none; border-color: var(--green-600); box-shadow: 0 0 0 3px var(--primary-soft); }
+/* حلقة box-shadow وحدها لونها ‎#e4eff3 على أبيض ≈ 1.15:1 — غير مرئية عملياً.
+   من يتنقّل بلوحة المفاتيح يحتاج مؤشراً حقيقياً، فتُعاد له الحلقة الموحّدة.
+   (الأولوية 0,2,0 لتغلب على .input:focus التي تلغي الـ outline.) */
+.input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
 textarea.input { resize: vertical; min-height: 76px; line-height: var(--lh); }
 .input-wrap { position: relative; }
 .input-wrap .toggle-eye {
@@ -372,7 +396,7 @@ textarea.input { resize: vertical; min-height: 76px; line-height: var(--lh); }
 .chip .chip-url { direction: ltr; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 280px; padding-inline-start: var(--s2); }
 .chip button {
   border: none; background: transparent; color: var(--text-2);
-  width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
+  width: 24px; height: 24px; border-radius: 50%; cursor: pointer;   /* حدّ 24×24 */
   display: grid; place-items: center; flex: none; padding: 0; transition: background .15s, color .15s;
 }
 .chip button:hover { background: var(--danger-soft); color: var(--danger); }
@@ -460,6 +484,7 @@ textarea.input { resize: vertical; min-height: 76px; line-height: var(--lh); }
 .view-toggle { display: flex; background: var(--surface-2); border: var(--hair); border-radius: var(--radius-sm); padding: 2px; gap: 2px; }
 .view-toggle button {
   border: none; background: none; padding: var(--s1) var(--s3); cursor: pointer;
+  min-width: 34px; min-height: 26px;   /* كان 39×23 — دون حدّ 24×24 */
   color: var(--text-2); border-radius: 7px; display: grid; place-items: center;
   transition: background .15s, color .15s;
 }
