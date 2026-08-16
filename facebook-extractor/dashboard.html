@@ -8,28 +8,30 @@
 <style>
   /* ============ Control band (unique to this page) ============ */
   .control-band {
-    margin-top: 18px; background: linear-gradient(150deg, var(--green-800), var(--green-950));
-    border-radius: var(--radius-lg); padding: 18px 20px; color: #e4eff3;
-    display: flex; align-items: center; gap: 16px; flex-wrap: wrap;
+    margin-top: var(--s5); background: var(--green-950);
+    border-radius: var(--radius); padding: var(--s4) var(--s5); color: #dbe7ec;
+    display: flex; align-items: center; gap: var(--s4); flex-wrap: wrap;
   }
   .pulse-dot { width: 10px; height: 10px; border-radius: 50%; flex: none; background: #7a8a7e; }
   .pulse-dot.on { background: #6fdb85; animation: pulse 1.8s infinite; }
   @keyframes pulse { 0% { box-shadow: 0 0 0 0 rgba(111, 219, 133, .5); } 70% { box-shadow: 0 0 0 10px rgba(111, 219, 133, 0); } 100% { box-shadow: 0 0 0 0 rgba(111, 219, 133, 0); } }
   .control-info { flex: 1 1 200px; }
-  .control-info h3 { font-size: .9rem; font-weight: 800; }
-  .control-info p { font-size: .72rem; opacity: .72; line-height: 1.6; }
+  .control-info h3 { font-size: var(--fs-body); font-weight: 700; letter-spacing: -.2px; }
+  .control-info p { font-size: var(--fs-xs); opacity: .6; line-height: var(--lh); margin-top: 2px; }
   .interval-select {
-    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.2); color: #fff;
-    border-radius: var(--radius-sm); padding: 7px 10px; font-family: inherit; font-size: .74rem; font-weight: 700;
+    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.16); color: #fff;
+    border-radius: var(--radius-sm); padding: var(--s2) var(--s3); font-family: inherit; font-size: var(--fs-xs); font-weight: 600;
   }
   .interval-select option { color: #1b1730; }
   .countdown {
-    font-size: 1.15rem; font-weight: 800; letter-spacing: .5px; direction: ltr;
-    background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.18);
-    border-radius: var(--radius-sm); padding: 6px 15px; font-variant-numeric: tabular-nums;
+    font-size: 1.05rem; font-weight: 700; letter-spacing: .5px; direction: ltr;
+    background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.16);
+    border-radius: var(--radius-sm); padding: var(--s2) var(--s4); font-variant-numeric: tabular-nums;
   }
-  .btn-cream { background: linear-gradient(155deg, var(--gold), var(--gold-deep)); color: #fff; }
-  .btn-stop { background: linear-gradient(155deg, #c65b46, #96331f); color: #fff; }
+  .btn-cream { background: var(--sage); color: #0b1820; }
+  .btn-cream:hover { background: #bcd8e1; }
+  .btn-stop { background: #b8402f; color: #fff; }
+  .btn-stop:hover { background: #a53727; }
   .mini-status { width: 100%; font-size: .72rem; opacity: .78; display: flex; align-items: center; gap: 7px; }
   .mini-spinner { width: 12px; height: 12px; flex: none; border: 2px solid rgba(255,255,255,.25); border-top-color: #fff; border-radius: 50%; animation: spin .8s linear infinite; display: none; }
   @keyframes spin { to { transform: rotate(360deg); } }
@@ -40,11 +42,11 @@
   .feed-head select.input { width: auto; }
 
   /* stat tiles + chart cards */
-  .charts-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: 14px; margin-bottom: 4px; }
+  .charts-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--s4); margin-bottom: var(--s1); }
   @media (max-width: 860px) { .charts-grid { grid-template-columns: 1fr; } }
-  .chart-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); box-shadow: var(--shadow-xs); padding: 16px 16px 12px; }
-  .chart-card h4 { font-size: .86rem; font-weight: 800; display: flex; align-items: center; gap: 7px; }
-  .chart-card .chart-sub { font-size: .7rem; color: var(--text-2); margin-top: 2px; margin-bottom: 8px; }
+  .chart-card { background: var(--surface); border: var(--hair); border-radius: var(--radius); padding: var(--s5) var(--s5) var(--s3); }
+  .chart-card h4 { font-size: var(--fs-body); font-weight: 700; letter-spacing: -.2px; display: flex; align-items: center; gap: var(--s2); }
+  .chart-card .chart-sub { font-size: var(--fs-2xs); color: var(--text-2); margin: 2px 0 var(--s3); }
   .chart-holder { position: relative; width: 100%; }
   .chart-holder svg { width: 100%; height: auto; display: block; overflow: visible; }
   .chart-empty { text-align: center; color: var(--text-2); font-size: .78rem; padding: 30px 10px; }
@@ -58,7 +60,7 @@
   svg text.num { direction: ltr; unicode-bidi: plaintext; }
 
   /* ============ Classification summary (merged from monitor.html) ============ */
-  .asum-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 10px; margin: 18px 0 4px; }
+  .asum-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--s3); margin: var(--s5) 0 var(--s1); }
   /* بطاقات الملخّص: خلفية باهتة ونصّ ملوّن بدل تدرّجات مشبعة — تُقرأ الأرقام
      بوضوح أعلى، ولا تتنافس ستّ مربّعات صارخة على انتباه العين. */
   .asum-card {
@@ -91,26 +93,39 @@
       <div class="brand-logo"><i class="ic" data-ic="logo"></i></div>
       <div>
         <h1>الإعلام الرقمي</h1>
-        <p>استخراج وتحليل منشورات وحسابات</p>
+        <p>رصد وتحليل المحتوى</p>
       </div>
     </a>
     <nav class="side-nav">
-      <a href="index.html"><span class="ico"><i class="ic" data-ic="search"></i></span><span class="label">استخراج فيسبوك</span></a>
-      <a href="dashboard.html" class="active"><span class="ico"><i class="ic" data-ic="chart"></i></span><span class="label">رصد فيسبوك</span></a>
-      <a href="twitter.html"><span class="ico">𝕏</span><span class="label">استخراج X (تويتر)</span></a>
-      <a href="twitter-dashboard.html"><span class="ico"><i class="ic" data-ic="signal"></i></span><span class="label">رصد X (تويتر)</span></a>
-      <a href="settings.html"><span class="ico"><i class="ic" data-ic="settings"></i></span><span class="label">الإعدادات</span></a>
+      <div class="nav-group">
+        <span class="nav-label">الاستخراج</span>
+        <a href="index.html"><span class="ico"><i class="ic" data-ic="search"></i></span><span class="label">فيسبوك</span></a>
+        <a href="twitter.html"><span class="ico"><i class="ic" data-ic="x"></i></span><span class="label">X (تويتر)</span></a>
+      </div>
+      <div class="nav-group">
+        <span class="nav-label">الرصد التلقائي</span>
+        <a href="dashboard.html" class="active"><span class="ico"><i class="ic" data-ic="chart"></i></span><span class="label">فيسبوك</span></a>
+        <a href="twitter-dashboard.html"><span class="ico"><i class="ic" data-ic="signal"></i></span><span class="label">X (تويتر)</span></a>
+      </div>
+      <div class="nav-group">
+        <span class="nav-label">النظام</span>
+        <a href="settings.html"><span class="ico"><i class="ic" data-ic="settings"></i></span><span class="label">الإعدادات</span></a>
+      </div>
     </nav>
     <div class="side-foot">
+      <span class="side-ver">الإصدار 5.0</span>
       <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري"><i class="ic" data-ic="moon"></i></button>
     </div>
   </aside>
 
   <div class="main-col">
     <header class="page-header">
-      <span class="hero-badge"><i class="ic" data-ic="signal"></i> رصد تلقائي · تحليل وتصنيف · رسوم بيانية تفاعلية</span>
-      <h2>الرصد التلقائي <em>لمنصاتك الرسمية</em> على فيسبوك</h2>
-      <p>أضف صفحاتك الرسمية (واضبط مفتاحك من الإعدادات)، وسيستخرج الموقع منشوراً واحداً من كل صفحة تلقائياً كل نصف ساعة (قابلة للتعديل)، ثم يحلّله ويصنّفه فوراً ويعرض كامل بياناته — النص، الصور والفيديوهات، والتفاعلات والمشاهدات والمشاركات والتعليقات — إلى جانب رسوم بيانية تفاعلية وتصفية حية حسب المنصة والفترة والتصنيف.</p>
+      <div class="ph-text">
+        <span class="hero-badge"><i class="ic" data-ic="chart"></i> رصد فيسبوك</span>
+        <h2>الرصد التلقائي للصفحات</h2>
+        <p>يستخرج الموقع منشورات صفحاتك الرسمية تلقائياً كل دورة، ويحلّلها ويصنّفها فوراً مع رسوم بيانية وتصفية حية.</p>
+      </div>
+      
     </header>
 
     <main>
@@ -220,7 +235,7 @@
 
     </main>
 
-    <footer>الإعلام الرقمي — الرصد التلقائي والتحليل التفاعلي · صور وفيديو · تصدير Excel · الإصدار 4.0 <i class="ic" data-ic="logo"></i></footer>
+    <footer>الإعلام الرقمي — الرصد التلقائي والتحليل التفاعلي · صور وفيديو · تصدير Excel · الإصدار 5.0 <i class="ic" data-ic="logo"></i></footer>
   </div>
 </div>
 <div class="toast" id="toast"></div>

@@ -7,33 +7,25 @@
 <link rel="stylesheet" href="theme.css">
 <style>
   /* ================= Features band (unique to this page) ================= */
-  /* شريط الميزات: لوح أزرق باهت بنص كحلي — يتنفّس مع بقية الصفحة بدل كتلة داكنة ثقيلة */
+  /* شريط الميزات: محتوى تعريفي، فمكانه أسفل الصفحة بعد أداة العمل لا قبلها.
+     وشكله هنا صفٌّ خفيف مفصول بخط لا لوحاً ملوّناً يزاحم المحتوى الحقيقي. */
   .features-band {
-    margin-top: 18px;
-    background: linear-gradient(150deg, var(--sage-soft), var(--cream));
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 30px 26px;
-    display: grid; gap: 16px;
-    grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+    margin-top: var(--s12); padding-top: var(--s8);
+    border-top: var(--hair);
+    display: grid; gap: var(--s6);
+    grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
     color: var(--text);
   }
-  .feature { text-align: center; padding: 0 6px; position: relative; }
-  .feature + .feature::before {
-    content: '';
-    position: absolute; inset-inline-end: -8px; top: 14%;
-    height: 72%; width: 1px;
-    background: linear-gradient(180deg, transparent, var(--border), transparent);
-  }
+  .feature { position: relative; }
   .feature-icon {
-    width: 40px; height: 40px; margin: 0 auto 8px;
+    width: 30px; height: 30px; margin-bottom: var(--s3);
     border-radius: var(--radius-sm);
-    background: var(--surface); border: 1px solid var(--border);
-    box-shadow: var(--shadow-xs);
-    display: grid; place-items: center; font-size: 18px;
+    background: var(--surface-2); color: var(--green-600);
+    display: grid; place-items: center; font-size: 15px;
   }
-  .feature h3 { font-family: var(--font-display); font-size: 1rem; font-weight: 700; margin-bottom: 5px; }
-  .feature p { font-size: .7rem; line-height: 1.7; color: var(--text-2); }
+  [data-theme="dark"] .feature-icon { color: var(--sage); }
+  .feature h3 { font-size: var(--fs-sm); font-weight: 700; margin-bottom: var(--s1); letter-spacing: -.1px; }
+  .feature p { font-size: var(--fs-xs); line-height: var(--lh); color: var(--text-2); }
 
   /* ================= Status (extraction progress — unique to this page) ================= */
   #statusPanel { display: none; }
@@ -77,60 +69,52 @@
       <div class="brand-logo"><i class="ic" data-ic="logo"></i></div>
       <div>
         <h1>الإعلام الرقمي</h1>
-        <p>استخراج وتحليل منشورات وحسابات</p>
+        <p>رصد وتحليل المحتوى</p>
       </div>
     </a>
     <nav class="side-nav">
-      <a href="index.html" class="active"><span class="ico"><i class="ic" data-ic="search"></i></span><span class="label">استخراج فيسبوك</span></a>
-      <a href="dashboard.html"><span class="ico"><i class="ic" data-ic="chart"></i></span><span class="label">رصد فيسبوك</span></a>
-      <a href="twitter.html"><span class="ico">𝕏</span><span class="label">استخراج X (تويتر)</span></a>
-      <a href="twitter-dashboard.html"><span class="ico"><i class="ic" data-ic="signal"></i></span><span class="label">رصد X (تويتر)</span></a>
-      <a href="settings.html"><span class="ico"><i class="ic" data-ic="settings"></i></span><span class="label">الإعدادات</span></a>
+      <div class="nav-group">
+        <span class="nav-label">الاستخراج</span>
+        <a href="index.html" class="active"><span class="ico"><i class="ic" data-ic="search"></i></span><span class="label">فيسبوك</span></a>
+        <a href="twitter.html"><span class="ico"><i class="ic" data-ic="x"></i></span><span class="label">X (تويتر)</span></a>
+      </div>
+      <div class="nav-group">
+        <span class="nav-label">الرصد التلقائي</span>
+        <a href="dashboard.html"><span class="ico"><i class="ic" data-ic="chart"></i></span><span class="label">فيسبوك</span></a>
+        <a href="twitter-dashboard.html"><span class="ico"><i class="ic" data-ic="signal"></i></span><span class="label">X (تويتر)</span></a>
+      </div>
+      <div class="nav-group">
+        <span class="nav-label">النظام</span>
+        <a href="settings.html"><span class="ico"><i class="ic" data-ic="settings"></i></span><span class="label">الإعدادات</span></a>
+      </div>
     </nav>
     <div class="side-foot">
+      <span class="side-ver">الإصدار 5.0</span>
       <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري"><i class="ic" data-ic="moon"></i></button>
     </div>
   </aside>
 
   <div class="main-col">
     <header class="page-header">
-      <span class="hero-badge"><i class="ic" data-ic="sparkle"></i> استخراج · تحليل · تصنيف</span>
-      <h2>استخرج منشورات أي صفحة فيسبوك <em>بضغطة زر</em> وبتحكم كامل</h2>
-      <p>اضبط مفتاحك من صفحة الإعدادات مرة واحدة، حدّد الفترة الزمنية وعدد المنشورات بسقف مضمون، واحصل على النتائج محلّلة ومصنّفة بعرض عصري أنيق مع التصدير إلى JSON أو CSV.</p>
-      <button class="hero-cta" id="heroCta">ابدأ الاستخراج الآن <i class="ic" data-ic="arrowDown"></i></button>
+      <div class="ph-text">
+        <span class="hero-badge"><i class="ic" data-ic="search"></i> استخراج فيسبوك</span>
+        <h2>منشورات الصفحات</h2>
+        <p>اضبط مفتاحك مرة واحدة، حدّد الفترة وعدد المنشورات بسقف مضمون، واحصل على النتائج محلَّلة ومصنَّفة.</p>
+      </div>
+      <button class="hero-cta" id="heroCta">ابدأ الاستخراج <i class="ic" data-ic="arrowDown"></i></button>
     </header>
 
     <main>
 
   <!-- Features band -->
-  <section class="features-band">
-    <div class="feature">
-      <div class="feature-icon"><i class="ic" data-ic="key"></i></div>
-      <h3>اضبط مفتاحك مرة</h3>
-      <p>يُحفظ مفتاحك محلياً في متصفحك فقط من صفحة الإعدادات، ويُستخدم في كل الصفحات</p>
-    </div>
-    <div class="feature">
-      <div class="feature-icon"><i class="ic" data-ic="calendar"></i></div>
-      <h3>فلاتر دقيقة</h3>
-      <p>حدّد الفترة الزمنية وعدد المنشورات مع سقف فوترة إلزامي يحميك من الاستهلاك الزائد</p>
-    </div>
-    <div class="feature">
-      <div class="feature-icon"><i class="ic" data-ic="news"></i></div>
-      <h3>عرض عصري</h3>
-      <p>بطاقات أنيقة مع الإحصائيات والتفاعلات، وبحث وفرز فوري داخل النتائج</p>
-    </div>
-    <div class="feature">
-      <div class="feature-icon"><i class="ic" data-ic="download"></i></div>
-      <h3>تصدير مرن</h3>
-      <p>نزّل نتائجك بصيغة JSON أو CSV متوافقة مع Excel واللغة العربية</p>
-    </div>
-  </section>
-
   <!-- Setup notice -->
-  <section class="panel" id="setupPanel" style="display:none">
-    <div class="panel-title"><span class="num"><i class="ic" data-ic="warning"></i></span> لم يُضبط مفتاح الاستخراج بعد</div>
-    <div class="hint" style="font-size:.9rem">اذهب إلى <a href="settings.html" style="color:var(--green-700);font-weight:900"><i class="ic" data-ic="settings"></i> صفحة الإعدادات</a> واضبط مفتاح واجهة الاستخراج مرة واحدة، ثم عُد إلى هنا للبدء.</div>
-    <div class="actions-row"><a class="btn btn-ghost btn-sm" href="settings.html"><i class="ic" data-ic="settings"></i> فتح الإعدادات</a></div>
+  <section class="notice" id="setupPanel" style="display:none">
+    <span class="notice-ic"><i class="ic" data-ic="warning"></i></span>
+    <div class="notice-body">
+      <strong>لم يُضبط مفتاح الاستخراج بعد</strong>
+      <p>اضبط مفتاح واجهة الاستخراج مرة واحدة من صفحة الإعدادات، ثم عُد إلى هنا للبدء.</p>
+    </div>
+    <a class="btn btn-ghost btn-sm" href="settings.html"><i class="ic" data-ic="settings"></i> فتح الإعدادات</a>
   </section>
 
   <!-- Search form -->
@@ -194,7 +178,8 @@
   <section id="resultsSection">
     <div class="stats-grid" id="statsGrid"></div>
 
-    <div class="toolbar">
+    <div class="controls">
+      <div class="toolbar">
       <div class="search-wrap">
         <input class="input" type="search" id="searchInput" placeholder="ابحث داخل النتائج...">
       </div>
@@ -208,6 +193,7 @@
       <button class="btn btn-ghost btn-sm" id="saveDbBtn"><i class="ic" data-ic="save"></i> حفظ في قاعدة البيانات</button>
       <button class="btn btn-ghost btn-sm" id="aiReviewBtn" style="display:none"><i class="ic" data-ic="brain"></i> مراجعة بالذكاء الاصطناعي</button>
       <button class="btn btn-ghost btn-sm" id="reportBtn"><i class="ic" data-ic="file"></i> تقرير PDF</button>
+      </div>
     </div>
 
     <div class="posts-grid" id="postsGrid"></div>
@@ -217,9 +203,33 @@
     </div>
   </section>
 
+  <section class="features-band">
+    <div class="feature">
+      <div class="feature-icon"><i class="ic" data-ic="key"></i></div>
+      <h3>اضبط مفتاحك مرة</h3>
+      <p>يُحفظ مفتاحك محلياً في متصفحك فقط من صفحة الإعدادات، ويُستخدم في كل الصفحات</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon"><i class="ic" data-ic="calendar"></i></div>
+      <h3>فلاتر دقيقة</h3>
+      <p>حدّد الفترة الزمنية وعدد المنشورات مع سقف فوترة إلزامي يحميك من الاستهلاك الزائد</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon"><i class="ic" data-ic="news"></i></div>
+      <h3>عرض عصري</h3>
+      <p>بطاقات أنيقة مع الإحصائيات والتفاعلات، وبحث وفرز فوري داخل النتائج</p>
+    </div>
+    <div class="feature">
+      <div class="feature-icon"><i class="ic" data-ic="download"></i></div>
+      <h3>تصدير مرن</h3>
+      <p>نزّل نتائجك بصيغة JSON أو CSV متوافقة مع Excel واللغة العربية</p>
+    </div>
+  </section>
+
+
     </main>
 
-    <footer>الإعلام الرقمي — استخراج وتحليل وتصنيف منشورات فيسبوك · صور وفيديو · تصدير Excel · تحليل محلي بالكامل · الإصدار 4.0 <i class="ic" data-ic="logo"></i></footer>
+    <footer>الإعلام الرقمي — استخراج وتحليل وتصنيف منشورات فيسبوك · صور وفيديو · تصدير Excel · تحليل محلي بالكامل · الإصدار 5.0 <i class="ic" data-ic="logo"></i></footer>
   </div>
 </div>
 <div class="toast" id="toast"></div>

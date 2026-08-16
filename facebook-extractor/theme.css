@@ -43,14 +43,38 @@
   --success-soft: #e2f3ea;
 
   /* ظلال ناعمة بلمسة زرقاء — حدّ 1px هو المُعرِّف الأساسي للبطاقة، والظل للعمق والانسيابية */
-  --shadow-xs: 0 1px 2px rgba(16, 42, 56, .05);
-  --shadow: 0 2px 6px rgba(16, 42, 56, .05), 0 10px 26px rgba(16, 42, 56, .07);
-  --shadow-md: 0 6px 18px rgba(16, 42, 56, .1);
-  --shadow-lg: 0 18px 40px rgba(16, 42, 56, .15);
+  --shadow-xs: 0 1px 2px rgba(16, 42, 56, .04);
+  --shadow: 0 1px 2px rgba(16, 42, 56, .04), 0 4px 12px rgba(16, 42, 56, .05);
+  --shadow-md: 0 4px 14px rgba(16, 42, 56, .08);
+  --shadow-lg: 0 12px 32px rgba(16, 42, 56, .12);
 
-  --radius-sm: 12px;
-  --radius: 20px;
-  --radius-lg: 28px;
+  /* ---- مقياس المسافات: مضاعفات 4px. كل حشوة وفجوة في الموقع تُشتق منه،
+     فينشأ إيقاع بصري منتظم بدل أرقام تُختار بالحدس (13px هنا و9px هناك). ---- */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 20px; --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px;
+
+  /* ---- مقياس الخط: أدوار محدَّدة لا مقاسات حرّة ---- */
+  --fs-display: 1.6rem;   /* عنوان الصفحة */
+  --fs-title: 1.02rem;    /* عنوان لوحة أو قسم */
+  --fs-body: .875rem;
+  --fs-sm: .8rem;
+  --fs-xs: .72rem;
+  --fs-2xs: .66rem;
+  --lh-tight: 1.35;
+  --lh: 1.7;
+
+  /* ---- أنصاف الأقطار: أضيق من السابق. الاستدارة الواسعة توحي بالمرح،
+     والأداة المهنية تُقرأ أدقّ بحوافّ محسوبة. ---- */
+  --radius-sm: 10px;
+  --radius: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+
+  /* ---- الحدّ الشعري (hairline) هو المُعرِّف الأساسي للسطح، والظل مساعد فقط ---- */
+  --hair: 1px solid var(--border);
+
+  /* أيقونة البحث داخل الحقل تُرسم كقناع، فتأخذ لون النص وتتبع السمة */
+  --ic-search: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%3E%3Ccircle%20cx%3D%2211%22%20cy%3D%2211%22%20r%3D%226.5%22%2F%3E%3Cpath%20d%3D%22m16%2016%204.5%204.5%22%2F%3E%3C%2Fsvg%3E");
 
   /* خط الموقع بالكامل: Arial. وهو خط نظام متوفّر على ويندوز وماك بلا تحميل،
      فلا يحتاج الموقع أي اتصال بخوادم خطوط خارجية. البدائل لأنظمة لينكس/أندرويد
@@ -112,248 +136,336 @@ body {
 /* العناوين الكبيرة: نفس الخط، والتمييز يأتي من الوزن والمقاس لا من عائلة أخرى */
 .display { font-family: var(--font-display); font-weight: 700; letter-spacing: -.2px; line-height: 1.5; }
 
-/* ================= هيكل الصفحة: قائمة جانبية + عمود المحتوى ================= */
+/* ================= هيكل التطبيق: قائمة جانبية ثابتة + عمود المحتوى ================= */
 .app-shell { display: flex; align-items: stretch; min-height: 100vh; }
 .sidebar {
-  width: 236px; flex: none;
-  background: linear-gradient(175deg, var(--green-800) 0%, var(--green-950) 100%);
-  color: #e9f2f5;
+  width: 232px; flex: none;
+  background: var(--green-950);           /* لون مصمت لا تدرّج: أهدأ وأدقّ */
+  border-inline-end: 1px solid rgba(255,255,255,.07);
+  color: #dbe7ec;
   display: flex; flex-direction: column;
-  padding: 20px 16px 16px;
+  padding: var(--s5) var(--s3) var(--s3);
   position: sticky; top: 0; height: 100vh; overflow-y: auto;
-  z-index: 10;
+  z-index: 20;
 }
-.side-brand { display: flex; align-items: center; gap: 10px; text-decoration: none; color: inherit; margin-bottom: 22px; padding: 4px 2px; }
+.side-brand {
+  display: flex; align-items: center; gap: var(--s3);
+  text-decoration: none; color: inherit;
+  padding: var(--s1) var(--s2) var(--s5);
+}
 .side-brand .brand-logo {
-  width: 38px; height: 38px; border-radius: 12px; flex: none;
-  background: linear-gradient(155deg, var(--gold), var(--gold-deep)); color: #fff;
-  box-shadow: 0 4px 12px rgba(26, 81, 100, .28);
-  display: grid; place-items: center; font-size: 18px;
+  width: 34px; height: 34px; border-radius: var(--radius-sm); flex: none;
+  background: var(--green-600); color: #fff;
+  display: grid; place-items: center; font-size: 17px;
 }
-.side-brand h1 { font-size: .95rem; font-weight: 800; letter-spacing: -.1px; line-height: 1.25; }
-.side-brand p { font-size: .68rem; opacity: .65; margin-top: 1px; }
-.side-nav { display: flex; flex-direction: column; gap: 2px; }
+.side-brand h1 { font-size: var(--fs-body); font-weight: 700; letter-spacing: -.1px; line-height: 1.3; }
+.side-brand p { font-size: var(--fs-2xs); opacity: .55; margin-top: 2px; }
+
+/* التنقّل مقسَّم إلى مجموعات معنونة: خمسة روابط بلا تجميع تُقرأ ككومة،
+   ومع العناوين تُقرأ كخريطة للأداة. */
+.side-nav { display: flex; flex-direction: column; gap: 1px; }
+.nav-group { margin-bottom: var(--s4); display: flex; flex-direction: column; gap: 1px; }
+.nav-label {
+  font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .6px;
+  color: rgba(255,255,255,.34); padding: 0 var(--s3) var(--s2);
+}
 .side-nav a {
-  display: flex; align-items: center; gap: 10px;
-  padding: 9px 11px; border-radius: var(--radius-sm);
-  color: #cfe0e7; text-decoration: none; font-size: .84rem; font-weight: 600;
-  opacity: .78; transition: background .15s, opacity .15s;
+  display: flex; align-items: center; gap: var(--s3);
+  padding: var(--s2) var(--s3); border-radius: var(--radius-sm);
+  color: #b9cdd6; text-decoration: none; font-size: var(--fs-sm); font-weight: 600;
+  position: relative; transition: background .15s, color .15s;
 }
-.side-nav a .ico { font-size: .95rem; width: 18px; text-align: center; }
-.side-nav a:hover { background: rgba(255,255,255,.06); opacity: 1; }
-.side-nav a.active { background: rgba(255,255,255,.12); opacity: 1; font-weight: 800; box-shadow: inset 2.5px 0 0 var(--gold); }
-.side-foot { margin-top: auto; padding-top: 12px; border-top: 1px solid rgba(255,255,255,.09); display: flex; justify-content: flex-end; }
+.side-nav a .ico { display: grid; place-items: center; width: 18px; flex: none; opacity: .75; }
+.side-nav a:hover { background: rgba(255,255,255,.05); color: #eaf3f6; }
+.side-nav a:hover .ico { opacity: 1; }
+.side-nav a.active { background: rgba(255,255,255,.1); color: #fff; font-weight: 700; }
+.side-nav a.active .ico { opacity: 1; color: var(--sage); }
+/* شريط رفيع يعلّم الصفحة الحالية — أوضح من فرق لون وحده */
+.side-nav a.active::before {
+  content: ''; position: absolute; inset-block: 7px; inset-inline-start: 0;
+  width: 3px; border-radius: 0 3px 3px 0; background: var(--sage);
+}
+.side-foot {
+  margin-top: auto; padding-top: var(--s3);
+  border-top: 1px solid rgba(255,255,255,.08);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s2);
+}
+.side-ver { font-size: var(--fs-2xs); color: rgba(255,255,255,.32); padding-inline-start: var(--s2); }
 .icon-btn {
-  width: 34px; height: 34px; border-radius: var(--radius-sm); border: 1px solid rgba(255,255,255,.16); cursor: pointer;
-  background: rgba(255,255,255,.06); color: #fff; font-size: 15px; display: grid; place-items: center;
-  transition: background .15s, transform .15s;
+  width: 32px; height: 32px; border-radius: var(--radius-sm); flex: none;
+  border: 1px solid rgba(255,255,255,.14); cursor: pointer;
+  background: rgba(255,255,255,.05); color: #dbe7ec; font-size: 14px;
+  display: grid; place-items: center; transition: background .15s, color .15s;
 }
-.icon-btn:hover { background: rgba(255,255,255,.16); transform: translateY(-1px); }
+.icon-btn:hover { background: rgba(255,255,255,.14); color: #fff; }
 
 .main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 
-/* ================= رأس الصفحة: بطلة تحريرية فاتحة بدل البانر الداكن =================
-   النموذج المرجعي يبني الهيبة من المساحة البيضاء وخط العنوان المشبك، لا من خلفية داكنة
-   ثقيلة. فالرأس هنا سطح فاتح واسع التنفّس، مع لمسة زرقاء باهتة في الخلفية فقط. */
+/* ================= رأس الصفحة: شريط تطبيق مضغوط وثابت =================
+   البانر الإعلاني الطويل يليق بصفحة تعريف، لا بأداة عمل: كان يدفع المحتوى
+   الحقيقي خارج الشاشة الأولى في كل صفحة. هنا شريط منخفض يحمل موقعك في
+   الأداة (سطر فوقي) + العنوان + الإجراء الأساسي، ويبقى ملتصقاً بالأعلى
+   أثناء التمرير فلا يضيع السياق داخل قوائم طويلة. */
 .page-header {
-  position: relative; overflow: hidden;
-  background: var(--surface);
-  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 15;
+  background: color-mix(in srgb, var(--surface) 86%, transparent);
+  backdrop-filter: saturate(1.6) blur(10px);
+  border-bottom: var(--hair);
   color: var(--text);
-  padding: 40px 34px 34px;
-  display: flex; flex-direction: column; gap: 4px;
+  padding: var(--s5) var(--s8);
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: var(--s6); flex-wrap: wrap;
 }
-/* هالة زرقاء باهتة جداً — عمق بلا ضجيج */
-.page-header::before, .page-header::after {
-  content: ''; position: absolute; z-index: 0; border-radius: 50%; pointer-events: none;
-  filter: blur(60px); opacity: .5;
-}
-.page-header::before { width: 340px; height: 340px; top: -190px; inset-inline-end: 4%; background: radial-gradient(circle, var(--sage), transparent 70%); }
-.page-header::after { width: 300px; height: 300px; bottom: -210px; inset-inline-start: 16%; background: radial-gradient(circle, var(--tan), transparent 70%); opacity: .55; }
-[data-theme="dark"] .page-header::before,
-[data-theme="dark"] .page-header::after { opacity: .16; }
-.page-header > * { position: relative; z-index: 1; }
+.ph-text { min-width: 0; display: flex; flex-direction: column; gap: var(--s1); }
 .hero-badge {
-  display: inline-flex; align-items: center; gap: 6px; align-self: flex-start;
-  background: var(--sage-soft); border: 1px solid var(--border); color: var(--green-700);
-  border-radius: 999px; padding: 5px 14px; font-size: .69rem; font-weight: 700; margin-bottom: 12px;
-  letter-spacing: .2px;
+  display: inline-flex; align-items: center; gap: var(--s2); align-self: flex-start;
+  color: var(--green-600); font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .4px;
 }
 [data-theme="dark"] .hero-badge { color: var(--sage); }
 .page-header h2 {
-  font-family: var(--font-display);
-  font-size: 2.1rem; font-weight: 700; line-height: 1.52; max-width: 760px; letter-spacing: 0;
+  font-size: var(--fs-display); font-weight: 700; line-height: var(--lh-tight);
+  letter-spacing: -.4px; max-width: 46ch;
 }
 .page-header h2 em { font-style: normal; color: var(--green-600); }
 [data-theme="dark"] .page-header h2 em { color: var(--sage); }
-.page-header p { max-width: 620px; color: var(--text-2); line-height: 1.85; font-size: .84rem; margin-top: 10px; }
-/* زرّ حبّة كحلي صلب — بالضبط كأزرار النموذج المرجعي */
+.page-header p { max-width: 68ch; color: var(--text-2); line-height: var(--lh); font-size: var(--fs-sm); }
+/* الإجراء الأساسي: مستطيل بحوافّ محسوبة لا حبّة كاملة — أدقّ وأكثر مهنية */
 .hero-cta {
-  display: inline-flex; align-items: center; gap: 8px; margin-top: 22px; align-self: flex-start;
-  background: var(--green-900); color: #f2f8fa; border: none; border-radius: 999px;
-  padding: 12px 30px; font-family: inherit; font-size: .82rem; font-weight: 700; cursor: pointer;
-  box-shadow: 0 6px 18px rgba(16, 34, 44, .18); transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+  display: inline-flex; align-items: center; gap: var(--s2); flex: none;
+  background: var(--green-900); color: #eff6f8; border: none; border-radius: var(--radius-sm);
+  padding: var(--s3) var(--s5); font-family: inherit; font-size: var(--fs-sm); font-weight: 700;
+  cursor: pointer; transition: background .16s ease;
 }
-.hero-cta:hover { transform: translateY(-2px); background: var(--green-800); box-shadow: 0 12px 26px rgba(16, 34, 44, .26); }
+.hero-cta:hover { background: var(--green-800); }
 [data-theme="dark"] .hero-cta { background: var(--sage); color: #0b1820; }
 [data-theme="dark"] .hero-cta:hover { background: #bcd8e1; }
 
 @media (max-width: 880px) {
   .app-shell { flex-direction: column; }
-  .sidebar { width: 100%; height: auto; position: static; flex-direction: row; align-items: center; padding: 10px 14px; gap: 12px; }
-  .side-brand { margin-bottom: 0; }
+  .sidebar {
+    width: 100%; height: auto; position: sticky; top: 0;
+    flex-direction: row; align-items: center; padding: var(--s2) var(--s3); gap: var(--s3);
+    border-inline-end: none; border-bottom: 1px solid rgba(255,255,255,.07);
+  }
+  .side-brand { padding: 0; }
   .side-brand p { display: none; }
-  .side-nav { flex-direction: row; flex: 1; justify-content: center; gap: 4px; }
-  .side-nav a { padding: 8px; border-radius: var(--radius-sm); }
-  .side-nav a .ico { font-size: 1.05rem; }
+  .side-nav { flex-direction: row; flex: 1; justify-content: center; gap: var(--s1); }
+  .nav-group { flex-direction: row; margin-bottom: 0; gap: var(--s1); }
+  .nav-label, .side-ver { display: none; }
+  .side-nav a { padding: var(--s2); }
+  .side-nav a.active::before { inset: auto 0 0 0; width: auto; height: 2px; border-radius: 2px 2px 0 0; }
   .side-nav a .label { display: none; }
   .side-foot { margin-top: 0; padding-top: 0; border-top: none; }
-  .page-header { padding: 24px 18px 22px; }
-  .page-header h2 { font-size: 1.5rem; }
-  .hero-badge { margin-bottom: 8px; }
-  .hero-cta { margin-top: 16px; }
+  /* على الجوال يصير الشريط الجانبي شريطاً علوياً لاصقاً؛ ولو بقي رأس الصفحة
+     لاصقاً كذلك لتراكبا عند نفس الحافة. الأولوية للتنقّل، فيُفكّ التصاق الرأس. */
+  .page-header { position: static; padding: var(--s4); gap: var(--s3); }
+  .page-header h2 { font-size: 1.25rem; }
 }
 @media (max-width: 560px) {
   .page-header p { display: none; }
 }
 
-/* ================= لوحات وعناصر عامة ================= */
-main { max-width: 1240px; margin: 0 auto; padding: 30px 30px 64px; width: 100%; }
+/* ================= اللوحات والعناصر العامة ================= */
+main { max-width: 1200px; margin: 0 auto; padding: var(--s8) var(--s8) var(--s12); width: 100%; }
+
+/* اللوحة سطح محايد يُعرَّف بحدّه لا بظلّه. البطاقات المرتفعة الكثيرة تُنتج
+   ضجيجاً بصرياً وتُسطّح التسلسل الهرمي بدل أن تبنيه. */
 .panel {
-  background: var(--surface); border: 1px solid var(--border);
-  border-radius: var(--radius); box-shadow: var(--shadow);
-  padding: 26px 28px; margin-top: 22px;
+  background: var(--surface); border: var(--hair);
+  border-radius: var(--radius); box-shadow: var(--shadow-xs);
+  padding: var(--s6); margin-top: var(--s5);
   transition: background .25s, border-color .25s;
 }
-.panel-title { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-size: 1.2rem; font-weight: 700; margin-bottom: 6px; line-height: 1.6; }
+.panel-title {
+  display: flex; align-items: center; gap: var(--s3);
+  font-size: var(--fs-title); font-weight: 700; line-height: var(--lh-tight);
+  letter-spacing: -.2px;
+}
 .panel-title .num {
-  width: 26px; height: 26px; border-radius: 8px; flex: none;
+  width: 22px; height: 22px; border-radius: 6px; flex: none;
   background: var(--primary-soft); color: var(--green-700);
-  display: grid; place-items: center; font-size: .74rem; font-weight: 900;
+  display: grid; place-items: center; font-size: var(--fs-2xs); font-weight: 700;
 }
 [data-theme="dark"] .panel-title .num { color: var(--sage); }
-.panel-sub { font-size: .78rem; color: var(--text-2); margin: 4px 0 14px; line-height: 1.7; }
+.panel-sub { font-size: var(--fs-xs); color: var(--text-2); margin: var(--s2) 0 var(--s5); line-height: var(--lh); }
 
-.grid { display: grid; gap: 14px; }
+.grid { display: grid; gap: var(--s4); }
 .grid-2 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
 .grid-4 { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
-.row { display: flex; gap: 8px; flex-wrap: wrap; }
+.row { display: flex; gap: var(--s2); flex-wrap: wrap; }
 
-label.field-label { display: block; font-size: .8rem; font-weight: 700; margin-bottom: 6px; color: var(--text); }
+/* تنبيه مضغوط: رسالة سطرية لا تستحق لوحة كاملة بارتفاع قسم */
+.notice {
+  display: flex; align-items: center; gap: var(--s3);
+  background: var(--warn-soft); border: 1px solid color-mix(in srgb, var(--warn) 26%, transparent);
+  border-radius: var(--radius); padding: var(--s3) var(--s4); margin-top: var(--s5);
+}
+.notice-ic { color: var(--warn); display: grid; place-items: center; flex: none; font-size: 17px; }
+.notice-body { flex: 1; min-width: 0; }
+.notice-body strong { display: block; font-size: var(--fs-sm); font-weight: 700; }
+.notice-body p { font-size: var(--fs-xs); color: var(--text-2); line-height: var(--lh); margin-top: 1px; }
+.notice .btn { flex: none; background: var(--surface); }
+
+/* ================= حقول الإدخال ================= */
+label.field-label { display: block; font-size: var(--fs-xs); font-weight: 700; margin-bottom: var(--s2); color: var(--text); }
 label.field-label small { font-weight: 400; color: var(--text-2); }
 .input, select.input {
-  width: 100%; padding: 10px 13px;
-  border: 1.5px solid var(--border); border-radius: var(--radius-sm);
-  background: var(--surface-2); color: var(--text);
-  font-family: inherit; font-size: .85rem;
+  width: 100%; padding: var(--s3) var(--s3);
+  border: var(--hair); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--text);
+  font-family: inherit; font-size: var(--fs-sm);
   transition: border-color .15s, box-shadow .15s;
 }
-.input:focus { outline: none; border-color: var(--green-500); box-shadow: 0 0 0 3px var(--primary-soft); }
-textarea.input { resize: vertical; min-height: 76px; line-height: 1.7; }
+.input::placeholder { color: var(--text-2); opacity: .7; }
+.input:hover { border-color: color-mix(in srgb, var(--green-500) 45%, var(--border)); }
+.input:focus { outline: none; border-color: var(--green-600); box-shadow: 0 0 0 3px var(--primary-soft); }
+textarea.input { resize: vertical; min-height: 76px; line-height: var(--lh); }
 .input-wrap { position: relative; }
 .input-wrap .toggle-eye {
-  position: absolute; left: 10px; top: 50%; transform: translateY(-50%);
+  position: absolute; left: var(--s3); top: 50%; transform: translateY(-50%);
   border: none; background: none; cursor: pointer; font-size: 14px; color: var(--text-2);
+  display: grid; place-items: center;
 }
-.hint { font-size: .74rem; color: var(--text-2); margin-top: 6px; line-height: 1.6; }
+.hint { font-size: var(--fs-xs); color: var(--text-2); margin-top: var(--s2); line-height: var(--lh); }
 .hint a { color: var(--green-700); text-decoration: none; font-weight: 700; }
 [data-theme="dark"] .hint a { color: var(--sage); }
 .status-line {
-  margin-top: 10px; font-size: .78rem; font-weight: 700; padding: 9px 13px; border-radius: var(--radius-sm);
-  background: var(--surface-2); border: 1px solid var(--border); display: none;
+  margin-top: var(--s3); font-size: var(--fs-xs); font-weight: 700;
+  padding: var(--s3) var(--s4); border-radius: var(--radius-sm);
+  background: var(--surface-2); border: var(--hair); display: none;
 }
 .status-line.show { display: block; }
 .status-ok { color: var(--green-700); } [data-theme="dark"] .status-ok { color: var(--sage); }
 .status-err { color: var(--danger); }
 
-/* ================= أزرار ================= */
+/* ================= الأزرار ================= */
+/* مستطيلات بحوافّ محسوبة بدل حبّات كاملة: الحبّة تليق بالوسوم والمرشِّحات،
+   أما أزرار الإجراءات في أداة عمل فتُقرأ أدقّ وأكثر مهنية بهذا الشكل. */
 .btn {
-  display: inline-flex; align-items: center; justify-content: center; gap: 7px;
-  padding: 9px 20px; border: none; border-radius: 999px; cursor: pointer;
-  font-family: inherit; font-size: .82rem; font-weight: 800;
-  transition: transform .12s, box-shadow .15s, background .15s, opacity .15s;
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  padding: var(--s2) var(--s4); border: 1px solid transparent; border-radius: var(--radius-sm);
+  cursor: pointer; font-family: inherit; font-size: var(--fs-sm); font-weight: 700;
+  line-height: 1.5; white-space: nowrap;
+  transition: background .15s, border-color .15s, color .15s, opacity .15s;
 }
-.btn:active { transform: scale(.97); }
-/* حبّة كحلية صلبة — لا تدرّج. هذا هو زرّ النموذج المرجعي: ثقة بلا زخرفة. */
-.btn-primary { background: var(--green-900); color: #eff6f8; box-shadow: 0 3px 10px rgba(16, 34, 44, .18); }
-.btn-primary:hover { background: var(--green-800); box-shadow: 0 8px 20px rgba(16, 34, 44, .26); transform: translateY(-1px); }
-.btn-primary:disabled { opacity: .45; cursor: not-allowed; }
+.btn:active { transform: translateY(.5px); }
+.btn-primary { background: var(--green-900); color: #eff6f8; }
+.btn-primary:hover { background: var(--green-800); }
+.btn-primary:disabled { opacity: .4; cursor: not-allowed; }
 [data-theme="dark"] .btn-primary { background: var(--sage); color: #0b1820; }
 [data-theme="dark"] .btn-primary:hover { background: #bcd8e1; }
-.btn-ghost { background: var(--surface-2); color: var(--text); border: 1.5px solid var(--border); }
-.btn-ghost:hover { border-color: var(--green-500); color: var(--green-700); }
+.btn-ghost { background: var(--surface); color: var(--text); border-color: var(--border); }
+.btn-ghost:hover { border-color: var(--green-500); color: var(--green-700); background: var(--surface-2); }
 [data-theme="dark"] .btn-ghost:hover { color: var(--sage); }
-.btn-danger-ghost { background: transparent; border: 1.5px solid var(--danger); color: var(--danger); }
-.btn-sm { padding: 7px 16px; font-size: .78rem; }
-.actions-row { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; }
+.btn-danger-ghost { background: transparent; border-color: color-mix(in srgb, var(--danger) 45%, transparent); color: var(--danger); }
+.btn-danger-ghost:hover { background: var(--danger-soft); border-color: var(--danger); }
+.btn-sm { padding: var(--s1) var(--s3); font-size: var(--fs-xs); }
+.actions-row { display: flex; gap: var(--s2); flex-wrap: wrap; margin-top: var(--s5); }
 
-/* ================= شرائح (Chips) وفلاتر (Pills) ================= */
-.chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+/* ================= الوسوم والمرشِّحات ================= */
+.chips { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s3); }
 .chip {
-  display: inline-flex; align-items: center; gap: 8px; background: var(--sage-soft);
-  border: 1px solid var(--border); border-radius: 999px; padding: 6px 12px; font-size: .76rem; font-weight: 700;
+  display: inline-flex; align-items: center; gap: var(--s2); background: var(--surface-2);
+  border: var(--hair); border-radius: var(--radius-pill);
+  padding: var(--s1) var(--s2) var(--s1) var(--s1); font-size: var(--fs-xs); font-weight: 600;
 }
-.chip .chip-url { direction: ltr; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 280px; }
-.chip button { border: none; background: var(--danger); color: #fff; width: 18px; height: 18px; border-radius: 50%; cursor: pointer; font-size: 9px; display: grid; place-items: center; flex: none; padding: 0; }
-.chip button svg { width: 1.3em; height: 1.3em; }
-.no-platforms { font-size: .8rem; color: var(--text-2); margin-top: 10px; }
+.chip .chip-url { direction: ltr; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 280px; padding-inline-start: var(--s2); }
+.chip button {
+  border: none; background: transparent; color: var(--text-2);
+  width: 20px; height: 20px; border-radius: 50%; cursor: pointer;
+  display: grid; place-items: center; flex: none; padding: 0; transition: background .15s, color .15s;
+}
+.chip button:hover { background: var(--danger-soft); color: var(--danger); }
+.chip button svg { width: 13px; height: 13px; }
+.no-platforms { font-size: var(--fs-sm); color: var(--text-2); margin-top: var(--s3); }
 
-.filters { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 20px 0 4px; }
-.filter-group { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-.filter-label { font-size: .72rem; font-weight: 700; color: var(--text-2); margin-inline-end: 2px; }
-.pill {
-  border: 1.5px solid var(--border); background: var(--surface); color: var(--text);
-  border-radius: 999px; padding: 6px 13px; font-family: inherit; font-size: .76rem; font-weight: 700; cursor: pointer;
-  transition: all .15s; white-space: nowrap;
+/* شريط التحكّم: سطح واحد محدود يجمع البحث والمرشِّحات وطريقة العرض والإجراءات،
+   بدل ثلاثة صفوف سائبة تطفو فوق الخلفية بلا رابط بينها. */
+.controls {
+  background: var(--surface); border: var(--hair); border-radius: var(--radius);
+  padding: var(--s3) var(--s4); margin: var(--s5) 0 var(--s4);
+  display: flex; flex-direction: column; gap: var(--s3);
 }
-.pill:hover { border-color: var(--green-500); }
-.pill.active { background: var(--green-700); border-color: var(--green-700); color: #eff6f8; }
+.controls > * + * { padding-top: var(--s3); border-top: var(--hair); }
+
+.filters { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+.filter-group { display: flex; gap: var(--s1); flex-wrap: wrap; align-items: center; }
+.filter-label { font-size: var(--fs-2xs); font-weight: 700; color: var(--text-2); margin-inline-end: var(--s1); }
+.pill {
+  display: inline-flex; align-items: center; gap: var(--s1);
+  border: 1px solid transparent; background: transparent; color: var(--text-2);
+  border-radius: var(--radius-pill); padding: var(--s1) var(--s3);
+  font-family: inherit; font-size: var(--fs-xs); font-weight: 600; cursor: pointer;
+  transition: background .15s, color .15s; white-space: nowrap;
+}
+.pill:hover { background: var(--surface-2); color: var(--text); }
+.pill.active { background: var(--primary-soft); color: var(--green-700); font-weight: 700; }
+[data-theme="dark"] .pill.active { color: var(--sage); }
 .filters .spacer { flex: 1; }
 
-/* ================= بطاقات إحصائية (موحّدة لكل الصفحات) ================= */
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin: 18px 0; }
+/* ================= بطاقات الإحصاء ================= */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: var(--s3); margin: var(--s5) 0; }
 .stat-tile {
-  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
-  padding: 14px 16px; box-shadow: var(--shadow-xs);
-  display: flex; align-items: center; gap: 12px;
+  background: var(--surface); border: var(--hair); border-radius: var(--radius);
+  padding: var(--s4); display: flex; align-items: center; gap: var(--s3);
 }
 .stat-tile .stat-icon {
-  width: 34px; height: 34px; border-radius: var(--radius-sm); flex: none;
-  background: var(--primary-soft); display: grid; place-items: center; font-size: 16px;
+  width: 32px; height: 32px; border-radius: var(--radius-sm); flex: none;
+  background: var(--surface-2); color: var(--green-600);
+  display: grid; place-items: center; font-size: 15px;
 }
+[data-theme="dark"] .stat-tile .stat-icon { color: var(--sage); }
 /* نقطة الحالة: نفس دلالة الإيموجي بلا اختلاف شكله بين الأنظمة، وبلون اللوحة */
 .stat-tile .stat-dot {
-  width: 10px; height: 10px; border-radius: 50%; flex: none;
+  width: 8px; height: 8px; border-radius: 50%; flex: none;
   background: var(--tone, var(--text-2));
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tone, var(--text-2)) 16%, transparent);
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tone, var(--text-2)) 15%, transparent);
+  margin-inline-start: var(--s1);
 }
 .stat-tile.tone-pos     { --tone: var(--success); }
 .stat-tile.tone-neg     { --tone: var(--danger); }
 .stat-tile.tone-warn    { --tone: var(--warn); }
 .stat-tile.tone-neutral { --tone: var(--green-600); }
 .stat-tile .stat-body { min-width: 0; }
-.stat-tile .k { font-size: .7rem; font-weight: 700; color: var(--text-2); }
-.stat-tile .v { font-size: 1.18rem; font-weight: 800; line-height: 1.25; }
-.stat-tile .v.small { font-size: .88rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.stat-tile .sub { font-size: .68rem; color: var(--text-2); }
+.stat-tile .k { font-size: var(--fs-2xs); font-weight: 600; color: var(--text-2); }
+/* الأرقام بأرقام جدولية: تبقى الخانات متحاذية بين البطاقات ولا ترقص مع التحديث */
+.stat-tile .v { font-size: 1.32rem; font-weight: 700; line-height: 1.2; letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
+.stat-tile .v.small { font-size: var(--fs-body); font-weight: 700; letter-spacing: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat-tile .sub { font-size: var(--fs-2xs); color: var(--text-2); margin-top: 1px; }
 
-/* ================= شريط الأدوات (بحث + فرز + عرض) ================= */
-.toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 16px; }
-.search-wrap { position: relative; flex: 1 1 220px; max-width: 320px; }
-.search-wrap input { padding-inline-end: 36px; }
-.search-wrap::before {
-  content: '🔍'; position: absolute; inset-inline-end: 12px; top: 50%;
-  transform: translateY(-50%); font-size: 12px; pointer-events: none;
+/* ================= ترويسة القسم ================= */
+.feed-head { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; margin: var(--s8) 0 var(--s4); }
+.feed-head h3 {
+  font-size: var(--fs-title); font-weight: 700; display: flex; align-items: center; gap: var(--s2);
+  line-height: var(--lh-tight); letter-spacing: -.2px;
 }
-.view-toggle { display: flex; background: var(--surface-2); border: 1.5px solid var(--border); border-radius: 999px; overflow: hidden; }
-.view-toggle button { border: none; background: none; padding: 8px 14px; cursor: pointer; color: var(--text-2); font-size: 14px; transition: background .15s, color .15s; }
-.view-toggle button.active { background: var(--green-700); color: #eff6f8; }
-
-/* ================= بطاقات المنشورات — تصميم مدمج ومُطوَّر ================= */
-.feed-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin: 22px 0 12px; }
-.feed-head h3 { font-family: var(--font-display); font-size: 1.28rem; font-weight: 700; display: flex; align-items: center; gap: 8px; line-height: 1.6; }
-.feed-count { background: var(--green-700); color: #eff6f8; border-radius: 999px; padding: 2px 10px; font-size: .7rem; font-weight: 800; }
+.feed-count {
+  background: var(--surface-2); color: var(--text-2); border: var(--hair);
+  border-radius: var(--radius-pill); padding: 1px var(--s2);
+  font-size: var(--fs-2xs); font-weight: 700; font-variant-numeric: tabular-nums;
+}
 .feed-head .spacer { flex: 1; }
+
+/* ================= شريط الأدوات ================= */
+.toolbar { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+.search-wrap { position: relative; flex: 1 1 200px; max-width: 300px; }
+.search-wrap input { padding-inline-end: var(--s8); }
+.search-wrap::before {
+  content: ''; position: absolute; inset-inline-end: var(--s3); top: 50%;
+  width: 14px; height: 14px; margin-top: -7px; pointer-events: none; opacity: .5;
+  background: currentColor;
+  -webkit-mask: var(--ic-search) center / contain no-repeat;
+  mask: var(--ic-search) center / contain no-repeat;
+}
+.view-toggle { display: flex; background: var(--surface-2); border: var(--hair); border-radius: var(--radius-sm); padding: 2px; gap: 2px; }
+.view-toggle button {
+  border: none; background: none; padding: var(--s1) var(--s3); cursor: pointer;
+  color: var(--text-2); border-radius: 7px; display: grid; place-items: center;
+  transition: background .15s, color .15s;
+}
+.view-toggle button:hover { color: var(--text); }
+.view-toggle button.active { background: var(--surface); color: var(--green-700); box-shadow: var(--shadow-xs); }
+[data-theme="dark"] .view-toggle button.active { color: var(--sage); }
 
 /* قوالب المنشورات نفسها انتقلت إلى card.js (FBXCard) — لكل من عرض البطاقات
    وعرض الجدول — فلا تُعرَّف هنا. ما يبقى في هذا الملف هو ما تشترك فيه كل
