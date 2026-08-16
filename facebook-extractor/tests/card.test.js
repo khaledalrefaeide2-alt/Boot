@@ -61,14 +61,25 @@ test('الهروب يشمل صفّ الجدول كما البطاقة', () => {
 /* ============================================================
  * الشكل يتبع البيانات
  * ============================================================ */
-test('المنشور ذو الوسائط يأخذ غلافاً، وبدونها رأساً عادياً', () => {
+test('كتلة الوسائط تظهر عند وجود وسائط فقط', () => {
   const withMedia = C.html(post({ mediaList: [{ type: 'image', src: 'a.jpg' }] }));
-  assert.ok(withMedia.includes('fx-cover'), 'وجود صورة يعني غلافاً');
-  assert.ok(!withMedia.includes('fx-plainhead'));
+  assert.ok(withMedia.includes('fx-media'), 'وجود صورة يعني كتلة وسائط');
+  assert.ok(withMedia.includes('media-grid'));
 
   const noMedia = C.html(post());
-  assert.ok(noMedia.includes('fx-plainhead'), 'بلا صورة: رأس عادي');
-  assert.ok(!noMedia.includes('fx-cover'));
+  assert.ok(!noMedia.includes('fx-media'), 'بلا صورة: لا كتلة وسائط ولا فراغ مكانها');
+});
+
+test('الرأس يحمل الحساب والحكم، والنصّ يسبق الوسائط', () => {
+  const p = post({ mediaList: [{ type: 'image', src: 'a.jpg' }], text: 'نصّ المنشور المصنَّف' });
+  p.analysis = A.analyze(p);
+  const h = C.html(p);
+  assert.ok(h.includes('fx-head'), 'رأس مستقلّ لا طبقة فوق الصورة');
+  // شارة الحكم داخل الرأس لا في الجسم — لتُمسح بنظرة واحدة عبر الشبكة
+  const head = h.slice(h.indexOf('fx-head'), h.indexOf('fx-body'));
+  assert.ok(head.includes('fx-vd'), 'الحكم يجب أن يكون في الرأس');
+  // هذه أداة فرز محتوى: النصّ هو ما يحكم عليه المحرك، فيسبق الصورة
+  assert.ok(h.indexOf('fx-text') < h.indexOf('fx-media'), 'النصّ قبل الوسائط');
 });
 
 test('المنشور بلا رابط لا يعرض زرّ فتح المنشور', () => {

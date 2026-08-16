@@ -12,8 +12,9 @@
  *   FBXCard.injectStyles()       → يحقن CSS الخاص بالعرض
  *
  * نموذجان للعرض:
- *   • «بطاقات» — الوسائط أولاً بملء العرض، ورأس المنشور فوقها على تدرّج
- *     داكن، ثم النص، ثم سطر الحكم، ثم شريط التفاعل. بصري وسريع المسح.
+ *   • «بطاقات» — رأس نظيف (الحساب + التاريخ + شارة الحكم)، ثم النصّ، ثم
+ *     الوسائط، ثم الفئة، ثم شريط التفاعل. النصّ قبل الصورة عن قصد: المحرك
+ *     يحكم على النصّ، فدفنه تحت صورة يخفي ما جاء المستخدم ليقرأه.
  *   • «جدول»  — صفوف مضغوطة للفرز السريع لمئات المنشورات: مصغّرة،
  *     الحساب، مقتطف، الحكم، التفاعل. هو النموذج العملي لعمل الفرز.
  *
@@ -105,23 +106,26 @@
     const a = p.analysis;
     const media = global.FBXMedia ? global.FBXMedia.galleryHtml(p) : '';
     const text = String(p.text || '');
-    const hasMedia = !!media;
-
-    // الرأس فوق الوسائط على تدرّج داكن عند وجود صورة، أو سطر عادي عند غيابها
     const handle = p.screenName ? `<span class="fx-handle">@${esc(p.screenName)}</span>` : '';
-    const head = `<div class="fx-head">${avatarHtml(p)}
+
+    /* ترتيب المعلومات: الحساب ← الحكم ← النص ← الوسائط ← التفاعل.
+       النصّ قبل الصورة عن قصد: هذه أداة فرز محتوى، والمحرك يحكم على النصّ —
+       فدفنه تحت صورة كبيرة يخفي بالضبط ما جاء المستخدم ليقرأه. والحكم في
+       الرأس يجعل تصنيف عشرات البطاقات يُمسح بنظرة واحدة عبر الشبكة. */
+    const head = `<header class="fx-head">
+      ${avatarHtml(p)}
       <span class="fx-head-t">
         <b class="fx-author">${esc(authorOf(p))}${handle}${opts.fresh ? '<i class="fx-new">جديد</i>' : ''}</b>
-        <span class="fx-date">${icon('clock', 12)}${dateText(p)}</span>
-      </span></div>`;
+        <span class="fx-meta">${icon('clock', 12)}<span>${dateText(p)}</span>${a ? meter(a) : ''}</span>
+      </span>
+      ${a ? `<span class="fx-vd fx-vd-${a.classification.toLowerCase()}">${esc(a.classificationLabel)}</span>` : ''}
+    </header>`;
 
     // إعادة النشر معلومة تخصّ المنشور نفسه لا الصفحة التي تعرضه، فتُقرأ من البيانات
     const rt = p.isRetweet
       ? `<span class="fx-rt">${icon('share', 12)}إعادة نشر من @${esc(p.retweetedFrom || '')}</span>` : '';
 
-    const verdict = a ? `<div class="fx-verdict">
-      <span class="fx-vd fx-vd-${a.classification.toLowerCase()}">${esc(a.classificationLabel)}</span>
-      ${meter(a)}
+    const tags = a ? `<div class="fx-tags">
       <span class="fx-vd-sub">${esc(String(a.subCategory || '').split(' — ')[0])}</span>
       ${a.action !== 'KEEP' ? `<span class="fx-vd-act">${icon('warning', 12)}${esc(a.actionLabel)}</span>` : ''}
       ${a.exceptionApplied ? '<span class="fx-vd-exc">استثناء توثيق/إدانة</span>' : ''}
@@ -129,21 +133,22 @@
 
     return `<article class="fx-card${opts.fresh ? ' fx-fresh' : ''}" style="--acc:${accent(a)}${
       opts.delay ? `;animation-delay:${opts.delay}ms` : ''}">
-      ${hasMedia ? `<div class="fx-cover">${media}<div class="fx-scrim">${head}</div></div>` : `<div class="fx-plainhead">${head}</div>`}
+      ${head}
       <div class="fx-body">
         ${rt}
         <p class="fx-text fx-clamp" id="fxt-${id}">${
           esc(text) || `<em class="fx-notext">— ${esc(opts.emptyLabel || 'منشور بدون نص')} —</em>`}</p>
-        ${verdict}
+        ${media ? `<div class="fx-media">${media}</div>` : ''}
+        ${tags}
       </div>
-      <div class="fx-foot">
+      <footer class="fx-foot">
         ${metricsHtml(p)}
         <span class="fx-foot-sp"></span>
         ${a ? `<button type="button" class="fx-btn fx-analysis" data-panel="fxp-${id}"
           title="عرض التحليل الكامل" aria-label="عرض التحليل الكامل">${icon('brain', 15)}</button>` : ''}
         ${p.url ? `<a class="fx-btn fx-open" href="${esc(p.url)}" target="_blank" rel="noopener"
           title="فتح ${esc(opts.openLabel || 'المنشور')} الأصلي" aria-label="فتح ${esc(opts.openLabel || 'المنشور')} الأصلي">${icon('link', 15)}</a>` : ''}
-      </div>
+      </footer>
       ${a ? `<div class="fx-panel" id="fxp-${id}" hidden>${global.FBXAnalyzer ? global.FBXAnalyzer.panel(a) : ''}</div>` : ''}
     </article>`;
   }
@@ -258,7 +263,11 @@
   /* المشهد على الحاوية لا على البطاقة: perspective على كل بطاقة يجعل نقطة
      التلاشي في مركزها هي، فتبدو كلٌّ منها في عالم منفصل. على الحاوية يشترك
      الجميع في نقطة تلاشٍ واحدة، وهذا ما يجعل العمق يبدو حقيقياً. */
-  .fx-list.fx-cards { display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+  /* align-items: start حتى تأخذ كل بطاقة ارتفاع محتواها. الافتراضي (stretch)
+     يمطّ بطاقة بلا وسائط إلى ارتفاع جارتها المصوّرة، فيتخلّف فراغ كبير في
+     منتصفها بلا سبب. */
+  .fx-list.fx-cards { display: grid; gap: 18px; align-items: start;
+    grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
     perspective: var(--persp, 1100px); perspective-origin: 50% 0; }
   .fx-list.fx-table { display: flex; flex-direction: column; gap: 8px; }
 
@@ -286,38 +295,34 @@
   /* المرور يقرّب البطاقة من الناظر ويميلها قليلاً — والخروج بنفس المنحنى */
   .fx-card:hover { box-shadow: var(--e4); transform: translate3d(0, -5px, 34px) rotateX(1.6deg); }
   .fx-card:active { transform: translate3d(0, -1px, 8px); transition-duration: var(--dur-1); }
-  /* الغلاف يتقدّم على مستوى الجسم فيُقرأ ارتفاعه فوقه */
-  .fx-card:hover .fx-cover { transform: translateZ(14px); }
-  .fx-cover { transition: transform var(--dur-2) var(--ease); }
+  /* الوسائط تتقدّم قليلاً على مستوى البطاقة فيُقرأ ارتفاعها فوقها */
+  .fx-card:hover .fx-media { transform: translateZ(16px); }
+  .fx-media { transition: transform var(--dur-2) var(--ease); }
   /* شريط الحكم أعلى البطاقة — أوضح من حدّ جانبي رفيع، ولا يزاحم النص */
   .fx-card::before { content: ''; position: absolute; inset-inline: 0; top: 0; height: 3px; background: var(--acc); z-index: 4; }
   .fx-fresh { box-shadow: 0 0 0 2px var(--sage-soft), var(--shadow-md); }
 
-  /* الغلاف: الوسائط بملء العرض والرأس فوقها على تدرّج */
-  .fx-cover { position: relative; }
-  .fx-cover .media-grid { margin: 0; border-radius: 0; height: 160px; }
-  .fx-scrim {
-    position: absolute; inset-inline: 0; bottom: 0; z-index: 3; pointer-events: none;
-    padding: 26px 13px 9px;
-    background: linear-gradient(to top, rgba(8,20,27,.88) 0%, rgba(8,20,27,.55) 45%, transparent 100%);
+  /* الرأس صفّ نظيف فوق سطح البطاقة لا طبقة فوق الصورة. التراكب كان أنيقاً
+     على صور اختبار هادئة، لكن صور المنشورات الحقيقية مزدحمة — فيتنازع النص
+     والصورة على الانتباه ويخسر كلاهما. */
+  .fx-head {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 13px 0; min-width: 0;
   }
-  .fx-scrim .fx-author, .fx-scrim .fx-date { color: #fff; }
-  .fx-scrim .fx-date { opacity: .8; }
-  .fx-scrim .fx-av { box-shadow: 0 0 0 2px rgba(255,255,255,.5); }
-  .fx-plainhead { padding: 13px 14px 0; }
-
-  .fx-head { display: flex; align-items: center; gap: 9px; min-width: 0; }
   .fx-av {
-    width: 30px; height: 30px; border-radius: 50%; flex: none; object-fit: cover;
-    background: linear-gradient(155deg, var(--green-600), var(--green-900)); color: #fff;
+    width: 34px; height: 34px; border-radius: 11px; flex: none; object-fit: cover;
+    background: linear-gradient(150deg, var(--green-600), var(--green-900)); color: #fff;
     display: grid; place-items: center; font-weight: 700; font-size: var(--fs-2xs);
+    box-shadow: 0 0 0 1px var(--border);
   }
-  .fx-head-t { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .fx-head-t { min-width: 0; flex: 1; display: flex; flex-direction: column; gap: 2px; }
   .fx-author { font-size: var(--fs-sm); font-weight: 700; display: flex; align-items: center; gap: 6px;
     line-height: 1.45; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fx-meta { display: flex; align-items: center; gap: 5px; font-size: var(--fs-2xs); color: var(--text-2); }
+  .fx-meta > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fx-meta .fx-meter { margin-inline-start: 3px; }
   .fx-new { font-style: normal; background: var(--sage); color: #0b1820; border-radius: 999px;
     padding: 1px 7px; font-size: var(--fs-2xs); font-weight: 700; flex: none; }
-  .fx-date { font-size: var(--fs-2xs); color: var(--text-2); display: flex; align-items: center; gap: 4px; }
   .fx-handle { font-weight: 400; font-size: var(--fs-xs); opacity: .72; direction: ltr; }
   .fx-rt { display: inline-flex; align-items: center; gap: 5px; align-self: flex-start;
     background: var(--sage-soft); color: var(--green-700); border-radius: 999px;
@@ -325,32 +330,42 @@
   [data-theme="dark"] .fx-rt { color: var(--sage); }
 
   /* الجسم */
-  .fx-body { padding: 12px 14px 13px; flex: 1; display: flex; flex-direction: column; gap: 9px; }
+  .fx-body { padding: 11px 13px 13px; flex: 1; display: flex; flex-direction: column; gap: 9px; }
   .fx-text { font-size: var(--fs-sm); line-height: 1.75; word-break: break-word; white-space: pre-wrap; margin: 0; }
   .fx-clamp { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
   .fx-notext { color: var(--text-2); }
   .fx-more { align-self: flex-start; border: none; background: none; cursor: pointer; padding: var(--s1) 0;
     font-family: inherit; font-size: var(--fs-xs); font-weight: 700; color: var(--green-600);
     display: inline-flex; align-items: center; gap: 3px; }
+  [data-theme="dark"] .fx-more { color: var(--sage); }
   .fx-more.up .fx-i { transform: rotate(180deg); }
   .fx-more:hover { text-decoration: underline; }
 
-  /* سطر الحكم */
-  .fx-verdict { display: flex; align-items: center; gap: 7px; flex-wrap: wrap; margin-top: auto; padding-top: 2px; }
-  .fx-vd { font-size: var(--fs-2xs); font-weight: 700; border-radius: 999px; padding: 3px 11px;
-    border: 1px solid transparent; white-space: nowrap; }
-  .fx-vd-negative { background: var(--danger-soft); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 22%, transparent); }
-  .fx-vd-positive { background: var(--success-soft); color: var(--success); border-color: color-mix(in srgb, var(--success) 22%, transparent); }
-  .fx-vd-neutral  { background: var(--surface-2); color: var(--text-2); border-color: var(--border); }
-  .fx-vd-sub { font-size: var(--fs-2xs); color: var(--text-2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+  /* الوسائط داخل الجسم بحوافّ مستديرة ومسافة عن أطراف البطاقة — إطار حول
+     الصورة بدل لصقها بالحافة، وهو ما يعطي الإحساس العصري بالبطاقة المطبوعة. */
+  .fx-media { margin-top: 1px; }
+
+  /* سطر الفئة والإجراء */
+  .fx-tags { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; padding-top: 2px; }
+  .fx-vd-sub { font-size: var(--fs-2xs); color: var(--text-2); background: var(--surface-2);
+    border-radius: 999px; padding: 3px 10px; overflow: hidden; text-overflow: ellipsis;
+    white-space: nowrap; min-width: 0; }
   .fx-vd-act { font-size: var(--fs-2xs); font-weight: 700; color: var(--danger); background: var(--danger-soft);
     border-radius: 999px; padding: 3px 9px; display: inline-flex; align-items: center; gap: 4px; }
   .fx-vd-exc { font-size: var(--fs-2xs); font-weight: 700; color: var(--green-700); background: var(--primary-soft);
     border-radius: 999px; padding: 3px 9px; }
+  [data-theme="dark"] .fx-vd-exc { color: var(--sage); }
+
+  /* شارة الحكم في الرأس: تُمسح عبر شبكة البطاقات بنظرة واحدة */
+  .fx-vd { font-size: var(--fs-2xs); font-weight: 700; border-radius: 999px; padding: 4px 11px;
+    border: 1px solid transparent; white-space: nowrap; flex: none; align-self: flex-start; }
+  .fx-vd-negative { background: var(--danger-soft); color: var(--danger); border-color: color-mix(in srgb, var(--danger) 26%, transparent); }
+  .fx-vd-positive { background: var(--success-soft); color: var(--success); border-color: color-mix(in srgb, var(--success) 26%, transparent); }
+  .fx-vd-neutral  { background: var(--surface-2); color: var(--text-2); border-color: var(--border); }
 
   /* مقياس الخطورة */
   .fx-meter { display: inline-flex; gap: 2px; align-items: center; flex: none; }
-  .fx-meter i { width: 12px; height: 4px; border-radius: 2px; background: var(--border); display: block; }
+  .fx-meter i { width: 10px; height: 3px; border-radius: 2px; background: var(--border); display: block; }
   .fx-meter i.on { background: var(--acc); }
 
   /* القدم */
@@ -414,7 +429,7 @@
   }
   @media (prefers-reduced-motion: reduce) {
     .fx-card { animation: none; }
-    .fx-card:hover, .fx-row:hover, .fx-card:hover .fx-cover { transform: none; }
+    .fx-card:hover, .fx-row:hover, .fx-card:hover .fx-media { transform: none; }
     .fx-list.fx-cards, .fx-list.fx-table { perspective: none; }
   }
   @media (max-width: 620px) {

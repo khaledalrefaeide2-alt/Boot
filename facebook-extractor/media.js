@@ -258,8 +258,9 @@
     if (document.getElementById('fbx-media-styles')) return;
     const css = `
     /* ===== فسيفساء داخل البطاقة: ارتفاع ثابت مهما كان عدد الوسائط، فلا تطول البطاقة أبداً ===== */
-    .media-grid { display: grid; gap: 2px; margin: 7px 0 0; height: 152px;
-      border-radius: 14px; overflow: hidden; background: var(--border, #e0eaee); }
+    /* نسبة أبعاد بدل ارتفاع ثابت: تتكيّف مع عرض البطاقة على أي شاشة */
+    .media-grid { display: grid; gap: 2px; margin: 0; aspect-ratio: 16 / 10;
+      border-radius: 12px; overflow: hidden; background: var(--border, #e0eaee); }
     .media-grid.n1 { grid-template-columns: 1fr; }
     .media-grid.n2 { grid-template-columns: 1fr 1fr; }
     .media-grid.n3 { grid-template-columns: 1.55fr 1fr; grid-template-rows: 1fr 1fr; }
@@ -279,9 +280,12 @@
         var(--green-800, #111a2e) 55%, var(--green-950, #020617) 100%); }
     .media-item:focus-visible { outline: 2px solid var(--green-600, #2b7f97); outline-offset: -2px; }
     img.media-el { position: relative; z-index: 1; width: 100%; height: 100%;
-      object-fit: contain; display: block; transition: transform var(--dur-3, 340ms) var(--ease, ease); }
-    /* بعد نجاح القصّ الآلي لم تعد هناك حواف يجب حمايتها بـ contain، فتُملأ الخانة بالكامل. */
-    img.media-el.fbx-cropped { object-fit: cover; }
+      /* cover لا contain: صور المنشورات تأتي بنسب أبعاد شتّى، وcontain كان
+         يترك شريطين داكنين حول كل صورة تقريباً — وهو أسوأ بصرياً من الأشرطة
+         السوداء التي جاء ليتفاداها. القصّ الآلي يزيل الأشرطة المطبوعة داخل
+         البكسلات أولاً، ثم يملأ cover الإطار. والصورة كاملة تبقى متاحة في
+         العارض المكبّر بنقرة، وهو يعرضها بـ contain. */
+      object-fit: cover; display: block; transition: transform var(--dur-3, 340ms) var(--ease, ease); }
     .media-item.no-img img.media-el { display: none; }
     .media-item:hover img.media-el { transform: scale(1.06); }
     @media (prefers-reduced-motion: reduce) {
