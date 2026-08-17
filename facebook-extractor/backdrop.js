@@ -51,9 +51,14 @@ float fbm(vec2 v){
 }
 
 /* الالتواء المجالي: نزيح الإحداثيات بضجيج آخر قبل أخذ الارتفاع، فتنكسر
-   الاستقامة وتظهر أشرطة منسابة بدل بقع متكررة. */
+   الاستقامة وتظهر أشرطة منسابة بدل بقع متكررة. طبقتان تكفيان هنا: الالتواء
+   يزيح الإحداثيات فقط، والتفاصيل الدقيقة فيه تضيع في الحقل النهائي — وheight
+   تُستدعى ثلاث مرات لكل بكسل (مرّة للقيمة ومرّتين للمنحدر)، فكل طبقة موفَّرة
+   تُضرب في ستّة. */
+float fbm2(vec2 v){ return 0.5 * noise(v) + 0.25 * noise(v * 2.02); }
+
 float height(vec2 uv){
-  vec2 q = vec2(fbm(uv + uT * 0.03), fbm(uv + vec2(5.2, 1.3) - uT * 0.02));
+  vec2 q = vec2(fbm2(uv + uT * 0.03), fbm2(uv + vec2(5.2, 1.3) - uT * 0.02));
   return fbm(uv + 1.6 * q);
 }
 
@@ -134,10 +139,11 @@ void main(){
 
     document.body.appendChild(cv);
 
-    /* نصف الدقة بحدّ أعلى 960px عرضاً: المخرَج يمرّ خلف زجاج مموَّه، فرفع
-       الدقة ينفق على تفاصيل لا تصل العين. */
+    /* ثلث الدقة تقريباً بحدّ أعلى 720px عرضاً: المخرَج يمرّ خلف زجاج مموَّه،
+       فرفع الدقة ينفق على تفاصيل لا تصل العين. كلفة المظلّل تتناسب مع عدد
+       البكسلات مباشرة، فالنزول من 0.5 إلى 0.36 يقصّها إلى النصف بلا فرق مرئي. */
     function resize() {
-      const s = Math.min(0.5, 960 / Math.max(W.innerWidth, 1));
+      const s = Math.min(0.36, 720 / Math.max(W.innerWidth, 1));
       const w = Math.max(2, Math.round(W.innerWidth * s));
       const h = Math.max(2, Math.round(W.innerHeight * s));
       if (cv.width === w && cv.height === h) return;
@@ -159,26 +165,44 @@ void main(){
 
     resize(); theme();
 
-    let raf = 0, last = 0, t0 = 0;
+    /* حاكم السرعة. على راسم برمجي (SwiftShader، llvmpipe) أو بطاقة ضعيفة يكلّف
+       الإطار الواحد أكثر من 100ms، فتُقاس نقرة تبديل المظهر عند 176ms — فوق سقف
+       INP لأن الصفحة تنتظر رسم المستوي كاملاً قبل أن تَعرِض. زينة تتلعثم ليست
+       زينة، فبعد عشرين إطاراً نقيس الوسيط: إن عجزنا عن الوقوف قريباً من الهدف
+       أوقفنا الحلقة وأبقينا آخر إطار ساكناً. القرار يُقاس ولا يُخمَّن من اسم
+       البطاقة، فيصحّ على كل جهاز لا على المعروف منها فقط. */
+    const BUDGET = 60;                     /* الهدف 33ms؛ ما فوق 60 تلعثم ظاهر */
+    let raf = 0, last = 0, t0 = 0, gauged = 0, spans = [];
     function frame(now) {
       raf = W.requestAnimationFrame(frame);
       if (now - last < 33) return;         /* ~30 إطاراً/ث */
+      const gap = now - last;
       last = now;
       if (!t0) t0 = now;
       gl.uniform1f(uT, (now - t0) / 1000);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+      if (gauged < 20) {
+        if (++gauged > 4) spans.push(gap);  /* أول إطارات فيها كلفة الإقلاع */
+        if (gauged === 20) {
+          spans.sort((a, b) => a - b);
+          if (spans[spans.length >> 1] > BUDGET) { stop(); cv.dataset.static = 'slow'; }
+        }
+      }
     }
     function draw1() { gl.uniform1f(uT, 0); gl.drawArrays(gl.TRIANGLES, 0, 3); }
-    function play() { if (!raf && !reduced) raf = W.requestAnimationFrame(frame); }
+    function play() { if (!raf && !reduced && cv.dataset.static !== 'slow') raf = W.requestAnimationFrame(frame); }
     function stop() { if (raf) { W.cancelAnimationFrame(raf); raf = 0; } }
 
     draw1();
     if (reduced) { cv.dataset.static = '1'; } else { play(); }
 
     document.addEventListener('visibilitychange', () => document.hidden ? stop() : play());
-    W.addEventListener('resize', () => { resize(); if (reduced) draw1(); }, { passive: true });
+    // متى كنّا ساكنين — بتفضيل المستخدم أو بحكم الحاكم — نرسم الإطار بأنفسنا،
+    // إذ لا حلقة تلتقط التغيير. شرطها غياب الحلقة لا سبب غيابها.
+    W.addEventListener('resize', () => { resize(); if (!raf) draw1(); }, { passive: true });
     // تبديل المظهر يكتب data-theme على <html>؛ نتبعه بدل ربطه بزرّ بعينه
-    new MutationObserver(() => { theme(); if (reduced) draw1(); })
+    new MutationObserver(() => { theme(); if (!raf) draw1(); })
       .observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
     // فقد السياق يحدث فعلاً (تبديل بطاقة رسوم، سبات): نتنحّى بهدوء لا نتجمّد
     cv.addEventListener('webglcontextlost', e => { e.preventDefault(); stop(); cv.remove(); });
