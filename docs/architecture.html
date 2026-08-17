@@ -227,9 +227,10 @@ footer { margin-top: 88px; padding-top: 28px; border-top: 1px solid var(--line);
   <div class="metrics">
     <div class="metric"><b>0</b><span>إزاحة تخطيط (CLS)</span></div>
     <div class="metric"><b>0</b><span>طلب شبكة خارجي</span></div>
-    <div class="metric"><b>132–244</b><span>مللي ثانية · زمن أكبر رسمة</span></div>
+    <div class="metric"><b>132–256</b><span>مللي ثانية · زمن أكبر رسمة</span></div>
+    <div class="metric"><b>≤ 72</b><span>مللي ثانية · زمن الاستجابة</span></div>
     <div class="metric"><b>5.36:1</b><span>أدنى تباين مقيس</span></div>
-    <div class="metric"><b>147</b><span>اختباراً يمرّ</span></div>
+    <div class="metric"><b>148</b><span>اختباراً يمرّ</span></div>
     <div class="metric"><b>240</b><span>كيلوبايت · الحمولة كاملة</span></div>
   </div>
 </header>
@@ -458,7 +459,9 @@ footer { margin-top: 88px; padding-top: 28px; border-top: 1px solid var(--line);
     <div class="tw"><table>
       <thead><tr><th>الضابط</th><th>القيمة</th><th>المبرّر</th></tr></thead>
       <tbody>
-        <tr><td>دقة الرسم</td><td class="mono">‎0.5×، بحدّ 960px</td><td>المخرَج يمرّ خلف زجاج مموّه — التفاصيل لا تصل العين</td></tr>
+        <tr><td>دقة الرسم</td><td class="mono">‎0.36×، بحدّ 720px</td><td>الكلفة تتناسب مع عدد البكسلات مباشرة، والمخرَج مموَّه أصلاً</td></tr>
+        <tr><td>الالتواء المجالي</td><td class="mono">طبقتان</td><td>‏<code>height()</code> تُستدعى ثلاث مرات لكل بكسل — كل طبقة موفَّرة تُضرب في ستّة</td></tr>
+        <tr><td>حاكم السرعة</td><td class="mono">وسيط 20 إطاراً &gt; 60ms ⇒ توقّف</td><td>زينة تتلعثم ليست زينة — القرار مقيس لا مخمَّن من اسم البطاقة</td></tr>
         <tr><td>معدّل الإطارات</td><td class="mono">‎30fps (عتبة 33ms)</td><td>الحركة بطيئة أصلاً، فلا فرق مرئي والكلفة تنتصف</td></tr>
         <tr><td>سياق WebGL</td><td class="mono">‎low-power، بلا عمق، بلا تنعيم</td><td>مستوٍ واحد ملء الشاشة لا يحتاج أياً منها</td></tr>
         <tr><td>الرسم الهندسي</td><td class="mono">مثلّث واحد</td><td>يغطي المشهد بلا حافة قطرية مهدورة</td></tr>
@@ -474,8 +477,20 @@ footer { margin-top: 88px; padding-top: 28px; border-top: 1px solid var(--line);
         <tr><td class="mono">لا سياق WebGL</td><td>لا يُنشأ العنصر أصلاً — يبقى تدرّج CSS وحده، بلا خطأ في السجلّ</td></tr>
         <tr><td class="mono">فشل ترجمة المظلّل</td><td>انسحاب صامت قبل إضافة العنصر إلى الصفحة</td></tr>
         <tr><td class="mono">webglcontextlost</td><td>إيقاف الحلقة وإزالة العنصر — لا إطار متجمّد على الشاشة</td></tr>
+        <tr><td class="mono">جهاز يعجز عن المجاراة</td><td>الحلقة تتوقّف ويبقى آخر إطار ساكناً؛ تبديل المظهر يرسم إطاراً يدوياً إذ لا حلقة تلتقطه</td></tr>
       </tbody>
     </table></div>
+
+    <div class="verdict">
+      <span class="tag">العطل الذي كشفه الكنس</span>
+      <p>الطبقة نفسها كانت تكسر سقفاً آخر. كل نقرة على مبدّل المظهر قِيست بين
+        <strong>128 و168ms</strong> — فوق سقف INP. وبحجب <code>backdrop.js</code> وحده
+        هبطت إلى <strong>32ms</strong>. المعالجة 4ms فقط: الكلفة كلّها انتظار عرض، إذ
+        تنتظر الصفحة رسم المستوي كامل الشاشة قبل أن تَعرِض.</p>
+      <p>خفض الدقة وتقليل طبقات الالتواء أعادها إلى <strong>72ms</strong>، وحاكم السرعة
+        يحمي الأجهزة الأضعف. الدرس أن الزينة لا تُحاسب على حجمها وحده بل على ما
+        تُدخله في مسار كل تفاعل بعدها.</p>
+    </div>
 
     <div class="verdict">
       <span class="tag">خطأ قِيس وصُحّح</span>
@@ -589,8 +604,12 @@ footer { margin-top: 88px; padding-top: 28px; border-top: 1px solid var(--line);
     <div class="filename">backdrop.js · fragment shader</div>
 <pre><span class="c">// الالتواء المجالي: نزيح الإحداثيات بضجيج آخر قبل أخذ الارتفاع،
 // فتنكسر الاستقامة وتظهر أشرطة منسابة بدل بقع متكررة</span>
+<span class="c">// طبقتان تكفيان للالتواء: height تُستدعى ثلاث مرات لكل بكسل
+// (مرّة للقيمة ومرّتين للمنحدر)، فكل طبقة موفَّرة تُضرب في ستّة</span>
+<span class="k">float</span> fbm2(<span class="k">vec2</span> v){ <span class="k">return</span> 0.5 * noise(v) + 0.25 * noise(v * 2.02); }
+
 <span class="k">float</span> height(<span class="k">vec2</span> uv){
-  <span class="k">vec2</span> q = <span class="k">vec2</span>(fbm(uv + uT * 0.03), fbm(uv + <span class="k">vec2</span>(5.2, 1.3) - uT * 0.02));
+  <span class="k">vec2</span> q = <span class="k">vec2</span>(fbm2(uv + uT * 0.03), fbm2(uv + <span class="k">vec2</span>(5.2, 1.3) - uT * 0.02));
   <span class="k">return</span> fbm(uv + 1.6 * q);
 }
 
@@ -658,12 +677,14 @@ footer { margin-top: 88px; padding-top: 28px; border-top: 1px solid var(--line);
       <tbody>
         <tr><td>‏CLS · الصفحة الرئيسية</td><td class="n">0</td><td class="n">0.0219</td><td class="n">0</td><td><span class="pill ok">محقّق</span></td></tr>
         <tr><td>‏CLS · لوحة الرصد</td><td class="n">0</td><td class="n">0.1028</td><td class="n">0</td><td><span class="pill ok">محقّق</span></td></tr>
-        <tr><td>‏LCP · أبطأ صفحة</td><td class="n">&lt; 1800ms</td><td class="n">—</td><td class="n">244ms</td><td><span class="pill ok">محقّق</span></td></tr>
+        <tr><td>‏LCP · أبطأ صفحة</td><td class="n">&lt; 1800ms</td><td class="n">—</td><td class="n">256ms</td><td><span class="pill ok">محقّق</span></td></tr>
+        <tr><td>‏INP · تبديل المظهر</td><td class="n">&lt; 100ms</td><td class="n">176ms</td><td class="n">72ms</td><td><span class="pill ok">محقّق</span></td></tr>
+        <tr><td>‏INP · بقية التفاعلات</td><td class="n">&lt; 100ms</td><td class="n">—</td><td class="n">0–64ms</td><td><span class="pill ok">محقّق</span></td></tr>
         <tr><td>أدنى تباين نصّ</td><td class="n">4.5:1</td><td class="n">4.75:1</td><td class="n">5.36:1</td><td><span class="pill ok">‏AA</span></td></tr>
         <tr><td>أرضية مقاس الخط</td><td class="n">12px</td><td class="n">—</td><td class="n">12px</td><td><span class="pill ok">محقّق</span></td></tr>
         <tr><td>طلبات خارجية</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td><span class="pill ok">محقّق</span></td></tr>
         <tr><td>الحمولة كاملة</td><td class="n">—</td><td class="n">—</td><td class="n">240KB</td><td><span class="pill ok">‏13 طلباً محلياً</span></td></tr>
-        <tr><td>الاختبارات</td><td class="n">—</td><td class="n">121</td><td class="n">147</td><td><span class="pill ok">كلها تمرّ</span></td></tr>
+        <tr><td>الاختبارات</td><td class="n">—</td><td class="n">121</td><td class="n">148</td><td><span class="pill ok">كلها تمرّ</span></td></tr>
       </tbody>
     </table></div>
     <p class="cap">كل رقم هنا مقيس بمتصفح فعلي على الصفحات الخمس في المظهرين، بمفتاح محفوظ
@@ -698,7 +719,8 @@ footer { margin-top: 88px; padding-top: 28px; border-top: 1px solid var(--line);
     'float noise(vec2 v){ vec2 i = floor(v), f = fract(v); vec2 u = f*f*(3.0-2.0*f);',
     '  return mix(mix(hash(i), hash(i+vec2(1,0)), u.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), u.x), u.y); }',
     'float fbm(vec2 v){ float s=0.0, a=0.5; for(int i=0;i<4;i++){ s+=a*noise(v); v*=2.02; a*=0.5; } return s; }',
-    'float height(vec2 uv){ vec2 q = vec2(fbm(uv + uT*0.03), fbm(uv + vec2(5.2,1.3) - uT*0.02));',
+    'float fbm2(vec2 v){ return 0.5*noise(v) + 0.25*noise(v*2.02); }',
+    'float height(vec2 uv){ vec2 q = vec2(fbm2(uv + uT*0.03), fbm2(uv + vec2(5.2,1.3) - uT*0.02));',
     '  return fbm(uv + 1.6*q); }',
     'void main(){',
     '  vec2 uv = gl_FragCoord.xy / uRes;',
