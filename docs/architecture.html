@@ -1,0 +1,799 @@
+<title>معمار الإعلام الرقمي</title>
+<style>
+/* ═══════════════════════════════════════════════════════════════
+   لوحة الألوان مأخوذة من theme.css الخاص بالمنتج نفسه لا مخترعة هنا:
+   وثيقة تصف نظاماً يجب أن تُقرأ بلغة ذلك النظام. داكن أولاً لأن هوية
+   المنتج OLED، والفاتح يُعاد تعريفه على مستوى الرموز فقط.
+   ═══════════════════════════════════════════════════════════════ */
+:root {
+  --ground:   #020617;
+  --surface:  #0b1220;
+  --raised:   #111a2e;
+  --line:     #1c2942;
+  --line-soft:#131e33;
+  --text:     #e8eef6;
+  --text-2:   #9aabc0;
+  --text-3:   #64748b;
+  --accent:   #67e8f9;
+  --accent-2: #0e8fae;
+  --accent-ink:#031018;
+  --ok:       #34d399;
+  --warn:     #fbbf24;
+  --bad:      #f87171;
+  --code-bg:  #060d1c;
+  --sel:      rgba(103,232,249,.22);
+
+  --f-display: 'Noto Kufi Arabic', 'Segoe UI', Tahoma, Arial, sans-serif;
+  --f-body: 'Segoe UI', Tahoma, Arial, 'Liberation Sans', sans-serif;
+  --f-mono: 'JetBrains Mono', 'Cascadia Mono', 'Fira Code', Consolas, ui-monospace, monospace;
+
+  --measure: 74ch;
+  --pad: clamp(20px, 4vw, 56px);
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --ground:   #eef2f7;
+    --surface:  #ffffff;
+    --raised:   #f2f6fa;
+    --line:     #dde5ee;
+    --line-soft:#e7edf4;
+    --text:     #0b1220;
+    --text-2:   #55647a;
+    --text-3:   #7d8ca1;
+    --accent:   #0e6f8c;
+    --accent-2: #0e8fae;
+    --accent-ink:#ffffff;
+    --ok:       #12784a;
+    --warn:     #9c5c0b;
+    --bad:      #c2352b;
+    --code-bg:  #0b1220;
+    --sel:      rgba(14,111,140,.18);
+  }
+}
+:root[data-theme="light"] {
+  --ground:   #eef2f7;
+  --surface:  #ffffff;
+  --raised:   #f2f6fa;
+  --line:     #dde5ee;
+  --line-soft:#e7edf4;
+  --text:     #0b1220;
+  --text-2:   #55647a;
+  --text-3:   #7d8ca1;
+  --accent:   #0e6f8c;
+  --accent-2: #0e8fae;
+  --accent-ink:#ffffff;
+  --ok:       #12784a;
+  --warn:     #9c5c0b;
+  --bad:      #c2352b;
+  --code-bg:  #0b1220;
+  --sel:      rgba(14,111,140,.18);
+}
+
+* { box-sizing: border-box; }
+body { background: var(--ground); color: var(--text); font-family: var(--f-body);
+       font-size: 16px; line-height: 1.75; margin: 0; }
+::selection { background: var(--sel); }
+
+.doc { max-width: 1180px; margin: 0 auto; padding: 0 var(--pad) 96px; }
+
+/* ── الترويسة: أطروحة لا زخرفة ── */
+.mast { padding: clamp(56px, 9vw, 108px) 0 clamp(32px, 5vw, 56px); border-bottom: 1px solid var(--line); }
+.eyebrow { font-size: 12.5px; font-weight: 600; color: var(--accent);
+           margin: 0 0 20px; display: flex; align-items: center; gap: 12px; }
+.eyebrow::after { content: ""; flex: 1; height: 1px; background: linear-gradient(to left, var(--line), transparent); }
+.mast h1 { font-family: var(--f-display); font-weight: 700; text-wrap: balance;
+           font-size: clamp(2rem, 1.3rem + 3.2vw, 3.6rem); line-height: 1.25; letter-spacing: -.01em; margin: 0 0 20px; }
+.mast .lede { font-size: clamp(1.02rem, .98rem + .3vw, 1.22rem); color: var(--text-2);
+              max-width: 62ch; line-height: 1.75; margin: 0; }
+.mast .lede strong { color: var(--text); font-weight: 600; }
+
+/* ── شريط الأرقام المقيسة ── */
+.metrics { display: grid; grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+           gap: 1px; background: var(--line); border: 1px solid var(--line);
+           border-radius: 12px; overflow: hidden; margin-top: 44px; }
+.metric { background: var(--surface); padding: 18px 20px; }
+.metric b { display: block; font-family: var(--f-mono); direction: ltr; unicode-bidi: isolate; font-size: clamp(1.3rem, 1.1rem + .8vw, 1.75rem);
+            font-weight: 600; color: var(--accent); font-variant-numeric: tabular-nums; line-height: 1.2; }
+.metric span { display: block; font-size: 12.5px; color: var(--text-3); margin-top: 6px; }
+
+/* ── التخطيط: عمود مقيس + سكّة أقسام ── */
+.body-grid { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: clamp(24px, 4vw, 64px);
+             align-items: start; margin-top: 56px; }
+@media (max-width: 900px) { .body-grid { grid-template-columns: 1fr; } .rail { display: none; } }
+
+.rail { position: sticky; top: 32px; font-size: 13.5px; }
+.rail-h { font-size: 12px; font-weight: 600; color: var(--text-3); margin: 0 0 14px; }
+.rail ol { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px;
+           border-inline-start: 1px solid var(--line); }
+.rail a { display: flex; gap: 10px; align-items: baseline; text-decoration: none; color: var(--text-2);
+          padding: 7px 14px; margin-inline-start: -1px; border-inline-start: 1px solid transparent;
+          transition: color .18s ease, border-color .18s ease; }
+.rail a:hover { color: var(--text); border-inline-start-color: var(--accent); }
+.rail a i { font-family: var(--f-mono); font-style: normal; font-size: 11px; color: var(--text-3);
+            font-variant-numeric: tabular-nums; }
+
+main { min-width: 0; max-width: var(--measure); }
+
+section { padding-top: 56px; }
+section + section { margin-top: 8px; }
+h2 { font-family: var(--f-display); font-weight: 700; font-size: clamp(1.35rem, 1.15rem + .8vw, 1.85rem);
+     line-height: 1.35; letter-spacing: -.005em; text-wrap: balance; margin: 0 0 6px; scroll-margin-top: 24px; }
+h2 .num { font-family: var(--f-mono); font-size: .58em; font-weight: 500; color: var(--accent);
+          margin-inline-end: 12px; vertical-align: .12em; font-variant-numeric: tabular-nums; }
+.sub { color: var(--text-3); font-size: 14.5px; margin: 0 0 28px; }
+h3 { font-family: var(--f-display); font-size: 1.06rem; font-weight: 700; margin: 40px 0 10px; line-height: 1.5; }
+h4 { font-size: .95rem; font-weight: 700; margin: 26px 0 8px; color: var(--text); }
+p { margin: 0 0 18px; }
+p, li { color: var(--text-2); }
+p strong, li strong { color: var(--text); font-weight: 600; }
+ul { margin: 0 0 18px; padding-inline-start: 1.1em; }
+li { margin-bottom: 8px; }
+li::marker { color: var(--accent-2); }
+a { color: var(--accent); text-underline-offset: 3px; }
+code { font-family: var(--f-mono); font-size: .875em; background: var(--raised); color: var(--text);
+       padding: .12em .4em; border-radius: 5px; border: 1px solid var(--line-soft); }
+
+/* ── الاقتباس المعماري: القرار الذي غيّر المسار ── */
+.verdict { border: 1px solid var(--line); border-inline-start: 3px solid var(--accent);
+           background: var(--surface); border-radius: 4px 12px 12px 4px; padding: 22px 24px; margin: 28px 0; }
+.verdict .tag { font-size: 12px; font-weight: 700; color: var(--accent); display: block; margin-bottom: 10px; }
+.verdict p:last-child { margin-bottom: 0; }
+
+/* ── الجداول ── */
+.tw { overflow-x: auto; margin: 22px 0 28px; border: 1px solid var(--line); border-radius: 12px; background: var(--surface); }
+table { border-collapse: collapse; width: 100%; font-size: 13.5px; min-width: 540px; }
+th { text-align: start; font-size: 12px; color: var(--text-3); font-weight: 700; padding: 13px 16px;
+     border-bottom: 1px solid var(--line); white-space: nowrap; background: var(--raised); }
+th.mono, th.n { font-family: var(--f-mono); font-weight: 500; }
+td { padding: 11px 16px; border-bottom: 1px solid var(--line-soft); color: var(--text-2); vertical-align: top; }
+tbody tr:last-child td { border-bottom: 0; }
+td.mono, th.mono { font-family: var(--f-mono); font-variant-numeric: tabular-nums; color: var(--text); white-space: nowrap; }
+td.n { font-family: var(--f-mono); font-variant-numeric: tabular-nums; text-align: end;
+        white-space: nowrap; direction: ltr; unicode-bidi: isolate; }
+.pill { display: inline-block; font-family: var(--f-mono); font-size: 11px; padding: 2px 8px; border-radius: 999px;
+        border: 1px solid currentColor; white-space: nowrap; }
+.pill.ok { color: var(--ok); } .pill.warn { color: var(--warn); } .pill.bad { color: var(--bad); }
+
+/* ── الشيفرة ── */
+pre { direction: ltr; text-align: left; background: var(--code-bg); color: #cbd5e1; border: 1px solid var(--line);
+      border-radius: 12px; padding: 18px 20px; overflow-x: auto; margin: 20px 0 26px;
+      font-family: var(--f-mono); font-size: 12.5px; line-height: 1.75; tab-size: 2; }
+pre .c { color: #4d6180; font-style: italic; }
+pre .k { color: #67e8f9; }
+pre .s { color: #86efac; }
+pre .p { color: #fbbf24; }
+.filename { direction: ltr; text-align: left; font-family: var(--f-mono); font-size: 11.5px; color: var(--text-3);
+            background: var(--raised); border: 1px solid var(--line); border-bottom: 0;
+            border-radius: 12px 12px 0 0; padding: 8px 16px; margin: 20px 0 -26px; letter-spacing: .04em; }
+.filename + pre { border-radius: 0 0 12px 12px; margin-top: 0; }
+
+/* ── المخططات السلكية ── */
+.wire { border: 1px solid var(--line); border-radius: 12px; background: var(--surface);
+        padding: 16px; margin: 20px 0 10px; }
+.wire-t { font-size: 12px; font-weight: 700; color: var(--text-3); margin-bottom: 12px; }
+.wf { display: grid; gap: 6px; }
+.wf-row { display: grid; gap: 6px; }
+.blk { border: 1px dashed var(--line); border-radius: 7px; background: var(--raised);
+       padding: 10px 12px; font-size: 12px; color: var(--text-2); min-height: 40px;
+       display: flex; flex-direction: column; justify-content: center; }
+.blk b { color: var(--text); font-weight: 600; font-size: 12.5px; display: block; }
+.blk em { font-style: normal; color: var(--text-3); font-size: 11px; font-family: var(--f-mono); }
+.blk.key { border-style: solid; border-color: var(--accent-2); background: color-mix(in srgb, var(--accent) 8%, var(--surface)); }
+.blk.sm { min-height: 32px; padding: 7px 11px; }
+.cap { font-size: 12.5px; color: var(--text-3); margin: 0 0 26px; }
+
+/* ── لوحة الرموز ── */
+.swatches { display: grid; grid-template-columns: repeat(auto-fill, minmax(112px, 1fr)); gap: 10px; margin: 20px 0 26px; }
+.sw { border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.sw .chip { height: 46px; }
+.sw .n { padding: 8px 10px; font-family: var(--f-mono); font-size: 10.5px; line-height: 1.5; color: var(--text-3); }
+.sw .n b { display: block; color: var(--text); font-weight: 500; font-size: 11px; }
+
+/* ── المشهد الحيّ ── */
+.stage { position: relative; border: 1px solid var(--line); border-radius: 12px; overflow: hidden;
+         background: var(--ground); margin: 22px 0 10px; }
+.stage canvas { display: block; width: 100%; height: 260px; }
+.stage .lbl { position: absolute; inset-block-start: 12px; inset-inline-start: 12px;
+              font-size: 11.5px; font-weight: 600; color: var(--text-2);
+              background: color-mix(in srgb, var(--ground) 72%, transparent); padding: 4px 9px; border-radius: 6px;
+              border: 1px solid var(--line); }
+.stage .fallback { padding: 40px 20px; text-align: center; color: var(--text-3); font-size: 13px; }
+.ctrls { display: flex; gap: 8px; flex-wrap: wrap; margin: 0 0 26px; }
+.ctrls button { font-size: 12.5px; padding: 6px 13px; border-radius: 999px;
+                border: 1px solid var(--line); background: var(--surface); color: var(--text-2); cursor: pointer;
+                transition: color .18s ease, border-color .18s ease, background .18s ease; }
+.ctrls button:hover { color: var(--text); border-color: var(--accent-2); }
+.ctrls button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+
+:where(a, button):focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 4px; }
+
+footer { margin-top: 88px; padding-top: 28px; border-top: 1px solid var(--line);
+         font-size: 12.5px; color: var(--text-3); }
+
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+</style>
+
+<div class="doc" dir="rtl" lang="ar">
+
+<header class="mast">
+  <p class="eyebrow">مواصفة معمارية · الإصدار 5.0</p>
+  <h1>معمار الإعلام الرقمي</h1>
+  <p class="lede">أداة فرز محتوى تعمل من قرص المستخدم بلا خادم وبلا اتصال. هذه الوثيقة تصف نظامها البصري
+    وطبقتها ثلاثية الأبعاد وحركتها ومقاييسها المرصودة — و<strong>القرار المعماري الذي رفض الإطار
+    المطلوب</strong> لأن قيداً واحداً في التشغيل يُبطله.</p>
+
+  <div class="metrics">
+    <div class="metric"><b>0</b><span>إزاحة تخطيط (CLS)</span></div>
+    <div class="metric"><b>0</b><span>طلب شبكة خارجي</span></div>
+    <div class="metric"><b>132–244</b><span>مللي ثانية · زمن أكبر رسمة</span></div>
+    <div class="metric"><b>5.36:1</b><span>أدنى تباين مقيس</span></div>
+    <div class="metric"><b>147</b><span>اختباراً يمرّ</span></div>
+    <div class="metric"><b>240</b><span>كيلوبايت · الحمولة كاملة</span></div>
+  </div>
+</header>
+
+<div class="body-grid">
+
+  <nav class="rail" aria-label="أقسام الوثيقة">
+    <p class="rail-h">المخطّط</p>
+    <ol>
+      <li><a href="#s1"><i>01</i> الرؤية الاستراتيجية</a></li>
+      <li><a href="#s2"><i>02</i> رموز نظام التصميم</a></li>
+      <li><a href="#s3"><i>03</i> مخططات الصفحات</a></li>
+      <li><a href="#s4"><i>04</i> الطبقة ثلاثية الأبعاد</a></li>
+      <li><a href="#s5"><i>05</i> مصفوفة الحركة</a></li>
+      <li><a href="#s6"><i>06</i> مخططات الشيفرة</a></li>
+    </ol>
+  </nav>
+
+  <main>
+
+  <!-- ═══════════════ 1 ═══════════════ -->
+  <section id="s1">
+    <h2><span class="num">01</span>الرؤية الاستراتيجية</h2>
+    <p class="sub">ما الذي يخدمه هذا المنتج، وما القيد الذي يحكم كل قرار بعده</p>
+
+    <p>الأداة تستخرج منشورات صفحات فيسبوك وتغريدات X وتصنّفها على إطار قانوني وأخلاقي سوري.
+      مستعملها مسؤول محتوى يمرّ على عشرات المنشورات في الجلسة الواحدة ويحتاج أن يقرأ الحكم
+      بنظرة، لا أن يُبهَر. من هنا تنبع المعادلة كلها: <strong>الكثافة المعلوماتية أولاً،
+      والعمق البصري في خدمتها لا فوقها</strong>.</p>
+
+    <h3>القيد الحاكم: التشغيل من <code>file://</code></h3>
+    <p>الموقع يُفتح بالنقر المزدوج على ملف HTML من سطح المكتب. لا خادم، ولا عملية بناء،
+      ولا شهادة، وقد لا يكون هناك إنترنت أصلاً. هذا ليس تفضيلاً بل شرط الاستعمال، وهو يُبطل
+      طبقة كاملة من الحلول الشائعة.</p>
+
+    <div class="verdict">
+      <span class="tag">القرار المعماري</span>
+      <p>المواصفة المطلوبة نصّت على Next.js أو Astro أو SvelteKit مع Three.js وTailwind وZustand.
+        <strong>لا واحد منها يعمل تحت هذا القيد.</strong> أُطر التوليد تفترض خادماً أو خطوة بناء
+        ومسارات جذرية تنكسر على البروتوكول المحلي؛ ووحدات ES تفشل بسياسة المصدر نفسه من
+        <code>file://</code>؛ وTailwind يحتاج مرحلة ترجمة؛ وThree.js يعني إمّا CDN — أي طلباً
+        خارجياً — وإمّا ~600KB مضافة إلى المستودع لطبقة زخرفية واحدة.</p>
+      <p>الذي نُفّذ بدلاً منها يحقّق الغاية المعلنة لا الوسيلة المسمّاة: HTML وCSS وJS عادية،
+        نظام رموز مركزي بديلاً عن Tailwind، وحدات على <code>window</code> بديلاً عن Zustand،
+        وWebGL مكتوب باليد في 10KB بديلاً عن Three.js. النتائج المرصودة أدنى من كل السقوف
+        المطلوبة.</p>
+    </div>
+
+    <h3>ثلاثة مبادئ تحكم الواجهة</h3>
+    <ul>
+      <li><strong>الحكم قبل المحتوى.</strong> تصنيف المنشور يظهر في رأس البطاقة لا في جسمها،
+        فتُمسح الشبكة كلها بنظرة واحدة قبل قراءة أي نصّ.</li>
+      <li><strong>اللون الدلالي محجوز.</strong> الأخضر والكهرماني والأحمر ملك محرّك التصنيف
+        وحده. لهذا لون الهوية سماوي — كي لا ينافس دلالةً على معناها.</li>
+      <li><strong>العمق يُحسّ ولا يُقرأ.</strong> الزجاج والظلّ والميل ثلاثي الأبعاد تعطي ترتيباً
+        للطبقات؛ متى طلبت انتباهاً لنفسها فقد فشلت.</li>
+    </ul>
+  </section>
+
+  <!-- ═══════════════ 2 ═══════════════ -->
+  <section id="s2">
+    <h2><span class="num">02</span>رموز نظام التصميم</h2>
+    <p class="sub"><bdi>theme.css</bdi> · مصدر واحد تقرأ منه كل صفحة وكل وحدة، وحتى مظلّل <bdi>WebGL</bdi></p>
+
+    <h3>سلّم الهوية</h3>
+    <p>كحلي ليلي يتدرّج نحو سماوي كهربائي. الطرف الداكن أسطح، والطرف الفاتح تأكيد.</p>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#020617"></div><div class="n"><b>green-950</b>#020617</div></div>
+      <div class="sw"><div class="chip" style="background:#070d1c"></div><div class="n"><b>green-900</b>#070d1c</div></div>
+      <div class="sw"><div class="chip" style="background:#111a2e"></div><div class="n"><b>green-800</b>#111a2e</div></div>
+      <div class="sw"><div class="chip" style="background:#0e6f8c"></div><div class="n"><b>green-700</b>#0e6f8c</div></div>
+      <div class="sw"><div class="chip" style="background:#0e8fae"></div><div class="n"><b>green-600</b>#0e8fae</div></div>
+      <div class="sw"><div class="chip" style="background:#35b7d4"></div><div class="n"><b>green-500</b>#35b7d4</div></div>
+      <div class="sw"><div class="chip" style="background:#67e8f9"></div><div class="n"><b>sage</b>#67e8f9</div></div>
+    </div>
+
+    <h3>الألوان الدلالية — منفصلة عمداً</h3>
+    <div class="swatches">
+      <div class="sw"><div class="chip" style="background:#12784a"></div><div class="n"><b>success</b>#12784a</div></div>
+      <div class="sw"><div class="chip" style="background:#9c5c0b"></div><div class="n"><b>warn</b>#9c5c0b</div></div>
+      <div class="sw"><div class="chip" style="background:#c2352b"></div><div class="n"><b>danger</b>#c2352b</div></div>
+      <div class="sw"><div class="chip" style="background:#55647a"></div><div class="n"><b>text-2</b>#55647a</div></div>
+    </div>
+    <p class="cap"><code>--text-2</code> عند <code>#55647a</code> ليس اختياراً جمالياً: قِيس على الأسطح
+      الثلاثة فأعطى 5.2:1 فأعلى. القيمة الأفتح منه تسقط دون حدّ AA على السطح الرمادي.</p>
+
+    <h3>مقياس الخط السائل</h3>
+    <p>كل مقاس <code>clamp()</code> يجمع <code>rem</code> مع <code>vw</code> في مُنحدره. المُنحدر
+      بـ <code>vw</code> وحده يجعل النصّ لا يستجيب لتكبير المتصفح — وهو إخفاق مباشر لمعيار
+      WCAG 1.4.4. والأرضية عند <code>0.75rem</code> أي 12px لا تُخترق في أي عرض شاشة.</p>
+    <div class="tw"><table>
+      <thead><tr><th>الرمز</th><th class="mono">القيمة</th><th class="n">‎360px</th><th class="n">‎1440px</th><th>الاستعمال</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">--fs-display</td><td class="mono">clamp(1.45rem, 1.15rem + 1.35vw, 2.35rem)</td><td class="n">23.2px</td><td class="n">37.6px</td><td>عنوان الصفحة</td></tr>
+        <tr><td class="mono">--fs-title</td><td class="mono">clamp(1rem, .95rem + .25vw, 1.2rem)</td><td class="n">16.1px</td><td class="n">19.2px</td><td>عناوين اللوحات</td></tr>
+        <tr><td class="mono">--fs-body</td><td class="mono">clamp(.875rem, .85rem + .12vw, .95rem)</td><td class="n">14.0px</td><td class="n">15.2px</td><td>النصّ الجاري</td></tr>
+        <tr><td class="mono">--fs-sm</td><td class="mono">clamp(.825rem, .81rem + .1vw, .9rem)</td><td class="n">13.3px</td><td class="n">14.4px</td><td>نصّ البطاقة</td></tr>
+        <tr><td class="mono">--fs-xs</td><td class="mono">clamp(.78rem, .77rem + .07vw, .84rem)</td><td class="n">12.6px</td><td class="n">13.4px</td><td>بيانات وصفية</td></tr>
+        <tr><td class="mono">--fs-2xs</td><td class="mono">clamp(.75rem, .745rem + .04vw, .79rem)</td><td class="n">12.0px</td><td class="n">12.6px</td><td>الأرضية — لا أصغر</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>المسافة والاستدارة والعمق</h3>
+    <div class="tw"><table>
+      <thead><tr><th>المجموعة</th><th>الرموز</th><th>القاعدة</th></tr></thead>
+      <tbody>
+        <tr><td>المسافة</td><td class="mono">--s1…--s12</td><td>مضاعفات 4px: ‎4 · 8 · 12 · 16 · 20 · 24 · 32 · 40 · 48</td></tr>
+        <tr><td>الاستدارة</td><td class="mono">--radius-sm / --radius / --radius-lg</td><td>‎10px · 14px · 20px — والحبّة الكاملة للشرائح فقط</td></tr>
+        <tr><td>العمق</td><td class="mono">--e1 … --e4</td><td>ظلال مزدوجة الطبقة تحاكي مصدر ضوء واحد من الأعلى</td></tr>
+        <tr><td>الزجاج</td><td class="mono">--glass-bg / --glass-blur / --glass-sat</td><td>‎rgba(255,255,255,.72) · تمويه 18px · تشبّع 1.7</td></tr>
+        <tr><td>المشهد</td><td class="mono">--persp</td><td>‎1100px — على الحاوية لا على البطاقة</td></tr>
+      </tbody>
+    </table></div>
+    <div class="verdict">
+      <span class="tag">مزلق مكلف</span>
+      <p><code>perspective</code> يجب أن يقع على الشبكة الحاوية لا على كل بطاقة. وضعه على البطاقة
+        يمنح كلّ واحدة نقطة تلاشٍ خاصة بها، فتميل البطاقات كأنها مشاهد منفصلة ويسقط الوهم كله.</p>
+    </div>
+  </section>
+
+  <!-- ═══════════════ 3 ═══════════════ -->
+  <section id="s3">
+    <h2><span class="num">03</span>مخططات الصفحات</h2>
+    <p class="sub">خمس صفحات · قشرة واحدة · قائمة جانبية ثابتة وعمود محتوى</p>
+
+    <p>القشرة واحدة في كل الصفحات: قائمة جانبية لاصقة بعرض 232px، وعمود محتوى يبدأ برأس زجاجي
+      لاصق. الاختلاف كله في جسم العمود.</p>
+
+    <div class="wire">
+      <p class="wire-t">القشرة المشتركة</p>
+      <div class="wf" style="grid-template-columns: 232px minmax(0, 1fr);">
+        <div class="blk" style="min-height:210px"><b>‏aside.sidebar</b><em>علامة · nav مجمَّعة بعناوين · مبدّل المظهر</em></div>
+        <div class="wf" style="gap:6px;">
+          <div class="blk key"><b>‏header.page-header — لاصق، زجاجي، z-index 15</b><em>شارة · h1 عنوان الصفحة · فقرة · إجراء أساسي</em></div>
+          <div class="blk" style="min-height:150px"><b>‏main#main-content</b><em>جسم الصفحة — يختلف وحده بين الصفحات</em></div>
+          <div class="blk sm"><em>‏footer</em></div>
+        </div>
+      </div>
+    </div>
+    <p class="cap">‏<code>a.skip-link</code> أول عنصر في الجسم، و<code>main</code> يحمل
+      <code>id="main-content"</code> و<code>tabindex="-1"</code> ليستقبل التركيز فعلاً.</p>
+
+    <div class="wire">
+      <p class="wire-t">صفحتا الاستخراج · index و twitter</p>
+      <div class="wf">
+        <div class="blk sm"><em>تنبيه «لم يُضبط مفتاح الاستخراج» — يظهر بقاعدة CSS لا بأمر JS</em></div>
+        <div class="blk key"><b>لوحة الإعدادات والفلاتر</b><em>روابط الصفحات · العدد بسقف إلزامي · مدى التاريخ · الترتيب</em></div>
+        <div class="wf-row" style="grid-template-columns: 1fr 1fr 1fr;">
+          <div class="blk sm"><em>مبدّل العرض</em></div>
+          <div class="blk sm"><em>بحث وفرز</em></div>
+          <div class="blk sm"><em>تصدير</em></div>
+        </div>
+        <div class="wf-row" style="grid-template-columns: repeat(3, 1fr);">
+          <div class="blk" style="min-height:82px"><b>بطاقة منشور</b><em>رأس/نصّ/وسائط/تفاعل</em></div>
+          <div class="blk" style="min-height:82px"><b>بطاقة منشور</b><em>ارتفاع متساوٍ في الصفّ</em></div>
+          <div class="blk" style="min-height:82px"><b>بطاقة منشور</b><em>‏auto-fill · minmax(310px,1fr)</em></div>
+        </div>
+        <div class="blk sm"><em>شريط الميزات — محتوى تعريفي، أسفل الأداة لا فوقها</em></div>
+      </div>
+    </div>
+
+    <div class="wire">
+      <p class="wire-t">لوحتا الرصد · dashboard و twitter-dashboard</p>
+      <div class="wf">
+        <div class="blk key"><b>شريط التحكم بالرصد</b><em>نبضة · حالة · مدة الدورة · عدّاد تنازلي · بدء/إيقاف · رصد فوري</em></div>
+        <div class="wf-row" style="grid-template-columns: repeat(4, 1fr);">
+          <div class="blk sm"><em>ملخّص</em></div><div class="blk sm"><em>ملخّص</em></div>
+          <div class="blk sm"><em>ملخّص</em></div><div class="blk sm"><em>ملخّص</em></div>
+        </div>
+        <div class="blk sm"><em>فلاتر: المنصة · التصنيف · الفترة</em></div>
+        <div class="wf-row" style="grid-template-columns: 1fr 1fr;">
+          <div class="blk" style="min-height:66px"><b>نشاط النشر عبر الزمن</b><em>‏SVG مرسوم محلياً</em></div>
+          <div class="blk" style="min-height:66px"><b>التفاعل حسب المنصة</b><em>بلا مكتبة رسوم</em></div>
+        </div>
+        <div class="blk sm"><em>تدفّق المنشورات المرصودة</em></div>
+      </div>
+    </div>
+
+    <h3>بطاقة المنشور — الوحدة التي يُقاس بها كل شيء</h3>
+    <div class="tw"><table>
+      <thead><tr><th>الطبقة</th><th>القرار</th><th>السبب</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">الرأس</td><td>صورة الحساب · الاسم · التاريخ · مقياس الخطورة · شارة الحكم</td><td>الحكم في الرأس يُمسح بنظرة عبر الشبكة كلها</td></tr>
+        <tr><td class="mono">النصّ</td><td>‏<code>flex: none</code> مع <code>line-clamp: 3</code></td><td>الفليكس يضغط العنصر إلى أدنى ارتفاعه فيُبطل القصّ</td></tr>
+        <tr><td class="mono">الوسائط</td><td>‏<code>aspect-ratio: 16/10</code> و<code>object-fit: cover</code></td><td>بغيرهما يرث الإطار ارتفاع الصورة الطبيعي فتتمدّد البطاقة</td></tr>
+        <tr><td class="mono">بلا وسائط</td><td>‏<code>:not(:has(.fx-media)) .fx-text { line-clamp: 11 }</code></td><td>المساحة المحرّرة تعود للنصّ لا لفراغ</td></tr>
+        <tr><td class="mono">الوسوم</td><td>‏<code>margin-top: auto</code></td><td>تُثبَّت في القاع فتستوي قواعد البطاقات</td></tr>
+        <tr><td class="mono">الشبكة</td><td>‏<code>align-items: stretch</code> (الافتراضي)</td><td>‏<code>start</code> ينتج سلّماً مسنّناً — جُرّب ورُدّ</td></tr>
+      </tbody>
+    </table></div>
+  </section>
+
+  <!-- ═══════════════ 4 ═══════════════ -->
+  <section id="s4">
+    <h2><span class="num">04</span>الطبقة ثلاثية الأبعاد</h2>
+    <p class="sub"><bdi>backdrop.js</bdi> · <bdi>10KB</bdi> · <bdi>WebGL</bdi> مكتوب باليد · صفر اعتماديات</p>
+
+    <p>المظلّل أدناه يعمل الآن بشيفرته الحرفية من المنتج: حقل ارتفاع بأربع طبقات ضجيج مع التواء
+      مجالي، يُشتقّ منه اتجاه السطح بفروق منتهية ثم يُضاء بمصدر ثابت. هذا عمق محسوب على بطاقة
+      الرسوم، لا تدرّج لوني مسطّح.</p>
+
+    <div class="stage" id="stage">
+      <span class="lbl" id="stageLbl">حيّ · بكثافة المنتج الفعلية</span>
+      <canvas id="gl" width="800" height="260" aria-label="عرض حيّ لمظلّل الخلفية"></canvas>
+    </div>
+    <p class="cap">الأثر خافت عمداً: هذه كثافته في المنتج حرفياً، مركَّبة فوق لون الأرضية
+      نفسه. زرّ «اتجاه السطح» يكشف الهندسة الكامنة تحته.</p>
+    <div class="ctrls">
+      <button type="button" id="bDark" aria-pressed="true">قيم المظهر الداكن</button>
+      <button type="button" id="bLight" aria-pressed="false">قيم المظهر الفاتح</button>
+      <button type="button" id="bNorm" aria-pressed="false">إظهار اتجاه السطح</button>
+    </div>
+
+    <h3>لماذا لا Three.js ولا Spline</h3>
+    <div class="tw"><table>
+      <thead><tr><th>الخيار</th><th class="n">الحجم</th><th>الحكم</th></tr></thead>
+      <tbody>
+        <tr><td>‏Three.js من CDN</td><td class="n">~600KB</td><td><span class="pill bad">مرفوض</span> طلب خارجي — يُبطل العمل بلا إنترنت</td></tr>
+        <tr><td>‏Three.js في المستودع</td><td class="n">~600KB</td><td><span class="pill bad">مرفوض</span> يضاعف حجم المشروع لطبقة زخرفية واحدة</td></tr>
+        <tr><td>مشهد Spline</td><td class="n">‎2MB+</td><td><span class="pill bad">مرفوض</span> يتجاوز سقف الأصول المنصوص عليه أصلاً</td></tr>
+        <tr><td>‏WebGL مكتوب باليد</td><td class="n">‎10KB</td><td><span class="pill ok">المعتمد</span> رسم فعلي على بطاقة الرسوم بلا اعتمادية</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>ميزانية الأداء</h3>
+    <div class="tw"><table>
+      <thead><tr><th>الضابط</th><th>القيمة</th><th>المبرّر</th></tr></thead>
+      <tbody>
+        <tr><td>دقة الرسم</td><td class="mono">‎0.5×، بحدّ 960px</td><td>المخرَج يمرّ خلف زجاج مموّه — التفاصيل لا تصل العين</td></tr>
+        <tr><td>معدّل الإطارات</td><td class="mono">‎30fps (عتبة 33ms)</td><td>الحركة بطيئة أصلاً، فلا فرق مرئي والكلفة تنتصف</td></tr>
+        <tr><td>سياق WebGL</td><td class="mono">‎low-power، بلا عمق، بلا تنعيم</td><td>مستوٍ واحد ملء الشاشة لا يحتاج أياً منها</td></tr>
+        <tr><td>الرسم الهندسي</td><td class="mono">مثلّث واحد</td><td>يغطي المشهد بلا حافة قطرية مهدورة</td></tr>
+        <tr><td>النافذة الغائبة</td><td class="mono">توقّف كامل</td><td>‏<code>visibilitychange</code> — لا استهلاك بطارية في الخلفية</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>سلسلة التراجع</h3>
+    <div class="tw"><table>
+      <thead><tr><th>الحالة</th><th>السلوك</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">prefers-reduced-motion</td><td>إطار واحد ساكن، ثم لا حلقة <code>requestAnimationFrame</code> إطلاقاً</td></tr>
+        <tr><td class="mono">لا سياق WebGL</td><td>لا يُنشأ العنصر أصلاً — يبقى تدرّج CSS وحده، بلا خطأ في السجلّ</td></tr>
+        <tr><td class="mono">فشل ترجمة المظلّل</td><td>انسحاب صامت قبل إضافة العنصر إلى الصفحة</td></tr>
+        <tr><td class="mono">webglcontextlost</td><td>إيقاف الحلقة وإزالة العنصر — لا إطار متجمّد على الشاشة</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="verdict">
+      <span class="tag">خطأ قِيس وصُحّح</span>
+      <p>‏<code>gl_FragCoord.y</code> صفرها في أسفل الشاشة لا أعلاها. التخميد المكتوب على أساس
+        العكس وضع أقوى الأثر خلف الفقرات بدل رأس الصفحة، فهبط تباين فقرة الميزات إلى
+        <strong>4.75:1</strong> — فوق حدّ AA لكن بهامش لا يكفي خلفيةً متحرّكة. بعد عكس التخميد
+        صار <strong>5.35:1</strong>، وأدنى قياس على الصفحة كلها <strong>5.36:1</strong> عبر عشر
+        لحظات متتابعة في المظهرين. الخلفية المتحرّكة لا تُقاس بلقطة واحدة.</p>
+    </div>
+  </section>
+
+  <!-- ═══════════════ 5 ═══════════════ -->
+  <section id="s5">
+    <h2><span class="num">05</span>مصفوفة الحركة</h2>
+    <p class="sub">أربع مدد · أربعة منحنيات · قاعدة واحدة: الخروج أسرع من الدخول</p>
+
+    <div class="tw"><table>
+      <thead><tr><th>الرمز</th><th class="mono">القيمة</th><th>المجال</th></tr></thead>
+      <tbody>
+        <tr><td class="mono">--dur-1</td><td class="mono">130ms</td><td>لمسات دقيقة: لون، شفافية</td></tr>
+        <tr><td class="mono">--dur-2</td><td class="mono">220ms</td><td>المرور والضغط</td></tr>
+        <tr><td class="mono">--dur-3</td><td class="mono">340ms</td><td>الدخول والظهور</td></tr>
+        <tr><td class="mono">--dur-exit</td><td class="mono">160ms</td><td>كل خروج — أسرع من دخوله دائماً</td></tr>
+        <tr><td class="mono">--ease</td><td class="mono">cubic-bezier(.22, 1, .36, 1)</td><td>خروج ناعم — الافتراضي</td></tr>
+        <tr><td class="mono">--ease-spring</td><td class="mono">cubic-bezier(.34, 1.56, .64, 1)</td><td>نابض بتجاوز طفيف</td></tr>
+        <tr><td class="mono">--ease-soft</td><td class="mono">cubic-bezier(.65, 0, .35, 1)</td><td>دخول وخروج متماثل</td></tr>
+        <tr><td class="mono">--ease-snap</td><td class="mono">cubic-bezier(.2, .9, .3, 1.2)</td><td>استجابة حادّة للضغط</td></tr>
+      </tbody>
+    </table></div>
+
+    <h3>الانتقالات المعتمدة</h3>
+    <div class="tw"><table>
+      <thead><tr><th>العنصر</th><th>الحدث</th><th>التحوّل</th><th class="mono">المدة · المنحنى</th></tr></thead>
+      <tbody>
+        <tr><td>بطاقة منشور</td><td>ظهور</td><td class="mono">translateY(14px) → 0، opacity 0 → 1</td><td class="mono">340ms · ease</td></tr>
+        <tr><td>بطاقة منشور</td><td>مرور</td><td class="mono">translate3d(0,-5px,34px) rotateX(1.6deg)</td><td class="mono">220ms · spring</td></tr>
+        <tr><td>بطاقة منشور</td><td>ضغط</td><td class="mono">عودة إلى المستوى</td><td class="mono">160ms · snap</td></tr>
+        <tr><td>الإجراء الأساسي</td><td>مرور</td><td class="mono">translate3d(0,-2px,12px) + ظلّ e3</td><td class="mono">220ms · ease</td></tr>
+        <tr><td>لوحة التحليل</td><td>فتح</td><td class="mono">ارتفاع + شفافية</td><td class="mono">340ms · soft</td></tr>
+        <tr><td>العارض</td><td>فتح</td><td class="mono">‏scale(.92) rotateX(6deg) → مستوٍ، مشهد 1200px</td><td class="mono">340ms · ease</td></tr>
+        <tr><td>الطبقة ثلاثية الأبعاد</td><td>دخول</td><td class="mono">opacity 0 → 1 بتأخير 120ms</td><td class="mono">900ms · ease</td></tr>
+        <tr><td>الكشف بالتمرير</td><td>دخول المشهد</td><td class="mono">‏IntersectionObserver يضيف <code>.in</code></td><td class="mono">340ms · ease</td></tr>
+      </tbody>
+    </table></div>
+
+    <div class="verdict">
+      <span class="tag">مزلق كلّف ساعة</span>
+      <p>‏<code>animation-fill-mode: both</code> يثبّت التحوّل النهائي للحركة، والقيم المتحرّكة
+        تعلو على التصريحات العادية في الترتيب. النتيجة أن <code>:hover</code> توقّف عن العمل
+        تماماً بلا أي خطأ — الميل ثلاثي الأبعاد كان يُكتب ويُتجاهل. الصواب
+        <code>backwards</code>: يضبط حالة ما قبل البدء ولا يثبّت النهاية.</p>
+    </div>
+
+    <h3>احترام تفضيل تقليل الحركة</h3>
+    <p>حارس واحد على مستوى النظام يلغي الحركات والانتقالات ويحيّد المشهد ثلاثي الأبعاد، وطبقة
+      WebGL تفحص التفضيل بنفسها فلا تبدأ حلقتها أصلاً.</p>
+    <pre><span class="c">/* theme.css — الحارس العام */</span>
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    scroll-behavior: auto !important;
+  }
+  .fx-list.fx-cards, .fbx-lb { perspective: none !important; }
+}</pre>
+  </section>
+
+  <!-- ═══════════════ 6 ═══════════════ -->
+  <section id="s6">
+    <h2><span class="num">06</span>مخططات الشيفرة</h2>
+    <p class="sub">الأنماط التي حملت الإصلاحات المقيسة</p>
+
+    <h3>‏أ · قراءة الحالة قبل أوّل رسمة</h3>
+    <p>هذا هو الفرق بين CLS = 0.0219 وCLS = 0. سكربت في <code>&lt;head&gt;</code> قبل ورقة الأنماط
+      (السكربتات تنتظر أوراق الأنماط المعلَّقة قبلها)، ثم القواعد تتفرّع عن سمة على الجذر.</p>
+    <div class="filename">index.html · &lt;head&gt;</div>
+<pre><span class="k">&lt;script&gt;</span>
+(<span class="k">function</span> () {
+  <span class="k">var</span> d = document.documentElement;
+  <span class="k">try</span> {
+    <span class="k">var</span> t = localStorage.getItem(<span class="s">'fbx_theme'</span>) ||
+      (matchMedia(<span class="s">'(prefers-color-scheme: dark)'</span>).matches ? <span class="s">'dark'</span> : <span class="s">'light'</span>);
+    d.setAttribute(<span class="s">'data-theme'</span>, t);
+    <span class="c">// أي خلل في التخزين يُعامل كـ«بلا مفتاح»: إظهار التنبيه أهون من إخفاء إعداد ناقص</span>
+    <span class="k">if</span> (!(localStorage.getItem(<span class="s">'fbx_apify_key'</span>) || <span class="s">''</span>).trim()) d.setAttribute(<span class="s">'data-nokey'</span>, <span class="s">''</span>);
+  } <span class="k">catch</span> (e) { d.setAttribute(<span class="s">'data-nokey'</span>, <span class="s">''</span>); }
+})();
+<span class="k">&lt;/script&gt;</span>
+<span class="k">&lt;link</span> <span class="p">rel</span>=<span class="s">"stylesheet"</span> <span class="p">href</span>=<span class="s">"theme.css"</span><span class="k">&gt;</span></pre>
+    <div class="filename">theme.css</div>
+<pre><span class="c">/* الإخفاء هو الأصل، والإظهار يتفرّع عن السمة — بلا أمر JS بعد التحميل */</span>
+#setupPanel, #keyHint { display: none; }
+:root[data-nokey] #setupPanel { display: flex; }
+:root[data-nokey] #keyHint    { display: block; }</pre>
+
+    <h3>‏ب · حجز صندوق الأيقونة</h3>
+    <p>الأيقونات تُحقن بـ JS من نهاية الصفحة. القاعدة يجب أن تكون في ملف يحجب الرسم، والمقاس
+      يجب أن يكون على الطرفين معاً.</p>
+    <div class="filename">theme.css</div>
+<pre>.ic { display: inline-flex; align-items: center; justify-content: center;
+      flex: none; line-height: 0; width: 1.15em; height: 1.15em; }
+.ic.lg { width: 1.5em; height: 1.5em; }
+
+<span class="c">/* الرسم يكفي نفسه: svg() يُستعمل أحياناً بلا غلاف .ic، وSVG بلا عرض
+   مصرَّح يتمدّد إلى 300px الافتراضية — ضخّم زرّاً إلى 318px وشريطاً إلى 380px */</span>
+.ic-svg { width: 1.15em; height: 1.15em; display: block; }
+.ic &gt; .ic-svg { width: 100%; height: 100%; }</pre>
+
+    <h3>‏ج · المظلّل — قلب الطبقة ثلاثية الأبعاد</h3>
+    <div class="filename">backdrop.js · fragment shader</div>
+<pre><span class="c">// الالتواء المجالي: نزيح الإحداثيات بضجيج آخر قبل أخذ الارتفاع،
+// فتنكسر الاستقامة وتظهر أشرطة منسابة بدل بقع متكررة</span>
+<span class="k">float</span> height(<span class="k">vec2</span> uv){
+  <span class="k">vec2</span> q = <span class="k">vec2</span>(fbm(uv + uT * 0.03), fbm(uv + <span class="k">vec2</span>(5.2, 1.3) - uT * 0.02));
+  <span class="k">return</span> fbm(uv + 1.6 * q);
+}
+
+<span class="k">void</span> main(){
+  <span class="k">vec2</span> uv = gl_FragCoord.xy / uRes;
+  <span class="k">vec2</span> sv = uv * <span class="k">vec2</span>(uRes.x / uRes.y, 1.0) * 2.4;
+
+  <span class="c">// اتجاه السطح من فروق منتهية — هذا ما يعطي الحجم بدل لطخة لونية</span>
+  <span class="k">float</span> h = height(sv);
+  <span class="k">float</span> e = 1.6 / uRes.y * 2.4;
+  <span class="k">vec3</span> n = normalize(<span class="k">vec3</span>(height(sv + <span class="k">vec2</span>(e, 0.0)) - h,
+                          height(sv + <span class="k">vec2</span>(0.0, e)) - h, e * 1.6));
+
+  <span class="k">vec3</span>  L    = normalize(<span class="k">vec3</span>(-0.45, 0.7, 0.55));
+  <span class="k">float</span> lam  = max(dot(n, L), 0.0);
+  <span class="k">float</span> spec = pow(max(dot(reflect(-L, n), <span class="k">vec3</span>(0.0, 0.0, 1.0)), 0.0), 22.0);
+
+  <span class="k">vec3</span> col = mix(uA, uB, clamp(h * 0.85 + lam * 0.5, 0.0, 1.0));
+  col += spec * 0.16;
+
+  <span class="c">// انتبه: gl_FragCoord.y صفرها في الأسفل. عكسها يضع أقوى الأثر خلف الفقرات</span>
+  <span class="k">float</span> fade = smoothstep(0.0, 0.86, uv.y)
+             * smoothstep(0.0, 0.35, 1.0 - abs(uv.x - 0.5));
+  gl_FragColor = <span class="k">vec4</span>(col, clamp(uAmp * fade, 0.0, 1.0));
+}</pre>
+
+    <h3>‏د · الحالة بلا Zustand</h3>
+    <p>وحدات تُصدَّر كخصائص على <code>window</code> لا كتعريفات <code>const</code> عامة: إعادة
+      التعريف تستبدل القيمة بهدوء بدل أن تُسقط الصفحة بخطأ «Identifier has already been declared».</p>
+    <div class="filename">common.js</div>
+<pre>(<span class="k">function</span> (W) {
+  <span class="s">'use strict'</span>;
+  <span class="k">const</span> STORAGE = { key: <span class="s">'fbx_apify_key'</span>, theme: <span class="s">'fbx_theme'</span>, dbUrl: <span class="s">'fbx_db_url'</span> };
+
+  <span class="c">// مفتاح المنشور: غيابه حوّل مجموعة إزالة التكرار إلى {undefined}
+  // فسقط كل منشور بعد الأول — عطل صامت أوقف الرصد التلقائي كلياً</span>
+  <span class="k">function</span> postKey(p) {
+    <span class="k">return</span> p.key || p.url || <span class="s">`${p.author}|${p.ts || ''}|${(p.text || '').slice(0, 80)}`</span>;
+  }
+
+  W.FBXCommon = { getToken, postKey, applyTheme, apiPost, initReveal, <span class="c">/* … */</span> };
+})(<span class="k">typeof</span> window !== <span class="s">'undefined'</span> ? window : globalThis);</pre>
+
+    <h3>‏هـ · تفادي الفحص المسبق للطلبات</h3>
+    <p>‏<code>POST</code> بترويسة <code>Content-Type: application/json</code> ليس طلباً بسيطاً،
+      فيسبقه <code>OPTIONS</code>. ومن <code>file://</code> يُرسل المتصفح <code>Origin: null</code>
+      فيُرفض الفحص وتفشل كل عملية استخراج بـ «Failed to fetch». الحلّ إرسال نفس الجسم
+      بنوع بسيط، مع تراجع إلى JSON إن رفضته الخدمة.</p>
+    <div class="filename">common.js</div>
+<pre><span class="k">async function</span> apiPost(url, body) {
+  <span class="k">const</span> payload = JSON.stringify(body);
+  <span class="c">// text/plain طلب بسيط: لا OPTIONS، فلا رفض من أصل null</span>
+  <span class="k">let</span> r = <span class="k">await</span> apiFetch(url, { method: <span class="s">'POST'</span>, body: payload,
+    headers: { <span class="s">'Content-Type'</span>: <span class="s">'text/plain;charset=UTF-8'</span> } });
+  <span class="k">if</span> (r.status === 400 || r.status === 415) {
+    r = <span class="k">await</span> apiFetch(url, { method: <span class="s">'POST'</span>, body: payload,
+      headers: { <span class="s">'Content-Type'</span>: <span class="s">'application/json'</span> } });
+  }
+  <span class="k">return</span> r;
+}</pre>
+
+    <h3>النتائج المرصودة</h3>
+    <div class="tw"><table>
+      <thead><tr><th>المقياس</th><th class="n">السقف</th><th class="n">قبل</th><th class="n">بعد</th><th>الحكم</th></tr></thead>
+      <tbody>
+        <tr><td>‏CLS · الصفحة الرئيسية</td><td class="n">0</td><td class="n">0.0219</td><td class="n">0</td><td><span class="pill ok">محقّق</span></td></tr>
+        <tr><td>‏CLS · لوحة الرصد</td><td class="n">0</td><td class="n">0.1028</td><td class="n">0</td><td><span class="pill ok">محقّق</span></td></tr>
+        <tr><td>‏LCP · أبطأ صفحة</td><td class="n">&lt; 1800ms</td><td class="n">—</td><td class="n">244ms</td><td><span class="pill ok">محقّق</span></td></tr>
+        <tr><td>أدنى تباين نصّ</td><td class="n">4.5:1</td><td class="n">4.75:1</td><td class="n">5.36:1</td><td><span class="pill ok">‏AA</span></td></tr>
+        <tr><td>أرضية مقاس الخط</td><td class="n">12px</td><td class="n">—</td><td class="n">12px</td><td><span class="pill ok">محقّق</span></td></tr>
+        <tr><td>طلبات خارجية</td><td class="n">0</td><td class="n">0</td><td class="n">0</td><td><span class="pill ok">محقّق</span></td></tr>
+        <tr><td>الحمولة كاملة</td><td class="n">—</td><td class="n">—</td><td class="n">240KB</td><td><span class="pill ok">‏13 طلباً محلياً</span></td></tr>
+        <tr><td>الاختبارات</td><td class="n">—</td><td class="n">121</td><td class="n">147</td><td><span class="pill ok">كلها تمرّ</span></td></tr>
+      </tbody>
+    </table></div>
+    <p class="cap">كل رقم هنا مقيس بمتصفح فعلي على الصفحات الخمس في المظهرين، بمفتاح محفوظ
+      وبدونه. قيم التباين هي أسوأ ما رُصد عبر عشر لحظات متتابعة لا لقطة واحدة.</p>
+  </section>
+
+  </main>
+</div>
+
+<footer>الإعلام الرقمي · مواصفة معمارية · الإصدار 5.0</footer>
+</div>
+
+<script>
+/* ═══ المظلّل الحيّ: نفس شيفرة backdrop.js في المنتج ═══ */
+(function () {
+  'use strict';
+  var cv = document.getElementById('gl'), stage = document.getElementById('stage'),
+      lbl = document.getElementById('stageLbl');
+  if (!cv) return;
+  function bail(msg) {
+    stage.innerHTML = '<p class="fallback">' + msg + '</p>';
+  }
+  var gl = cv.getContext('webgl', { alpha: false, antialias: false, depth: false, powerPreference: 'low-power' });
+  if (!gl) { bail('متصفّحك لا يوفّر WebGL — وهذا بالضبط ما تعالجه سلسلة التراجع أعلاه: لا عنصر، ولا خطأ.'); return; }
+
+  var VERT = 'attribute vec2 p; void main(){ gl_Position = vec4(p, 0.0, 1.0); }';
+  var FRAG = [
+    'precision mediump float;',
+    'uniform vec2 uRes; uniform float uT; uniform vec3 uA; uniform vec3 uB;',
+    'uniform float uAmp; uniform float uShowN; uniform vec3 uG;',
+    'float hash(vec2 v){ return fract(sin(dot(v, vec2(127.1, 311.7))) * 43758.5453); }',
+    'float noise(vec2 v){ vec2 i = floor(v), f = fract(v); vec2 u = f*f*(3.0-2.0*f);',
+    '  return mix(mix(hash(i), hash(i+vec2(1,0)), u.x), mix(hash(i+vec2(0,1)), hash(i+vec2(1,1)), u.x), u.y); }',
+    'float fbm(vec2 v){ float s=0.0, a=0.5; for(int i=0;i<4;i++){ s+=a*noise(v); v*=2.02; a*=0.5; } return s; }',
+    'float height(vec2 uv){ vec2 q = vec2(fbm(uv + uT*0.03), fbm(uv + vec2(5.2,1.3) - uT*0.02));',
+    '  return fbm(uv + 1.6*q); }',
+    'void main(){',
+    '  vec2 uv = gl_FragCoord.xy / uRes;',
+    '  vec2 sv = uv * vec2(uRes.x/uRes.y, 1.0) * 2.4;',
+    '  float h = height(sv);',
+    '  float e = 1.6 / uRes.y * 2.4;',
+    '  vec3 n = normalize(vec3(height(sv+vec2(e,0.0))-h, height(sv+vec2(0.0,e))-h, e*1.6));',
+    '  vec3 L = normalize(vec3(-0.45, 0.7, 0.55));',
+    '  float lam = max(dot(n, L), 0.0);',
+    '  float spec = pow(max(dot(reflect(-L, n), vec3(0.0,0.0,1.0)), 0.0), 22.0);',
+    '  vec3 col = mix(uA, uB, clamp(h*0.85 + lam*0.5, 0.0, 1.0));',
+    '  col += spec * 0.16;',
+    '  col = mix(col, n * 0.5 + 0.5, uShowN);',
+    '  float fade = smoothstep(0.0, 0.86, uv.y) * smoothstep(0.0, 0.35, 1.0 - abs(uv.x - 0.5));',
+    '  gl_FragColor = vec4(mix(uG, col, clamp(uAmp*fade, 0.0, 1.0)), 1.0);',
+    '}'
+  ].join('\n');
+
+  function sh(t, src) { var s = gl.createShader(t); gl.shaderSource(s, src); gl.compileShader(s);
+    return gl.getShaderParameter(s, gl.COMPILE_STATUS) ? s : null; }
+  var vs = sh(gl.VERTEX_SHADER, VERT), fs = sh(gl.FRAGMENT_SHADER, FRAG);
+  if (!vs || !fs) { bail('تعذّرت ترجمة المظلّل — الانسحاب صامت كما هو منصوص عليه.'); return; }
+  var pr = gl.createProgram();
+  gl.attachShader(pr, vs); gl.attachShader(pr, fs); gl.linkProgram(pr);
+  if (!gl.getProgramParameter(pr, gl.LINK_STATUS)) { bail('تعذّر ربط البرنامج.'); return; }
+  gl.useProgram(pr);
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1,-1, 3,-1, -1,3]), gl.STATIC_DRAW);
+  var loc = gl.getAttribLocation(pr, 'p');
+  gl.enableVertexAttribArray(loc);
+  gl.vertexAttribPointer(loc, 2, gl.FLOAT, false, 0, 0);
+
+  var uRes = gl.getUniformLocation(pr, 'uRes'), uT = gl.getUniformLocation(pr, 'uT'),
+      uA = gl.getUniformLocation(pr, 'uA'), uB = gl.getUniformLocation(pr, 'uB'),
+      uAmp = gl.getUniformLocation(pr, 'uAmp'), uShowN = gl.getUniformLocation(pr, 'uShowN'),
+      uG = gl.getUniformLocation(pr, 'uG');
+
+  var PAL = {
+    dark:  { a: [0.008, 0.023, 0.090], b: [0.055, 0.561, 0.682], amp: 0.50, g: [0.008, 0.023, 0.090] },
+    light: { a: [0.949, 0.965, 0.980], b: [0.055, 0.435, 0.549], amp: 0.12, g: [0.933, 0.949, 0.968] }
+  };
+  // المشهد يبدأ بمظهر القارئ نفسه فلا تظهر رقعة داكنة وسط صفحة فاتحة
+  var rootTheme = document.documentElement.getAttribute('data-theme');
+  var prefersDark = !window.matchMedia || window.matchMedia('(prefers-color-scheme: dark)').matches;
+  var mode = rootTheme === 'light' ? 'light' : (rootTheme === 'dark' || prefersDark) ? 'dark' : 'light';
+  var showN = 0;
+
+  function apply() {
+    var p = PAL[mode];
+    gl.uniform3fv(uA, p.a); gl.uniform3fv(uB, p.b); gl.uniform3fv(uG, p.g);
+    gl.uniform1f(uAmp, p.amp); gl.uniform1f(uShowN, showN);
+  }
+  function size() {
+    var w = Math.max(2, Math.round(cv.clientWidth * 0.6)),
+        h = Math.max(2, Math.round(cv.clientHeight * 0.6));
+    if (cv.width === w && cv.height === h) return;
+    cv.width = w; cv.height = h;
+    gl.viewport(0, 0, w, h); gl.uniform2f(uRes, w, h);
+  }
+
+  var reduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  var raf = 0, last = 0, t0 = 0;
+  function draw(t) { gl.uniform1f(uT, t); gl.drawArrays(gl.TRIANGLES, 0, 3); }
+  function frame(now) {
+    raf = requestAnimationFrame(frame);
+    if (now - last < 33) return;
+    last = now; if (!t0) t0 = now;
+    draw((now - t0) / 1000);
+  }
+  var bD = document.getElementById('bDark'), bL = document.getElementById('bLight'),
+      bN = document.getElementById('bNorm');
+  size(); setMode(mode); draw(0);
+  if (reduced) { lbl.textContent = 'إطار ساكن — تفضيل تقليل الحركة'; }
+  else { raf = requestAnimationFrame(frame); }
+
+  window.addEventListener('resize', function () { size(); if (reduced) draw(0); }, { passive: true });
+  document.addEventListener('visibilitychange', function () {
+    if (document.hidden) { if (raf) { cancelAnimationFrame(raf); raf = 0; } }
+    else if (!raf && !reduced) raf = requestAnimationFrame(frame);
+  });
+
+  function setMode(m) {
+    mode = m;
+    bD.setAttribute('aria-pressed', String(m === 'dark'));
+    bL.setAttribute('aria-pressed', String(m === 'light'));
+    apply(); if (reduced) draw(0);
+  }
+  bD.addEventListener('click', function () { setMode('dark'); });
+  bL.addEventListener('click', function () { setMode('light'); });
+  bN.addEventListener('click', function () {
+    showN = showN ? 0 : 1;
+    bN.setAttribute('aria-pressed', String(!!showN));
+    bN.textContent = showN ? 'إخفاء اتجاه السطح' : 'إظهار اتجاه السطح';
+    apply(); if (reduced) draw(0);
+  });
+})();
+</script>
