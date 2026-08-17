@@ -103,6 +103,63 @@ test('لا صفحة تعيد إخفاء التنبيه بأمر JS بعد الت
 });
 
 /* ============================================================
+ * طبقة الخلفية ثلاثية الأبعاد — زينة لا يُسمح لها بأن تكلّف شيئاً
+ * ============================================================ */
+const backdrop = read('backdrop.js');
+
+test('الطبقة خارج التخطيط وخارج التقاط الفأرة', () => {
+  const rule = theme.match(/^\.bg-3d\s*\{([^}]*)\}/m);
+  assert.ok(rule, '.bg-3d معرَّف في theme.css');
+  assert.match(rule[1], /position:\s*fixed/, 'خارج التدفّق فلا تزيح شيئاً (CLS)');
+  assert.match(rule[1], /z-index:\s*-1/, 'خلف كل المحتوى');
+  assert.match(rule[1], /pointer-events:\s*none/, 'لا تعترض نقرة');
+});
+
+test('الطبقة تحترم تفضيل تقليل الحركة فلا تدور حلقة', () => {
+  assert.match(backdrop, /prefers-reduced-motion/);
+  // مع التفضيل: إطار واحد ساكن، وplay() لا يبدأ الحلقة أصلاً
+  assert.match(backdrop, /if\s*\(!raf\s*&&\s*!reduced\)/,
+    'الحلقة مشروطة بغياب التفضيل لا بإيقافها بعد البدء');
+});
+
+test('الطبقة تتنحّى بلا WebGL وعند فقد السياق', () => {
+  assert.match(backdrop, /if\s*\(!gl\)\s*return/, 'بلا سياق: لا عنصر ولا خطأ');
+  assert.match(backdrop, /webglcontextlost/, 'فقد السياق يُزيل العنصر بدل التجمّد');
+  assert.match(backdrop, /visibilitychange/, 'تتوقّف متى غابت النافذة');
+});
+
+test('الطبقة لا تجلب شيئاً من الشبكة', () => {
+  assert.ok(!/https?:\/\//.test(backdrop.replace(/\/\*[\s\S]*?\*\//g, '')),
+    'لا عنوان خارجي في الشيفرة');
+  assert.ok(!/\bimport\b|\brequire\(/.test(backdrop), 'بلا اعتماديات');
+});
+
+/* ============================================================
+ * ثبات الشرط الأساسي: صفر طلبات خارجية
+ * ============================================================
+ * الموقع يُفتح من القرص (file://) وقد يُستعمل بلا إنترنت. أيّ خطّ بعيد أو
+ * مكتبة من CDN يحوّل صفحة تعمل إلى صفحة معطوبة نصفها. هذا الاختبار يمنع
+ * تسرّب مرجع خارجي مع أيّ تعديل لاحق. */
+for (const page of PAGES) {
+  test(`${page}: لا مرجع خارجي في وسوم التحميل`, () => {
+    const html = read(page);
+    const tags = html.match(/<(?:script|link|img|iframe)\b[^>]*>/gi) || [];
+    for (const t of tags) {
+      const m = t.match(/\b(?:src|href)\s*=\s*"([^"]*)"/i);
+      if (!m) continue;
+      assert.ok(!/^(https?:)?\/\//i.test(m[1]), `${page}: مرجع خارجي ← ${m[1]}`);
+    }
+    assert.ok(!/@import\s+url\(\s*["']?https?:/i.test(html), 'لا @import خارجي');
+  });
+}
+
+test('ورقة الأنماط لا تجلب خطاً أو صورة من الشبكة', () => {
+  assert.ok(!/@import/i.test(theme), 'بلا @import');
+  assert.ok(!/url\(\s*["']?https?:/i.test(theme), 'بلا url() خارجي');
+  assert.ok(!/fonts\.googleapis|fonts\.gstatic/i.test(theme), 'بلا خطوط Google');
+});
+
+/* ============================================================
  * البنية الدلالية — قِيست غائبة في المراجعة نفسها
  * ============================================================ */
 for (const page of PAGES) {

@@ -233,6 +233,16 @@
 .fx-scrim :where(a, button):focus-visible,
 .fbx-lb :where(a, button):focus-visible { outline-color: #eaf3f6; }
 /* من يستخدم الفأرة لا يرى الحلقة — وهذا سلوك :focus-visible القياسي */
+/* طبقة الخلفية ثلاثية الأبعاد (backdrop.js). ثابتة خلف كل شيء: خارج التخطيط
+   فلا تزيح، وبلا التقاط للفأرة فلا تعترض نقرة. تُموَّه خلف زجاج رأس الصفحة
+   وهو المقصود — العمق يُحسّ ولا يُقرأ. إن غاب WebGL لم يُنشأ العنصر أصلاً. */
+.bg-3d {
+  position: fixed; inset: 0; width: 100%; height: 100%;
+  z-index: -1; pointer-events: none; border: 0;
+  opacity: 0; animation: bg3dIn 900ms var(--ease) 120ms forwards;
+}
+@keyframes bg3dIn { to { opacity: 1; } }
+
 html { scroll-behavior: smooth; }
 body {
   font-family: var(--font-body);
