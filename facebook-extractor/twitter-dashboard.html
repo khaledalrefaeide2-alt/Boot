@@ -4,6 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>الرصد التلقائي لتغريدات X (تويتر) — الإعلام الرقمي</title>
+<script>
+/* يعمل قبل أوّل رسمة، وهذا شرطه لا تحسينه. المظهر والمفتاح كانا يُقرآن من
+   سكربتات نهاية الصفحة، فيرسم المتصفح النسخة الفاتحة ثم يقلبها داكنة (وميض)،
+   ويظهر تنبيه «اضبط المفتاح» بعد الرسم فيدفع ما تحته 135px — إزاحة تخطيط
+   قِيست عند 0.02. القراءة هنا تُثبّت الحالتين على <html> قبل أن يُرسم شيء،
+   والقواعد في theme.css تتفرّع عنهما. أي خلل في التخزين يُعامل كـ«بلا مفتاح»
+   لأن إظهار التنبيه أهون من إخفاء إعداد ناقص. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('fbx_theme') ||
+      (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    d.setAttribute('data-theme', t);
+    if (!(localStorage.getItem('fbx_apify_key') || '').trim()) d.setAttribute('data-nokey', '');
+  } catch (e) { d.setAttribute('data-nokey', ''); }
+})();
+</script>
 <link rel="stylesheet" href="theme.css">
 <style>
   /* ============ Control band (unique to this page) ============ */
@@ -94,16 +111,17 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">تخطَّ إلى المحتوى</a>
 <div class="app-shell">
-  <aside class="sidebar">
+  <aside class="sidebar" aria-label="التنقّل الرئيسي">
     <a class="side-brand" href="index.html">
       <div class="brand-logo"><i class="ic" data-ic="logo"></i></div>
       <div>
-        <h1>الإعلام الرقمي</h1>
+        <span class="brand-name">الإعلام الرقمي</span>
         <p>رصد وتحليل المحتوى</p>
       </div>
     </a>
-    <nav class="side-nav">
+    <nav class="side-nav" aria-label="أقسام الأداة">
       <div class="nav-group">
         <span class="nav-label">الاستخراج</span>
         <a href="index.html"><span class="ico"><i class="ic" data-ic="search"></i></span><span class="label">فيسبوك</span></a>
@@ -129,13 +147,13 @@
     <header class="page-header">
       <div class="ph-text">
         <span class="hero-badge"><i class="ic" data-ic="signal"></i> رصد X (تويتر)</span>
-        <h2>الرصد التلقائي للحسابات</h2>
+        <h1>الرصد التلقائي للحسابات</h1>
         <p>يستخرج الموقع تغريدات حساباتك الرسمية تلقائياً كل دورة، ويحلّلها ويصنّفها فوراً مع رسوم بيانية وتصفية حية.</p>
       </div>
       
     </header>
 
-    <main>
+    <main id="main-content" tabindex="-1">
 
   <!-- Setup -->
   <section class="panel">
@@ -157,7 +175,7 @@
       </div>
     </div>
 
-    <div class="hint" id="keyHint" style="display:none"><i class="ic" data-ic="warning"></i> لم يُضبط مفتاح الاستخراج بعد — <a href="settings.html">اضبطه من صفحة الإعدادات <i class="ic" data-ic="settings"></i></a>.</div>
+    <div class="hint" id="keyHint"><i class="ic" data-ic="warning"></i> لم يُضبط مفتاح الاستخراج بعد — <a href="settings.html">اضبطه من صفحة الإعدادات <i class="ic" data-ic="settings"></i></a>.</div>
     <div class="hint" style="margin-top:14px"><i class="ic" data-ic="bulb"></i> مفتاح الاستخراج وقاعدة البيانات يُضبطان من <a href="settings.html">صفحة الإعدادات <i class="ic" data-ic="settings"></i></a> ويُطبَّقان تلقائياً هنا.</div>
   </section>
 
@@ -323,7 +341,7 @@ function saveFeed() {
 
 /* =============== API key (managed from settings.html) =============== */
 function refreshKeyUi() {
-  $('keyHint').style.display = getToken() ? 'none' : 'block';
+  document.documentElement.toggleAttribute('data-nokey', !getToken());
 }
 
 /* =============== Accounts =============== */

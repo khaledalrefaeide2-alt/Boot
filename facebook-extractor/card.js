@@ -294,8 +294,10 @@
     to   { opacity: 1; transform: none; }
   }
   /* المرور يقرّب البطاقة من الناظر ويميلها قليلاً — والخروج بنفس المنحنى */
-  .fx-card:hover { box-shadow: var(--e4); transform: translate3d(0, -5px, 34px) rotateX(1.6deg); }
-  .fx-card:active { transform: translate3d(0, -1px, 8px); transition-duration: var(--dur-1); }
+  .fx-card:hover { box-shadow: var(--e4); transform: translate3d(0, -5px, 34px) rotateX(1.6deg);
+    transition-timing-function: var(--ease-spring); }
+  .fx-card:active { transform: translate3d(0, -1px, 8px) scale(.995);
+    transition-duration: var(--dur-exit, 160ms); transition-timing-function: var(--ease-snap); }
   /* الوسائط تتقدّم قليلاً على مستوى البطاقة فيُقرأ ارتفاعها فوقها */
   .fx-card:hover .fx-media { transform: translateZ(16px); }
   .fx-media { transition: transform var(--dur-2) var(--ease); }

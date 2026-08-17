@@ -4,6 +4,23 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>الإعلام الرقمي — مستخرج منشورات فيسبوك</title>
+<script>
+/* يعمل قبل أوّل رسمة، وهذا شرطه لا تحسينه. المظهر والمفتاح كانا يُقرآن من
+   سكربتات نهاية الصفحة، فيرسم المتصفح النسخة الفاتحة ثم يقلبها داكنة (وميض)،
+   ويظهر تنبيه «اضبط المفتاح» بعد الرسم فيدفع ما تحته 135px — إزاحة تخطيط
+   قِيست عند 0.02. القراءة هنا تُثبّت الحالتين على <html> قبل أن يُرسم شيء،
+   والقواعد في theme.css تتفرّع عنهما. أي خلل في التخزين يُعامل كـ«بلا مفتاح»
+   لأن إظهار التنبيه أهون من إخفاء إعداد ناقص. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('fbx_theme') ||
+      (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    d.setAttribute('data-theme', t);
+    if (!(localStorage.getItem('fbx_apify_key') || '').trim()) d.setAttribute('data-nokey', '');
+  } catch (e) { d.setAttribute('data-nokey', ''); }
+})();
+</script>
 <link rel="stylesheet" href="theme.css">
 <style>
   /* ================= Features band (unique to this page) ================= */
@@ -63,16 +80,17 @@
 </head>
 <body>
 
+<a class="skip-link" href="#main-content">تخطَّ إلى المحتوى</a>
 <div class="app-shell">
-  <aside class="sidebar">
+  <aside class="sidebar" aria-label="التنقّل الرئيسي">
     <a class="side-brand" href="index.html">
       <div class="brand-logo"><i class="ic" data-ic="logo"></i></div>
       <div>
-        <h1>الإعلام الرقمي</h1>
+        <span class="brand-name">الإعلام الرقمي</span>
         <p>رصد وتحليل المحتوى</p>
       </div>
     </a>
-    <nav class="side-nav">
+    <nav class="side-nav" aria-label="أقسام الأداة">
       <div class="nav-group">
         <span class="nav-label">الاستخراج</span>
         <a href="index.html" class="active"><span class="ico"><i class="ic" data-ic="search"></i></span><span class="label">فيسبوك</span></a>
@@ -98,17 +116,17 @@
     <header class="page-header">
       <div class="ph-text">
         <span class="hero-badge"><i class="ic" data-ic="search"></i> استخراج فيسبوك</span>
-        <h2>منشورات الصفحات</h2>
+        <h1>منشورات الصفحات</h1>
         <p>اضبط مفتاحك مرة واحدة، حدّد الفترة وعدد المنشورات بسقف مضمون، واحصل على النتائج محلَّلة ومصنَّفة.</p>
       </div>
       <button class="hero-cta" id="heroCta">ابدأ الاستخراج <i class="ic" data-ic="arrowDown"></i></button>
     </header>
 
-    <main>
+    <main id="main-content" tabindex="-1">
 
   <!-- Features band -->
   <!-- Setup notice -->
-  <section class="notice" id="setupPanel" style="display:none">
+  <section class="notice" id="setupPanel">
     <span class="notice-ic"><i class="ic" data-ic="warning"></i></span>
     <div class="notice-body">
       <strong>لم يُضبط مفتاح الاستخراج بعد</strong>
@@ -279,7 +297,7 @@ $('heroCta').onclick = () => document.querySelector('main .panel').scrollIntoVie
 /* =============== API key (managed from settings.html) =============== */
 // إن لم يُضبط المفتاح بعد، أظهِر تنبيهاً يوجّه إلى صفحة الإعدادات.
 function refreshSetupNotice() {
-  $('setupPanel').style.display = getToken() ? 'none' : 'block';
+  document.documentElement.toggleAttribute('data-nokey', !getToken());
 }
 
 /* =============== Form =============== */

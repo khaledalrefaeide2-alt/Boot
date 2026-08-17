@@ -67,21 +67,29 @@
   --dur-1: 130ms;   /* لمسات دقيقة: لون، شفافية */
   --dur-2: 220ms;   /* المرور والضغط */
   --dur-3: 340ms;   /* الدخول والظهور */
-  --ease: cubic-bezier(.22, 1, .36, 1);          /* ≈ power2.out */
-  --ease-soft: cubic-bezier(.65, 0, .35, 1);
+  --dur-exit: 160ms;/* الخروج أسرع من الدخول دائماً — فيبقى الردّ فورياً */
+  /* منحنيات مشتقّة من حركة نابض حقيقي لا من خط مستقيم: التسارع في البداية
+     والتباطؤ الطويل في النهاية هو ما يجعل الحركة تُقرأ «مادية». */
+  --ease: cubic-bezier(.22, 1, .36, 1);              /* خروج ناعم (power2.out) */
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);    /* نابض بتجاوز طفيف */
+  --ease-soft: cubic-bezier(.65, 0, .35, 1);         /* دخول/خروج متماثل */
+  --ease-snap: cubic-bezier(.2, .9, .3, 1.2);        /* استجابة حادّة للضغط */
   --persp: 1100px;  /* بُعد المشهد ثلاثي الأبعاد */
 
   /* ---- مقياس المسافات: مضاعفات 4px ---- */
   --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
   --s5: 20px; --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px;
 
-  /* ---- مقياس الخط ---- */
-  --fs-display: 1.6rem;
-  --fs-title: 1.05rem;
-  --fs-body: .9rem;       /* 14.4px */
-  --fs-sm: .85rem;        /* 13.6px */
-  --fs-xs: .8rem;         /* 12.8px */
-  --fs-2xs: .75rem;       /* 12px — الأرضية: لا نصّ أصغر منها في الموقع */
+  /* ---- مقياس خط سائل: clamp(أدنى، مُنحدر، أقصى) ----
+     المُنحدر بـ vw وحده يكسر التكبير في المتصفح (النصّ لا يستجيب لـ ctrl+‏+)،
+     فيُجمع مع rem حتى يبقى التكبير عاملاً — شرط في WCAG 1.4.4.
+     المدى بين 360px و1440px، والأرضية 12px لا تُخترق في أي مقاس شاشة. */
+  --fs-display: clamp(1.45rem, 1.15rem + 1.35vw, 2.35rem);
+  --fs-title:   clamp(1rem,   .95rem + .25vw,  1.2rem);
+  --fs-body:    clamp(.875rem, .85rem + .12vw, .95rem);
+  --fs-sm:      clamp(.825rem, .81rem + .1vw,  .9rem);
+  --fs-xs:      clamp(.78rem, .77rem + .07vw,  .84rem);
+  --fs-2xs:     clamp(.75rem, .745rem + .04vw, .79rem);   /* لا تنزل تحت 12px */
   --lh-tight: 1.35;
   --lh: 1.7;
 
@@ -192,6 +200,22 @@
   .scene-3d { perspective: none; }
 }
 
+/* رابط تخطّي القائمة: مخفي بصرياً حتى يصله التركيز، فيراه مستخدم لوحة
+   المفاتيح وحده. الإخفاء بـ transform لا بـ display حتى يبقى في شجرة التركيز. */
+.skip-link {
+  position: fixed; z-index: 100; inset-inline-start: var(--s4); top: var(--s4);
+  background: var(--green-900); color: #eff6f8; border-radius: var(--radius-sm);
+  padding: var(--s3) var(--s5); font-size: var(--fs-sm); font-weight: 700; text-decoration: none;
+  transform: translateY(-200%); transition: transform var(--dur-2) var(--ease-spring);
+  box-shadow: var(--e3);
+}
+.skip-link:focus-visible { transform: translateY(0); }
+[data-theme="dark"] .skip-link { background: var(--sage); color: #0b1820; }
+#main-content:focus { outline: none; }
+
+/* اسم العلامة في الشريط الجانبي لم يعد h1 — العنوان الأول لكل صفحة هو عنوانها */
+.brand-name { display: block; font-size: var(--fs-body); font-weight: 700; letter-spacing: -.1px; line-height: 1.3; }
+
 /* ================= حلقة التركيز =================
    لم تكن في الموقع أي قاعدة :focus-visible، فمن يتنقّل بلوحة المفاتيح وحدها
    كان يعتمد على حلقة المتصفح الافتراضية — وهي تختفي فعلياً فوق الشريط الجانبي
@@ -220,6 +244,30 @@ body {
 }
 /* العناوين الكبيرة: نفس الخط، والتمييز يأتي من الوزن والمقاس لا من عائلة أخرى */
 .display { font-family: var(--font-display); font-weight: 700; letter-spacing: -.2px; line-height: 1.5; }
+
+/* ================= صندوق الأيقونة — محجوز قبل أول رسمة =================
+   الأيقونات تُحقن بـ JS في نهاية الصفحة (icons.js). لو كان مقاسها معرَّفاً في
+   ذلك الملف لبقيت <i class="ic"> بعرض صفر حتى DOMContentLoaded ثم قفزت دفعة
+   واحدة — وهذه بالضبط الإزاحة التي قِيست: 0.0219 في الرئيسية و0.1028 في لوحة
+   الرصد، مصدرها اتساع الأزرار وانتقال شريط التحكم 104px→380px. لأن هذا الملف
+   يحجب الرسم، تعريف المقاس هنا يحجز المكان منذ اللحظة الأولى فتصير CLS = 0.
+   السطر التالي علامة يقرأها icons.js فلا يعيد حقن القواعد نفسها. */
+:root { --fbx-ic: 1; }
+.ic { display: inline-flex; align-items: center; justify-content: center; flex: none; line-height: 0;
+      width: 1.15em; height: 1.15em; }
+.ic.lg { width: 1.5em; height: 1.5em; }
+/* الرسم يحمل مقاسه بنفسه: FBXIcons.svg() يُستعمل أحياناً بلا غلاف .ic (شرائح
+   الصفحات، زرّ بدء الرصد، بطاقات الإحصاء)، وSVG بلا عرض مصرَّح يتمدّد إلى
+   300px الافتراضية — وهو ما ضخّم زرّ الرصد إلى 318px وشريط التحكم إلى 380px.
+   وداخل الغلاف يملأه فيرث مقاس .ic بما فيه المقاس الكبير. */
+.ic-svg { width: 1.15em; height: 1.15em; display: block; }
+.ic > .ic-svg { width: 100%; height: 100%; }
+.ic.tone-ok   { color: var(--success); }
+.ic.tone-warn { color: var(--warn); }
+.ic.tone-bad  { color: var(--danger); }
+.ic.tone-mute { color: var(--text-2); }
+/* الأيقونة داخل زرّ أو شريحة تتباعد عن النص تلقائياً */
+.btn .ic, .pill .ic, .hero-cta .ic, .side-nav a .ic { margin-inline-end: 1px; }
 
 /* ================= هيكل التطبيق: قائمة جانبية ثابتة + عمود المحتوى ================= */
 .app-shell { display: flex; align-items: stretch; min-height: 100vh; }
@@ -396,6 +444,12 @@ main { max-width: 1200px; margin: 0 auto; padding: var(--s8) var(--s8) var(--s12
 .notice-body strong { display: block; font-size: var(--fs-sm); font-weight: 700; }
 .notice-body p { font-size: var(--fs-xs); color: var(--text-2); line-height: var(--lh); margin-top: 1px; }
 .notice .btn { flex: none; background: var(--surface); }
+/* تنبيهات «اضبط المفتاح» تظهر بقاعدة لا بأمر JS بعد التحميل: السكربت في <head>
+   يضع data-nokey قبل الرسم، فيبدأ التنبيه ظاهراً أو غائباً من أول لحظة بلا قفزة.
+   الإخفاء هو الأصل حتى لا يومض التنبيه على من ضبط مفتاحه أصلاً. */
+#setupPanel, #keyHint { display: none; }
+:root[data-nokey] #setupPanel { display: flex; }
+:root[data-nokey] #keyHint { display: block; }
 
 /* ================= حقول الإدخال ================= */
 label.field-label { display: block; font-size: var(--fs-xs); font-weight: 700; margin-bottom: var(--s2); color: var(--text); }
@@ -445,7 +499,7 @@ textarea.input { resize: vertical; min-height: 76px; line-height: var(--lh); }
               color var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease),
               transform var(--dur-1) var(--ease);
 }
-.btn:active { transform: translate3d(0, 1px, 0) scale(.985); }
+.btn:active { transform: translate3d(0, 1px, 0) scale(.97); transition-duration: var(--dur-1); transition-timing-function: var(--ease-snap); }
 .btn-primary { background: var(--green-900); color: #eff6f8; box-shadow: var(--e2); }
 .btn-primary:hover { box-shadow: var(--e3); }
 .btn-primary:hover { background: var(--green-800); }
@@ -501,6 +555,7 @@ textarea.input { resize: vertical; min-height: 76px; line-height: var(--lh); }
               transform var(--dur-2) var(--ease); white-space: nowrap;
 }
 .pill:hover { background: var(--surface-2); color: var(--text); transform: translateY(-1px); }
+.pill:active { transform: scale(.96); transition-duration: var(--dur-1); }
 .pill.active { background: var(--primary-soft); color: var(--green-700); font-weight: 700; }
 [data-theme="dark"] .pill.active { color: var(--sage); }
 .filters .spacer { flex: 1; }
@@ -513,7 +568,7 @@ textarea.input { resize: vertical; min-height: 76px; line-height: var(--lh); }
   box-shadow: var(--e1);
   transition: transform var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease);
 }
-.stat-tile:hover { transform: translate3d(0, -2px, 14px); box-shadow: var(--e3); }
+.stat-tile:hover { transform: translate3d(0, -3px, 16px); box-shadow: var(--e3); transition-timing-function: var(--ease-spring); }
 .stat-tile .stat-icon {
   width: 32px; height: 32px; border-radius: var(--radius-sm); flex: none;
   background: var(--surface-2); color: var(--green-600);

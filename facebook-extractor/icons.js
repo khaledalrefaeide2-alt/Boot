@@ -112,15 +112,22 @@
     return n;
   }
 
+  /* هذه القواعد موطنها الأصلي theme.css لأنه ملف يحجب الرسم: المقاس يجب أن
+     يُحجز قبل أول رسمة وإلا قفز التخطيط عند الحقن (CLS). ما هنا نسخة احتياطية
+     لمن يستعمل icons.js وحده بلا theme.css؛ فإن وجدنا علامة theme.css نمتنع. */
   function injectStyles() {
     if (typeof document === 'undefined' || document.getElementById('fbx-icon-styles')) return;
+    if (typeof getComputedStyle === 'function' && document.documentElement &&
+        getComputedStyle(document.documentElement).getPropertyValue('--fbx-ic').trim()) return;
     const style = document.createElement('style');
     style.id = 'fbx-icon-styles';
     // المقاس من font-size واللون من currentColor: الأيقونة تتبع النص المجاور تلقائياً
     style.textContent = `
-    .ic { display: inline-flex; align-items: center; justify-content: center; flex: none; line-height: 0; }
+    .ic { display: inline-flex; align-items: center; justify-content: center; flex: none; line-height: 0;
+          width: 1.15em; height: 1.15em; }
+    .ic.lg { width: 1.5em; height: 1.5em; }
     .ic-svg { width: 1.15em; height: 1.15em; display: block; }
-    .ic.lg .ic-svg { width: 1.5em; height: 1.5em; }
+    .ic > .ic-svg { width: 100%; height: 100%; }
     .ic.tone-ok   { color: var(--success); }
     .ic.tone-warn { color: var(--warn); }
     .ic.tone-bad  { color: var(--danger); }
