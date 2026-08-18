@@ -1,0 +1,6 @@
+# Windows batch files must keep CRLF line endings — CMD mis-parses labels and
+# goto targets in LF-only .bat files, so never let git normalize them.
+*.bat text eol=crlf
+
+# Shell scripts must stay LF, even when checked out on Windows.
+*.sh text eol=lf

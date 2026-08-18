@@ -10,3 +10,6 @@ node_modules/
 .agents/
 .claude/
 skills-lock.json
+
+# نظام التصميم المولَّد من مهارة ui-ux-pro-max — مرجع عمل لا شيفرة منتج
+design-system/
