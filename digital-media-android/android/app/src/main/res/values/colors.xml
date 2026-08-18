@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- القيم مأخوذة من theme.css في الإصدار السادس (الحبر، والعلامة، والورق)
+     لا مخترعة هنا. الغلاف الأصلي يجب أن يبدأ بلون الواجهة نفسها، وإلا
+     ومض بياضٌ بين شاشة الإقلاع وأوّل رسمة للصفحة. -->
+<resources>
+    <color name="colorPrimary">#1E40AF</color>
+    <color name="colorPrimaryDark">#0F172A</color>
+    <color name="colorAccent">#1E40AF</color>
+    <color name="splashBackground">#0F172A</color>
+</resources>

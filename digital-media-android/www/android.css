@@ -1,0 +1,36 @@
+/* ===========================================================
+   android.css — ما يخصّ الغلاف الأصلي وحده
+   -----------------------------------------------------------
+   يُحمَّل بعد theme.css في نسخة أندرويد فقط، ويُطبَّق تحت السمة
+   [data-native] التي يضعها android.js — فلو فُتحت هذه الملفات في
+   متصفّح عادي لم يتغيّر شيء.
+   =========================================================== */
+:root[data-native] {
+  /* الصفحة تمتدّ تحت شريط الحالة وشريط التنقّل، فتُحجز مساحتهما */
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+:root[data-native] .page-header { padding-top: calc(var(--sp-5) + var(--safe-top)); }
+:root[data-native] .side-brand { padding-top: var(--safe-top); height: auto; min-height: var(--bar-h); }
+:root[data-native] .side-foot { padding-bottom: calc(var(--sp-4) + var(--safe-bottom)); }
+:root[data-native] main { padding-bottom: calc(var(--sp-6) + var(--safe-bottom)); }
+:root[data-native] .skip-link { inset-block-start: calc(8px + var(--safe-top)); }
+:root[data-native] .toast { inset-block-end: calc(var(--sp-5) + var(--safe-bottom)); }
+
+/* اللمس لا يعرف المرور: حالات hover تعلق بعد النقر على الشاشة اللمسية،
+   فتبقى البطاقة «مضاءة» بلا سبب. نحصرها في الأجهزة التي تملك مؤشّراً. */
+@media (hover: none) {
+  :root[data-native] .fx-card:hover,
+  :root[data-native] .stat-tile:hover { background: var(--card); border-color: var(--rule); }
+  :root[data-native] .btn:hover:not(:disabled) { background: var(--card); }
+}
+
+/* تحديد النصّ داخل واجهة التطبيق يفتح قوائم النظام بلا فائدة؛
+   ويبقى مسموحاً في نصّ المنشور نفسه لأنه محتوى يُنسخ. */
+:root[data-native] body { -webkit-user-select: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+:root[data-native] .fx-text, :root[data-native] .fx-row-text,
+:root[data-native] .input, :root[data-native] .fx-panel {
+  -webkit-user-select: text; user-select: text;
+}
+/* منع السحب لتحديث الصفحة: التطبيق ليس صفحة تُحدَّث بالسحب */
+:root[data-native] { overscroll-behavior-y: none; }
