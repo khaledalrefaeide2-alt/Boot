@@ -84,6 +84,10 @@
     share:     '<path d="m17 2 5 5-5 5"/><path d="M22 7H9a5 5 0 0 0-5 5v1"/><path d="m7 22-5-5 5-5"/><path d="M2 17h13a5 5 0 0 0 5-5v-1"/>',
     link:      '<path d="M13.5 10.5 21 3"/><path d="M15 3h6v6"/><path d="M20 14v5a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h5"/>',
     chevron:   '<path d="m6 9 6 6 6-6"/>',
+    /* زرّ القائمة: ثلاثة خطوط، وسهم مزدوج يدلّ على الطيّ والبسط */
+    menu:      '<path d="M4 7h16"/><path d="M4 12h16"/><path d="M4 17h16"/>',
+    panelOpen: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/><path d="m10 10 2 2-2 2"/>',
+    panelShut: '<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M15 4v16"/><path d="m12 10-2 2 2 2"/>',
 
     /* ------- المؤشرات الدلالية (نقاط ملوّنة) ------- */
     dot:       '<circle cx="12" cy="12" r="5"/>'

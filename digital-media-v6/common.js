@@ -68,6 +68,90 @@
 
   const getToken = () => (localStorage.getItem(STORAGE.key) || '').trim();
 
+
+  /* ============================================================
+   * قائمة التنقّل: تُطوى على الشاشة الواسعة وتنزلق على الضيّقة
+   * ============================================================
+   * زرّ واحد بسلوكين. فوق 1024px يطوي السكّة إلى أيقونات ويحفظ الحالة؛
+   * تحتها يفتح درجاً فوق حجاب.
+   *
+   * ما يجعل الدرج قابلاً للاستعمال بلوحة المفاتيح — وهو شرط لا تحسين:
+   *   · Escape يغلق، والحجاب يغلق بالنقر
+   *   · التركيز ينتقل إلى الدرج عند الفتح ويعود إلى الزرّ عند الإغلاق،
+   *     فلا يضيع مكان المستخدم
+   *   · بقية الصفحة تصير inert وهو مفتوح، فلا يتسلّل التبويب خلف الحجاب
+   *     إلى عناصر لا تُرى — وهو «فخّ تركيز» معكوس أسوأ من الفخّ نفسه
+   *   · aria-expanded يعلن الحالة، وaria-controls يربط الزرّ بالقائمة
+   */
+  const NAV_KEY = 'fbx_nav_collapsed';
+  const isNarrow = () => W.matchMedia && W.matchMedia('(max-width: 1024px)').matches;
+
+  function initNav() {
+    if (typeof document === 'undefined') return;
+    const root = document.documentElement;
+    const btn = $('navToggle'), scrim = $('navScrim'), nav = $('mainNav'), col = document.querySelector('.main-col');
+    if (!btn || !nav) return;
+
+    function label() {
+      const open = isNarrow() ? root.hasAttribute('data-nav-open')
+                              : root.getAttribute('data-nav') !== 'collapsed';
+      btn.setAttribute('aria-expanded', String(open));
+      btn.setAttribute('aria-label', open ? 'طيّ قائمة التنقّل' : 'فتح قائمة التنقّل');
+    }
+
+    function openDrawer() {
+      if (scrim) scrim.hidden = false;
+      // إظهار الحجاب ثم رفع السمة في الإطار التالي حتى يُحرَّك التلاشي فعلاً
+      requestAnimationFrame(() => root.setAttribute('data-nav-open', ''));
+      if (col) col.setAttribute('inert', '');
+      const first = nav.querySelector('a, button');
+      if (first) first.focus();
+      label();
+    }
+    function closeDrawer(restore) {
+      root.removeAttribute('data-nav-open');
+      if (col) col.removeAttribute('inert');
+      const done = () => { if (scrim) scrim.hidden = true; };
+      // ننتظر انتهاء الانزلاق قبل إخفاء الحجاب، وإلا اختفى المشهد فجأةً
+      if (scrim) { scrim.addEventListener('transitionend', done, { once: true }); setTimeout(done, 420); }
+      if (restore) btn.focus();
+      label();
+    }
+    function toggleCollapsed() {
+      const next = root.getAttribute('data-nav') === 'collapsed' ? '' : 'collapsed';
+      if (next) root.setAttribute('data-nav', next); else root.removeAttribute('data-nav');
+      try { localStorage.setItem(NAV_KEY, next ? '1' : '0'); } catch (e) { /* تخزين محجوب: الحالة تعيش للجلسة */ }
+      label();
+    }
+
+    btn.onclick = () => {
+      if (!isNarrow()) return toggleCollapsed();
+      root.hasAttribute('data-nav-open') ? closeDrawer(true) : openDrawer();
+    };
+    if (scrim) scrim.onclick = () => closeDrawer(true);
+    const closeBtn = $('navClose');
+    if (closeBtn) closeBtn.onclick = () => closeDrawer(true);
+    document.addEventListener('keydown', e => {
+      if (e.key === 'Escape' && root.hasAttribute('data-nav-open')) closeDrawer(true);
+    });
+    // اختيار وجهة يغلق الدرج: الصفحة تتبدّل، وبقاؤه مفتوحاً فوقها لا معنى له
+    nav.addEventListener('click', e => {
+      if (e.target.closest('a') && isNarrow()) closeDrawer(false);
+    });
+    // تجاوز نقطة الانكسار وهو مفتوح يترك الصفحة معطَّلة بـ inert بلا حجاب
+    if (W.matchMedia) W.matchMedia('(max-width: 1024px)').addEventListener('change', () => {
+      if (!isNarrow() && root.hasAttribute('data-nav-open')) closeDrawer(false);
+      label();
+    });
+    // في الحالة المطويّة لا يبقى إلا الرسم، فمستعمل الفأرة بلا دليل على
+    // الوجهة. نعكس الاسم الوصفي في title فيظهر تلميحاً — والقارئ الصوتي
+    // يقرأ aria-label كما هو.
+    nav.querySelectorAll('a[aria-label]').forEach(a => {
+      if (!a.title) a.title = a.getAttribute('aria-label');
+    });
+    label();
+  }
+
   function postKey(p) {
     return p.key || p.url || `${p.author}|${p.ts || ''}|${(p.text || '').slice(0, 80)}`;
   }
@@ -370,7 +454,7 @@
    * ============================================================ */
   const api = {
     STORAGE, $, sleep, escapeHtml, escapeAttr: escapeHtml, fmtNum, num, validDate,
-    getToken, postKey, applyTheme, initTheme, showToast, sevAccent, apiError,
+    getToken, postKey, applyTheme, initTheme, initNav, showToast, sevAccent, apiError,
     apiFetch, apiPost, apiGet, isNetworkError, NET_HINT, initReveal,
     csvCell, download, exportCsv, normalizePost, db, dbCheck, saveToDb
   };

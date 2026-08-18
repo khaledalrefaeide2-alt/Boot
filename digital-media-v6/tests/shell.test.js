@@ -234,13 +234,41 @@ test('روابط التنقّل تحمل أسماء مستقلّة تصمد عن
 });
 
 test('التسميات المطويّة تُخفى بصرياً لا تُحذف من شجرة الوصول', () => {
-  // display:none يمحو النصّ من قارئ الشاشة أيضاً، فتصير السكّة روابط بلا اسم
-  const m = theme.match(/@media \(max-width: 1024px\)\s*\{([\s\S]*?)\n\}/);
-  assert.ok(m, 'نقطة الانكسار 1024px معرَّفة');
-  const rule = m[1].match(/\.side-nav a \.label[^{]*\{([^}]*)\}/);
+  // display:none يمحو النصّ من قارئ الشاشة أيضاً، فتصير السكّة المطويّة
+  // روابط بلا اسم. القاعدة تُخرج النصّ من الرسم وتُبقيه للقارئ الصوتي.
+  const rule = theme.match(/:root\[data-nav="collapsed"\] \.side-nav a \.label,[\s\S]*?\{([^}]*)\}/);
   assert.ok(rule, 'قاعدة التسمية المطويّة موجودة');
   assert.ok(!/display:\s*none/.test(rule[1]), 'الإخفاء بصريّ لا بـ display:none');
   assert.match(rule[1], /clip-path: inset\(50%\)/, 'يُستعمل الإخفاء البصري القياسي');
+});
+
+test('القائمة تُطوى وتنزلق، وكلاهما قابل للتشغيل بلوحة المفاتيح', () => {
+  const common = read('common.js');
+  for (const page of PAGES) {
+    const html = read(page);
+    assert.match(html, /id="navToggle"[^>]*aria-controls="mainNav"/s, `${page}: الزرّ مربوط بالقائمة`);
+    assert.match(html, /id="navToggle"[^>]*aria-expanded=/s, `${page}: الزرّ يعلن حالته`);
+    assert.match(html, /<aside class="sidebar" id="mainNav"/, `${page}: القائمة تحمل المعرّف المشار إليه`);
+    assert.match(html, /id="navScrim"/, `${page}: الحجاب موجود`);
+    assert.match(html, /initNav\(\);/, `${page}: التهيئة مستدعاة`);
+    // الحالة المطويّة تُقرأ قبل أوّل رسمة وإلا انكمشت السكّة بعد رسمها
+    const head = html.slice(0, html.indexOf('</head>'));
+    assert.match(head, /fbx_nav_collapsed/, `${page}: الحالة تُقرأ في الرأس`);
+  }
+  assert.match(common, /e\.key === 'Escape'/, 'Escape يغلق الدرج');
+  assert.match(common, /scrim\.onclick/, 'النقر على الحجاب يغلق');
+  assert.match(common, /btn\.focus\(\)/, 'التركيز يعود إلى الزرّ عند الإغلاق');
+  assert.match(common, /setAttribute\('inert'/, 'بقية الصفحة تصير inert فلا يتسلّل التبويب خلف الحجاب');
+  assert.match(common, /removeAttribute\('inert'/, 'وتعود عند الإغلاق');
+});
+
+test('انزلاق الدرج بـ transform لا بخصائص تُعيد التخطيط', () => {
+  // تحريك inset أو width يُعيد تخطيط الصفحة كل إطار؛ transform يجري على
+  // بطاقة الرسم وحدها.
+  const rule = theme.match(/@media \(max-width: 1024px\)[\s\S]*?\.sidebar\s*\{([^}]*)\}/);
+  assert.ok(rule, 'قاعدة الدرج موجودة');
+  assert.match(rule[1], /transform: translateX/, 'الانزلاق بـ transform');
+  assert.match(rule[1], /transition: transform/, 'والانتقال على transform وحده');
 });
 
 test('لا لون مثبَّت في سمة style السطرية', () => {
