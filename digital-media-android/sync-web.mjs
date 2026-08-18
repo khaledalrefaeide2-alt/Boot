@@ -8,13 +8,25 @@
  * النقل بسكربت لا باليد لأن النسخ اليدوي ينسى ملفاً أو يُبقي قديماً،
  * فتفترق النسختان بصمت — وهو أسوأ من افتراقهما بضجيج.
  */
-import { readdir, readFile, writeFile, copyFile, mkdir } from 'node:fs/promises';
+import { readdir, readFile, writeFile, copyFile, mkdir, access } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const here = dirname(fileURLToPath(import.meta.url));
 const SRC = join(here, '..', 'digital-media-v6');
 const WWW = join(here, 'www');
+
+/* المصدر اختياري. من استلم مجلد التطبيق وحده لا يملك digital-media-v6
+   المجاور، وأصول الويب مشحونة داخل www/ أصلاً — فلا شيء يُنقل، ويبقى
+   عمل هذا السكربت مزامنةَ المشروع الأصلي وحدها. وسقوطه بخطأ هنا كان
+   يوقف البناء كلّه عند من لا مصدر عنده. */
+const hasSource = await access(SRC).then(() => true, () => false);
+if (!hasSource) {
+  console.log('لا يوجد مجلد المصدر digital-media-v6 بجانب هذا المشروع —');
+  console.log('تُستعمل الأصول المشحونة في www/ كما هي. هذا وضع طبيعي لمن');
+  console.log('استلم مجلد التطبيق وحده.');
+  process.exit(0);
+}
 
 /* ما يخصّ الغلاف وحده: لا يُنسخ ولا يُمسح */
 const SHELL = new Set(['android.js', 'android.css']);
