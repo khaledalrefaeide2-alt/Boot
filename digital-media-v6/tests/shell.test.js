@@ -165,12 +165,15 @@ test('الحكم يصل بنصّ صريح لا بلون وحده', () => {
 test('مقياس الخطورة شكل يُقرأ بلا لون', () => {
   // ثلاث شُرَط تمتلئ بقدر المستوى: الامتلاء معلومة هندسية لا لونية
   assert.match(card, /\[1, 2, 3\]\.map\(i => `<i class="\$\{i <= filled \? 'on' : ''\}"/);
-  assert.match(card, /\.fx-meter i\s*\{[^}]*background: var\(--rule\)/, 'الشُرَط الفارغة محايدة');
+  assert.match(card, /\.fx-meter i\s*\{[^}]*background: var\(--(?:rule|glass-brd)\)/, 'الشُرَط الفارغة محايدة');
 });
 
 test('البطاقة تحمل قضيب حكم على الحافة الابتدائية', () => {
-  assert.match(card, /\.fx-card\s*\{[^}]*border-inline-start: 3px solid var\(--acc/,
-    'القضيب منطقي الاتجاه فينقلب مع RTL بلا قاعدة ثانية');
+  // الخاصية منطقية لا فيزيائية، فينقلب القضيب مع RTL بلا قاعدة ثانية
+  assert.match(card, /\.fx-card::after\s*\{[^}]*inset-inline-start: 0;[^}]*background: var\(--acc/s,
+    'قضيب البطاقة على الحافة الابتدائية');
+  assert.match(card, /\.fx-row\s*\{[^}]*border-inline-start: 4px solid var\(--acc/s,
+    'وصفّ الجدول كذلك');
 });
 
 test('ألوان الدلالة لا تُستعمل في الإطار', () => {
@@ -178,7 +181,9 @@ test('ألوان الدلالة لا تُستعمل في الإطار', () => {
   const chrome = ['.side-nav a.active', '.btn-primary', '.pill.active', '.panel-title .num',
                   '.hero-cta', '.view-toggle button.active'];
   for (const sel of chrome) {
-    const m = theme.match(new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\{([^}]*)\\}'));
+    const esc = sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    // المحدِّد قد يرد وحده أو ضمن مجموعة مفصولة بفواصل
+    const m = theme.match(new RegExp('(?:^|,)\\s*' + esc + '\\s*(?:,[^{]*)?\\{([^}]*)\\}', 'm'));
     assert.ok(m, `${sel} معرَّف`);
     assert.ok(!/--keep|--review|--remove|--success|--warn|--danger/.test(m[1]),
       `${sel} يجب أن يخلو من ألوان الدلالة — هي ملك الحكم وحده`);
@@ -204,11 +209,47 @@ test('أرضية مقاس الخطّ 12px لا تُخترق', () => {
   assert.ok(Math.min(...sizes) >= 12, `أصغر مقاس ${Math.min(...sizes)}px — الحدّ 12px`);
 });
 
-test('التصميم يخلو من مفردات الإصدار الخامس البصرية', () => {
-  // السجلّ لا يتدرّج ولا يزجّج ولا يميل. هذه ليست ذوقاً بل تعريف الهوية.
-  assert.ok(!/linear-gradient|radial-gradient/.test(theme), 'بلا تدرّجات لونية');
-  assert.ok(!/backdrop-filter:\s*(?!none)/.test(theme), 'بلا زجاج مموّه');
-  assert.ok(!/rotateX|rotateY|translate3d|perspective:\s*\d/.test(theme + card), 'بلا ميل ثلاثي الأبعاد');
+test('الأسطح الزجاجية تعلن التمويه وبادئته معاً', () => {
+  // بلا البادئة يسقط الأثر على Safari وWebKit فيصير السطح شفافاً بلا تمويه —
+  // أي نصّ فوق ما تحته مباشرةً، وهو أسوأ من غياب الزجاج أصلاً.
+  const all = [...theme.matchAll(/(-webkit-)?backdrop-filter:\s*blur/g)];
+  const plain = all.filter(m => !m[1]).length;
+  const pref  = all.filter(m => m[1]).length;
+  assert.ok(plain >= 2, 'التمويه مستعمل فعلاً');
+  assert.strictEqual(pref, plain, `${plain} قاعدة تمويه مقابل ${pref} بادئة — يجب أن تتساويا`);
+});
+
+test('ألوان الحكم أشبع من خضرة الإطار — والتشبّع نفسه معنى', () => {
+  /* الأطروحة: في واجهة كلّها خضرة لا يكفي أن يفارق الحكمُ الإطارَ درجةً،
+     فقد يضيع الزمرّدي في الساج. الفارق محمول على التشبّع: الإطار مهدَّأ
+     والحكم مشبَع. هذا الاختبار يقيسه عدداً لا ذوقاً. */
+  const hex = n => {
+    const m = theme.match(new RegExp('--' + n + ':\\s*(#[0-9a-f]{6})', 'i'));
+    assert.ok(m, `الرمز --${n} معرَّف بقيمة سداسية`);
+    return m[1];
+  };
+  const sat = h => {
+    const [r, g, b] = [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16) / 255);
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2;
+    if (mx === mn) return 0;
+    return (mx - mn) / (l > .5 ? (2 - mx - mn) : (mx + mn));
+  };
+  const chrome = sat(hex('sage'));
+  for (const n of ['keep', 'review', 'remove']) {
+    const v = sat(hex(n));
+    assert.ok(v > chrome + .15,
+      `تشبّع --${n} (${v.toFixed(2)}) يجب أن يفوق تشبّع الإطار (${chrome.toFixed(2)}) بفارق واضح`);
+  }
+});
+
+test('المظهر الفاتح يعيد تعريف كل رمز أرضية وحبر ودلالة', () => {
+  // نمط Glassmorphism مصنَّف risk:conditional في القاعدة: لونٌ معرَّف في
+  // مظهر واحد فقط ينتج نصّ مظهر فوق أرضية المظهر الآخر — وهو العطل الكلاسيكي.
+  const light = theme.slice(theme.indexOf('[data-theme="light"]'));
+  for (const n of ['bg', 'surface', 'text', 'text-2', 'text-3', 'cream',
+                   'sage', 'sage-ink', 'keep', 'review', 'remove', 'glass', 'glass-brd', 'focus']) {
+    assert.match(light, new RegExp('--' + n + ':'), `--${n} غير معرَّف في المظهر الفاتح`);
+  }
 });
 
 test('الاستجابة مغطّاة عند المقاسات الأربعة', () => {
@@ -241,4 +282,18 @@ test('التسميات المطويّة تُخفى بصرياً لا تُحذف 
   assert.ok(rule, 'قاعدة التسمية المطويّة موجودة');
   assert.ok(!/display:\s*none/.test(rule[1]), 'الإخفاء بصريّ لا بـ display:none');
   assert.match(rule[1], /clip-path: inset\(50%\)/, 'يُستعمل الإخفاء البصري القياسي');
+});
+
+test('لا لون مثبَّت في سمة style السطرية', () => {
+  /* السمة السطرية تغلب ورقة الأنماط، فلونٌ مثبَّت فيها يبقى كما هو في
+     المظهرين. زرّ «رصد فوري» كان يحمل نصّاً أبيض من يوم كان الشريط
+     داكناً، فاختفى تماماً على المظهر الفاتح. الألوان تأتي من الرموز
+     لتتبع المظهر، والسطرية للتخطيط لا للّون. */
+  for (const page of PAGES) {
+    const html = read(page);
+    for (const m of html.matchAll(/style="([^"]*)"/g)) {
+      assert.ok(!/#[0-9a-fA-F]{3,8}\b|rgba?\(/.test(m[1]),
+        `${page}: لون مثبَّت في سمة سطرية ← ${m[1]}`);
+    }
+  }
 });

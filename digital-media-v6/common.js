@@ -76,15 +76,29 @@
    * السمة (فاتح/داكن)
    * ============================================================ */
   function applyTheme(t) {
-    document.documentElement.dataset.theme = t;
+    /* تبديل المظهر يغيّر كل رمز لوني دفعةً واحدة، فتنطلق عشرات انتقالات
+       الخلفية معاً — واحد لكل زرّ وبطاقة وشريحة على الشاشة. النتيجة أن
+       نقرةً واحدة قِيست عند 104ms وهي فوق سقف INP. الانتقال هنا لا يخدم
+       شيئاً أصلاً: المستخدم طلب مظهراً آخر لا مشهدَ تحوّل. نُعطّل
+       الانتقالات للحظة التبديل ثم نعيدها في الإطار التالي، فتبقى حيّة
+       لكل تفاعل آخر. */
+    const d = document.documentElement;
+    d.setAttribute('data-switching', '');
+    d.dataset.theme = t;
+    if (typeof requestAnimationFrame === 'function') {
+      requestAnimationFrame(() => requestAnimationFrame(() => d.removeAttribute('data-switching')));
+    } else { d.removeAttribute('data-switching'); }
     const btn = $('themeBtn');
     // زرّ السمة رسم لا حرف: يتبع لون الشريط الجانبي ولا يختلف شكله بين الأنظمة
     if (btn) btn.innerHTML = W.FBXIcons ? W.FBXIcons.svg(t === 'dark' ? 'sun' : 'moon') : '';
   }
 
   function initTheme() {
+    // الداكن هو أصل الهوية هنا لا استثناؤها، فالفاتح يحتاج طلباً صريحاً —
+    // من التخزين أو من تفضيل النظام. يجب أن يطابق سكربت الرأس حرفاً بحرف
+    // وإلا وميض المظهر بينهما عند كل تحميل.
     const saved = localStorage.getItem(STORAGE.theme) ||
-      (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
     applyTheme(saved);
     const btn = $('themeBtn');
     if (btn) btn.onclick = () => {

@@ -15,7 +15,7 @@
   var d = document.documentElement;
   try {
     var t = localStorage.getItem('fbx_theme') ||
-      (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+      (matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
     d.setAttribute('data-theme', t);
     if (!(localStorage.getItem('fbx_apify_key') || '').trim()) d.setAttribute('data-nokey', '');
   } catch (e) { d.setAttribute('data-nokey', ''); }
@@ -111,7 +111,7 @@
       </div>
     </nav>
     <div class="side-foot">
-      <span class="side-ver">الإصدار 6.0</span>
+      <span class="side-ver">الإصدار 6.1</span>
       <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري"><i class="ic" data-ic="moon"></i></button>
     </div>
   </aside>
@@ -159,7 +159,7 @@
     </select>
     <div class="countdown" id="countdown">--:--</div>
     <button class="btn btn-cream" id="toggleBtn"><i class="ic" data-ic="play"></i> بدء الرصد</button>
-    <button class="btn btn-ghost btn-sm" id="runNowBtn" style="border-color:rgba(255,255,255,.3);background:rgba(255,255,255,.08);color:#fff"><i class="ic" data-ic="bolt"></i> رصد فوري</button>
+    <button class="btn btn-ghost btn-sm" id="runNowBtn"><i class="ic" data-ic="bolt"></i> رصد فوري</button>
     <div class="mini-status">
       <div class="mini-spinner" id="miniSpinner"></div>
       <span id="miniStatus">آخر رصد: لم يتم بعد</span>
@@ -233,7 +233,7 @@
 
     </main>
 
-    <footer>الإعلام الرقمي — الرصد التلقائي والتحليل التفاعلي · صور وفيديو · تصدير Excel · الإصدار 6.0 <i class="ic" data-ic="logo"></i></footer>
+    <footer>الإعلام الرقمي — الرصد التلقائي والتحليل التفاعلي · صور وفيديو · تصدير Excel · الإصدار 6.1 <i class="ic" data-ic="logo"></i></footer>
   </div>
 </div>
 <div class="toast" id="toast"></div>

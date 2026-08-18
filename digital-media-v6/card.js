@@ -258,200 +258,219 @@
 
   const CSS_TEXT = `
   /* ===================================================================
-     بطاقة السجلّ — الإصدار 6
+     بطاقة المنشور — هوية «الحديقة الليلية»
      -------------------------------------------------------------------
-     الإصدار الخامس كان بطاقة زجاجية تميل في الفضاء عند المرور. هذه
-     قصاصة سجلّ: سطح أبيض، خطّ شعري، وقضيب حكم على الحافة الابتدائية.
-     لا ظلّ ولا ميل ولا مشهد ثلاثي الأبعاد — المرور يغيّر الحدّ فقط،
-     وهو كلّ ما تحتاجه العين لتعرف أين هي.
+     لوح زجاجي مصنفر يعلو عند المرور، وقضيب حكم مضيء على الحافة
+     الابتدائية. الاستدارة سخيّة والحشو أوسع من النسخة السويسرية:
+     المطلوب حيوية، والحيوية تحتاج هواءً وعمقاً.
 
-     والحكم لا يُنقل بلون وحده أبداً (إرشاد «Color Only», شدّة عالية):
-     قضيب لوني + شارة نصّية صريحة + رسم. من يرى الألوان يقرأ ثلاثتها،
-     ومن لا يراها يقرأ اثنتين.
+     والحكم يصل بثلاث طرق مستقلّة لأن الإرشاد الأعلى شدّةً يمنع نقل
+     المعلومة باللون وحده: قضيب + شارة نصّية باسم التصنيف + مقياس من
+     ثلاث شُرَط. وألوان الحكم مشبَعة عمداً بينما خضرة الإطار مهدَّأة،
+     فالتشبّع نفسه صار حاملاً للمعنى في واجهة كلّها خضرة.
      =================================================================== */
   .fx-i { flex: none; vertical-align: -2px; }
 
   /* ===================== الحاويات ===================== */
   .fx-list { margin: 0; }
   .fx-list.fx-cards {
-    display: grid; gap: var(--gap, 8px);
-    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    display: grid; gap: var(--gap, 14px);
+    grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
     align-items: stretch;
   }
-  .fx-list.fx-table { display: block; border: var(--hair); border-radius: var(--r-lg); overflow: hidden; background: var(--card); }
+  .fx-list.fx-table {
+    display: block; border: var(--hair); border-radius: var(--r-lg);
+    overflow: hidden; background: var(--glass); box-shadow: var(--sh-2);
+    -webkit-backdrop-filter: blur(var(--blur)) saturate(1.35);
+    backdrop-filter: blur(var(--blur)) saturate(1.35);
+  }
 
   /* ===================== البطاقة ===================== */
   .fx-card {
-    display: flex; flex-direction: column; min-width: 0;
-    background: var(--card); border: var(--hair); border-radius: var(--r);
-    border-inline-start: 3px solid var(--acc, var(--rule));
-    overflow: hidden; position: relative;
-    transition: border-color var(--t, 180ms) var(--ease, ease),
-                background var(--t, 180ms) var(--ease, ease);
+    display: flex; flex-direction: column; min-width: 0; position: relative;
+    border-radius: var(--r-lg); overflow: hidden;
+    box-shadow: var(--sh-2);
+    /* تخطّي ما هو خارج الشاشة. أربعون بطاقة شفافة فوق تدرّج رفعت زمن
+       الاستجابة إلى 144ms عند تبديل المظهر، لأن كلّاً منها تُرسم من جديد
+       ولو كانت خارج المشهد. المقاس الجوهري مصرَّح به حتى لا يقفز شريط
+       التمرير عند دخول البطاقة المشهد — وإلا استُبدلت كلفةُ رسمٍ بإزاحة
+       تخطيط، وهي أسوأ. */
+    content-visibility: auto;
+    contain-intrinsic-size: auto 300px;
+    transition: transform var(--t, 220ms) var(--ease-spring, ease),
+                box-shadow var(--t, 220ms) var(--ease, ease),
+                border-color var(--t, 220ms) var(--ease, ease);
   }
-  .fx-card:hover { background: var(--card-2); border-color: var(--ink-3); border-inline-start-color: var(--acc, var(--rule)); }
+  /* قضيب الحكم: شريط مضيء على الحافة الابتدائية، فوق طبقة الزجاج */
+  .fx-card::after {
+    content: ""; position: absolute; inset-block: 0; inset-inline-start: 0;
+    width: 4px; background: var(--acc, transparent);
+    box-shadow: 0 0 14px -2px var(--acc, transparent);
+    pointer-events: none; z-index: 1;
+  }
+  .fx-card:hover { transform: translateY(-3px); box-shadow: var(--sh-3); border-color: var(--sage-line); }
   .fx-card:focus-within { border-color: var(--focus); }
-  /* المنشور الجديد يُعلَّم بشارة نصّية، والوميض تأكيد لا إعلان */
-  .fx-fresh { animation: fxFresh 1.4s var(--ease-out, ease) 1; }
-  @keyframes fxFresh { 0%, 100% { background: var(--card); } 30% { background: var(--brand-soft); } }
+  .fx-fresh { animation: fxFresh 1.6s var(--ease-out, ease) 1; }
+  @keyframes fxFresh { 0%, 100% { box-shadow: var(--sh-2); } 35% { box-shadow: var(--glow); } }
 
   /* ---- الرأس ---- */
   .fx-head {
-    display: flex; align-items: flex-start; gap: var(--sp-3, 8px);
-    padding: var(--pad-card, 12px); padding-bottom: var(--sp-3, 8px);
+    display: flex; align-items: flex-start; gap: var(--sp-3, 10px);
+    padding: var(--pad-card, 16px); padding-bottom: var(--sp-3, 10px);
+    position: relative; z-index: 2;
   }
   .fx-av {
-    width: 30px; height: 30px; flex: none; border-radius: var(--r-sm, 3px);
-    object-fit: cover; background: var(--card-2); color: var(--ink-3);
-    display: grid; place-items: center; font-size: 13px; font-weight: 700;
-    border: var(--hair);
+    width: 38px; height: 38px; flex: none; border-radius: 50%;
+    object-fit: cover; color: var(--sage); font-size: 15px; font-weight: 700;
+    display: grid; place-items: center;
+    background: var(--sage-soft); border: 1px solid var(--sage-line);
   }
-  .fx-head-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 1px; }
+  .fx-head-t { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
   .fx-author {
-    font-size: var(--fs-xs, 13px); font-weight: 700; color: var(--ink);
-    display: flex; align-items: baseline; gap: var(--sp-2, 4px); flex-wrap: wrap;
+    font-size: var(--fs-sm, 14px); font-weight: 700; color: var(--text);
+    display: flex; align-items: baseline; gap: var(--sp-2, 6px); flex-wrap: wrap;
     overflow: hidden; text-overflow: ellipsis;
   }
-  .fx-handle { font-family: var(--mono); font-weight: 400; font-size: var(--fs-2xs, 12px); color: var(--ink-3); }
+  .fx-handle { font-family: var(--mono); font-weight: 400; font-size: var(--fs-2xs, 12px); color: var(--text-3); }
   .fx-new {
-    font-style: normal; font-size: 10px; font-weight: 700; letter-spacing: .04em;
-    background: var(--brand); color: var(--brand-ink);
-    padding: 1px 5px; border-radius: var(--r-sm, 3px);
+    font-style: normal; font-size: 10px; font-weight: 700; letter-spacing: .03em;
+    background: linear-gradient(140deg, var(--sage-2), var(--sage)); color: var(--sage-ink);
+    padding: 2px 8px; border-radius: var(--r-pill);
   }
   .fx-meta {
-    display: flex; align-items: center; gap: var(--sp-2, 4px);
-    font-family: var(--mono); font-size: var(--fs-2xs, 12px); color: var(--ink-3);
+    display: flex; align-items: center; gap: var(--sp-2, 6px);
+    font-family: var(--mono); font-size: var(--fs-2xs, 12px); color: var(--text-3);
     font-variant-numeric: tabular-nums;
+    flex-wrap: nowrap; min-width: 0;
   }
+  /* التاريخ يُقصّ ولا يلتفّ: لفّه كان يهبط بأيقونة الساعة سطراً وحدها
+     ويكسر ارتفاع الرأس بين بطاقة وأخرى. */
+  .fx-meta > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .fx-meta > .fx-meter { flex: none; }
 
-  /* شارة الحكم: نصّ صريح لا لون وحده */
+  /* شارة الحكم: حبّة نصّية — النصّ هو الحامل، واللون تأكيد */
   .fx-vd {
     flex: none; align-self: flex-start;
     font-size: 11px; font-weight: 700; letter-spacing: -.01em;
-    padding: 2px var(--sp-2, 6px); border-radius: var(--r-sm, 3px);
+    padding: 4px var(--sp-3, 10px); border-radius: var(--r-pill);
     border: 1px solid; white-space: nowrap;
   }
   .fx-vd-positive { color: var(--keep);   background: var(--keep-soft);   border-color: var(--keep-line); }
-  .fx-vd-neutral  { color: var(--ink-2);  background: var(--card-2);      border-color: var(--rule); }
+  .fx-vd-neutral  { color: var(--text-2); background: var(--glass-2);     border-color: var(--glass-brd); }
   .fx-vd-negative { color: var(--remove); background: var(--remove-soft); border-color: var(--remove-line); }
 
-  /* مقياس الخطورة: ثلاث شُرَط ممتلئة بقدر المستوى — شكل لا لون */
-  .fx-meter { display: inline-flex; gap: 2px; align-items: center; }
-  .fx-meter i { width: 8px; height: 3px; border-radius: 1px; background: var(--rule); display: block; }
-  .fx-meter i.on { background: var(--acc, var(--ink-3)); }
+  /* مقياس الخطورة: امتلاء هندسي يُقرأ بلا لون */
+  .fx-meter { display: inline-flex; gap: 3px; align-items: center; }
+  .fx-meter i { width: 9px; height: 4px; border-radius: 2px; background: var(--glass-brd); display: block; }
+  .fx-meter i.on { background: var(--acc, var(--text-3)); }
 
   /* ---- الجسم ---- */
-  .fx-body { display: flex; flex-direction: column; gap: var(--sp-3, 8px); padding: 0 var(--pad-card, 12px); flex: 1; }
-  .fx-rt {
-    font-family: var(--mono); font-size: var(--fs-2xs, 12px); color: var(--ink-3);
-    display: flex; align-items: center; gap: var(--sp-2, 4px);
-  }
+  .fx-body { display: flex; flex-direction: column; gap: var(--sp-3, 10px);
+             padding: 0 var(--pad-card, 16px); flex: 1; position: relative; z-index: 2; }
+  .fx-rt { font-family: var(--mono); font-size: var(--fs-2xs, 12px); color: var(--text-3);
+           display: flex; align-items: center; gap: var(--sp-2, 6px); }
   .fx-text {
-    flex: none; font-size: var(--fs-xs, 13px); line-height: 1.6; color: var(--ink);
+    flex: none; font-size: var(--fs-sm, 14px); line-height: 1.65; color: var(--text);
     margin: 0; overflow: hidden; word-break: break-word;
     display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 4; line-clamp: 4;
-    min-height: calc(3 * 1.6 * var(--fs-xs, 13px));
+    min-height: calc(3 * 1.65 * var(--fs-sm, 14px));
   }
-  /* بلا وسائط، المساحة المحرَّرة تعود للنصّ لا لفراغ */
-  .fx-card:not(:has(.fx-media)) .fx-text { -webkit-line-clamp: 12; line-clamp: 12; }
+  .fx-card:not(:has(.fx-media)) .fx-text { -webkit-line-clamp: 11; line-clamp: 11; }
   .fx-text.fx-open-txt { -webkit-line-clamp: unset; line-clamp: unset; display: block; }
-  .fx-notext { color: var(--ink-3); font-style: italic; }
-  .fx-media { flex: none; border-radius: var(--r-sm, 3px); overflow: hidden; border: var(--hair); }
+  .fx-notext { color: var(--text-3); font-style: italic; }
+  .fx-media { flex: none; border-radius: var(--r-sm, 10px); overflow: hidden; border: var(--hair); }
 
-  .fx-tags { display: flex; flex-wrap: wrap; gap: var(--sp-2, 4px); margin-top: auto; padding-top: var(--sp-2, 4px); }
+  .fx-tags { display: flex; flex-wrap: wrap; gap: var(--sp-2, 6px); margin-top: auto; padding-top: var(--sp-2, 6px); }
   .fx-vd-sub, .fx-vd-act, .fx-vd-exc {
-    font-size: 11px; padding: 1px var(--sp-2, 6px); border-radius: var(--r-sm, 3px);
-    display: inline-flex; align-items: center; gap: 3px; border: 1px solid transparent;
+    font-size: 11px; padding: 3px var(--sp-3, 10px); border-radius: var(--r-pill);
+    display: inline-flex; align-items: center; gap: 4px; border: 1px solid transparent;
   }
-  .fx-vd-sub { background: var(--card-2); color: var(--ink-2); border-color: var(--rule); }
+  .fx-vd-sub { background: var(--glass-2); color: var(--text-2); border-color: var(--glass-brd); }
   .fx-vd-act { background: var(--remove-soft); color: var(--remove); border-color: var(--remove-line); font-weight: 700; }
   .fx-vd-exc { background: var(--keep-soft); color: var(--keep); border-color: var(--keep-line); }
 
   /* ---- التذييل ---- */
   .fx-foot {
-    display: flex; align-items: center; gap: var(--sp-2, 4px);
-    padding: var(--sp-3, 8px) var(--pad-card, 12px);
-    margin-top: var(--sp-3, 8px); border-top: 1px solid var(--rule-2);
-    background: var(--card-2);
+    display: flex; align-items: center; gap: var(--sp-2, 6px);
+    padding: var(--sp-4, 14px) var(--pad-card, 16px);
+    margin-top: var(--sp-4, 14px); border-top: var(--hair);
+    background: var(--wash); position: relative; z-index: 2;
   }
   .fx-foot-sp { flex: 1; }
-  .fx-metrics { display: flex; gap: var(--sp-3, 8px); align-items: center; }
-  .fx-metric {
-    display: inline-flex; align-items: center; gap: 3px;
-    font-size: var(--fs-2xs, 12px); color: var(--ink-3);
-  }
-  .fx-metric b { font-weight: 600; color: var(--ink-2); font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  .fx-metrics { display: flex; gap: var(--sp-4, 14px); align-items: center; }
+  .fx-metric { display: inline-flex; align-items: center; gap: 4px; font-size: var(--fs-2xs, 12px); color: var(--text-3); }
+  .fx-metric b { font-weight: 700; color: var(--text-2); font-family: var(--mono); font-variant-numeric: tabular-nums; }
   .fx-btn {
-    display: inline-flex; align-items: center; gap: 3px;
-    border: var(--hair); border-radius: var(--r-sm, 3px); background: var(--card);
-    color: var(--ink-2); font-size: 11px; font-weight: 600; padding: 4px 8px;
-    text-decoration: none; position: relative;
-    transition: background var(--t, 180ms) var(--ease, ease), color var(--t, 180ms) var(--ease, ease),
-                border-color var(--t, 180ms) var(--ease, ease);
+    display: inline-flex; align-items: center; gap: 4px; position: relative;
+    border: var(--hair); border-radius: 50%; background: var(--glass-2);
+    color: var(--text-2); font-size: 11px; font-weight: 600;
+    width: 34px; height: 34px; justify-content: center; text-decoration: none;
+    transition: background var(--t, 220ms) var(--ease, ease), color var(--t, 220ms) var(--ease, ease),
+                border-color var(--t, 220ms) var(--ease, ease);
   }
-  /* هدف اللمس 44×44 دون تضخيم الشكل — شرط في قائمة التسليم */
   .fx-btn::after { content: ""; position: absolute; inset: 50% 50% auto auto; translate: 50% -50%; width: 44px; height: 44px; }
-  .fx-btn:hover { background: var(--card-2); color: var(--ink); border-color: var(--ink-3); }
-  .fx-open { color: var(--brand); border-color: var(--brand-line); }
-  .fx-open:hover { background: var(--brand-soft); border-color: var(--brand); }
+  .fx-btn:hover { background: var(--raised); color: var(--text); border-color: var(--sage-line); }
+  .fx-open { color: var(--sage); border-color: var(--sage-line); }
+  .fx-open:hover { background: var(--sage-soft); border-color: var(--sage); }
 
   .fx-panel {
-    border-top: var(--hair); background: var(--card-2);
-    padding: var(--pad-card, 12px); font-size: var(--fs-2xs, 12px);
+    border-top: var(--hair); background: var(--wash-2);
+    padding: var(--pad-card, 16px); font-size: var(--fs-2xs, 12px);
+    position: relative; z-index: 2;
   }
 
   /* ===================== صفّ الجدول ===================== */
   .fx-row {
-    display: grid; align-items: center; gap: var(--sp-3, 8px);
-    grid-template-columns: 40px minmax(0, 1fr) auto auto auto auto;
-    min-height: var(--row-h, 36px); padding: var(--sp-2, 4px) var(--sp-3, 8px);
-    border-bottom: 1px solid var(--rule-2);
-    border-inline-start: 3px solid var(--acc, transparent);
-    transition: background var(--t-fast, 120ms) var(--ease, ease);
+    content-visibility: auto; contain-intrinsic-size: auto var(--row-h, 44px);
+    display: grid; align-items: center; gap: var(--sp-4, 14px);
+    grid-template-columns: 46px minmax(0, 1fr) auto auto auto auto;
+    min-height: var(--row-h, 44px); padding: var(--sp-3, 10px) var(--sp-4, 14px);
+    border-bottom: 1px solid var(--glass-brd);
+    border-inline-start: 4px solid var(--acc, transparent);
+    transition: background var(--t-fast, 140ms) var(--ease, ease);
   }
   .fx-row:last-child { border-bottom: 0; }
-  .fx-row:hover { background: var(--card-2); }
+  .fx-row:hover { background: var(--glass-2); }
   .fx-row-thumb {
-    width: 40px; height: 28px; border-radius: var(--r-sm, 3px); object-fit: cover;
-    background: var(--card-2); border: var(--hair); position: relative;
-    display: grid; place-items: center; color: var(--ink-3);
+    width: 46px; height: 34px; border-radius: var(--r-sm, 10px); object-fit: cover;
+    background: var(--sage-soft); border: 1px solid var(--sage-line); position: relative;
+    display: grid; place-items: center; color: var(--sage);
   }
   .fx-row-n {
     position: absolute; inset-block-end: 0; inset-inline-end: 0;
-    background: var(--ink); color: var(--paper); font-family: var(--mono);
-    font-size: 9px; font-style: normal; padding: 0 3px; border-radius: 2px 0 0 0;
+    background: var(--bg); color: var(--sage); font-family: var(--mono);
+    font-size: 9px; font-style: normal; padding: 0 4px; border-radius: 6px 0 0 0;
   }
-  .fx-row-main { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
-  .fx-row-author { font-size: var(--fs-2xs, 12px); font-weight: 700; color: var(--ink); }
-  .fx-row-text {
-    font-size: var(--fs-2xs, 12px); color: var(--ink-2); overflow: hidden;
-    text-overflow: ellipsis; white-space: nowrap;
-  }
+  .fx-row-main { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+  .fx-row-author { font-size: var(--fs-xs, 13px); font-weight: 700; color: var(--text); }
+  .fx-row-text { font-size: var(--fs-2xs, 12px); color: var(--text-2); overflow: hidden;
+                 text-overflow: ellipsis; white-space: nowrap; }
   .fx-row-date, .fx-row-metrics {
-    font-family: var(--mono); font-size: 11px; color: var(--ink-3);
+    font-family: var(--mono); font-size: 11px; color: var(--text-3);
     font-variant-numeric: tabular-nums; white-space: nowrap;
   }
-  .fx-row-metrics { display: flex; gap: var(--sp-3, 8px); }
-  .fx-row-verdict { display: flex; align-items: center; gap: var(--sp-2, 4px); }
-  .fx-row-acts { display: flex; gap: var(--sp-2, 4px); }
-  .fx-row-acts .fx-btn { padding: 3px 6px; }
-  .fx-row-panel { grid-column: 1 / -1; border-top: var(--hair); margin-top: var(--sp-2, 4px); padding: 0; }
+  .fx-row-metrics { display: flex; gap: var(--sp-4, 14px); }
+  .fx-row-verdict { display: flex; align-items: center; gap: var(--sp-2, 6px); }
+  .fx-row-acts { display: flex; gap: var(--sp-2, 6px); }
+  .fx-row-acts .fx-btn { width: 30px; height: 30px; }
+  .fx-row-panel { grid-column: 1 / -1; border-top: var(--hair); margin-top: var(--sp-3, 10px); padding: 0; }
 
   /* ===================== الظهور المدرَّج ===================== */
-  .fx-card, .fx-row { animation: fxIn var(--t-slow, 260ms) var(--ease-out, ease) backwards; }
-  @keyframes fxIn { from { opacity: 0; transform: translateY(6px); } }
+  .fx-card, .fx-row { animation: fxIn var(--t-slow, 320ms) var(--ease-out, ease) backwards; }
+  @keyframes fxIn { from { opacity: 0; transform: translateY(10px) scale(.985); } }
 
   @media (max-width: 1024px) {
-    .fx-row { grid-template-columns: 40px minmax(0, 1fr) auto auto; }
+    .fx-row { grid-template-columns: 46px minmax(0, 1fr) auto auto; }
     .fx-row-metrics, .fx-row-date { display: none; }
   }
   @media (max-width: 620px) {
     .fx-list.fx-cards { grid-template-columns: 1fr; }
-    .fx-row { grid-template-columns: 32px minmax(0, 1fr) auto; }
+    .fx-row { grid-template-columns: 38px minmax(0, 1fr) auto; }
     .fx-row-verdict .fx-meter { display: none; }
   }
   @media (prefers-reduced-motion: reduce) {
     .fx-card, .fx-row, .fx-fresh { animation: none; }
+    .fx-card:hover { transform: none; }
   }
   `;
 

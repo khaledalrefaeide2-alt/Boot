@@ -206,7 +206,10 @@
     if (document.getElementById('fbx-pages-styles')) return;
     const css = `
     .fbxp-overlay { position: fixed; inset: 0; z-index: 9000; background: rgba(10,8,20,.62);
-      backdrop-filter: blur(3px); display: grid; place-items: center; padding: 16px; animation: fbxpIn .18s ease; }
+      display: grid; place-items: center; padding: 16px; animation: fbxpIn .18s ease; }
+      /* بلا تمويه على الحجاب: تمويه ملء الشاشة يمرّر مرشّحاً على الصفحة
+         كاملةً عند كل فتح وإغلاق، وقِيس عند 104ms. والعتمة وحدها تفصل
+         الطبقتين بلا كلفة. */
     @keyframes fbxpIn { from { opacity: 0 } to { opacity: 1 } }
     .fbxp-modal { width: min(920px, 100%); max-height: 88vh; display: flex; flex-direction: column;
       background: var(--surface, #fff); border: 1px solid var(--border, #e8e5f2);
