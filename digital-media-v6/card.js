@@ -31,10 +31,15 @@
      تتباعد عنها مع الوقت. المقاس يُمرَّر صراحة لأن أيقونات البطاقة تُوضع
      داخل أسطر بمقاسات نصّ مختلفة. */
   const PATHS = (global.FBXIcons && global.FBXIcons.paths) || {};
-  const icon = (name, size) =>
-    `<svg class="fx-i" viewBox="0 0 24 24" width="${size || 15}" height="${size || 15}" fill="none"
-      stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"
-      aria-hidden="true">${PATHS[name] || ''}</svg>`;
+  /* إشارة إلى ورقة الرموز بدل تضمين المسار. البطاقة الواحدة تحمل نحو
+     اثنتي عشرة أيقونة، و1500 بطاقة تعني 17929 منها: تضمين المسار في كلٍّ
+     ضخّم صفحة الرسم إلى 10.4 ميغابايت وكلّف 800ms في التحليل وحده.
+     المقاس يبقى صريحاً لأن أيقونات البطاقة توضع في أسطر بمقاسات مختلفة. */
+  const icon = (name, size) => {
+    const s = size || 15;
+    if (!PATHS[name]) return `<svg class="fx-i" width="${s}" height="${s}" aria-hidden="true"></svg>`;
+    return `<svg class="fx-i" width="${s}" height="${s}" aria-hidden="true"><use href="#fbx-i-${name}"/></svg>`;
+  };
 
   /* ============================================================
    * مساعدات
@@ -149,7 +154,7 @@
         ${p.url ? `<a class="fx-btn fx-open" href="${esc(p.url)}" target="_blank" rel="noopener"
           title="فتح ${esc(opts.openLabel || 'المنشور')} الأصلي" aria-label="فتح ${esc(opts.openLabel || 'المنشور')} الأصلي">${icon('link', 15)}</a>` : ''}
       </footer>
-      ${a ? `<div class="fx-panel" id="fxp-${id}" hidden>${global.FBXAnalyzer ? global.FBXAnalyzer.panel(a) : ''}</div>` : ''}
+      ${a ? `<div class="fx-panel" id="fxp-${id}" hidden></div>` : ''}
     </article>`;
   }
 
@@ -181,7 +186,7 @@
         ${a ? `<button type="button" class="fx-btn fx-analysis" data-panel="fxr-${id}" title="عرض التحليل الكامل">${icon('brain', 14)}</button>` : ''}
         ${p.url ? `<a class="fx-btn fx-open" href="${esc(p.url)}" target="_blank" rel="noopener" title="فتح المنشور">${icon('link', 14)}</a>` : ''}
       </span>
-      ${a ? `<div class="fx-panel fx-row-panel" id="fxr-${id}" hidden>${global.FBXAnalyzer ? global.FBXAnalyzer.panel(a) : ''}</div>` : ''}
+      ${a ? `<div class="fx-panel fx-row-panel" id="fxr-${id}" hidden></div>` : ''}
     </article>`;
   }
 
@@ -192,16 +197,24 @@
     opts = opts || {};
     if (!container) return;
     injectStyles();
+    // البطاقات تشير إلى ورقة الرموز، فيجب أن تكون محقونة قبل أول <use>
+    if (global.FBXIcons && global.FBXIcons.injectSprite) global.FBXIcons.injectSprite();
     const table = opts.view === 'table';
     const build = table ? rowHtml : html;
     container.className = table ? 'fx-list fx-table' : 'fx-list fx-cards';
-    container.innerHTML = (posts || []).map((p, i) => build(p, {
-      id: (opts.prefix || 'c') + i,
-      fresh: opts.isFresh ? !!opts.isFresh(p) : false,
-      delay: table ? 0 : Math.min(i * 28, 320),
-      openLabel: opts.openLabel,
-      emptyLabel: opts.emptyLabel
-    })).join('');
+    const data = {};
+    container.innerHTML = (posts || []).map((p, i) => {
+      const id = (opts.prefix || 'c') + i;
+      if (p.analysis) data[(table ? 'fxr-' : 'fxp-') + id] = p.analysis;
+      return build(p, {
+        id: id,
+        fresh: opts.isFresh ? !!opts.isFresh(p) : false,
+        delay: table ? 0 : Math.min(i * 28, 320),
+        openLabel: opts.openLabel,
+        emptyLabel: opts.emptyLabel
+      });
+    }).join('');
+    container._panelData = data;
     bind(container);
   }
 
@@ -224,6 +237,13 @@
   }
 
   function bind(container) {
+    /* خريطة صريحة من معرّف اللوحة إلى تحليلها، تُبنى وقت الرسم. استنتاج
+       الفهرس من المعرّف كان يعمل بالصدفة ما دامت البادئة رقمية، ويكسر
+       بأوّل بادئة تحوي رقماً. */
+    const map = container._panelData;
+    if (map) container.querySelectorAll('.fx-panel').forEach(el => {
+      if (map[el.id]) el._analysis = map[el.id];
+    });
     addOverflowButtons(container);
     container.querySelectorAll('.fx-more').forEach(btn => {
       btn.onclick = () => {
@@ -238,6 +258,15 @@
       btn.onclick = () => {
         const el = container.querySelector('#' + CSS.escape(btn.dataset.panel));
         if (!el) return;
+        /* اللوحة تُبنى عند أول فتح لا مع البطاقة. كانت تُبنى كاملةً لكل
+           بطاقة وإن لم تُفتح قطّ: خمس عشرة أيقونة وقسم مفصَّل × 1500
+           بطاقة = 22500 عنصر رسم مهدور، وهو ما كان يُبقي تحليل innerHTML
+           فوق الثانية بعد نقل الأيقونات إلى ورقة الرموز.
+           التحليل نفسه محفوظ على العنصر عند الرسم، فلا يُعاد حسابه. */
+        if (!el.dataset.built && el._analysis && global.FBXAnalyzer) {
+          el.innerHTML = global.FBXAnalyzer.panel(el._analysis);
+          el.dataset.built = '1';
+        }
         el.hidden = !el.hidden;
         btn.classList.toggle('on', !el.hidden);
         btn.title = el.hidden ? 'عرض التحليل الكامل' : 'إخفاء التحليل';

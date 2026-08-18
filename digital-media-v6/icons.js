@@ -93,11 +93,32 @@
     dot:       '<circle cx="12" cy="12" r="5"/>'
   };
 
+  /* ورقة رموز واحدة لكل الصفحة: كل أيقونة تُعرَّف مرّة في <symbol> ثم
+     يُشار إليها بـ <use>. القياس هو الذي فرض هذا: 1500 بطاقة تحمل 17929
+     أيقونة، وتضمين مسارها في كلٍّ منها ضخّم صفحة الرسم إلى 10.4 ميغابايت
+     وكلّف 800ms من أصل 1313 في تحليل innerHTML وحده. الإشارة تُنزل حجم
+     الأيقونة الواحدة من ~600 حرف إلى ~70.
+     تُحقن مرّة عند التهيئة، وقبل أي <use> — فالمرجع لا يُحلّ إن غاب. */
+  let spriteDone = false;
+  function injectSprite() {
+    if (spriteDone || typeof document === 'undefined' || !document.body) return;
+    spriteDone = true;
+    const box = document.createElement('div');
+    box.id = 'fbx-icon-sprite';
+    box.setAttribute('aria-hidden', 'true');
+    // خارج التدفّق تماماً: لا يزيح شيئاً ولا يُقرأ
+    box.style.cssText = 'position:absolute;width:0;height:0;overflow:hidden';
+    box.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg"><defs>' +
+      Object.keys(P).map(n =>
+        `<symbol id="fbx-i-${n}" viewBox="0 0 24 24" fill="none" stroke="currentColor"` +
+        ` stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">${P[n]}</symbol>`
+      ).join('') + '</defs></svg>';
+    document.body.insertBefore(box, document.body.firstChild);
+  }
+
   function svg(name, cls) {
-    const d = P[name];
-    return `<svg class="ic-svg${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" fill="none"
-      stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"
-      aria-hidden="true" focusable="false">${d || ''}</svg>`;
+    if (!has(name)) return `<svg class="ic-svg${cls ? ' ' + cls : ''}" viewBox="0 0 24 24" aria-hidden="true" focusable="false"></svg>`;
+    return `<svg class="ic-svg${cls ? ' ' + cls : ''}" aria-hidden="true" focusable="false"><use href="#fbx-i-${name}"/></svg>`;
   }
 
   const has = name => Object.prototype.hasOwnProperty.call(P, name);
@@ -144,6 +165,7 @@
 
   function init() {
     injectStyles();
+    injectSprite();
     hydrate(document);
   }
 
@@ -152,6 +174,6 @@
     else init();
   }
 
-  global.FBXIcons = { svg, hydrate, injectStyles, has, paths: P };
+  global.FBXIcons = { svg, hydrate, injectStyles, injectSprite, has, paths: P };
 
 })(typeof window !== 'undefined' ? window : this);

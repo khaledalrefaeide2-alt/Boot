@@ -152,6 +152,19 @@
     label();
   }
 
+  /* تأخير التنفيذ حتى يهدأ الإدخال. البحث كان يُعيد رسم القائمة كاملةً
+     عند كل ضغطة مفتاح، وقياس الرسم عند 1500 منشور بلغ 628ms — أي أن
+     كتابة كلمة من خمسة أحرف كانت تكلّف ثلاث ثوانٍ من التجمّد. 160ms
+     أقصر من أن تُحسّ بين ضغطتين، وتكفي لإلغاء الرسم المهدور. */
+  function debounce(fn, wait) {
+    let t;
+    return function () {
+      const args = arguments, self = this;
+      clearTimeout(t);
+      t = setTimeout(() => fn.apply(self, args), wait == null ? 160 : wait);
+    };
+  }
+
   function postKey(p) {
     return p.key || p.url || `${p.author}|${p.ts || ''}|${(p.text || '').slice(0, 80)}`;
   }
@@ -462,7 +475,7 @@
    * ============================================================ */
   const api = {
     STORAGE, $, sleep, escapeHtml, escapeAttr: escapeHtml, fmtNum, num, validDate,
-    getToken, postKey, applyTheme, initTheme, initNav, showToast, sevAccent, apiError,
+    getToken, postKey, applyTheme, initTheme, initNav, debounce, showToast, sevAccent, apiError,
     apiFetch, apiPost, apiGet, isNetworkError, NET_HINT, initReveal,
     csvCell, download, exportCsv, normalizePost, db, dbCheck, saveToDb
   };

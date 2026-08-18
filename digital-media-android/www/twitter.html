@@ -405,12 +405,19 @@ async function startExtraction() {
     progressBar.style.width = '25%';
     setStatus('جارٍ استخراج التغريدات...', 'قد تستغرق العملية عدة دقائق حسب حجم الطلب');
     let status = run.status, datasetId = run.defaultDatasetId, elapsed = 0;
+    /* استطلاع متدرّج بدل فاصل ثابت. الفاصل الثابت عند أربع ثوانٍ كان
+       يفرض انتظاراً كاملاً حتى على طلبٍ ينتهي في ثانيتين — فالنوم يسبق
+       أوّل استطلاع. البدء عند 700ms يلتقط الطلبات القصيرة فور انتهائها،
+       والتصاعد إلى أربع ثوانٍ يمنع إغراق الخدمة في الطلبات الطويلة:
+       العدد الكلّي للاستطلاعات يبقى قريباً مما كان. */
+    let wait = 700;
     while (['READY', 'RUNNING'].includes(status)) {
       if (aborted) return;
-      await sleep(4000);
-      elapsed += 4;
+      await sleep(wait);
+      elapsed += wait / 1000;
+      wait = Math.min(4000, Math.round(wait * 1.45));
       progressBar.style.width = Math.min(85, 25 + elapsed * 1.2) + '%';
-      statusSub.textContent = `مضى ${elapsed} ثانية · الحالة: قيد التشغيل`;
+      statusSub.textContent = `مضى ${Math.round(elapsed)} ثانية · الحالة: قيد التشغيل`;
       const st = await apiGet(`${API_BASE}/actor-runs/${currentRunId}?token=${encodeURIComponent(token)}`);
       if (!st.ok) throw await apiError(st);
       const d = (await st.json()).data;
@@ -584,7 +591,7 @@ function renderPosts() {
 
 
 /* =============== Toolbar events =============== */
-searchInput.addEventListener('input', renderPosts);
+searchInput.addEventListener('input', debounce(renderPosts));
 sortSelect.addEventListener('change', () => { if (allPosts.length) renderPosts(); });
 $('gridViewBtn').onclick = () => setView('cards');
 $('listViewBtn').onclick = () => setView('table');

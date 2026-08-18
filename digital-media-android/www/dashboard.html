@@ -395,9 +395,13 @@ async function runCycle(manual) {
     const run = (await startRes.json()).data;
     let status = run.status, datasetId = run.defaultDatasetId;
     const deadline = Date.now() + 20 * 60000;
+    // استطلاع متدرّج: يبدأ سريعاً فيلتقط الدورات القصيرة فور انتهائها،
+    // ويتصاعد إلى أربع ثوانٍ فلا يُغرق الخدمة في الدورات الطويلة.
+    let wait = 700;
     while (['READY', 'RUNNING'].includes(status)) {
       if (Date.now() > deadline) throw new Error('تجاوز التشغيل عشرين دقيقة دون أن ينتهي — أُلغيت الدورة وستُعاد المحاولة.');
-      await sleep(4000);
+      await sleep(wait);
+      wait = Math.min(4000, Math.round(wait * 1.45));
       const st = await apiGet(`${API_BASE}/actor-runs/${run.id}?token=${encodeURIComponent(token)}`);
       if (!st.ok) throw await apiError(st);
       const d = (await st.json()).data; status = d.status; datasetId = d.defaultDatasetId;
@@ -705,7 +709,7 @@ $('rangeFilter').querySelectorAll('.pill').forEach(b => b.onclick = () => {
   $('rangeFilter').querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
   b.classList.add('active'); filterRange = parseInt(b.dataset.range, 10); renderDashboard();
 });
-$('searchInput').addEventListener('input', e => { searchQ = e.target.value.trim().toLowerCase(); renderDashboard(); });
+$('searchInput').addEventListener('input', debounce(e => { searchQ = e.target.value.trim().toLowerCase(); renderDashboard(); }));
 $('sortSelect').addEventListener('change', e => { sortMode = e.target.value; renderDashboard(); });
 
 $('clearBtn').onclick = () => {

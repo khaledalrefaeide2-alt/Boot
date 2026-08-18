@@ -285,3 +285,54 @@ test('لا لون مثبَّت في سمة style السطرية', () => {
     }
   }
 });
+
+/* ============================================================
+ * الأداء: شروط مقيسة لا تفضيلات
+ * ============================================================
+ * كل تأكيد هنا يحرس رقماً قِيس فعلاً، وإرجاعه يُعيد بطئاً معروفاً. */
+const iconsSrc = read('icons.js');
+
+test('الأيقونات تُشار إليها من ورقة رموز لا تُضمَّن في كل بطاقة', () => {
+  // 1500 بطاقة تحمل 17929 أيقونة؛ تضمين مسارها في كلٍّ ضخّم صفحة الرسم
+  // إلى 10.4 ميغابايت وكلّف 800ms من أصل 1313 في تحليل innerHTML وحده.
+  assert.match(iconsSrc, /function injectSprite/, 'ورقة الرموز تُحقن مرّة واحدة');
+  assert.match(iconsSrc, /<symbol id="fbx-i-\$\{n\}"/, 'كل أيقونة تُعرَّف كـ symbol');
+  assert.match(iconsSrc, /<use href="#fbx-i-\$\{name\}"\/>/, 'والاستعمال إشارة لا تضمين');
+  assert.match(card, /<use href="#fbx-i-\$\{name\}"\/>/, 'وبطاقات المنشورات كذلك');
+  // ولا يُشار إلى تعريف غائب: المرجع لا يُحلّ فتظهر فجوة صامتة
+  assert.match(card, /if \(!PATHS\[name\]\)/, 'اسم غير معروف يعود برسم فارغ لا بمرجع معطَّل');
+});
+
+test('لوحة التحليل تُبنى عند أول فتح لا مع البطاقة', () => {
+  // كانت تُبنى كاملةً لكل بطاقة وإن لم تُفتح: 22500 عنصر رسم مهدور
+  assert.match(card, /<div class="fx-panel" id="fxp-\$\{id\}" hidden><\/div>/, 'حاوية فارغة في القالب');
+  assert.match(card, /if \(!el\.dataset\.built && el\._analysis/, 'تُبنى مرّة واحدة عند الطلب');
+  assert.match(card, /container\._panelData = data/, 'التحليل مربوط بمعرّف اللوحة صراحةً');
+});
+
+test('حقول البحث مؤخَّرة فلا تُعيد الرسم مع كل ضغطة', () => {
+  // كتابة ست أحرف على 1500 منشور قِيست عند 38 ثانية بلا تأخير، و1.06 معه
+  const common = read('common.js');
+  assert.match(common, /function debounce\(fn, wait\)/, 'الأداة معرَّفة مرّة في مكان مشترك');
+  for (const page of ['index.html', 'twitter.html', 'dashboard.html', 'twitter-dashboard.html']) {
+    const html = read(page);
+    assert.match(html, /searchInput/, `${page}: حقل البحث موجود`);
+    assert.match(html, /addEventListener\('input', debounce\(/, `${page}: الإدخال مؤخَّر`);
+  }
+});
+
+test('استطلاع حالة التشغيل متدرّج لا ثابت', () => {
+  // الفاصل الثابت عند أربع ثوانٍ كان يفرض انتظاراً كاملاً على طلب ينتهي
+  // في جزء من الثانية: قِيس استخراج قصير عند 4.4 ثانية، وعند 1.08 بعده
+  for (const page of ['index.html', 'twitter.html', 'dashboard.html', 'twitter-dashboard.html']) {
+    const html = read(page);
+    assert.ok(!/await sleep\(4000\)/.test(html), `${page}: لا فاصل ثابت عند 4000`);
+    assert.match(html, /wait = Math\.min\(4000, Math\.round\(wait \* 1\.45\)\)/, `${page}: تصاعد محكوم بسقف`);
+  }
+});
+
+test('سقف الاستخراج 1500 في الحقل وفي الحدّ معاً', () => {
+  const html = read('index.html');
+  assert.match(html, /id="postsLimit"[^>]*max="1500"/, 'حدّ الحقل');
+  assert.match(html, /Math\.min\(1500, parseInt\(postsLimitInput\.value/, 'وحدّ الشيفرة — والحقل وحده يُتجاوز بالكتابة');
+});
