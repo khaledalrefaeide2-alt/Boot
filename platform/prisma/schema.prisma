@@ -1,0 +1,780 @@
+// ---------------------------------------------------------------------------
+// منصة رصد وتحليل المنصات الإعلامية — مخطط قاعدة البيانات
+// ---------------------------------------------------------------------------
+
+generator client {
+  provider        = "prisma-client-js"
+  output          = "../src/generated/prisma"
+  previewFeatures = ["postgresqlExtensions"]
+}
+
+datasource db {
+  provider   = "postgresql"
+  extensions = [pg_trgm]
+}
+
+// ============================ التعدادات (Enums) ============================
+
+/// أدوار النظام
+enum Role {
+  OWNER
+  ADMIN
+  SUPERVISOR
+  VIEWER
+}
+
+/// حالة المستخدم
+enum UserStatus {
+  PENDING
+  ACTIVE
+  DISABLED
+}
+
+/// حالة عامة للكيانات (منصة / حساب / كلمة مفتاحية ...)
+enum EntityStatus {
+  ACTIVE
+  INACTIVE
+}
+
+/// نوع الحساب المرصود
+enum AccountType {
+  PAGE
+  PROFILE
+  GROUP
+  CHANNEL
+  OTHER
+}
+
+/// ملكية الحساب: نملكه أم يخص جهة أخرى
+enum AccountOwnership {
+  OWNED
+  EXTERNAL
+}
+
+/// ظهور الحساب
+enum AccountVisibility {
+  PUBLIC
+  PRIVATE
+}
+
+/// حالات عملية الاستخراج
+enum ExtractionStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+  NO_RESULTS
+}
+
+/// مصدر تشغيل عملية الاستخراج
+enum ExtractionTrigger {
+  MANUAL
+  SCHEDULED
+  WEBHOOK
+}
+
+/// نوع المنشور
+enum PostType {
+  TEXT
+  IMAGE
+  VIDEO
+  REEL
+  LINK
+  ALBUM
+  STORY
+  OTHER
+}
+
+/// المشاعر
+enum Sentiment {
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+  MIXED
+  UNKNOWN
+}
+
+/// مصدر تحديد المشاعر أو التصنيف
+enum AnalysisSource {
+  RULES
+  MANUAL
+  AI
+}
+
+/// أنواع التنبيهات الداخلية
+enum NotificationType {
+  EXTRACTION_FAILED
+  EXTRACTION_SUCCEEDED
+  EXTRACTION_NO_RESULTS
+  HIGH_ENGAGEMENT_POST
+  NEGATIVE_SENTIMENT_SPIKE
+  KEYWORD_HIT
+  USER_PENDING_APPROVAL
+  SYSTEM
+}
+
+/// شدة التنبيه
+enum NotificationSeverity {
+  INFO
+  SUCCESS
+  WARNING
+  ERROR
+}
+
+/// صيغة التصدير
+enum ReportFormat {
+  EXCEL
+  PDF
+}
+
+/// حالة تشغيل التقرير
+enum ReportStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+}
+
+/// نطاق التقرير الزمني
+enum ReportPeriod {
+  DAILY
+  WEEKLY
+  MONTHLY
+  CUSTOM
+}
+
+// ============================ المستخدمون والجلسات ============================
+
+model User {
+  id           String     @id @default(cuid())
+  email        String     @unique
+  name         String
+  passwordHash String?
+  role         Role       @default(VIEWER)
+  status       UserStatus @default(PENDING)
+
+  jobTitle    String?
+  phone       String?
+  avatarUrl   String?
+  /// صلاحيات دقيقة إضافية فوق الدور (مفاتيح منطقية)
+  permissions Json?
+
+  lastLoginAt      DateTime?
+  failedLoginCount Int       @default(0)
+  lockedUntil      DateTime?
+  mustChangePassword Boolean @default(false)
+
+  approvedAt   DateTime?
+  approvedById String?
+  disabledAt   DateTime?
+  createdById  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  approvedBy   User?  @relation("UserApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedUsers User[] @relation("UserApprovedBy")
+  createdBy    User?  @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdUsers User[] @relation("UserCreatedBy")
+
+  sessions        Session[]
+  oauthAccounts   OAuthAccount[]
+  resetTokens     PasswordResetToken[]
+  auditLogs       AuditLog[]
+  notifications   Notification[]
+  savedDashboards SavedDashboard[]
+  extractionRuns  ExtractionRun[]
+  reportRuns      ReportRun[]
+  reportTemplates ReportTemplate[]
+  reviewedPosts   Post[]               @relation("PostReviewedBy")
+  createdAccounts Account[]            @relation("AccountCreatedBy")
+  createdKeywords Keyword[]            @relation("KeywordCreatedBy")
+  updatedSettings Setting[]            @relation("SettingUpdatedBy")
+
+  @@index([status])
+  @@index([role])
+  @@index([createdAt])
+  @@map("users")
+}
+
+/// جلسات مخزّنة في القاعدة — الرمز يُحفظ مجزأً (hash) ويُرسل في كوكي HTTP-only
+model Session {
+  id          String    @id @default(cuid())
+  userId      String
+  tokenHash   String    @unique
+  csrfSecret  String
+  expiresAt   DateTime
+  lastSeenAt  DateTime  @default(now())
+  ipAddress   String?
+  userAgent   String?
+  revokedAt   DateTime?
+  createdAt   DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("sessions")
+}
+
+/// جاهز لربط مزودي الدخول الخارجيين لاحقاً (Google OAuth)
+model OAuthAccount {
+  id                String   @id @default(cuid())
+  userId            String
+  provider          String
+  providerAccountId String
+  createdAt         DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+  @@map("oauth_accounts")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(cuid())
+  userId    String
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+  @@map("password_reset_tokens")
+}
+
+// ============================ المنصات والحسابات ============================
+
+model Platform {
+  id   String @id @default(cuid())
+  /// رمز فريد: facebook | x | instagram
+  code String @unique
+  name String
+  /// اسم أيقونة أو رمز تعبيري للعرض
+  icon      String?
+  color     String?
+  status    EntityStatus @default(ACTIVE)
+  sortOrder Int          @default(0)
+
+  /// Apify Actor الافتراضي لهذه المنصة
+  defaultActorId    String?
+  /// مدخلات افتراضية تُدمج مع مدخلات كل تشغيل
+  defaultActorInput Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts       Account[]
+  posts          Post[]
+  extractionRuns ExtractionRun[]
+  dailyStats     DailyPlatformStat[]
+
+  @@index([status])
+  @@map("platforms")
+}
+
+model Account {
+  id         String @id @default(cuid())
+  platformId String
+  name       String
+  /// اسم المستخدم أو المعرّف القصير
+  username   String?
+  url        String
+  /// المعرّف الخارجي من المنصة إن توفر
+  externalId String?
+
+  type       AccountType       @default(PAGE)
+  ownership  AccountOwnership  @default(EXTERNAL)
+  visibility AccountVisibility @default(PUBLIC)
+
+  language String?
+  country  String?
+  status   EntityStatus @default(ACTIVE)
+  isActive Boolean      @default(true)
+
+  /// مدة الاستخراج بالأيام (نافذة زمنية للمنشورات)
+  extractionWindowDays Int @default(30)
+  /// تكرار الاستخراج بالدقائق (0 = يدوي فقط)
+  extractionIntervalMinutes Int @default(0)
+  /// أقصى عدد منشورات لكل تشغيل — سقف الفوترة على Apify
+  maxItemsPerRun Int @default(100)
+
+  /// تجاوز الـ Actor الافتراضي للمنصة عند الحاجة
+  actorIdOverride    String?
+  actorInputOverride Json?
+
+  followersCount Int?
+  avatarUrl      String?
+  notes          String?
+
+  lastExtractedAt   DateTime?
+  lastSuccessfulRunAt DateTime?
+  nextRunAt         DateTime?
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  platform   Platform          @relation(fields: [platformId], references: [id], onDelete: Restrict)
+  createdBy  User?             @relation("AccountCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  posts      Post[]
+  runs       ExtractionRun[]
+  keywords   AccountKeyword[]
+  dailyStats DailyAccountStat[]
+
+  @@unique([platformId, url])
+  @@index([platformId, isActive])
+  @@index([status])
+  @@index([nextRunAt])
+  @@index([name(ops: raw("gin_trgm_ops"))], type: Gin)
+  @@map("accounts")
+}
+
+// ============================ عمليات الاستخراج ============================
+
+model ExtractionRun {
+  id         String  @id @default(cuid())
+  accountId  String?
+  platformId String?
+
+  actorId       String
+  apifyRunId    String?
+  apifyDatasetId String?
+
+  status  ExtractionStatus  @default(PENDING)
+  trigger ExtractionTrigger @default(MANUAL)
+
+  requestedById String?
+
+  /// سقف الفوترة الممرَّر إلى Apify
+  maxItems Int?
+  /// المدخلات المرسلة إلى الـ Actor (بدون أي أسرار)
+  input    Json?
+
+  itemsFetched Int @default(0)
+  itemsSaved   Int @default(0)
+  itemsSkipped Int @default(0)
+  itemsFailed  Int @default(0)
+
+  errorMessage String?
+  errorDetails Json?
+  /// عينة خام محدودة من النتائج للمراجعة والتشخيص
+  rawSample    Json?
+
+  queueJobId String?
+  attempt    Int       @default(1)
+  startedAt  DateTime?
+  finishedAt DateTime?
+  durationMs Int?
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  account     Account?  @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  platform    Platform? @relation(fields: [platformId], references: [id], onDelete: SetNull)
+  requestedBy User?     @relation(fields: [requestedById], references: [id], onDelete: SetNull)
+  posts       Post[]
+
+  @@index([status, createdAt])
+  @@index([accountId, createdAt])
+  @@index([platformId, createdAt])
+  @@index([apifyRunId])
+  @@map("extraction_runs")
+}
+
+// ============================ المنشورات ============================
+
+model Post {
+  id         String @id @default(cuid())
+  accountId  String
+  platformId String
+
+  /// المعرّف الخارجي للمنشور إن توفر
+  externalId String?
+  /// مفتاح منع التكرار: المعرّف الخارجي أو بصمة الرابط
+  dedupeKey  String
+
+  url  String?
+  text String?
+
+  publishedAt DateTime?
+  postType    PostType  @default(OTHER)
+  language    String?
+  country     String?
+  location    String?
+
+  authorName String?
+  imageUrl   String?
+  videoUrl   String?
+  thumbnailUrl String?
+  /// روابط وسائط إضافية — روابط فقط، لا ملفات
+  mediaUrls  Json?
+
+  likes    Int @default(0)
+  comments Int @default(0)
+  shares   Int @default(0)
+  views    Int @default(0)
+  saves    Int @default(0)
+  /// مجموع التفاعل المخزَّن مسبقاً لتسريع الفرز والتجميع
+  engagementTotal Int @default(0)
+
+  sentiment       Sentiment       @default(UNKNOWN)
+  sentimentScore  Float?
+  sentimentSource AnalysisSource?
+
+  topicId     String?
+  topicSource AnalysisSource?
+
+  /// كلمات مفتاحية مكتشفة (نسخة مسطحة للبحث السريع)
+  detectedKeywords String[] @default([])
+  hashtags         String[] @default([])
+
+  /// البيانات الخام من Apify للرجوع إليها عند الحاجة
+  rawData Json?
+
+  extractionRunId String?
+
+  /// إخفاء من العرض بعد المراجعة بدل الحذف النهائي
+  isHidden     Boolean   @default(false)
+  reviewedAt   DateTime?
+  reviewedById String?
+  reviewNote   String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  account       Account        @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  platform      Platform       @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  topic         Topic?         @relation(fields: [topicId], references: [id], onDelete: SetNull)
+  extractionRun ExtractionRun? @relation(fields: [extractionRunId], references: [id], onDelete: SetNull)
+  reviewedBy    User?          @relation("PostReviewedBy", fields: [reviewedById], references: [id], onDelete: SetNull)
+  keywordLinks  PostKeyword[]
+  hashtagLinks  PostHashtag[]
+
+  @@unique([accountId, dedupeKey])
+  @@index([publishedAt(sort: Desc)])
+  @@index([accountId, publishedAt(sort: Desc)])
+  @@index([platformId, publishedAt(sort: Desc)])
+  @@index([engagementTotal(sort: Desc)])
+  @@index([sentiment, publishedAt(sort: Desc)])
+  @@index([postType])
+  @@index([language])
+  @@index([country])
+  @@index([topicId])
+  @@index([isHidden, publishedAt(sort: Desc)])
+  @@index([extractionRunId])
+  @@index([text(ops: raw("gin_trgm_ops"))], type: Gin)
+  @@index([hashtags], type: Gin)
+  @@index([detectedKeywords], type: Gin)
+  @@map("posts")
+}
+
+// ============================ الكلمات والهاشتاغات والتصنيفات ============================
+
+model Keyword {
+  id             String       @id @default(cuid())
+  term           String       @unique
+  /// صيغة مطبّعة للمطابقة (بدون تشكيل وبألف موحدة)
+  normalizedTerm String
+  category       String?
+  color          String?
+  weight         Int          @default(1)
+  status         EntityStatus @default(ACTIVE)
+  /// كلمة حساسة تُطلق تنبيهاً عند ظهورها
+  isAlerting     Boolean      @default(false)
+  matchCount     Int          @default(0)
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User?            @relation("KeywordCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  posts     PostKeyword[]
+  accounts  AccountKeyword[]
+
+  @@index([status])
+  @@index([normalizedTerm])
+  @@map("keywords")
+}
+
+model AccountKeyword {
+  accountId String
+  keywordId String
+  createdAt DateTime @default(now())
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  keyword Keyword @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  @@id([accountId, keywordId])
+  @@index([keywordId])
+  @@map("account_keywords")
+}
+
+model PostKeyword {
+  postId    String
+  keywordId String
+  createdAt DateTime @default(now())
+
+  post    Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  keyword Keyword @relation(fields: [keywordId], references: [id], onDelete: Cascade)
+
+  @@id([postId, keywordId])
+  @@index([keywordId])
+  @@map("post_keywords")
+}
+
+model Hashtag {
+  id         String       @id @default(cuid())
+  tag        String       @unique
+  status     EntityStatus @default(ACTIVE)
+  usageCount Int          @default(0)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+
+  posts PostHashtag[]
+
+  @@index([usageCount(sort: Desc)])
+  @@map("hashtags")
+}
+
+model PostHashtag {
+  postId    String
+  hashtagId String
+
+  post    Post    @relation(fields: [postId], references: [id], onDelete: Cascade)
+  hashtag Hashtag @relation(fields: [hashtagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, hashtagId])
+  @@index([hashtagId])
+  @@map("post_hashtags")
+}
+
+model Topic {
+  id          String       @id @default(cuid())
+  code        String       @unique
+  name        String
+  description String?
+  color       String?
+  parentId    String?
+  status      EntityStatus @default(ACTIVE)
+  sortOrder   Int          @default(0)
+  /// قواعد كلمات بسيطة للتصنيف التلقائي المبدئي
+  rules       Json?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  parent   Topic?  @relation("TopicParent", fields: [parentId], references: [id], onDelete: SetNull)
+  children Topic[] @relation("TopicParent")
+  posts    Post[]
+
+  @@index([status])
+  @@map("topics")
+}
+
+// ============================ الإحصاءات اليومية ============================
+
+model DailyAccountStat {
+  id        String   @id @default(cuid())
+  accountId String
+  /// بداية اليوم بتوقيت UTC
+  date      DateTime @db.Date
+
+  postsCount      Int   @default(0)
+  likes           Int   @default(0)
+  comments        Int   @default(0)
+  shares          Int   @default(0)
+  views           Int   @default(0)
+  saves           Int   @default(0)
+  engagementTotal Int   @default(0)
+  engagementRate  Float @default(0)
+
+  followersCount Int?
+
+  positiveCount Int @default(0)
+  neutralCount  Int @default(0)
+  negativeCount Int @default(0)
+  unknownCount  Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@unique([accountId, date])
+  @@index([date(sort: Desc)])
+  @@map("daily_account_stats")
+}
+
+model DailyPlatformStat {
+  id         String   @id @default(cuid())
+  platformId String
+  date       DateTime @db.Date
+
+  postsCount      Int   @default(0)
+  accountsCount   Int   @default(0)
+  likes           Int   @default(0)
+  comments        Int   @default(0)
+  shares          Int   @default(0)
+  views           Int   @default(0)
+  saves           Int   @default(0)
+  engagementTotal Int   @default(0)
+  engagementRate  Float @default(0)
+
+  positiveCount Int @default(0)
+  neutralCount  Int @default(0)
+  negativeCount Int @default(0)
+  unknownCount  Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  platform Platform @relation(fields: [platformId], references: [id], onDelete: Cascade)
+
+  @@unique([platformId, date])
+  @@index([date(sort: Desc)])
+  @@map("daily_platform_stats")
+}
+
+// ============================ اللوحات والتقارير ============================
+
+model SavedDashboard {
+  id          String  @id @default(cuid())
+  userId      String
+  name        String
+  description String?
+  /// الفلاتر المحفوظة (منصات، حسابات، فترة، مشاعر ...)
+  filters     Json
+  layout      Json?
+  isDefault   Boolean @default(false)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, name])
+  @@index([userId])
+  @@map("saved_dashboards")
+}
+
+model ReportTemplate {
+  id          String       @id @default(cuid())
+  name        String       @unique
+  description String?
+  period      ReportPeriod @default(MONTHLY)
+  format      ReportFormat @default(EXCEL)
+  filters     Json
+  columns     Json?
+  status      EntityStatus @default(ACTIVE)
+
+  /// جاهز للتقارير المجدولة لاحقاً
+  isScheduled  Boolean @default(false)
+  scheduleCron String?
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User?       @relation(fields: [createdById], references: [id], onDelete: SetNull)
+  runs      ReportRun[]
+
+  @@map("report_templates")
+}
+
+model ReportRun {
+  id         String       @id @default(cuid())
+  templateId String?
+  format     ReportFormat
+  status     ReportStatus @default(PENDING)
+  filters    Json
+
+  rowCount   Int?
+  fileName   String?
+  errorMessage String?
+
+  requestedById String?
+  createdAt     DateTime  @default(now())
+  finishedAt    DateTime?
+
+  template    ReportTemplate? @relation(fields: [templateId], references: [id], onDelete: SetNull)
+  requestedBy User?           @relation(fields: [requestedById], references: [id], onDelete: SetNull)
+
+  @@index([createdAt(sort: Desc)])
+  @@map("report_runs")
+}
+
+// ============================ التنبيهات والسجلات والإعدادات ============================
+
+model Notification {
+  id       String               @id @default(cuid())
+  /// مستخدم محدد، أو فارغ مع دور لبثّ التنبيه لكل أصحاب الدور
+  userId   String?
+  role     Role?
+  type     NotificationType
+  severity NotificationSeverity @default(INFO)
+
+  title String
+  body  String?
+  link  String?
+
+  entityType String?
+  entityId   String?
+
+  isRead    Boolean   @default(false)
+  readAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead, createdAt(sort: Desc)])
+  @@index([role, isRead, createdAt(sort: Desc)])
+  @@index([createdAt(sort: Desc)])
+  @@map("notifications")
+}
+
+model AuditLog {
+  id     String  @id @default(cuid())
+  userId String?
+  /// نسخة ثابتة من بريد المنفّذ حتى لو حُذف المستخدم
+  actorEmail String?
+  actorRole  Role?
+
+  action     String
+  entityType String
+  entityId   String?
+  summary    String?
+  metadata   Json?
+
+  ipAddress String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  user User? @relation(fields: [userId], references: [id], onDelete: SetNull)
+
+  @@index([createdAt(sort: Desc)])
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([entityType, entityId])
+  @@index([action])
+  @@map("audit_logs")
+}
+
+model Setting {
+  key         String   @id
+  value       Json
+  category    String   @default("general")
+  label       String?
+  description String?
+
+  updatedById String?
+  updatedAt   DateTime @updatedAt
+
+  updatedBy User? @relation("SettingUpdatedBy", fields: [updatedById], references: [id], onDelete: SetNull)
+
+  @@index([category])
+  @@map("settings")
+}

@@ -1,0 +1,17 @@
+node_modules/
+.next/
+out/
+build/
+dist/
+.env
+.env.local
+.env*.local
+src/generated/
+*.tsbuildinfo
+next-env.d.ts
+.DS_Store
+exports/
+
+# ملفات يولّدها Next تلقائياً للوكلاء
+AGENTS.md
+CLAUDE.md

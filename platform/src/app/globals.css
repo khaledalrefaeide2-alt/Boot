@@ -1,0 +1,322 @@
+@import 'tailwindcss';
+
+/* الوضع الداكن يُفعَّل بصنف على عنصر html عبر next-themes */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* ===========================================================================
+   الهوية البصرية: رسمية حكومية هادئة — نيلي داكن ورمادي محايد
+   =========================================================================== */
+:root {
+  color-scheme: light;
+
+  --background: #f4f6f8;
+  --surface: #ffffff;
+  --surface-2: #eef1f5;
+  --surface-3: #e4e9ef;
+  --border: #d8dee7;
+  --border-strong: #c2cbd7;
+
+  --foreground: #0f1b2d;
+  --muted-foreground: #5a6779;
+  --subtle-foreground: #7c8899;
+
+  --primary: #123a63;
+  --primary-hover: #0d2c4c;
+  --primary-foreground: #ffffff;
+  --primary-soft: #e6edf5;
+  --primary-soft-foreground: #123a63;
+
+  --accent: #8a6a2f;
+  --accent-soft: #f5efe2;
+
+  --success: #16704a;
+  --success-soft: #e3f2ea;
+  --warning: #92600f;
+  --warning-soft: #fbf0dd;
+  --danger: #a52620;
+  --danger-soft: #fbe9e8;
+  --info: #1a548f;
+  --info-soft: #e6eff8;
+
+  --ring: #123a63;
+
+  --shadow-sm: 0 1px 2px rgba(15, 27, 45, 0.06);
+  --shadow: 0 1px 3px rgba(15, 27, 45, 0.08), 0 4px 12px rgba(15, 27, 45, 0.05);
+  --shadow-lg: 0 8px 28px rgba(15, 27, 45, 0.12);
+
+  --radius: 0.5rem;
+
+  /* ألوان الرسوم البيانية — متمايزة في الوضعين ومناسبة لعمى الألوان */
+  --chart-1: #1f5fa6;
+  --chart-2: #0f766e;
+  --chart-3: #92600f;
+  --chart-4: #6d4a9c;
+  --chart-5: #a52620;
+  --chart-6: #4a6572;
+  --chart-grid: #e2e8f0;
+  --chart-axis: #64748b;
+}
+
+.dark {
+  color-scheme: dark;
+
+  --background: #0a1120;
+  --surface: #111c30;
+  --surface-2: #16233a;
+  --surface-3: #1d2c46;
+  --border: #25324a;
+  --border-strong: #33425e;
+
+  --foreground: #e7edf5;
+  --muted-foreground: #98a6bb;
+  --subtle-foreground: #7b8AA0;
+
+  --primary: #6ba3dc;
+  --primary-hover: #86b6e6;
+  --primary-foreground: #06101f;
+  --primary-soft: #17273f;
+  --primary-soft-foreground: #a9caea;
+
+  --accent: #d3ac63;
+  --accent-soft: #2a2317;
+
+  --success: #58c295;
+  --success-soft: #14301f;
+  --warning: #dcaa5c;
+  --warning-soft: #302512;
+  --danger: #ef8079;
+  --danger-soft: #341a19;
+  --info: #6fa8e0;
+  --info-soft: #142639;
+
+  --ring: #6ba3dc;
+
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 4px 14px rgba(0, 0, 0, 0.35);
+  --shadow-lg: 0 10px 34px rgba(0, 0, 0, 0.55);
+
+  --chart-1: #6ba3dc;
+  --chart-2: #4fbfae;
+  --chart-3: #dcaa5c;
+  --chart-4: #a98add;
+  --chart-5: #ef8079;
+  --chart-6: #9aacba;
+  --chart-grid: #22314c;
+  --chart-axis: #8496ae;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
+
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-subtle-foreground: var(--subtle-foreground);
+
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary-soft: var(--primary-soft);
+  --color-primary-soft-foreground: var(--primary-soft-foreground);
+
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+
+  --color-ring: var(--ring);
+
+  --radius-DEFAULT: var(--radius);
+
+  --font-sans:
+    'Cairo', 'Noto Kufi Arabic', 'Segoe UI', 'Tahoma', 'Dubai', 'Geeza Pro', system-ui, sans-serif;
+}
+
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    font-feature-settings: 'kern';
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* الأرقام دائماً من اليسار لليمين داخل النص العربي */
+  .num,
+  [data-num] {
+    font-variant-numeric: tabular-nums;
+    direction: ltr;
+    unicode-bidi: embed;
+    display: inline-block;
+  }
+
+  /* روابط ومعرّفات لاتينية داخل واجهة عربية */
+  .ltr {
+    direction: ltr;
+    unicode-bidi: embed;
+    text-align: left;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+  }
+
+  ::selection {
+    background-color: var(--primary-soft);
+    color: var(--primary-soft-foreground);
+  }
+
+  /* شريط تمرير هادئ يناسب الواجهة الرسمية */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: var(--surface-2);
+  }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border-strong);
+    border-radius: 999px;
+    border: 2px solid var(--surface-2);
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--subtle-foreground);
+  }
+}
+
+@layer utilities {
+  .card-surface {
+    background-color: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+  }
+
+  /* هيكل تحميل نابض */
+  .skeleton {
+    background: linear-gradient(
+      90deg,
+      var(--surface-2) 25%,
+      var(--surface-3) 37%,
+      var(--surface-2) 63%
+    );
+    background-size: 400% 100%;
+    animation: skeleton-shimmer 1.4s ease infinite;
+    border-radius: 0.375rem;
+  }
+
+  @keyframes skeleton-shimmer {
+    0% {
+      background-position: 100% 50%;
+    }
+    100% {
+      background-position: 0 50%;
+    }
+  }
+
+  /* اقتطاع النص بعدد أسطر */
+  .line-clamp-2 {
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .line-clamp-3 {
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .line-clamp-4 {
+    display: -webkit-box;
+    -webkit-line-clamp: 4;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+}
+
+/* ===========================================================================
+   شاشة غرفة العمليات — تكبير مناسب للعرض على شاشة كبيرة
+   =========================================================================== */
+.ops-room {
+  font-size: 1.125rem;
+}
+.ops-room .ops-metric {
+  font-size: clamp(2rem, 4vw, 3.5rem);
+  line-height: 1.1;
+}
+
+/* ===========================================================================
+   الطباعة — تُستخدم لتصدير PDF عبر طباعة المتصفح
+   =========================================================================== */
+@media print {
+  @page {
+    size: A4;
+    margin: 14mm;
+  }
+
+  :root {
+    --background: #ffffff;
+    --surface: #ffffff;
+    --surface-2: #ffffff;
+    --border: #cbd5e1;
+    --foreground: #000000;
+    --muted-foreground: #334155;
+  }
+
+  html.dark {
+    color-scheme: light;
+  }
+
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-break-before {
+    break-before: page;
+  }
+
+  .print-avoid-break {
+    break-inside: avoid;
+  }
+
+  a[href]::after {
+    content: '';
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

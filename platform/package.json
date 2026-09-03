@@ -1,0 +1,60 @@
+{
+  "name": "media-monitoring-platform",
+  "version": "1.0.0",
+  "private": true,
+  "description": "منصة رصد وتحليل المنصات الإعلامية — نظام داخلي",
+  "scripts": {
+    "dev": "next dev",
+    "build": "prisma generate && next build",
+    "start": "next start",
+    "lint": "next lint",
+    "typecheck": "tsc --noEmit",
+    "worker": "tsx src/worker/index.ts",
+    "worker:dev": "tsx watch src/worker/index.ts",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:push": "prisma db push",
+    "db:seed": "tsx prisma/seed.ts",
+    "db:studio": "prisma studio"
+  },
+  "dependencies": {
+    "@prisma/adapter-pg": "^7.10.0",
+    "@prisma/client": "7.10.0",
+    "@tanstack/react-query": "5.102.8",
+    "@tanstack/react-table": "9.2.4",
+    "bcryptjs": "3.0.3",
+    "bullmq": "6.3.4",
+    "class-variance-authority": "0.7.1",
+    "clsx": "2.1.1",
+    "dotenv": "^17.2.3",
+    "exceljs": "4.4.0",
+    "ioredis": "6.0.0",
+    "jose": "6.2.10",
+    "lucide-react": "1.40.0",
+    "next": "16.3.4",
+    "next-themes": "0.4.6",
+    "pg": "^8.16.3",
+    "react": "19.2.8",
+    "react-dom": "19.2.8",
+    "recharts": "3.10.1",
+    "server-only": "^0.0.1",
+    "tailwind-merge": "3.4.1",
+    "zod": "4.5.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "4.3.3",
+    "@types/bcryptjs": "3.0.0",
+    "@types/node": "24.10.1",
+    "@types/pg": "^8.15.6",
+    "@types/react": "19.2.8",
+    "@types/react-dom": "19.2.4",
+    "prisma": "7.10.0",
+    "tailwindcss": "4.3.3",
+    "tsx": "4.20.6",
+    "typescript": "5.9.3"
+  },
+  "engines": {
+    "node": ">=20.11"
+  }
+}

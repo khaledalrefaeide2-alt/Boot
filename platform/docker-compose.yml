@@ -1,0 +1,108 @@
+# =============================================================================
+# تشغيل المنصة كاملة محلياً: قاعدة بيانات + Redis + تطبيق الويب + العامل الخلفي
+#   نسخ الإعداد:  cp .env.example .env  ثم عدّل القيم
+#   التشغيل:      docker compose up -d --build
+# =============================================================================
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mm_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-monitor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?يجب تعريف POSTGRES_PASSWORD في ملف .env}
+      POSTGRES_DB: ${POSTGRES_DB:-monitoring}
+      # ترتيب عربي صحيح وحساسية أحرف مناسبة
+      LANG: ar_SA.utf8
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    ports:
+      # يُنشر على الجهاز المحلي فقط — النظام داخلي
+      - '127.0.0.1:5432:5432'
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-monitor} -d ${POSTGRES_DB:-monitoring}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: mm_redis
+    restart: unless-stopped
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    ports:
+      - '127.0.0.1:6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mm_app
+    restart: unless-stopped
+    command: ['web']
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-monitor}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-monitoring}?schema=public
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: ${SESSION_SECRET:?يجب تعريف SESSION_SECRET في ملف .env}
+      SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:-7}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      APIFY_TOKEN: ${APIFY_TOKEN:-}
+      APIFY_API_BASE: ${APIFY_API_BASE:-https://api.apify.com/v2}
+      APIFY_MAX_ITEMS_HARD_CAP: ${APIFY_MAX_ITEMS_HARD_CAP:-1000}
+      APIFY_RUN_TIMEOUT_SECONDS: ${APIFY_RUN_TIMEOUT_SECONDS:-900}
+      SEED_OWNER_EMAIL: ${SEED_OWNER_EMAIL:-}
+      SEED_OWNER_NAME: ${SEED_OWNER_NAME:-}
+      SEED_OWNER_PASSWORD: ${SEED_OWNER_PASSWORD:-}
+      NODE_ENV: production
+    ports:
+      - '127.0.0.1:3000:3000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - exports_data:/app/exports
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mm_worker
+    restart: unless-stopped
+    command: ['worker']
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-monitor}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-monitoring}?schema=public
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: ${SESSION_SECRET}
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      APIFY_TOKEN: ${APIFY_TOKEN:-}
+      APIFY_API_BASE: ${APIFY_API_BASE:-https://api.apify.com/v2}
+      APIFY_MAX_ITEMS_HARD_CAP: ${APIFY_MAX_ITEMS_HARD_CAP:-1000}
+      APIFY_RUN_TIMEOUT_SECONDS: ${APIFY_RUN_TIMEOUT_SECONDS:-900}
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      app:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  redis_data:
+  exports_data:
