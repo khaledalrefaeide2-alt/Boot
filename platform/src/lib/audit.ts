@@ -53,45 +53,8 @@ export const AUDIT_ACTIONS = {
 
 export type AuditAction = (typeof AUDIT_ACTIONS)[keyof typeof AUDIT_ACTIONS];
 
-/** تسميات عربية للأفعال — تُستخدم في صفحة السجلات */
-export const AUDIT_ACTION_LABELS: Record<string, string> = {
-  'auth.login.success': 'تسجيل دخول ناجح',
-  'auth.login.failed': 'محاولة دخول فاشلة',
-  'auth.login.blocked': 'حجب محاولة دخول',
-  'auth.logout': 'تسجيل خروج',
-  'auth.password.changed': 'تغيير كلمة المرور',
-  'auth.password.reset_requested': 'طلب استعادة كلمة المرور',
-  'auth.password.reset_completed': 'إتمام استعادة كلمة المرور',
-  'user.created': 'إنشاء مستخدم',
-  'user.updated': 'تعديل مستخدم',
-  'user.approved': 'الموافقة على مستخدم',
-  'user.disabled': 'تعطيل مستخدم',
-  'user.enabled': 'تفعيل مستخدم',
-  'user.role_changed': 'تغيير دور مستخدم',
-  'user.password_reset_by_admin': 'إعادة تعيين كلمة مرور من الإدارة',
-  'platform.created': 'إضافة منصة',
-  'platform.updated': 'تعديل منصة',
-  'platform.deleted': 'حذف منصة',
-  'account.created': 'إضافة حساب',
-  'account.updated': 'تعديل حساب',
-  'account.deleted': 'حذف حساب',
-  'extraction.started': 'بدء عملية استخراج',
-  'extraction.cancelled': 'إلغاء عملية استخراج',
-  'extraction.completed': 'اكتمال عملية استخراج',
-  'extraction.failed': 'فشل عملية استخراج',
-  'post.updated': 'تعديل منشور',
-  'post.hidden': 'إخفاء منشور',
-  'post.restored': 'استعادة منشور',
-  'post.deleted': 'حذف منشور',
-  'taxonomy.created': 'إضافة تصنيف أو كلمة',
-  'taxonomy.updated': 'تعديل تصنيف أو كلمة',
-  'taxonomy.deleted': 'حذف تصنيف أو كلمة',
-  'report.exported': 'تصدير تقرير',
-  'template.created': 'إنشاء قالب',
-  'template.updated': 'تعديل قالب',
-  'template.deleted': 'حذف قالب',
-  'settings.updated': 'تعديل الإعدادات',
-};
+// التسميات العربية للأفعال في ملف مشترك لأن مكوّنات العميل تحتاجها أيضاً
+export { AUDIT_ACTION_LABELS } from './audit-labels';
 
 export interface AuditActor {
   id?: string | null;
