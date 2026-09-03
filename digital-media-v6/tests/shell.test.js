@@ -215,9 +215,20 @@ test('الاستجابة مغطّاة عند المقاسات الأربعة', (
   for (const bp of [1024, 768, 375]) {
     assert.match(theme, new RegExp(`@media \\(max-width: ${bp}px\\)`), `نقطة الانكسار ${bp}px`);
   }
-  // وشريط التنقّل السفلي على الجوّال لا يتجاوز خمسة بنود (حدّ الإرشاد)
-  const links = (read('index.html').match(/<a href="[^"]*\.html"[^>]*>\s*<span class="ico"/g) || []).length;
-  assert.ok(links <= 5, `بنود التنقّل ${links} — الحدّ خمسة`);
+});
+
+test('القائمة الجانبية دَرجٌ منزلق على الشاشة الضيّقة لا شريط سفلي ثابت', () => {
+  // حدّ «خمسة بنود» في إرشاد الشريط السفلي (bottom-nav) خاصّ بتبويبات
+  // أفقية بعرض ثابت؛ القائمة هنا دَرجٌ رأسي قابل للتمرير (translateX
+  // وinset-block: 0 وheight: 100vh)، فلا ينطبق عليه ذلك الحدّ — وسّاعته
+  // الفعلية مجموعات معنونة (الاستخراج، الرصد التلقائي، النظام، عام) لا
+  // عدّاً أقصى للبنود.
+  const rule = theme.match(/@media \(max-width: 1024px\)\s*\{[\s\S]*?\n\s*\.sidebar\s*\{([^}]*)\}/);
+  assert.ok(rule, 'قاعدة الدرج عند 1024px موجودة');
+  assert.match(rule[1], /transform: translateX/, 'العرض بالانزلاق لا بإخفاء بنود');
+  assert.match(rule[1], /height: 100vh/, 'ارتفاع كامل — دَرج لا شريط سفلي');
+  const groups = (read('index.html').match(/<span class="nav-label">/g) || []).length;
+  assert.ok(groups >= 3, `مجموعات التنقّل ${groups} — أقلّ ممّا يفترضه التصميم`);
 });
 
 test('روابط التنقّل تحمل أسماء مستقلّة تصمد عند طيّ السكّة', () => {
@@ -335,4 +346,110 @@ test('سقف الاستخراج 1500 في الحقل وفي الحدّ معاً'
   const html = read('index.html');
   assert.match(html, /id="postsLimit"[^>]*max="1500"/, 'حدّ الحقل');
   assert.match(html, /Math\.min\(1500, parseInt\(postsLimitInput\.value/, 'وحدّ الشيفرة — والحقل وحده يُتجاوز بالكتابة');
+});
+
+/* ============================================================
+ * الفصل بين لوحة التحكّم الكامل ولوحة عرض النتائج
+ * ============================================================
+ * القيد الحاكم لا يتغيّر: لا خادم يتحقّق من هوية الزائر، فالبوّابة هنا
+ * سلوكية لا أمنية — موثَّق بصراحة في auth.js وAGENTS.md. ما تختبره هذه
+ * المجموعة: أن البوّابة تُغلق الصفحات الخمس فعلياً قبل أي رسم، وأن
+ * results.html مفتوحة بلا أي إجراء إداري فيها، وأن كلمة المرور لا
+ * تُخزَّن أبداً بنصّها الصريح.
+ */
+const auth = read('auth.js');
+const ADMIN_PAGES = PAGES; // index/twitter/dashboard/twitter-dashboard/settings
+
+test('auth.js لا يخزّن كلمة المرور بنصّها الصريح', () => {
+  assert.match(auth, /crypto\.subtle\.digest\('SHA-256'/, 'التجزئة عبر Web Crypto لا اعتمادية خارجية');
+  assert.match(auth, /randomHex\(16\)/, 'ملح عشوائي لكل كلمة مرور');
+  // القيمة المخزَّنة كائن {salt, hash} لا كلمة المرور نفسها
+  assert.match(auth, /JSON\.stringify\(\{ salt, hash \}\)/, 'المخزَّن ملح وناتج تجزئة لا نصّاً صريحاً');
+  assert.ok(!/localStorage\.setItem\([^)]*\bpw\b/.test(auth), 'لا استدعاء يخزّن متغيّر كلمة المرور مباشرة');
+});
+
+test('auth.js يوثّق صراحةً أن البوّابة سلوكية لا أمنية', () => {
+  assert.match(auth, /ليس أماناً حقيقياً/, 'الإخلاء موجود ومقروء لا مطموراً في التنفيذ');
+});
+
+for (const page of ADMIN_PAGES) {
+  test(`${page}: بوّابة المدير تُغلق الصفحة قبل أوّل رسمة`, () => {
+    const html = read(page);
+    const head = html.slice(0, html.indexOf('</head>'));
+    const iGuard = head.indexOf("fbx_admin_session");
+    const iTheme = head.indexOf('fbx_theme');
+    assert.notStrictEqual(iGuard, -1, 'فحص الجلسة موجود في الرأس');
+    assert.ok(iGuard < iTheme, 'فحص الجلسة يسبق حتى قراءة المظهر — أوّل شيء يُنفَّذ');
+    assert.match(head, /location\.replace\('login\.html/, 'إعادة توجيه بـ replace لا href — لا رجوع بزرّ المتصفح');
+    assert.match(head, /encodeURIComponent\(location\.pathname\)/, 'الوجهة الأصلية تُحفظ لإعادة التوجيه بعد الدخول');
+  });
+
+  test(`${page}: يحمل زرّ تسجيل خروج فعلياً موصولاً`, () => {
+    const html = read(page);
+    assert.match(html, /id="logoutBtn"/, 'الزرّ موجود');
+    assert.match(html, /FBXAuth\.logout\(\)/, 'ويستدعي auth.js فعلياً لا زخرفة بلا وظيفة');
+    assert.match(html, /<script src="auth\.js"><\/script>/, 'الوحدة محمَّلة في الصفحة');
+  });
+}
+
+test('login.html لا يدخل في حلقة توجيه مع نفسه', () => {
+  const html = read('login.html');
+  const head = html.slice(0, html.indexOf('</head>'));
+  // لو حمل login.html نفس حارس الصفحات الإدارية لأعاد توجيه نفسه إلى
+  // نفسه إلى ما لا نهاية عند غياب الجلسة
+  assert.ok(!/location\.replace\('login\.html/.test(head), 'بوّابة الدخول لا تُوجَّه إلى نفسها');
+  // التمييز بين «إعداد أوّل» و«دخول عادي» يُقرأ في الرأس قبل الرسم (data-setup)
+  // لا بعد التحميل عبر FBXAuth.isSetup() — تلك القراءة المتأخّرة كانت تُظهر
+  // النموذج بحقلين ثم تُضيف حقل التأكيد وملاحظة الإعداد بعد جزء من الثانية،
+  // فتقفز الصفحة (CLS قِيست 0.0099). القراءتان تتّفقان على المصدر نفسه
+  // (fbx_admin_hash) فلا تناقض بينهما، إحداهما فقط أبكر من الأخرى.
+  assert.match(head, /fbx_admin_hash/, 'حالة الإعداد تُقرأ في الرأس قبل الرسم');
+  assert.match(html, /data-setup/, 'والنموذج يتفرّع عنها بقاعدة CSS/DOM لا بتبديل عرض متأخّر');
+  assert.match(html, /FBXAuth\.setPassword/, 'مسار الإعداد الأوّل موجود — وإلا حُبس أوّل مدير خارج أداته');
+  assert.match(html, /FBXAuth\.login/, 'مسار الدخول العادي موجود');
+});
+
+test('results.html مفتوحة بلا بوّابة، وبلا أي إجراء إداري فيها', () => {
+  const html = read('results.html');
+  const head = html.slice(0, html.indexOf('</head>'));
+  assert.ok(!/fbx_admin_session/.test(head), 'لا فحص جلسة — الصفحة مفتوحة للجميع');
+  // ولا وسيلة تنفّذ استخراجاً أو تعدّل إعداداً أو تكشف مفتاحاً
+  assert.ok(!/id="runBtn"/.test(html), 'لا زرّ استخراج');
+  assert.ok(!/id="toggleBtn"/.test(html), 'لا زرّ بدء/إيقاف رصد');
+  assert.ok(!/href="settings\.html"/.test(html), 'لا رابط مباشر إلى الإعدادات');
+  assert.ok(!/type="password"/.test(html), 'لا حقل سرّي من أي نوع');
+  assert.ok(!/id="clearBtn"|id="exportBtn"|id="exportExcelBtn"|id="saveDbBtn"/.test(html), 'لا إجراء يكتب أو يحذف أو يصدّر');
+  assert.ok(!/<script src="(pages|ai|report|xlsx-import|xlsx-export)\.js">/.test(html),
+    'وحدات الإدارة غير محمَّلة أصلاً — لا إمكانية استعمالها ولو بالخطأ');
+  // وما تسمح به فعلاً: بحث وفرز بالتصنيف
+  assert.match(html, /id="searchInput"/, 'حقل البحث موجود');
+  assert.match(html, /id="classFilter"/, 'فلتر التصنيف موجود');
+  assert.match(html, /FBXCard\.render/, 'يعرض النتائج عبر الوحدة المشتركة');
+});
+
+test('results.html تُفصح عن نطاق بياناتها — متصفح واحد أم قاعدة مشتركة', () => {
+  // بلا هذا الإفصاح يظنّ من يفتحها من جهاز آخر أن غياب النتائج يعني
+  // «لا شيء رُصد بعد» بينما الحقيقة أن بيانات جهاز آخر لا تصله
+  const html = read('results.html');
+  assert.match(html, /id="sourceNote"/, 'شارة توضّح النطاق');
+  assert.match(html, /بيانات هذا المتصفح فقط/, 'الحالة الافتراضية بلا قاعدة بيانات معروفة صراحةً');
+  assert.match(html, /متصل بقاعدة البيانات المحلية/, 'وحالة الاتصال المشترك معروفة كذلك');
+});
+
+test('settings.html تُدير كلمة مرور المدير عبر auth.js لا بمنطق مواز', () => {
+  const html = read('settings.html');
+  assert.match(html, /FBXAuth\.changePassword\(cur, n1\)/, 'التغيير يمرّ عبر الوحدة المشتركة');
+  assert.match(html, /هذه بوّابة سلوكية لا حماية حقيقية/, 'التحذير يظهر للمدير في مكان قراره لا في الشيفرة فقط');
+});
+
+test('results.html: القسم الديناميكي مخفيّ حتى يكتمل أوّل رسم', () => {
+  // نصف عناصر الصفحة (ملخّص التصنيف والفلاتر) تُبنى بالكامل من JS بلا
+  // بيانات معروفة مسبقاً كما في الصفحات الإدارية (التي تُخفي قسمها
+  // بالكامل خلف "لم يبدأ الرصد بعد"). بلا هذا الإخفاء يرسم المتصفح
+  // الشكل الفارغ في إطار أول أثناء تحميل السكربتات المتتابعة ثم يقفز
+  // بعد اكتمال الرسم — قِيست إزاحة 0.0562 قبل الإصلاح، وصفر بعده عبر
+  // ثمانية تشغيلات متتابعة.
+  const html = read('results.html');
+  assert.match(html, /<section id="results" hidden>/, 'القسم يبدأ مخفياً بسمة hidden لا بصفّ CSS يمكن نسيانه');
+  assert.match(html, /\$\('results'\)\.hidden = false;/, 'ويُكشَف فور اكتمال الرسم المتزامن الأوّل — لا داخل دالّة غير متزامنة');
 });

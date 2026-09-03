@@ -355,6 +355,19 @@ input[type="number"].input, input[type="date"].input { font-family: var(--mono);
 .search-wrap .input { padding-inline-start: 30px; }
 .search-wrap { position: relative; }
 
+/* زرّ إظهار/إخفاء داخل حقول الأسرار (مفاتيح وكلمات مرور). كان يُستعمل في
+   settings.html بلا تعريف — يُرسم كزرّ عادٍ خارج الحقل بدل أيقونة عائمة
+   فوقه. الحقول التي يظهر فيها هذا الزرّ كلّها dir="ltr" (مفاتيح وكلمات
+   مرور تُكتب لاتينياً)، فموضعه فيزيائي على اليسار ليطابق الحشو المحجوز
+   في الحقل نفسه (padding-left: 42px). */
+.toggle-eye {
+  position: absolute; top: 50%; left: 6px; translate: 0 -50%;
+  width: 30px; height: 30px; display: grid; place-items: center;
+  border: none; background: transparent; color: var(--ink-3); border-radius: var(--r-sm);
+  transition: color var(--t) var(--ease), background var(--t) var(--ease);
+}
+.toggle-eye:hover { color: var(--ink); background: var(--card-2); }
+
 .row { display: flex; gap: var(--gap); flex-wrap: wrap; align-items: flex-end; }
 .grid { display: grid; gap: var(--gap); }
 .grid-2 { display: grid; gap: var(--gap); grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); }

@@ -13,6 +13,16 @@
    لأن إظهار التنبيه أهون من إخفاء إعداد ناقص. */
 (function () {
   var d = document.documentElement;
+  /* بوّابة المدير: هذه صفحة تحكّم كامل، لا صفحة عرض نتائج. من دون جلسة
+     مدير سارية نغادر فوراً وقبل أن يُرسم أي شيء من الصفحة — الاستبدال
+     (replace لا href) يمنع الرجوع إليها بزرّ الرجوع بعد الخروج.
+     هذه بوّابة سلوكية لا حماية حقيقية؛ التفصيل والسبب في auth.js. */
+  try {
+    if (localStorage.getItem('fbx_admin_session') !== '1') {
+      location.replace('login.html?next=' + encodeURIComponent(location.pathname));
+      return;
+    }
+  } catch (e) { location.replace('login.html'); return; }
   try {
     var t = localStorage.getItem('fbx_theme') ||
       (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -107,9 +117,14 @@
         <span class="nav-label">النظام</span>
         <a href="settings.html" aria-label="الإعدادات"><span class="ico"><i class="ic" data-ic="settings"></i></span><span class="label">الإعدادات</span></a>
       </div>
+      <div class="nav-group">
+        <span class="nav-label">عام</span>
+        <a href="results.html" aria-label="عرض نتائج الرصد"><span class="ico"><i class="ic" data-ic="news"></i></span><span class="label">النتائج</span></a>
+      </div>
     </nav>
     <div class="side-foot">
       <span class="side-ver">الإصدار 6.0</span>
+      <button class="icon-btn" id="logoutBtn" title="تسجيل الخروج من حساب المدير"><i class="ic" data-ic="logout"></i></button>
       <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري"><i class="ic" data-ic="moon"></i></button>
     </div>
   </aside>
@@ -259,6 +274,7 @@
 <div class="toast" id="toast"></div>
 
 <script src="icons.js"></script>
+<script src="auth.js"></script>
 <script src="analyzer.js"></script>
 <script src="media.js"></script>
 <script src="card.js"></script>
@@ -298,6 +314,9 @@ let currentRunId = null;
 /* =============== Theme =============== */
 initTheme();
 initNav();
+// تسجيل الخروج: يمسح جلسة المدير ويعيد فوراً إلى شاشة الدخول. الاستبدال
+// (replace) يمنع العودة بزرّ رجوع المتصفح إلى صفحة تتطلّب الجلسة.
+$('logoutBtn').onclick = () => { FBXAuth.logout(); location.replace('login.html'); };
 
 $('heroCta').onclick = () => document.querySelector('main .panel').scrollIntoView({ behavior: 'smooth', block: 'start' });
 

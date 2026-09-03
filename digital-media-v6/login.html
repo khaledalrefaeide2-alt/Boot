@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>دخول المدير — الإعلام الرقمي</title>
+<script>
+/* يعمل قبل أوّل رسمة (نفس مبدأ بقية الصفحات). هذه الصفحة نفسها لا تتطلّب
+   جلسة — فهي بوّابة الدخول — لكن إن كانت هناك جلسة سارية بالفعل فالأنسب
+   إعادة التوجيه فوراً بدل عرض نموذج دخول لمن دخل أصلاً. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('fbx_theme') ||
+      (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    d.setAttribute('data-theme', t);
+    /* حالة «بلا حساب بعد» تُقرأ هنا لا في سكربت نهاية الصفحة، وإلا رُسم
+       النموذج أوّلاً بحقلَي دخول فقط ثم قفز حقل التأكيد وملاحظة الإعداد
+       إلى الأسفل بعد التحميل — إزاحة تخطيط قِيست عند 0.0099. القراءة
+       متزامنة تماماً (localStorage فقط، لا تجزئة) فلا كلفة في تقديمها. */
+    if (!localStorage.getItem('fbx_admin_hash')) d.setAttribute('data-setup', '');
+  } catch (e) {}
+  try {
+    if (localStorage.getItem('fbx_admin_session') === '1') {
+      var params = new URLSearchParams(location.search);
+      location.replace(params.get('next') || 'index.html');
+    }
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="theme.css">
+<style>
+  /* صفحة مستقلّة بلا قائمة جانبية — بطاقة واحدة في وسط الشاشة. الأمان هنا
+     سلوكي لا حقيقي (الشرح الكامل في auth.js)، فالتصميم يقول ذلك ضمناً:
+     لا قفل ثقيل ولا رسوم تهويلية، بل نموذج بسيط لا يزيد عن غرضه. */
+  body {
+    min-height: 100vh; display: flex; align-items: center; justify-content: center;
+    padding: var(--sp-5); background: var(--bg);
+  }
+  .auth-card {
+    width: 100%; max-width: 380px; background: var(--card);
+    border: var(--hair); border-radius: var(--r-lg); box-shadow: var(--sh-3);
+    padding: var(--sp-7) var(--sp-6);
+  }
+  .auth-brand { display: flex; align-items: center; gap: var(--sp-3); margin-bottom: var(--sp-6); }
+  .auth-brand .brand-logo {
+    width: 40px; height: 40px; border-radius: var(--r); flex: none;
+    display: grid; place-items: center; color: var(--brand-ink);
+    background: linear-gradient(150deg, var(--brand), var(--brand-line));
+  }
+  .auth-brand b { display: block; font-size: var(--fs-md); }
+  .auth-brand span { display: block; font-size: var(--fs-2xs); color: var(--ink-3); }
+  .auth-card h1 { font-size: var(--fs-lg); font-weight: 700; margin-bottom: var(--sp-2); }
+  .auth-card p.sub { color: var(--ink-3); font-size: var(--fs-sm); margin-bottom: var(--sp-5); line-height: 1.6; }
+  .auth-field { margin-bottom: var(--sp-4); }
+  .auth-error {
+    display: none; align-items: center; gap: var(--sp-2); background: var(--danger-soft);
+    color: var(--danger); border: 1px solid var(--danger); border-radius: var(--r-sm);
+    padding: var(--sp-3) var(--sp-4); font-size: var(--fs-sm); margin-bottom: var(--sp-4);
+  }
+  .auth-error.show { display: flex; }
+  .auth-foot {
+    margin-top: var(--sp-6); padding-top: var(--sp-5); border-top: var(--hair);
+    display: flex; flex-direction: column; gap: var(--sp-3); align-items: center;
+    font-size: var(--fs-xs); text-align: center;
+  }
+  .auth-foot a { color: var(--ink-3); }
+  .auth-note {
+    display: flex; gap: var(--sp-2); align-items: flex-start; margin-top: var(--sp-5);
+    background: var(--card-2); border: var(--hair); border-radius: var(--r-sm);
+    padding: var(--sp-3) var(--sp-4); font-size: var(--fs-xs); color: var(--ink-3); line-height: 1.7;
+  }
+  .auth-note .ic { flex: none; margin-top: 2px; color: var(--ink-3); }
+
+  /* الحقول والملاحظة الخاصّة بإنشاء الحساب أوّل مرة: تُخفى افتراضاً وتظهر
+     بقاعدة CSS متفرّعة عن data-setup — لا بأمر JS بعد الرسم. */
+  #confirmField, #setupNote { display: none; }
+  :root[data-setup] #confirmField { display: block; }
+  :root[data-setup] #setupNote { display: flex; }
+  :root:not([data-setup]) #forgotLink { display: inline; }
+</style>
+</head>
+<body>
+
+<div class="auth-card">
+  <div class="auth-brand">
+    <div class="brand-logo"><i class="ic" data-ic="logo"></i></div>
+    <div>
+      <b>الإعلام الرقمي</b>
+      <span>لوحة تحكّم المدير</span>
+    </div>
+  </div>
+
+  <h1 id="formTitle">تسجيل الدخول</h1>
+  <p class="sub" id="formSub">هذه اللوحة مخصّصة لمدير النظام: الاستخراج والرصد والإعدادات ومفاتيح الاتصال.</p>
+
+  <div class="auth-error" id="authError"><i class="ic" data-ic="warning"></i><span id="authErrorText"></span></div>
+
+  <form id="authForm">
+    <div class="auth-field">
+      <label class="field-label" for="pw">كلمة المرور</label>
+      <div class="input-wrap">
+        <input class="input" type="password" id="pw" autocomplete="current-password" required dir="ltr" style="padding-left:42px">
+        <button type="button" class="toggle-eye" id="eyeBtn" title="إظهار / إخفاء"><i class="ic" data-ic="eye"></i></button>
+      </div>
+    </div>
+    <div class="auth-field" id="confirmField">
+      <label class="field-label" for="pw2">تأكيد كلمة المرور</label>
+      <input class="input" type="password" id="pw2" autocomplete="new-password">
+    </div>
+    <button class="btn btn-primary" type="submit" id="submitBtn" style="width:100%;justify-content:center">
+      <i class="ic" data-ic="unlock"></i> <span id="submitLabel">دخول</span>
+    </button>
+  </form>
+
+  <div class="auth-note" id="setupNote">
+    <i class="ic" data-ic="bulb"></i>
+    <span>لا يوجد حساب مدير بعد. اختر كلمة مرور الآن لإنشائه — لن تحتاج إليها إلا من هذا الجهاز.</span>
+  </div>
+
+  <div class="auth-foot">
+    <a href="results.html"><i class="ic" data-ic="news"></i> عرض النتائج بلا تسجيل دخول</a>
+    <a href="#" id="forgotLink">نسيت كلمة المرور؟ إعادة التعيين من هنا</a>
+  </div>
+</div>
+
+<script src="icons.js"></script>
+<script src="common.js"></script>
+<script src="auth.js"></script>
+<script>
+'use strict';
+const $ = id => document.getElementById(id);
+initTheme();
+
+// نفس القراءة التي حدّدت data-setup في رأس الصفحة، هنا لضبط النصوص فقط
+const setup = document.documentElement.hasAttribute('data-setup');
+if (setup) {
+  $('formTitle').textContent = 'إعداد حساب المدير';
+  $('formSub').textContent = 'هذه أول زيارة للوحة التحكّم — أنشئ كلمة مرور المدير قبل أن تبدأ.';
+  $('submitLabel').textContent = 'إنشاء الحساب والدخول';
+}
+
+$('eyeBtn').onclick = () => {
+  const f = $('pw');
+  f.type = f.type === 'password' ? 'text' : 'password';
+};
+
+function showError(msg) {
+  $('authErrorText').textContent = msg;
+  $('authError').classList.add('show');
+}
+function hideError() { $('authError').classList.remove('show'); }
+
+function nextUrl() {
+  const params = new URLSearchParams(location.search);
+  return params.get('next') || 'index.html';
+}
+
+$('authForm').addEventListener('submit', async e => {
+  e.preventDefault();
+  hideError();
+  const pw = $('pw').value;
+  if (!pw) return;
+
+  if (setup) {
+    const pw2 = $('pw2').value;
+    if (pw.length < 4) return showError('كلمة المرور قصيرة جداً — أربعة أحرف على الأقل');
+    if (pw !== pw2) return showError('كلمتا المرور غير متطابقتين');
+    await FBXAuth.setPassword(pw);
+    location.replace(nextUrl());
+    return;
+  }
+
+  const ok = await FBXAuth.login(pw);
+  if (!ok) { showError('كلمة المرور غير صحيحة'); $('pw').value = ''; $('pw').focus(); return; }
+  location.replace(nextUrl());
+});
+
+/* إعادة التعيين: تمحو كلمة المرور الحالية بالكامل — لا خادم يستعيدها،
+   فهذا الإجراء الوحيد لمن نسيها. تأكيد صريح لأنه لا رجعة فيه. */
+$('forgotLink').onclick = e => {
+  e.preventDefault();
+  if (!confirm('سيُحذف حساب المدير الحالي نهائياً وتحتاج إلى إنشاء كلمة مرور جديدة. متابعة؟')) return;
+  FBXAuth.resetSetup();
+  location.reload();
+};
+</script>
+</body>
+</html>

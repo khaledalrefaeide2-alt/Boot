@@ -1,0 +1,325 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نتائج الرصد — الإعلام الرقمي</title>
+<script>
+/* يعمل قبل أوّل رسمة (نفس مبدأ بقية الصفحات). هذه الصفحة وحدها من دون
+   بوّابة مدير — القصد أن تكون مفتوحة لأي زائر، فلا تحقّق هنا من أي جلسة. */
+(function () {
+  var d = document.documentElement;
+  try {
+    var t = localStorage.getItem('fbx_theme') ||
+      (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    d.setAttribute('data-theme', t);
+    if (localStorage.getItem('fbx_nav_collapsed') === '1') d.setAttribute('data-nav', 'collapsed');
+  } catch (e) {}
+})();
+</script>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="android.css">
+<style>
+  /* ============ ملخّص التصنيف (من dashboard.html) ============ */
+  .asum-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--sp-3); margin-bottom: var(--sp-5); }
+  .asum-card {
+    border-radius: var(--r); padding: var(--sp-4); text-align: center;
+    background: var(--card); border: var(--hair); box-shadow: var(--sh-1); position: relative; overflow: hidden;
+  }
+  .asum-card::before { content: ''; position: absolute; inset-inline: 0; top: 0; height: 3px; background: currentColor; opacity: .85; }
+  .asum-card .v { font-size: 1.32rem; font-weight: 800; line-height: 1.1; color: currentColor; }
+  .asum-card .l { font-size: var(--fs-2xs); font-weight: 700; color: var(--ink-3); margin-top: 4px; }
+  .asum-card.pos  { color: var(--keep);   background: var(--keep-soft); }
+  .asum-card.neg  { color: var(--remove); background: var(--remove-soft); }
+  .asum-card.neu  { color: var(--ink-3);  background: var(--card-2); }
+  .asum-card.flag { color: var(--review); background: var(--review-soft); }
+  .asum-card.tot  { color: var(--brand);  background: var(--brand-soft); }
+
+  .source-note {
+    display: flex; align-items: center; gap: var(--sp-2); font-size: var(--fs-2xs);
+    color: var(--ink-3); margin-bottom: var(--sp-4);
+  }
+  .source-note .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--ink-3); flex: none; }
+  .source-note.online .dot { background: var(--keep); }
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">تخطَّ إلى المحتوى</a>
+<div class="app-shell">
+  <aside class="sidebar" id="mainNav" aria-label="التنقّل الرئيسي">
+    <a class="side-brand" href="results.html">
+      <div class="brand-logo"><i class="ic" data-ic="logo"></i></div>
+      <div>
+        <span class="brand-name">الإعلام الرقمي</span>
+        <p>رصد وتحليل المحتوى</p>
+      </div>
+    </a>
+    <button class="nav-close" id="navClose" type="button" aria-label="إغلاق قائمة التنقّل"><i class="ic" data-ic="close"></i></button>
+    <nav class="side-nav" aria-label="أقسام الأداة">
+      <div class="nav-group">
+        <span class="nav-label">عام</span>
+        <a href="results.html" class="active" aria-label="نتائج الرصد"><span class="ico"><i class="ic" data-ic="news"></i></span><span class="label">النتائج</span></a>
+      </div>
+    </nav>
+    <div class="side-foot">
+      <span class="side-ver">الإصدار 6.0</span>
+      <a class="icon-btn" href="login.html" title="دخول المدير" aria-label="دخول المدير"><i class="ic" data-ic="lock"></i></a>
+      <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري"><i class="ic" data-ic="moon"></i></button>
+    </div>
+  </aside>
+
+  <div class="main-col">
+    <header class="page-header">
+      <button class="nav-toggle" id="navToggle" type="button" aria-controls="mainNav" aria-expanded="false" aria-label="طيّ قائمة التنقّل"><i class="ic" data-ic="menu"></i></button>
+      <div class="ph-text">
+        <span class="hero-badge"><i class="ic" data-ic="news"></i> عرض للجميع — بلا تسجيل دخول</span>
+        <h1>نتائج الرصد</h1>
+        <p>استعراض وبحث في المنشورات المرصودة وتصنيفاتها. الاستخراج والإعدادات وإدارة الرصد من صلاحيات مدير النظام وحده.</p>
+      </div>
+    </header>
+
+    <main id="main-content" tabindex="-1">
+
+      <!-- مخفيّة حتى يكتمل الرسم الأول (JS، أدنى الصفحة) فلا يرى المتصفح شكلها
+           الفارغ قبل أن تمتلئ فقرات الملخّص والفلاتر — قِيست إزاحة تخطيط
+           0.0562 من هذه الفجوة تحديداً قبل أن تُخفى القسم بالكامل. -->
+      <section id="results" hidden>
+        <div class="source-note" id="sourceNote"><span class="dot"></span><span id="sourceNoteText">بيانات هذا المتصفح فقط</span></div>
+
+        <div class="asum-grid" id="asumGrid"></div>
+
+        <div class="filters">
+          <div class="filter-group" id="platformFilter">
+            <span class="filter-label">المنصة:</span>
+          </div>
+          <div class="spacer"></div>
+          <div class="filter-group" id="classFilter">
+            <span class="filter-label">التصنيف:</span>
+          </div>
+        </div>
+
+        <div class="feed-head">
+          <h3><i class="ic" data-ic="news"></i> المنشورات <span class="feed-count" id="feedCount">0</span></h3>
+          <div class="search-wrap"><input class="input" type="search" id="searchInput" placeholder="ابحث في المنشورات..."></div>
+          <select class="input" id="sortSelect">
+            <option value="newest">الأحدث أولاً</option>
+            <option value="oldest">الأقدم أولاً</option>
+            <option value="engage">الأكثر تفاعلاً</option>
+          </select>
+          <div class="view-toggle">
+            <button id="gridViewBtn" class="active" title="عرض بطاقات"><i class="ic" data-ic="grid"></i></button>
+            <button id="listViewBtn" title="عرض جدول"><i class="ic" data-ic="rows"></i></button>
+          </div>
+        </div>
+        <div class="feed" id="feed"></div>
+        <div class="empty-state" id="feedEmpty" style="display:none">
+          <div class="big"><i class="ic" data-ic="search"></i></div>
+          <p>لا نتائج بعد. حالما يبدأ مدير النظام الرصد التلقائي أو الاستخراج، تظهر النتائج هنا للجميع.</p>
+        </div>
+      </section>
+
+    </main>
+
+    <footer>الإعلام الرقمي — عرض النتائج · قراءة واستعراض فقط · الإصدار 6.0 <i class="ic" data-ic="logo"></i></footer>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="android.js"></script>
+<script src="icons.js"></script>
+<script src="analyzer.js"></script>
+<script src="media.js"></script>
+<script src="card.js"></script>
+<script src="common.js"></script>
+<script>
+'use strict';
+FBXAnalyzer.injectStyles();
+FBXMedia.injectStyles();
+
+const $ = id => document.getElementById(id);
+const toast = $('toast');
+const FB_FEED = 'fbx_monitor_feed';
+const TW_FEED = 'fbx_x_tweet_monitor_feed';
+
+initTheme();
+initNav();
+
+/* ============================================================
+ * تحميل النتائج — دون أي أثر جانبي
+ * ============================================================
+ * هذه الصفحة لا تبدأ رصداً ولا تستخرج ولا تكتب شيئاً؛ تقرأ فقط ما
+ * جمعته صفحتا الرصد في هذا المتصفح، وتدمج معهما أرشيف قاعدة البيانات
+ * المحلية إن كانت مضبوطة ومتصلة — فتصير النتائج مشتركة بين الأجهزة لا
+ * حبيسة متصفح المدير وحده. بلا قاعدة بيانات، يبقى العرض محصوراً بهذا
+ * المتصفح — وهذا نطاق واضح لا نقص خفي: العنوان أعلى القائمة يذكره دائماً. */
+function loadLocal(key) {
+  try { const v = JSON.parse(localStorage.getItem(key)); return Array.isArray(v) ? v : []; }
+  catch (e) { return []; }
+}
+
+function ensureAnalysis(p) { if (!p.analysis || !p.analysis.classification) p.analysis = FBXAnalyzer.analyze(p); return p; }
+function engagement(p) { return (p.likes || 0) + (p.comments || 0) + (p.shares || 0); }
+
+/* صفوف قاعدة البيانات تحمل تحليلاً كاملاً محفوظاً مسبقاً (عمود analysis)،
+   فتُستعمل كما هي بدل إعادة حسابه — أدق من إعادة التحليل على بيانات قد
+   تكون نُسخت جزئياً، وأرخص. */
+function fromDbRow(row) {
+  let analysis = null;
+  try { analysis = JSON.parse(row.analysis || 'null'); } catch (e) {}
+  return {
+    key: row.key, text: row.text || '', url: row.url || '', ts: row.ts || null,
+    date: row.ts ? new Date(row.ts) : null,
+    author: row.author || 'غير معروف', avatar: row.avatar || '',
+    media: row.media || '', mediaList: row.media ? [{ type: 'image', src: row.media }] : [],
+    platform: row.domain || 'facebook',
+    likes: row.likes || 0, comments: row.comments || 0, shares: row.shares || 0,
+    analysis: analysis || undefined
+  };
+}
+
+let allPosts = [];
+
+function updateSourceNote(dbOn) {
+  const note = $('sourceNote');
+  note.classList.toggle('online', dbOn);
+  $('sourceNoteText').textContent = dbOn
+    ? `متصل بقاعدة البيانات المحلية — نتائج مشتركة من كل الأجهزة (${allPosts.length})`
+    : `بيانات هذا المتصفح فقط (${allPosts.length}) — لعرض مشترك بين الأجهزة اطلب من مدير النظام تفعيل قاعدة البيانات المحلية`;
+}
+
+/* الرسم الأول متزامن تماماً — بلا أي await قبله — فلا تظهر شبكة الفلاتر
+   فارغة الارتفاع ثم تقفز عند امتلائها. كان هذا الفارق (38px ← 46px) هو
+   مصدر الإزاحة الوحيد المقيسة على الصفحة: 0.0134، ناتجة عن جعل تحميل
+   البيانات كلّه — المحلي المتزامن أصلاً مع الدمج الاختياري من قاعدة
+   البيانات البعيدة — دالّةً واحدة غير متزامنة. صار التحميل المحلي
+   مباشراً، والدمج من القاعدة (إن وُجدت) لاحقاً بلا حجب الرسم الأول. */
+function loadLocalMerged() {
+  return [...loadLocal(FB_FEED), ...loadLocal(TW_FEED)].map(ensureAnalysis);
+}
+
+async function mergeDb() {
+  if (!FBXCommon.db.url) return { dbOn: false, changed: false };
+  const dbOn = await dbCheck(true);
+  if (!dbOn) return { dbOn: false, changed: false };
+  try {
+    const r = await apiGet(`${FBXCommon.db.url}/api/posts?limit=500`);
+    if (!r.ok) return { dbOn: true, changed: false };
+    const d = await r.json();
+    const rows = (d.posts || []).map(fromDbRow);
+    const byKey = new Map(allPosts.map(p => [p.key, p]));
+    let changed = false;
+    for (const row of rows) if (!byKey.has(row.key)) { byKey.set(row.key, ensureAnalysis(row)); allPosts.push(row); changed = true; }
+    return { dbOn: true, changed };
+  } catch (e) {
+    return { dbOn: true, changed: false }; /* الفشل هنا لا يُسقط الصفحة — تبقى البيانات المحلية */
+  }
+}
+
+/* ============================================================
+ * الفلاتر — بلا أي إجراء على البيانات، عرضٌ وفرزٌ فقط
+ * ============================================================ */
+let filterPlatform = 'all';
+let filterClass = 'all';
+let searchQ = '';
+let sortMode = 'newest';
+let viewMode = 'cards';
+
+const PLATFORM_LABEL = { facebook: 'فيسبوك', twitter: 'X (تويتر)' };
+function platformList() { return [...new Set(allPosts.map(p => p.platform || 'facebook'))]; }
+
+function passesClass(p) {
+  if (filterClass === 'all') return true;
+  const a = ensureAnalysis(p).analysis;
+  if (filterClass === 'flagged') return !!a.flagged;
+  return a.classification === filterClass;
+}
+function filteredPosts() {
+  return allPosts.filter(p =>
+    (filterPlatform === 'all' || (p.platform || 'facebook') === filterPlatform) &&
+    passesClass(p) &&
+    (!searchQ || (p.text || '').toLowerCase().includes(searchQ) || (p.author || '').toLowerCase().includes(searchQ))
+  );
+}
+
+function renderPlatformFilter() {
+  const plats = platformList();
+  const box = $('platformFilter');
+  const pills = ['<span class="filter-label">المنصة:</span>',
+    `<button class="pill ${filterPlatform === 'all' ? 'active' : ''}" data-plat="all">الكل</button>`,
+    ...plats.map(pl => `<button class="pill ${filterPlatform === pl ? 'active' : ''}" data-plat="${escapeHtml(pl)}">${escapeHtml(PLATFORM_LABEL[pl] || pl)}</button>`)
+  ];
+  box.innerHTML = pills.join('');
+  box.querySelectorAll('.pill').forEach(b => b.onclick = () => { filterPlatform = b.dataset.plat; renderAll(); });
+}
+
+const dot = tone => `<i class="ic tone-${tone}" data-ic="dot" style="font-size:.5em"></i> `;
+function renderClassFilter() {
+  const opts = [
+    ['all', 'الكل'],
+    ['NEGATIVE', dot('bad') + 'سلبي'], ['flagged', dot('warn') + 'مرفوع العلم'],
+    ['POSITIVE', dot('ok') + 'إيجابي'], ['NEUTRAL', dot('mute') + 'محايد']
+  ];
+  const box = $('classFilter');
+  box.innerHTML = ['<span class="filter-label">التصنيف:</span>',
+    ...opts.map(([id, label]) => `<button class="pill ${filterClass === id ? 'active' : ''}" data-cls="${id}">${label}</button>`)
+  ].join('');
+  FBXIcons.hydrate(box);
+  box.querySelectorAll('.pill').forEach(b => b.onclick = () => { filterClass = b.dataset.cls; renderAll(); });
+}
+
+function renderSummary(posts) {
+  const g = FBXAnalyzer.aggregate(posts.map(p => ensureAnalysis(p).analysis));
+  $('asumGrid').innerHTML = [
+    ['tot', posts.length, 'الإجمالي'],
+    ['pos', g.positive, 'إيجابي'],
+    ['neg', g.negative, 'سلبي'],
+    ['neu', g.neutral, 'محايد'],
+    ['flag', g.flagged, 'مرفوع العلم']
+  ].map(([cls, v, l]) => `<div class="asum-card ${cls}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+}
+
+function renderFeed(posts) {
+  let list = posts.slice();
+  list.sort((a, b) => {
+    if (sortMode === 'oldest') return (a.ts || 0) - (b.ts || 0);
+    if (sortMode === 'engage') return engagement(b) - engagement(a);
+    return (b.ts || 0) - (a.ts || 0);
+  });
+  $('feedCount').textContent = list.length;
+  $('feedEmpty').style.display = list.length ? 'none' : 'block';
+  FBXCard.render($('feed'), list, { view: viewMode, prefix: 'r', openLabel: 'المنشور', emptyLabel: 'منشور بدون نص' });
+}
+
+function renderAll() {
+  renderPlatformFilter();
+  renderClassFilter();
+  const posts = filteredPosts();
+  renderSummary(posts);
+  renderFeed(posts);
+}
+
+function setView(v) {
+  viewMode = v;
+  $('gridViewBtn').classList.toggle('active', v === 'cards');
+  $('listViewBtn').classList.toggle('active', v === 'table');
+  renderFeed(filteredPosts());
+}
+$('gridViewBtn').onclick = () => setView('cards');
+$('listViewBtn').onclick = () => setView('table');
+$('searchInput').addEventListener('input', debounce(e => { searchQ = e.target.value.trim().toLowerCase(); renderAll(); }));
+$('sortSelect').addEventListener('change', e => { sortMode = e.target.value; renderFeed(filteredPosts()); });
+
+allPosts = loadLocalMerged();
+updateSourceNote(false);
+renderAll();
+$('results').hidden = false;
+
+(async () => {
+  const { dbOn, changed } = await mergeDb();
+  updateSourceNote(dbOn);
+  if (changed) renderAll();
+})();
+</script>
+</body>
+</html>

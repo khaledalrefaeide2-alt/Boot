@@ -13,6 +13,16 @@
    لأن إظهار التنبيه أهون من إخفاء إعداد ناقص. */
 (function () {
   var d = document.documentElement;
+  /* بوّابة المدير: هذه صفحة تحكّم كامل، لا صفحة عرض نتائج. من دون جلسة
+     مدير سارية نغادر فوراً وقبل أن يُرسم أي شيء من الصفحة — الاستبدال
+     (replace لا href) يمنع الرجوع إليها بزرّ الرجوع بعد الخروج.
+     هذه بوّابة سلوكية لا حماية حقيقية؛ التفصيل والسبب في auth.js. */
+  try {
+    if (localStorage.getItem('fbx_admin_session') !== '1') {
+      location.replace('login.html?next=' + encodeURIComponent(location.pathname));
+      return;
+    }
+  } catch (e) { location.replace('login.html'); return; }
   try {
     var t = localStorage.getItem('fbx_theme') ||
       (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
@@ -56,9 +66,14 @@
         <span class="nav-label">النظام</span>
         <a href="settings.html" class="active" aria-label="الإعدادات"><span class="ico"><i class="ic" data-ic="settings"></i></span><span class="label">الإعدادات</span></a>
       </div>
+      <div class="nav-group">
+        <span class="nav-label">عام</span>
+        <a href="results.html" aria-label="عرض نتائج الرصد"><span class="ico"><i class="ic" data-ic="news"></i></span><span class="label">النتائج</span></a>
+      </div>
     </nav>
     <div class="side-foot">
       <span class="side-ver">الإصدار 6.0</span>
+      <button class="icon-btn" id="logoutBtn" title="تسجيل الخروج من حساب المدير"><i class="ic" data-ic="logout"></i></button>
       <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري"><i class="ic" data-ic="moon"></i></button>
     </div>
   </aside>
@@ -146,6 +161,37 @@
     <div class="status-line" id="aiStatus"></div>
   </section>
 
+
+  <!-- Admin access -->
+  <section class="panel">
+    <div class="panel-title"><span class="num"><i class="ic" data-ic="lock"></i></span> أمان لوحة التحكّم</div>
+    <div class="panel-sub">كلمة المرور التي تفصل بين لوحة التحكّم الكامل (الاستخراج والرصد والإعدادات) وبين صفحة عرض النتائج المفتوحة للجميع بلا تسجيل دخول.</div>
+
+    <div class="hint" style="border-inline-start:3px solid var(--brand);background:var(--card-2);padding:8px 12px;border-radius:var(--r-sm);margin:10px 0 14px">
+      <i class="ic" data-ic="warning"></i> <strong>هذه بوّابة سلوكية لا حماية حقيقية:</strong> الموقع ملفّات تُفتح من القرص بلا خادم يتحقّق من الهوية، فمن يملك المجلد يستطيع تجاوزها تقنياً. فائدتها منع الوصول العرضي لمستخدم عادٍ لا ينوي التحايل — لا حجب من يملك القدرة التقنية على ذلك. التفصيل في AGENTS.md.
+    </div>
+
+    <label class="field-label" for="curPw">كلمة المرور الحالية</label>
+    <div class="input-wrap">
+      <input class="input" type="password" id="curPw" autocomplete="current-password" dir="ltr" style="padding-left:42px">
+      <button type="button" class="toggle-eye" id="curPwEye" title="إظهار / إخفاء"><i class="ic" data-ic="eye"></i></button>
+    </div>
+
+    <label class="field-label" for="newPw" style="margin-top:12px">كلمة المرور الجديدة</label>
+    <div class="input-wrap">
+      <input class="input" type="password" id="newPw" autocomplete="new-password" dir="ltr" style="padding-left:42px">
+      <button type="button" class="toggle-eye" id="newPwEye" title="إظهار / إخفاء"><i class="ic" data-ic="eye"></i></button>
+    </div>
+
+    <label class="field-label" for="newPw2" style="margin-top:12px">تأكيد كلمة المرور الجديدة</label>
+    <input class="input" type="password" id="newPw2" autocomplete="new-password" dir="ltr">
+
+    <div class="actions-row">
+      <button class="btn btn-primary btn-sm" id="changePwBtn"><i class="ic" data-ic="save"></i> تغيير كلمة المرور</button>
+    </div>
+    <div class="status-line" id="pwStatus"></div>
+  </section>
+
     </main>
 
     <footer>الإعلام الرقمي — مركز الإعدادات · تحليل وتصنيف محلي · بياناتك لا تغادر متصفحك · الإصدار 6.0 <i class="ic" data-ic="logo"></i></footer>
@@ -155,6 +201,7 @@
 
 <script src="android.js"></script>
 <script src="icons.js"></script>
+<script src="auth.js"></script>
 <script src="analyzer.js"></script>
 <script src="common.js"></script>
 <script src="ai.js"></script>
@@ -170,6 +217,9 @@ const toast = $('toast');
 /* السمة والتنبيهات — من common.js */
 initTheme();
 initNav();
+// تسجيل الخروج: يمسح جلسة المدير ويعيد فوراً إلى شاشة الدخول. الاستبدال
+// (replace) يمنع العودة بزرّ رجوع المتصفح إلى صفحة تتطلّب الجلسة.
+$('logoutBtn').onclick = () => { FBXAuth.logout(); location.replace('login.html'); };
 function setStatus(el, msg, ok) { el.textContent = msg; el.classList.add('show'); el.classList.toggle('status-ok', !!ok); el.classList.toggle('status-err', ok === false); }
 
 /* ===== API key ===== */
@@ -273,6 +323,22 @@ $('checkAiBtn').onclick = async () => {
     setStatus($('aiStatus'), String(e.message || e), false);
     showToast('تعذّر التحقق من المفتاح');
   }
+};
+
+/* =============== أمان لوحة التحكّم =============== */
+$('curPwEye').onclick = () => { const i = $('curPw'); i.type = i.type === 'password' ? 'text' : 'password'; };
+$('newPwEye').onclick = () => { const i = $('newPw'); i.type = i.type === 'password' ? 'text' : 'password'; };
+
+$('changePwBtn').onclick = async () => {
+  const cur = $('curPw').value, n1 = $('newPw').value, n2 = $('newPw2').value;
+  if (!cur) return setStatus($('pwStatus'), 'أدخل كلمة المرور الحالية.', false);
+  if (n1.length < 4) return setStatus($('pwStatus'), 'كلمة المرور الجديدة قصيرة جداً — أربعة أحرف على الأقل.', false);
+  if (n1 !== n2) return setStatus($('pwStatus'), 'كلمتا المرور الجديدتان غير متطابقتين.', false);
+  const ok = await FBXAuth.changePassword(cur, n1);
+  if (!ok) return setStatus($('pwStatus'), 'كلمة المرور الحالية غير صحيحة.', false);
+  $('curPw').value = ''; $('newPw').value = ''; $('newPw2').value = '';
+  setStatus($('pwStatus'), 'تم تغيير كلمة المرور.', true);
+  showToast('تم تغيير كلمة مرور المدير');
 };
 </script>
 </body>
