@@ -1,0 +1,87 @@
+/**
+ * أدوات تحليل النص العربي — قواعد بسيطة كافية للنسخة الأولى،
+ * ومصمّمة ليُستبدل جوهرها لاحقاً بالذكاء الاصطناعي دون تغيير الواجهات.
+ */
+
+/** تطبيع النص العربي: إزالة التشكيل وتوحيد الألف والياء والهاء */
+export function normalizeArabic(text: string): string {
+  return text
+    .replace(/[ً-ٰٟـ]/g, '')
+    .replace(/[أإآٱ]/g, 'ا')
+    .replace(/ى/g, 'ي')
+    .replace(/ة/g, 'ه')
+    .replace(/[ؤئ]/g, 'ء')
+    .toLowerCase()
+    .trim();
+}
+
+/** استخراج الهاشتاغات — يدعم العربية والإنجليزية والأرقام والشرطة السفلية */
+export function extractHashtags(text: string | null | undefined): string[] {
+  if (!text) return [];
+  const matches = text.match(/#[\p{L}\p{N}_]+/gu) ?? [];
+  const unique = new Set(
+    matches
+      .map((tag) => tag.slice(1).trim())
+      .filter((tag) => tag.length > 0 && tag.length <= 100),
+  );
+  return Array.from(unique).slice(0, 50);
+}
+
+/** استخراج المنشنات */
+export function extractMentions(text: string | null | undefined): string[] {
+  if (!text) return [];
+  const matches = text.match(/@[\p{L}\p{N}_.]+/gu) ?? [];
+  return Array.from(new Set(matches.map((m) => m.slice(1)))).slice(0, 50);
+}
+
+/** كشف لغة المنشور بشكل مبدئي حسب نسبة الحروف */
+export function detectLanguage(text: string | null | undefined): string | null {
+  if (!text) return null;
+  const stripped = text.replace(/[#@]\S+/g, '').replace(/https?:\/\/\S+/g, '');
+  const arabicChars = (stripped.match(/[؀-ۿ]/g) ?? []).length;
+  const latinChars = (stripped.match(/[A-Za-z]/g) ?? []).length;
+  const total = arabicChars + latinChars;
+  if (total < 4) return null;
+  if (arabicChars / total >= 0.5) return 'ar';
+  if (latinChars / total >= 0.7) return 'en';
+  return 'und';
+}
+
+/** كلمات الوقف العربية والإنجليزية — تُستبعد من إحصاء أكثر الكلمات تكراراً */
+const STOP_WORDS = new Set(
+  [
+    'في','من','على','الى','إلى','عن','مع','هذا','هذه','ذلك','التي','الذي','ما','لا','قد','كل','بعد','قبل',
+    'بين','عند','حتى','او','أو','ثم','كما','لكن','هو','هي','هم','نحن','انا','أنا','انت','أنت','كان','كانت',
+    'يكون','تكون','ان','أن','إن','به','له','لها','بها','منه','منها','و','يا','ايضا','أيضا','حول','خلال',
+    'the','and','for','with','that','this','from','have','has','was','were','are','you','your','our','its',
+    'not','but','all','can','will','would','they','their','his','her','him','she','out','who','what','how',
+  ].map(normalizeArabic),
+);
+
+/** تقسيم النص إلى كلمات ذات معنى */
+export function tokenize(text: string | null | undefined): string[] {
+  if (!text) return [];
+  const cleaned = text
+    .replace(/https?:\/\/\S+/g, ' ')
+    .replace(/[#@][\p{L}\p{N}_]+/gu, ' ')
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ');
+
+  return cleaned
+    .split(/\s+/)
+    .map((word) => normalizeArabic(word))
+    .filter((word) => word.length >= 3 && word.length <= 40 && !STOP_WORDS.has(word) && !/^\d+$/.test(word));
+}
+
+/** أكثر الكلمات تكراراً في مجموعة نصوص */
+export function topWords(texts: (string | null)[], limit = 40): { word: string; count: number }[] {
+  const counts = new Map<string, number>();
+  for (const text of texts) {
+    for (const word of tokenize(text)) {
+      counts.set(word, (counts.get(word) ?? 0) + 1);
+    }
+  }
+  return Array.from(counts.entries())
+    .map(([word, count]) => ({ word, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, limit);
+}

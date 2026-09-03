@@ -12,7 +12,7 @@ case "$1" in
     ;;
   worker)
     echo "⚙️  تشغيل العامل الخلفي"
-    exec npx tsx src/worker/index.ts
+    exec npx tsx --conditions=react-server src/worker/index.ts
     ;;
   *)
     exec "$@"
