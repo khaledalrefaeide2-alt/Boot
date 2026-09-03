@@ -1,15 +1,8 @@
-import { PageHeader } from '@/components/layout/page-header';
-import { Card, CardBody } from '@/components/ui/card';
+import type { Metadata } from 'next';
+import { OverviewClient } from './overview-client';
+
+export const metadata: Metadata = { title: 'النظرة العامة' };
 
 export default function OverviewPage() {
-  return (
-    <>
-      <PageHeader title="النظرة العامة" description="ملخص نشاط المنصات المرصودة" />
-      <Card>
-        <CardBody>
-          <p className="text-sm text-muted-foreground">قيد الإنشاء…</p>
-        </CardBody>
-      </Card>
-    </>
-  );
+  return <OverviewClient />;
 }

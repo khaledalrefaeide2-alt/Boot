@@ -46,15 +46,23 @@
 
   --radius: 0.5rem;
 
-  /* ألوان الرسوم البيانية — متمايزة في الوضعين ومناسبة لعمى الألوان */
-  --chart-1: #1f5fa6;
-  --chart-2: #0f766e;
-  --chart-3: #92600f;
-  --chart-4: #6d4a9c;
-  --chart-5: #a52620;
-  --chart-6: #4a6572;
-  --chart-grid: #e2e8f0;
-  --chart-axis: #64748b;
+  /* ألوان الرسوم البيانية — ترتيب ثابت لا يُدوَّر، مُتحقَّق منه آلياً:
+     نطاق الإضاءة، أرضية التشبع، تمايز عمى الألوان، وتمايز الرؤية الطبيعية.
+     الثلاثة الأولى تجتاز الفحص لكل الأزواج (للمخططات المبعثرة والمقارنات). */
+  --chart-1: #2a78d6;
+  --chart-2: #eb6834;
+  --chart-3: #1baf7a;
+  --chart-4: #eda100;
+  --chart-5: #e87ba4;
+  --chart-6: #008300;
+  --chart-grid: #e6eaf0;
+  --chart-axis: #5a6779;
+
+  /* ألوان الحالة محجوزة للمشاعر ولا تُستخدم كسلسلة بيانات */
+  --chart-positive: #16704a;
+  --chart-neutral: #7c8899;
+  --chart-negative: #a52620;
+  --chart-mixed: #92600f;
 }
 
 .dark {
@@ -95,14 +103,20 @@
   --shadow: 0 1px 3px rgba(0, 0, 0, 0.45), 0 4px 14px rgba(0, 0, 0, 0.35);
   --shadow-lg: 0 10px 34px rgba(0, 0, 0, 0.55);
 
-  --chart-1: #6ba3dc;
-  --chart-2: #4fbfae;
-  --chart-3: #dcaa5c;
-  --chart-4: #a98add;
-  --chart-5: #ef8079;
-  --chart-6: #9aacba;
+  /* نفس الدرجات مُعاد اشتقاقها للأرضية الداكنة، لا انعكاس آلي */
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  --chart-4: #c98500;
+  --chart-5: #d55181;
+  --chart-6: #008300;
   --chart-grid: #22314c;
   --chart-axis: #8496ae;
+
+  --chart-positive: #58c295;
+  --chart-neutral: #98a6bb;
+  --chart-negative: #ef8079;
+  --chart-mixed: #dcaa5c;
 }
 
 @theme inline {
