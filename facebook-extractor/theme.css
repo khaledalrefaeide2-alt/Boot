@@ -1,0 +1,664 @@
+/* ===========================================================
+   الإعلام الرقمي — نظام التصميم المشترك (theme.css)
+   ---------------------------------------------------------
+   طراز تحريري هادئ: أزرق مائي باهت + كحلي عميق، خط Arial في كل النصوص،
+   مساحات بيضاء واسعة، حدود شبه غير مرئية، وأزرار «حبّة» كحلية صلبة.
+   الهدف: هيبة من التنفّس والتسلسل الهرمي لا من الزخرفة، مع بقاء بطاقات
+   المنشورات مدمجة وكثافة المعلومات عالية.
+   يُحمَّل في كل صفحات الموقع؛ الأنماط الخاصة بصفحة واحدة (الرسوم
+   البيانية، شريط التحكم بالرصد، شريط الميزات) تبقى داخل كل ملف.
+   =========================================================== */
+
+:root {
+  /* ── الأسطح: أبيض نقي فوق رمادي أزرق بارد ── */
+  --bg: #eef2f7;
+  --surface: #ffffff;
+  --surface-2: #f2f6fa;
+  --text: #0b1220;
+  --text-2: #55647a;      /* مقيس: ‎5.2:1 فأعلى على الأسطح الثلاثة */
+  --border: #dde5ee;
+
+  /* ── سلّم الهوية: كحلي ليلي متدرّج نحو سماوي كهربائي ──
+     السماوي مقصود: يجب أن يبقى لون العلامة متميّزاً عن الأخضر والأحمر
+     والكهرماني، فتلك الثلاثة محجوزة لدلالات التصنيف وحدها. */
+  --green-950: #020617;
+  --green-900: #070d1c;
+  --green-800: #111a2e;
+  --green-700: #0e6f8c;
+  --green-600: #0e8fae;
+  --green-500: #35b7d4;
+  --sage: #67e8f9;
+  --sage-soft: #e2f6fb;
+  --gold: #35b7d4;
+  --gold-deep: #0e6f8c;
+  --tan: #c9e9f2;
+  --cream: #f3fbfd;
+
+  --primary: var(--green-700);
+  --primary-soft: #e2f2f7;
+  --danger: #c2352b;
+  --danger-soft: #fceceb;
+  /* ألوان دلالية بحتة — لدرجات الخطورة في محرك التحليل فقط، منفصلة عن هوية العلامة */
+  --warn: #9c5c0b;
+  --warn-soft: #fbf1e0;
+  --success: #12784a;
+  --success-soft: #e3f4ea;
+
+  /* ── الزجاج: أسطح الإطار (شريط جانبي، رأس، شريط تحكّم، عارض) ──
+     المهارة تصنّف الزجاجية cost:low|drivers:none — عمق حقيقي بلا مكتبة
+     وبلا كلفة رسم تُذكر، خلافاً للـ 3D الكامل (cost:high|risk:high). */
+  --glass-bg: rgba(255, 255, 255, .72);
+  --glass-brd: rgba(255, 255, 255, .7);
+  --glass-blur: 18px;
+  --glass-sat: 1.7;
+
+  /* ── العمق: ظلال متعدّدة الطبقات تحاكي مصدر ضوء واحد من الأعلى ── */
+  --e1: 0 1px 2px rgba(8, 20, 45, .05);
+  --e2: 0 1px 2px rgba(8, 20, 45, .05), 0 6px 16px rgba(8, 20, 45, .07);
+  --e3: 0 2px 6px rgba(8, 20, 45, .07), 0 12px 28px rgba(8, 20, 45, .1);
+  --e4: 0 8px 20px rgba(8, 20, 45, .13), 0 28px 64px rgba(8, 20, 45, .18);
+  --shadow-xs: var(--e1);
+  --shadow: var(--e2);
+  --shadow-md: var(--e3);
+  --shadow-lg: var(--e4);
+
+  /* ── الحركة: مقاسات المهارة — 200-300ms للتفاعل، وتسارع power2.out ──
+     الخروج أسرع من الدخول دائماً، فيبقى الردّ فورياً في الإحساس. */
+  --dur-1: 130ms;   /* لمسات دقيقة: لون، شفافية */
+  --dur-2: 220ms;   /* المرور والضغط */
+  --dur-3: 340ms;   /* الدخول والظهور */
+  --dur-exit: 160ms;/* الخروج أسرع من الدخول دائماً — فيبقى الردّ فورياً */
+  /* منحنيات مشتقّة من حركة نابض حقيقي لا من خط مستقيم: التسارع في البداية
+     والتباطؤ الطويل في النهاية هو ما يجعل الحركة تُقرأ «مادية». */
+  --ease: cubic-bezier(.22, 1, .36, 1);              /* خروج ناعم (power2.out) */
+  --ease-spring: cubic-bezier(.34, 1.56, .64, 1);    /* نابض بتجاوز طفيف */
+  --ease-soft: cubic-bezier(.65, 0, .35, 1);         /* دخول/خروج متماثل */
+  --ease-snap: cubic-bezier(.2, .9, .3, 1.2);        /* استجابة حادّة للضغط */
+  --persp: 1100px;  /* بُعد المشهد ثلاثي الأبعاد */
+
+  /* ---- مقياس المسافات: مضاعفات 4px ---- */
+  --s1: 4px;  --s2: 8px;  --s3: 12px; --s4: 16px;
+  --s5: 20px; --s6: 24px; --s8: 32px; --s10: 40px; --s12: 48px;
+
+  /* ---- مقياس خط سائل: clamp(أدنى، مُنحدر، أقصى) ----
+     المُنحدر بـ vw وحده يكسر التكبير في المتصفح (النصّ لا يستجيب لـ ctrl+‏+)،
+     فيُجمع مع rem حتى يبقى التكبير عاملاً — شرط في WCAG 1.4.4.
+     المدى بين 360px و1440px، والأرضية 12px لا تُخترق في أي مقاس شاشة. */
+  --fs-display: clamp(1.45rem, 1.15rem + 1.35vw, 2.35rem);
+  --fs-title:   clamp(1rem,   .95rem + .25vw,  1.2rem);
+  --fs-body:    clamp(.875rem, .85rem + .12vw, .95rem);
+  --fs-sm:      clamp(.825rem, .81rem + .1vw,  .9rem);
+  --fs-xs:      clamp(.78rem, .77rem + .07vw,  .84rem);
+  --fs-2xs:     clamp(.75rem, .745rem + .04vw, .79rem);   /* لا تنزل تحت 12px */
+  --lh-tight: 1.35;
+  --lh: 1.7;
+
+  --radius-sm: 10px;
+  --radius: 14px;
+  --radius-lg: 20px;
+  --radius-pill: 999px;
+  --hair: 1px solid var(--border);
+
+  --ic-search: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2024%2024%22%20fill%3D%22none%22%20stroke%3D%22black%22%20stroke-width%3D%222%22%20stroke-linecap%3D%22round%22%3E%3Ccircle%20cx%3D%2211%22%20cy%3D%2211%22%20r%3D%226.5%22%2F%3E%3Cpath%20d%3D%22m16%2016%204.5%204.5%22%2F%3E%3C%2Fsvg%3E");
+
+  --font-body: Arial, 'Liberation Sans', 'Segoe UI', Tahoma, sans-serif;
+  --font-display: var(--font-body);
+
+  --c-surface: var(--surface);
+  --c-text: var(--text);
+  --c-text-2: var(--text-2);
+  --c-muted: #8394a8;
+  --c-grid: #e3eaf2;
+  --c-accent: #0e8fae;
+  --c-accent-2: #35b7d4;
+  --c-fill-top: rgba(14, 143, 174, .22);
+  --c-fill-bot: rgba(14, 143, 174, .02);
+}
+
+/* ══ السمة الداكنة (OLED) — هي الاتجاه الأساسي للهوية الجديدة ══
+   أسود شبه مطلق يوفّر طاقة شاشات OLED ويجعل الأسطح الزجاجية والعمق
+   يظهران بأوضح ما يكون، إذ يحتاج الزجاج خلفية غنية ليُقرأ كزجاج. */
+[data-theme="dark"] {
+  --bg: #020617;
+  --surface: #0b1120;
+  --surface-2: #131b2e;
+  --text: #f2f7fc;
+  --text-2: #9aabc0;
+  --border: #1f2b41;
+  --primary-soft: #0d2b38;
+  --sage-soft: #0f2a35;
+  --cream: #0d2b38;
+  --danger: #f0655a;
+  --danger-soft: #33191a;
+  --warn: #dfa03a;
+  --warn-soft: #33260f;
+  --success: #34c98a;
+  --success-soft: #0f2b21;
+
+  --glass-bg: rgba(19, 27, 46, .6);
+  --glass-brd: rgba(255, 255, 255, .09);
+
+  --e1: 0 1px 2px rgba(0, 0, 0, .5);
+  --e2: 0 1px 2px rgba(0, 0, 0, .5), 0 6px 18px rgba(0, 0, 0, .5);
+  --e3: 0 2px 8px rgba(0, 0, 0, .55), 0 14px 34px rgba(0, 0, 0, .55);
+  --e4: 0 10px 26px rgba(0, 0, 0, .6), 0 32px 72px rgba(0, 0, 0, .7);
+
+  --c-muted: #74879e;
+  --c-grid: #1f2b41;
+  --c-accent: #35b7d4;
+  --c-accent-2: #67e8f9;
+  --c-fill-top: rgba(53, 183, 212, .26);
+  --c-fill-bot: rgba(53, 183, 212, .02);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ================= طبقة العمق والحركة =================
+   «ثلاثي الأبعاد» هنا مبنيّ على تحويلات CSS ثلاثية المحاور (perspective +
+   translate3d + rotate) لا على WebGL. المهارة تصنّف الواجهة ثلاثية الأبعاد
+   الكاملة cost:high|risk:high وتتطلّب Three.js — وهي مكتبة خارجية تكسر
+   ضمانة أن هذا الموقع لا يطلب أي ملف من الإنترنت، وتُثقل قائمة فيها مئات
+   البطاقات. أما الزجاجية فـ cost:low|drivers:none، فتعطي العمق نفسه مجاناً.
+
+   كل حركة تلتزم بمقاسات المهارة: 200-300ms للتفاعل، وتسارع power2.out،
+   والخروج أسرع من الدخول، وتحريك transform/opacity وحدهما (لا width/height
+   ولا top/left) حتى تبقى الحركة على بطاقة الرسم بلا إعادة تخطيط. */
+
+/* المشهد: يمنح الأبناء عمقاً حقيقياً بدل محاكاته بالظل */
+.scene-3d { perspective: var(--persp); perspective-origin: 50% 20%; }
+
+/* ارتفاع تفاعلي: العنصر يقترب من الناظر عند المرور، ويعود بنفس المنحنى */
+.lift {
+  transition: transform var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease),
+              border-color var(--dur-2) var(--ease);
+  will-change: transform;
+}
+.lift:hover { transform: translate3d(0, -4px, 24px); box-shadow: var(--e4); }
+.lift:active { transform: translate3d(0, -1px, 6px); transition-duration: var(--dur-1); }
+
+/* الظهور عند دخول العنصر إطار الشاشة — يُفعَّل من common.js عبر IntersectionObserver.
+   البداية مائلة قليلاً حول المحور الأفقي فتُقرأ كصفحة تنهض نحو الناظر. */
+.reveal { opacity: 0; transform: translate3d(0, 14px, -40px) rotateX(4deg); }
+.reveal.in {
+  opacity: 1; transform: none;
+  transition: opacity var(--dur-3) var(--ease), transform var(--dur-3) var(--ease);
+}
+
+/* ================= احترام تقليل الحركة =================
+   كل نتيجة حركة في المهارة تشترط هذا. النظام يُبلِّغ عن تفضيل المستخدم،
+   ومن يعاني اضطراب الدهليز قد تسبّب له الحركة دواراً حقيقياً — فتُلغى
+   الحركة كلّها وتُعرض الحالة النهائية فوراً بدل إبطائها. */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+    scroll-behavior: auto !important;
+  }
+  .reveal { opacity: 1; transform: none; }
+  .lift:hover { transform: none; }
+  .scene-3d { perspective: none; }
+}
+
+/* رابط تخطّي القائمة: مخفي بصرياً حتى يصله التركيز، فيراه مستخدم لوحة
+   المفاتيح وحده. الإخفاء بـ transform لا بـ display حتى يبقى في شجرة التركيز. */
+.skip-link {
+  position: fixed; z-index: 100; inset-inline-start: var(--s4); top: var(--s4);
+  background: var(--green-900); color: #eff6f8; border-radius: var(--radius-sm);
+  padding: var(--s3) var(--s5); font-size: var(--fs-sm); font-weight: 700; text-decoration: none;
+  transform: translateY(-200%); transition: transform var(--dur-2) var(--ease-spring);
+  box-shadow: var(--e3);
+}
+.skip-link:focus-visible { transform: translateY(0); }
+[data-theme="dark"] .skip-link { background: var(--sage); color: #0b1820; }
+#main-content:focus { outline: none; }
+
+/* اسم العلامة في الشريط الجانبي لم يعد h1 — العنوان الأول لكل صفحة هو عنوانها */
+.brand-name { display: block; font-size: var(--fs-body); font-weight: 700; letter-spacing: -.1px; line-height: 1.3; }
+
+/* ================= حلقة التركيز =================
+   لم تكن في الموقع أي قاعدة :focus-visible، فمن يتنقّل بلوحة المفاتيح وحدها
+   كان يعتمد على حلقة المتصفح الافتراضية — وهي تختفي فعلياً فوق الشريط الجانبي
+   الكحلي. هنا حلقة واحدة معرَّفة لكل عنصر تفاعلي، بلون يتغيّر مع السطح.
+   :where() تُبقي الأولوية صفراً فلا تزاحم أنماط المكوّنات. */
+:root { --focus: #1a5164; }
+[data-theme="dark"] { --focus: #a8c9d4; }
+:where(a, button, input, select, textarea, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+}
+/* فوق الأسطح الداكنة تُقلب إلى لون فاتح حتى تبقى مرئية */
+.sidebar :where(a, button):focus-visible,
+.control-band :where(a, button, select):focus-visible,
+.fx-scrim :where(a, button):focus-visible,
+.fbx-lb :where(a, button):focus-visible { outline-color: #eaf3f6; }
+/* من يستخدم الفأرة لا يرى الحلقة — وهذا سلوك :focus-visible القياسي */
+/* طبقة الخلفية ثلاثية الأبعاد (backdrop.js). ثابتة خلف كل شيء: خارج التخطيط
+   فلا تزيح، وبلا التقاط للفأرة فلا تعترض نقرة. تُموَّه خلف زجاج رأس الصفحة
+   وهو المقصود — العمق يُحسّ ولا يُقرأ. إن غاب WebGL لم يُنشأ العنصر أصلاً. */
+.bg-3d {
+  position: fixed; inset: 0; width: 100%; height: 100%;
+  z-index: -1; pointer-events: none; border: 0;
+  opacity: 0; animation: bg3dIn 900ms var(--ease) 120ms forwards;
+}
+@keyframes bg3dIn { to { opacity: 1; } }
+
+html { scroll-behavior: smooth; }
+body {
+  font-family: var(--font-body);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  transition: background .25s, color .25s;
+  font-size: 15px;
+}
+/* العناوين الكبيرة: نفس الخط، والتمييز يأتي من الوزن والمقاس لا من عائلة أخرى */
+.display { font-family: var(--font-display); font-weight: 700; letter-spacing: -.2px; line-height: 1.5; }
+
+/* ================= صندوق الأيقونة — محجوز قبل أول رسمة =================
+   الأيقونات تُحقن بـ JS في نهاية الصفحة (icons.js). لو كان مقاسها معرَّفاً في
+   ذلك الملف لبقيت <i class="ic"> بعرض صفر حتى DOMContentLoaded ثم قفزت دفعة
+   واحدة — وهذه بالضبط الإزاحة التي قِيست: 0.0219 في الرئيسية و0.1028 في لوحة
+   الرصد، مصدرها اتساع الأزرار وانتقال شريط التحكم 104px→380px. لأن هذا الملف
+   يحجب الرسم، تعريف المقاس هنا يحجز المكان منذ اللحظة الأولى فتصير CLS = 0.
+   السطر التالي علامة يقرأها icons.js فلا يعيد حقن القواعد نفسها. */
+:root { --fbx-ic: 1; }
+.ic { display: inline-flex; align-items: center; justify-content: center; flex: none; line-height: 0;
+      width: 1.15em; height: 1.15em; }
+.ic.lg { width: 1.5em; height: 1.5em; }
+/* الرسم يحمل مقاسه بنفسه: FBXIcons.svg() يُستعمل أحياناً بلا غلاف .ic (شرائح
+   الصفحات، زرّ بدء الرصد، بطاقات الإحصاء)، وSVG بلا عرض مصرَّح يتمدّد إلى
+   300px الافتراضية — وهو ما ضخّم زرّ الرصد إلى 318px وشريط التحكم إلى 380px.
+   وداخل الغلاف يملأه فيرث مقاس .ic بما فيه المقاس الكبير. */
+.ic-svg { width: 1.15em; height: 1.15em; display: block; }
+.ic > .ic-svg { width: 100%; height: 100%; }
+.ic.tone-ok   { color: var(--success); }
+.ic.tone-warn { color: var(--warn); }
+.ic.tone-bad  { color: var(--danger); }
+.ic.tone-mute { color: var(--text-2); }
+/* الأيقونة داخل زرّ أو شريحة تتباعد عن النص تلقائياً */
+.btn .ic, .pill .ic, .hero-cta .ic, .side-nav a .ic { margin-inline-end: 1px; }
+
+/* ================= هيكل التطبيق: قائمة جانبية ثابتة + عمود المحتوى ================= */
+.app-shell { display: flex; align-items: stretch; min-height: 100vh; }
+.sidebar {
+  width: 232px; flex: none;
+  background: linear-gradient(185deg, #0a1224 0%, var(--green-950) 60%);
+  border-inline-end: 1px solid rgba(255,255,255,.06);
+  box-shadow: 1px 0 0 rgba(255,255,255,.03), var(--e3);
+  color: #dbe7ec;
+  display: flex; flex-direction: column;
+  padding: var(--s5) var(--s3) var(--s3);
+  position: sticky; top: 0; height: 100vh; overflow-y: auto;
+  z-index: 20;
+}
+.side-brand {
+  display: flex; align-items: center; gap: var(--s3);
+  text-decoration: none; color: inherit;
+  padding: var(--s1) var(--s2) var(--s5);
+}
+.side-brand .brand-logo {
+  width: 34px; height: 34px; border-radius: var(--radius-sm); flex: none;
+  background: var(--green-600); color: #fff;
+  display: grid; place-items: center; font-size: 17px;
+}
+.side-brand h1 { font-size: var(--fs-body); font-weight: 700; letter-spacing: -.1px; line-height: 1.3; }
+.side-brand p { font-size: var(--fs-2xs); opacity: .55; margin-top: 2px; }
+
+/* التنقّل مقسَّم إلى مجموعات معنونة: خمسة روابط بلا تجميع تُقرأ ككومة،
+   ومع العناوين تُقرأ كخريطة للأداة. */
+.side-nav { display: flex; flex-direction: column; gap: 1px; }
+.nav-group { margin-bottom: var(--s4); display: flex; flex-direction: column; gap: 1px; }
+.nav-label {
+  font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .6px;
+  color: rgba(255,255,255,.5); padding: 0 var(--s3) var(--s2);   /* .34 = 3.1:1 — دون الحد */
+}
+.side-nav a {
+  display: flex; align-items: center; gap: var(--s3);
+  padding: var(--s2) var(--s3); border-radius: var(--radius-sm);
+  color: #b9cdd6; text-decoration: none; font-size: var(--fs-sm); font-weight: 600;
+  position: relative; transition: background .15s, color .15s;
+}
+.side-nav a .ico { display: grid; place-items: center; width: 18px; flex: none; opacity: .75; }
+.side-nav a:hover { background: rgba(255,255,255,.05); color: #eaf3f6; }
+.side-nav a:hover .ico { opacity: 1; }
+.side-nav a.active { background: rgba(255,255,255,.1); color: #fff; font-weight: 700; }
+.side-nav a.active .ico { opacity: 1; color: var(--sage); }
+/* شريط رفيع يعلّم الصفحة الحالية — أوضح من فرق لون وحده */
+.side-nav a.active::before {
+  content: ''; position: absolute; inset-block: 7px; inset-inline-start: 0;
+  width: 3px; border-radius: 0 3px 3px 0; background: var(--sage);
+}
+.side-foot {
+  margin-top: auto; padding-top: var(--s3);
+  border-top: 1px solid rgba(255,255,255,.08);
+  display: flex; align-items: center; justify-content: space-between; gap: var(--s2);
+}
+.side-ver { font-size: var(--fs-2xs); color: rgba(255,255,255,.5);   /* .32 = 2.89:1 — دون الحد */ padding-inline-start: var(--s2); }
+.icon-btn {
+  width: 32px; height: 32px; border-radius: var(--radius-sm); flex: none;
+  border: 1px solid rgba(255,255,255,.14); cursor: pointer;
+  background: rgba(255,255,255,.05); color: #dbe7ec; font-size: 14px;
+  display: grid; place-items: center; transition: background .15s, color .15s;
+}
+.icon-btn:hover { background: rgba(255,255,255,.14); color: #fff; }
+
+.main-col { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+
+/* ================= رأس الصفحة: شريط تطبيق مضغوط وثابت =================
+   البانر الإعلاني الطويل يليق بصفحة تعريف، لا بأداة عمل: كان يدفع المحتوى
+   الحقيقي خارج الشاشة الأولى في كل صفحة. هنا شريط منخفض يحمل موقعك في
+   الأداة (سطر فوقي) + العنوان + الإجراء الأساسي، ويبقى ملتصقاً بالأعلى
+   أثناء التمرير فلا يضيع السياق داخل قوائم طويلة. */
+.page-header {
+  position: sticky; top: 0; z-index: 15;
+  background: var(--glass-bg);
+  -webkit-backdrop-filter: saturate(var(--glass-sat)) blur(var(--glass-blur));
+  backdrop-filter: saturate(var(--glass-sat)) blur(var(--glass-blur));
+  border-bottom: 1px solid var(--glass-brd);
+  color: var(--text);
+  padding: var(--s5) var(--s8);
+  display: flex; align-items: flex-end; justify-content: space-between;
+  gap: var(--s6); flex-wrap: wrap;
+}
+.ph-text { min-width: 0; display: flex; flex-direction: column; gap: var(--s1); }
+.hero-badge {
+  display: inline-flex; align-items: center; gap: var(--s2); align-self: flex-start;
+  color: var(--green-700); font-size: var(--fs-2xs); font-weight: 700; letter-spacing: .4px;   /* green-600 = 4.53:1، يمرّ بلا هامش */
+}
+[data-theme="dark"] .hero-badge { color: var(--sage); }
+.page-header h2 {
+  font-size: var(--fs-display); font-weight: 700; line-height: var(--lh-tight);
+  letter-spacing: -.4px; max-width: 46ch;
+}
+.page-header h2 em { font-style: normal; color: var(--green-600); }
+[data-theme="dark"] .page-header h2 em { color: var(--sage); }
+.page-header p { max-width: 68ch; color: var(--text-2); line-height: var(--lh); font-size: var(--fs-sm); }
+/* الإجراء الأساسي: مستطيل بحوافّ محسوبة لا حبّة كاملة — أدقّ وأكثر مهنية */
+.hero-cta {
+  display: inline-flex; align-items: center; gap: var(--s2); flex: none;
+  background: var(--green-900); color: #eff6f8; border: none; border-radius: var(--radius-sm);
+  padding: var(--s3) var(--s5); font-family: inherit; font-size: var(--fs-sm); font-weight: 700;
+  cursor: pointer; box-shadow: var(--e2);
+  transition: background var(--dur-2) var(--ease), transform var(--dur-2) var(--ease),
+              box-shadow var(--dur-2) var(--ease);
+}
+.hero-cta:hover { background: var(--green-800); transform: translate3d(0, -2px, 12px); box-shadow: var(--e3); }
+.hero-cta:active { transform: translate3d(0, 1px, 0) scale(.985); }
+[data-theme="dark"] .hero-cta { background: var(--sage); color: #0b1820; }
+[data-theme="dark"] .hero-cta:hover { background: #bcd8e1; }
+
+@media (max-width: 880px) {
+  .app-shell { flex-direction: column; }
+  .sidebar {
+    width: 100%; height: auto; position: sticky; top: 0;
+    flex-direction: row; align-items: center; padding: var(--s2) var(--s3); gap: var(--s3);
+    border-inline-end: none; border-bottom: 1px solid rgba(255,255,255,.07);
+  }
+  .side-brand { padding: 0; }
+  .side-brand p { display: none; }
+  .side-nav { flex-direction: row; flex: 1; justify-content: center; gap: var(--s1); }
+  .nav-group { flex-direction: row; margin-bottom: 0; gap: var(--s1); }
+  .nav-label, .side-ver { display: none; }
+  .side-nav a { padding: var(--s2); }
+  .side-nav a.active::before { inset: auto 0 0 0; width: auto; height: 2px; border-radius: 2px 2px 0 0; }
+  .side-nav a .label { display: none; }
+  .side-foot { margin-top: 0; padding-top: 0; border-top: none; }
+  /* على الجوال يصير الشريط الجانبي شريطاً علوياً لاصقاً؛ ولو بقي رأس الصفحة
+     لاصقاً كذلك لتراكبا عند نفس الحافة. الأولوية للتنقّل، فيُفكّ التصاق الرأس. */
+  .page-header { position: static; padding: var(--s4); gap: var(--s3); }
+  .page-header h2 { font-size: 1.25rem; }
+}
+@media (max-width: 560px) {
+  .page-header p { display: none; }
+}
+
+/* ================= اللوحات والعناصر العامة ================= */
+main { max-width: 1200px; margin: 0 auto; padding: var(--s8) var(--s8) var(--s12); width: 100%; }
+
+/* اللوحة سطح محايد يُعرَّف بحدّه لا بظلّه. البطاقات المرتفعة الكثيرة تُنتج
+   ضجيجاً بصرياً وتُسطّح التسلسل الهرمي بدل أن تبنيه. */
+.panel {
+  background: var(--surface); border: var(--hair);
+  border-radius: var(--radius); box-shadow: var(--e2);
+  padding: var(--s6); margin-top: var(--s5);
+  transition: background var(--dur-3) var(--ease), border-color var(--dur-3) var(--ease),
+              box-shadow var(--dur-2) var(--ease);
+}
+.panel-title {
+  display: flex; align-items: center; gap: var(--s3);
+  font-size: var(--fs-title); font-weight: 700; line-height: var(--lh-tight);
+  letter-spacing: -.2px;
+}
+.panel-title .num {
+  width: 22px; height: 22px; border-radius: 6px; flex: none;
+  background: var(--primary-soft); color: var(--green-700);
+  display: grid; place-items: center; font-size: var(--fs-2xs); font-weight: 700;
+}
+[data-theme="dark"] .panel-title .num { color: var(--sage); }
+.panel-sub { font-size: var(--fs-xs); color: var(--text-2); margin: var(--s2) 0 var(--s5); line-height: var(--lh); }
+
+.grid { display: grid; gap: var(--s4); }
+.grid-2 { grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); }
+.grid-4 { grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.row { display: flex; gap: var(--s2); flex-wrap: wrap; }
+
+/* تنبيه مضغوط: رسالة سطرية لا تستحق لوحة كاملة بارتفاع قسم */
+.notice {
+  display: flex; align-items: center; gap: var(--s3);
+  background: var(--warn-soft); border: 1px solid color-mix(in srgb, var(--warn) 26%, transparent);
+  border-radius: var(--radius); padding: var(--s3) var(--s4); margin-top: var(--s5);
+}
+.notice-ic { color: var(--warn); display: grid; place-items: center; flex: none; font-size: 17px; }
+.notice-body { flex: 1; min-width: 0; }
+.notice-body strong { display: block; font-size: var(--fs-sm); font-weight: 700; }
+.notice-body p { font-size: var(--fs-xs); color: var(--text-2); line-height: var(--lh); margin-top: 1px; }
+.notice .btn { flex: none; background: var(--surface); }
+/* تنبيهات «اضبط المفتاح» تظهر بقاعدة لا بأمر JS بعد التحميل: السكربت في <head>
+   يضع data-nokey قبل الرسم، فيبدأ التنبيه ظاهراً أو غائباً من أول لحظة بلا قفزة.
+   الإخفاء هو الأصل حتى لا يومض التنبيه على من ضبط مفتاحه أصلاً. */
+#setupPanel, #keyHint { display: none; }
+:root[data-nokey] #setupPanel { display: flex; }
+:root[data-nokey] #keyHint { display: block; }
+
+/* ================= حقول الإدخال ================= */
+label.field-label { display: block; font-size: var(--fs-xs); font-weight: 700; margin-bottom: var(--s2); color: var(--text); }
+label.field-label small { font-weight: 400; color: var(--text-2); font-size: var(--fs-2xs); }
+.input, select.input {
+  width: 100%; padding: var(--s3) var(--s3);
+  border: var(--hair); border-radius: var(--radius-sm);
+  background: var(--surface); color: var(--text);
+  font-family: inherit; font-size: var(--fs-sm);
+  transition: border-color .15s, box-shadow .15s;
+}
+.input::placeholder { color: var(--text-2); opacity: .7; }
+.input:hover { border-color: color-mix(in srgb, var(--green-500) 45%, var(--border)); }
+.input:focus { outline: none; border-color: var(--green-600); box-shadow: 0 0 0 3px var(--primary-soft); }
+/* حلقة box-shadow وحدها لونها ‎#e4eff3 على أبيض ≈ 1.15:1 — غير مرئية عملياً.
+   من يتنقّل بلوحة المفاتيح يحتاج مؤشراً حقيقياً، فتُعاد له الحلقة الموحّدة.
+   (الأولوية 0,2,0 لتغلب على .input:focus التي تلغي الـ outline.) */
+.input:focus-visible { outline: 2px solid var(--focus); outline-offset: 2px; }
+textarea.input { resize: vertical; min-height: 76px; line-height: var(--lh); }
+.input-wrap { position: relative; }
+.input-wrap .toggle-eye {
+  position: absolute; left: var(--s3); top: 50%; transform: translateY(-50%);
+  border: none; background: none; cursor: pointer; font-size: 14px; color: var(--text-2);
+  display: grid; place-items: center;
+}
+.hint { font-size: var(--fs-xs); color: var(--text-2); margin-top: var(--s2); line-height: var(--lh); }
+.hint a { color: var(--green-700); text-decoration: none; font-weight: 700; }
+[data-theme="dark"] .hint a { color: var(--sage); }
+.status-line {
+  margin-top: var(--s3); font-size: var(--fs-xs); font-weight: 700;
+  padding: var(--s3) var(--s4); border-radius: var(--radius-sm);
+  background: var(--surface-2); border: var(--hair); display: none;
+}
+.status-line.show { display: block; }
+.status-ok { color: var(--green-700); } [data-theme="dark"] .status-ok { color: var(--sage); }
+.status-err { color: var(--danger); }
+
+/* ================= الأزرار ================= */
+/* مستطيلات بحوافّ محسوبة بدل حبّات كاملة: الحبّة تليق بالوسوم والمرشِّحات،
+   أما أزرار الإجراءات في أداة عمل فتُقرأ أدقّ وأكثر مهنية بهذا الشكل. */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--s2);
+  padding: var(--s2) var(--s4); border: 1px solid transparent; border-radius: var(--radius-sm);
+  cursor: pointer; font-family: inherit; font-size: var(--fs-sm); font-weight: 700;
+  line-height: 1.5; white-space: nowrap;
+  transition: background var(--dur-2) var(--ease), border-color var(--dur-2) var(--ease),
+              color var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease),
+              transform var(--dur-1) var(--ease);
+}
+.btn:active { transform: translate3d(0, 1px, 0) scale(.97); transition-duration: var(--dur-1); transition-timing-function: var(--ease-snap); }
+.btn-primary { background: var(--green-900); color: #eff6f8; box-shadow: var(--e2); }
+.btn-primary:hover { box-shadow: var(--e3); }
+.btn-primary:hover { background: var(--green-800); }
+.btn-primary:disabled { opacity: .4; cursor: not-allowed; }
+[data-theme="dark"] .btn-primary { background: var(--sage); color: #0b1820; }
+[data-theme="dark"] .btn-primary:hover { background: #bcd8e1; }
+.btn-ghost { background: var(--surface); color: var(--text); border-color: var(--border); }
+.btn-ghost:hover { border-color: var(--green-500); color: var(--green-700); background: var(--surface-2); }
+[data-theme="dark"] .btn-ghost:hover { color: var(--sage); }
+.btn-danger-ghost { background: transparent; border-color: color-mix(in srgb, var(--danger) 45%, transparent); color: var(--danger); }
+.btn-danger-ghost:hover { background: var(--danger-soft); border-color: var(--danger); }
+.btn-sm { padding: var(--s1) var(--s3); font-size: var(--fs-xs); }
+.actions-row { display: flex; gap: var(--s2); flex-wrap: wrap; margin-top: var(--s5); }
+
+/* ================= الوسوم والمرشِّحات ================= */
+.chips { display: flex; flex-wrap: wrap; gap: var(--s2); margin-top: var(--s3); }
+.chip {
+  display: inline-flex; align-items: center; gap: var(--s2); background: var(--surface-2);
+  border: var(--hair); border-radius: var(--radius-pill);
+  padding: var(--s1) var(--s2) var(--s1) var(--s1); font-size: var(--fs-xs); font-weight: 600;
+}
+.chip .chip-url { direction: ltr; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 280px; padding-inline-start: var(--s2); }
+.chip button {
+  border: none; background: transparent; color: var(--text-2);
+  width: 24px; height: 24px; border-radius: 50%; cursor: pointer;   /* حدّ 24×24 */
+  display: grid; place-items: center; flex: none; padding: 0; transition: background .15s, color .15s;
+}
+.chip button:hover { background: var(--danger-soft); color: var(--danger); }
+.chip button svg { width: 13px; height: 13px; }
+.no-platforms { font-size: var(--fs-sm); color: var(--text-2); margin-top: var(--s3); }
+
+/* شريط التحكّم: سطح واحد محدود يجمع البحث والمرشِّحات وطريقة العرض والإجراءات،
+   بدل ثلاثة صفوف سائبة تطفو فوق الخلفية بلا رابط بينها. */
+.controls {
+  background: var(--glass-bg); border: 1px solid var(--glass-brd); border-radius: var(--radius);
+  -webkit-backdrop-filter: saturate(var(--glass-sat)) blur(var(--glass-blur));
+  backdrop-filter: saturate(var(--glass-sat)) blur(var(--glass-blur));
+  box-shadow: var(--e2);
+  padding: var(--s3) var(--s4); margin: var(--s5) 0 var(--s4);
+  display: flex; flex-direction: column; gap: var(--s3);
+}
+.controls > * + * { padding-top: var(--s3); border-top: var(--hair); }
+
+.filters { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; }
+.filter-group { display: flex; gap: var(--s1); flex-wrap: wrap; align-items: center; }
+.filter-label { font-size: var(--fs-2xs); font-weight: 700; color: var(--text-2); margin-inline-end: var(--s1); }
+.pill {
+  display: inline-flex; align-items: center; gap: var(--s1);
+  border: 1px solid transparent; background: transparent; color: var(--text-2);
+  border-radius: var(--radius-pill); padding: var(--s1) var(--s3);
+  font-family: inherit; font-size: var(--fs-xs); font-weight: 600; cursor: pointer;
+  transition: background var(--dur-2) var(--ease), color var(--dur-2) var(--ease),
+              transform var(--dur-2) var(--ease); white-space: nowrap;
+}
+.pill:hover { background: var(--surface-2); color: var(--text); transform: translateY(-1px); }
+.pill:active { transform: scale(.96); transition-duration: var(--dur-1); }
+.pill.active { background: var(--primary-soft); color: var(--green-700); font-weight: 700; }
+[data-theme="dark"] .pill.active { color: var(--sage); }
+.filters .spacer { flex: 1; }
+
+/* ================= بطاقات الإحصاء ================= */
+.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(158px, 1fr)); gap: var(--s3); margin: var(--s5) 0; }
+.stat-tile {
+  background: var(--surface); border: var(--hair); border-radius: var(--radius);
+  padding: var(--s4); display: flex; align-items: center; gap: var(--s3);
+  box-shadow: var(--e1);
+  transition: transform var(--dur-2) var(--ease), box-shadow var(--dur-2) var(--ease);
+}
+.stat-tile:hover { transform: translate3d(0, -3px, 16px); box-shadow: var(--e3); transition-timing-function: var(--ease-spring); }
+.stat-tile .stat-icon {
+  width: 32px; height: 32px; border-radius: var(--radius-sm); flex: none;
+  background: var(--surface-2); color: var(--green-600);
+  display: grid; place-items: center; font-size: 15px;
+}
+[data-theme="dark"] .stat-tile .stat-icon { color: var(--sage); }
+/* نقطة الحالة: نفس دلالة الإيموجي بلا اختلاف شكله بين الأنظمة، وبلون اللوحة */
+.stat-tile .stat-dot {
+  width: 8px; height: 8px; border-radius: 50%; flex: none;
+  background: var(--tone, var(--text-2));
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--tone, var(--text-2)) 15%, transparent);
+  margin-inline-start: var(--s1);
+}
+.stat-tile.tone-pos     { --tone: var(--success); }
+.stat-tile.tone-neg     { --tone: var(--danger); }
+.stat-tile.tone-warn    { --tone: var(--warn); }
+.stat-tile.tone-neutral { --tone: var(--green-600); }
+.stat-tile .stat-body { min-width: 0; }
+.stat-tile .k { font-size: var(--fs-2xs); font-weight: 600; color: var(--text-2); }
+/* الأرقام بأرقام جدولية: تبقى الخانات متحاذية بين البطاقات ولا ترقص مع التحديث */
+.stat-tile .v { font-size: 1.32rem; font-weight: 700; line-height: 1.2; letter-spacing: -.5px; font-variant-numeric: tabular-nums; }
+.stat-tile .v.small { font-size: var(--fs-body); font-weight: 700; letter-spacing: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.stat-tile .sub { font-size: var(--fs-2xs); color: var(--text-2); margin-top: 1px; }
+
+/* ================= ترويسة القسم ================= */
+.feed-head { display: flex; align-items: center; gap: var(--s3); flex-wrap: wrap; margin: var(--s8) 0 var(--s4); }
+.feed-head h3 {
+  font-size: var(--fs-title); font-weight: 700; display: flex; align-items: center; gap: var(--s2);
+  line-height: var(--lh-tight); letter-spacing: -.2px;
+}
+.feed-count {
+  background: var(--surface-2); color: var(--text-2); border: var(--hair);
+  border-radius: var(--radius-pill); padding: 1px var(--s2);
+  font-size: var(--fs-2xs); font-weight: 700; font-variant-numeric: tabular-nums;
+}
+.feed-head .spacer { flex: 1; }
+
+/* ================= شريط الأدوات ================= */
+.toolbar { display: flex; align-items: center; gap: var(--s2); flex-wrap: wrap; }
+.search-wrap { position: relative; flex: 1 1 200px; max-width: 300px; }
+.search-wrap input { padding-inline-end: var(--s8); }
+.search-wrap::before {
+  content: ''; position: absolute; inset-inline-end: var(--s3); top: 50%;
+  width: 14px; height: 14px; margin-top: -7px; pointer-events: none; opacity: .5;
+  background: currentColor;
+  -webkit-mask: var(--ic-search) center / contain no-repeat;
+  mask: var(--ic-search) center / contain no-repeat;
+}
+.view-toggle { display: flex; background: var(--surface-2); border: var(--hair); border-radius: var(--radius-sm); padding: 2px; gap: 2px; }
+.view-toggle button {
+  border: none; background: none; padding: var(--s1) var(--s3); cursor: pointer;
+  min-width: 34px; min-height: 26px;   /* كان 39×23 — دون حدّ 24×24 */
+  color: var(--text-2); border-radius: 7px; display: grid; place-items: center;
+  transition: background .15s, color .15s;
+}
+.view-toggle button:hover { color: var(--text); }
+.view-toggle button.active { background: var(--surface); color: var(--green-700); box-shadow: var(--shadow-xs); }
+[data-theme="dark"] .view-toggle button.active { color: var(--sage); }
+
+/* قوالب المنشورات نفسها انتقلت إلى card.js (FBXCard) — لكل من عرض البطاقات
+   وعرض الجدول — فلا تُعرَّف هنا. ما يبقى في هذا الملف هو ما تشترك فيه كل
+   الصفحات: الهيكل، اللوحات، الأزرار، الشرائح، وشريط الأدوات. */
+
+.empty-state { text-align: center; padding: 44px 18px; color: var(--text-2); }
+.empty-state .big { font-size: 40px; margin-bottom: 10px; }
+
+footer { text-align: center; padding: 22px 20px 30px; color: var(--text-2); font-size: .76rem; }
+
+.toast {
+  position: fixed; bottom: 22px; right: 50%; transform: translate(50%, 16px);
+  background: var(--green-900); color: #eff6f8;
+  padding: 10px 22px; border-radius: 999px; font-size: .82rem; font-weight: 700;
+  opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s;
+  z-index: 99; box-shadow: var(--shadow-lg);
+}
+.toast.show { opacity: 1; transform: translate(50%, 0); }
+
+@media (max-width: 720px) {
+  main { padding: 18px 14px 44px; }
+  .panel { padding: 18px 16px; margin-top: 16px; }
+  .panel-title { font-size: 1.05rem; }
+  .feed-head h3 { font-size: 1.1rem; }
+}

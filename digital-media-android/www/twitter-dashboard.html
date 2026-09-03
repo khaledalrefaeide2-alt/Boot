@@ -1,0 +1,860 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>الرصد التلقائي لتغريدات X (تويتر) — الإعلام الرقمي</title>
+<script>
+/* يعمل قبل أوّل رسمة، وهذا شرطه لا تحسينه. المظهر والمفتاح كانا يُقرآن من
+   سكربتات نهاية الصفحة، فيرسم المتصفح النسخة الفاتحة ثم يقلبها داكنة (وميض)،
+   ويظهر تنبيه «اضبط المفتاح» بعد الرسم فيدفع ما تحته 135px — إزاحة تخطيط
+   قِيست عند 0.02. القراءة هنا تُثبّت الحالتين على <html> قبل أن يُرسم شيء،
+   والقواعد في theme.css تتفرّع عنهما. أي خلل في التخزين يُعامل كـ«بلا مفتاح»
+   لأن إظهار التنبيه أهون من إخفاء إعداد ناقص. */
+(function () {
+  var d = document.documentElement;
+  /* بوّابة المدير: هذه صفحة تحكّم كامل، لا صفحة عرض نتائج. من دون جلسة
+     مدير سارية نغادر فوراً وقبل أن يُرسم أي شيء من الصفحة — الاستبدال
+     (replace لا href) يمنع الرجوع إليها بزرّ الرجوع بعد الخروج.
+     هذه بوّابة سلوكية لا حماية حقيقية؛ التفصيل والسبب في auth.js. */
+  try {
+    if (localStorage.getItem('fbx_admin_session') !== '1') {
+      location.replace('login.html?next=' + encodeURIComponent(location.pathname));
+      return;
+    }
+  } catch (e) { location.replace('login.html'); return; }
+  try {
+    var t = localStorage.getItem('fbx_theme') ||
+      (matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
+    d.setAttribute('data-theme', t);
+    if (!(localStorage.getItem('fbx_apify_key') || '').trim()) d.setAttribute('data-nokey', '');
+    if (localStorage.getItem('fbx_nav_collapsed') === '1') d.setAttribute('data-nav', 'collapsed');
+  } catch (e) { d.setAttribute('data-nokey', ''); }
+})();
+</script>
+<link rel="stylesheet" href="theme.css">
+<link rel="stylesheet" href="android.css">
+<style>
+  /* ============ شريط الرصد ============
+     الشكل يأتي من theme.css؛ هنا ما يخصّ هذه الصفحة وحدها. الإصدار
+     الخامس كان يرسم الشريط لوحاً كحلياً بألوان مثبَّتة في الصفحة، وهي
+     تغلب على ورقة الأنماط لأنها بعدها في الترتيب — فأُزيلت كلها. */
+  .btn-stop { background: var(--remove); border-color: var(--remove); color: #fff; }
+  .btn-stop:hover:not(:disabled) { background: color-mix(in srgb, var(--remove) 85%, #000); }
+  .band-alert { display: none; }
+  .band-alert.on { display: block; }
+
+  /* ============ Control band (unique to this page) ============ */
+  .btn-stop { background: #b8402f; color: #fff; }
+  .btn-stop:hover { background: #a53727; }
+
+  /* ============ Dashboard content ============ */
+  #dashboard { display: none; }
+  .feed-head select.input { width: auto; }
+
+  /* stat tiles + chart cards */
+  .charts-grid { display: grid; grid-template-columns: 1.4fr 1fr; gap: var(--s4); margin-bottom: var(--s1); }
+  @media (max-width: 860px) { .charts-grid { grid-template-columns: 1fr; } }
+  .chart-card { background: var(--surface); border: var(--hair); border-radius: var(--radius); padding: var(--s5) var(--s5) var(--s3); }
+  .chart-card h4 { font-size: var(--fs-body); font-weight: 700; letter-spacing: -.2px; display: flex; align-items: center; gap: var(--s2); }
+  .chart-card .chart-sub { font-size: var(--fs-2xs); color: var(--text-2); margin: 2px 0 var(--s3); }
+  .chart-holder { position: relative; width: 100%; }
+  .chart-holder svg { width: 100%; height: auto; display: block; overflow: visible; }
+  .chart-empty { text-align: center; color: var(--text-2); font-size: .78rem; padding: 30px 10px; }
+  .chart-tooltip {
+    position: absolute; pointer-events: none; z-index: 5; opacity: 0; transition: opacity .12s;
+    background: var(--ink); color: var(--paper); border-radius: var(--radius-sm); padding: 7px 11px;
+    font-size: .74rem; box-shadow: var(--shadow-md); white-space: nowrap; transform: translate(-50%, -120%);
+  }
+  .chart-tooltip .tt-v { font-weight: 800; font-size: .84rem; }
+  .chart-tooltip .tt-k { opacity: .8; font-size: .68rem; }
+  svg text.num { direction: ltr; unicode-bidi: plaintext; }
+
+  /* ============ Classification summary ============ */
+  .asum-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: var(--s3); margin: var(--s5) 0 var(--s1); }
+  /* بطاقات الملخّص: خلفية باهتة ونصّ ملوّن بدل تدرّجات مشبعة — تُقرأ الأرقام
+     بوضوح أعلى، ولا تتنافس ستّ مربّعات صارخة على انتباه العين. */
+  .asum-card {
+    border-radius: var(--radius); padding: 13px; text-align: center;
+    background: var(--surface); border: 1px solid var(--border);
+    box-shadow: var(--shadow-xs); position: relative; overflow: hidden;
+  }
+  .asum-card::before { content: ''; position: absolute; inset-inline: 0; top: 0; height: 3px; background: currentColor; opacity: .85; }
+  .asum-card .v { font-size: 1.32rem; font-weight: 800; line-height: 1.1; color: currentColor; }
+  .asum-card .l { font-size: .68rem; font-weight: 700; color: var(--text-2); margin-top: 4px; }
+  .asum-card.pos  { color: var(--success); background: var(--success-soft); }
+  .asum-card.neg  { color: var(--danger);  background: var(--danger-soft); }
+  .asum-card.neu  { color: var(--text-2);  background: var(--surface-2); }
+  .asum-card.flag { color: var(--warn);    background: var(--warn-soft); }
+  .asum-card.esc  { color: var(--danger);  background: var(--danger-soft); }
+  .asum-card.sev  { color: var(--green-700); background: var(--primary-soft); }
+  [data-theme="dark"] .asum-card.sev { color: var(--sage); }
+
+  /* ============ Tweet cards ============ */
+  .rt-tag { font-size: .68rem; font-weight: 800; padding: 2px 9px; border-radius: var(--r-pill); background: var(--review-soft); color: var(--review); border: 1px solid var(--review-line); display: inline-block; margin-bottom: 8px; }
+  .tw-media { display: grid; grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 6px; margin: 10px 0; }
+  .tw-media img { width: 100%; height: 100px; object-fit: cover; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+  .tw-media a { display: block; position: relative; }
+  .tw-media .vid-badge { position: absolute; inset-inline-start: 6px; bottom: 6px; background: rgba(0,0,0,.6); color: #fff; font-size: .65rem; padding: 1px 6px; border-radius: 6px; }
+
+  @media (max-width: 720px) {
+  }
+</style>
+</head>
+<body>
+
+<a class="skip-link" href="#main-content">تخطَّ إلى المحتوى</a>
+<div class="app-shell">
+  <aside class="sidebar" id="mainNav" aria-label="التنقّل الرئيسي">
+    <a class="side-brand" href="index.html">
+      <div class="brand-logo"><i class="ic" data-ic="logo"></i></div>
+      <div>
+        <span class="brand-name">الإعلام الرقمي</span>
+        <p>رصد وتحليل المحتوى</p>
+      </div>
+    </a>
+      <button class="nav-close" id="navClose" type="button" aria-label="إغلاق قائمة التنقّل"><i class="ic" data-ic="close"></i></button>
+    <nav class="side-nav" aria-label="أقسام الأداة">
+      <div class="nav-group">
+        <span class="nav-label">الاستخراج</span>
+        <a href="index.html" aria-label="استخراج منشورات فيسبوك"><span class="ico"><i class="ic" data-ic="search"></i></span><span class="label">فيسبوك</span></a>
+        <a href="twitter.html" aria-label="استخراج تغريدات X"><span class="ico"><i class="ic" data-ic="x"></i></span><span class="label">X (تويتر)</span></a>
+      </div>
+      <div class="nav-group">
+        <span class="nav-label">الرصد التلقائي</span>
+        <a href="dashboard.html" aria-label="الرصد التلقائي لفيسبوك"><span class="ico"><i class="ic" data-ic="chart"></i></span><span class="label">فيسبوك</span></a>
+        <a href="twitter-dashboard.html" class="active" aria-label="الرصد التلقائي لـ X"><span class="ico"><i class="ic" data-ic="signal"></i></span><span class="label">X (تويتر)</span></a>
+      </div>
+      <div class="nav-group">
+        <span class="nav-label">النظام</span>
+        <a href="settings.html" aria-label="الإعدادات"><span class="ico"><i class="ic" data-ic="settings"></i></span><span class="label">الإعدادات</span></a>
+      </div>
+      <div class="nav-group">
+        <span class="nav-label">عام</span>
+        <a href="results.html" aria-label="عرض نتائج الرصد"><span class="ico"><i class="ic" data-ic="news"></i></span><span class="label">النتائج</span></a>
+      </div>
+    </nav>
+    <div class="side-foot">
+      <span class="side-ver">الإصدار 6.0</span>
+      <button class="icon-btn" id="logoutBtn" title="تسجيل الخروج من حساب المدير"><i class="ic" data-ic="logout"></i></button>
+      <button class="icon-btn" id="themeBtn" title="الوضع الليلي / النهاري"><i class="ic" data-ic="moon"></i></button>
+    </div>
+  </aside>
+
+  <div class="nav-scrim" id="navScrim" hidden></div>
+
+  <div class="main-col">
+    <header class="page-header">
+      <button class="nav-toggle" id="navToggle" type="button"
+        aria-controls="mainNav" aria-expanded="false" aria-label="طيّ قائمة التنقّل"><i class="ic" data-ic="menu"></i></button>
+      <div class="ph-text">
+        <span class="hero-badge"><i class="ic" data-ic="signal"></i> رصد X (تويتر)</span>
+        <h1>الرصد التلقائي للحسابات</h1>
+        <p>يستخرج الموقع تغريدات حساباتك الرسمية تلقائياً كل دورة، ويحلّلها ويصنّفها فوراً مع رسوم بيانية وتصفية حية.</p>
+      </div>
+      
+    </header>
+
+    <main id="main-content" tabindex="-1">
+
+  <!-- Setup -->
+  <section class="panel">
+    <div class="panel-title"><span class="num">1</span> الإعداد — الحسابات المستهدَفة</div>
+    <div class="row">
+      <input class="input" type="text" id="newAccount" placeholder="https://x.com/ALsahmaLsaudi" dir="ltr" style="flex:1 1 280px">
+      <button class="btn btn-primary btn-sm" id="addAccountBtn"><i class="ic" data-ic="plus"></i> إضافة حساب</button>
+      <button class="btn btn-ghost btn-sm" id="pickPagesBtn" type="button"><i class="ic" data-ic="library"></i> من الدليل</button>
+    </div>
+    <div class="hint">أضف روابط حسابات X الرسمية التي تريد رصد تغريداتها (مثل <span dir="ltr">https://x.com/ALsahmaLsaudi</span>) — تُحفظ في متصفحك.</div>
+    <div class="chips" id="accountChips"></div>
+    <div class="no-platforms" id="noAccounts">لم تضف أي حساب بعد.</div>
+
+    <div class="grid grid-4" style="margin-top:14px">
+      <div>
+        <label class="field-label" for="tweetsPerCycle">عدد التغريدات لكل دورة</label>
+        <input class="input" type="number" id="tweetsPerCycle" min="1" max="20" value="3">
+        <div class="hint"><i class="ic" data-ic="shield"></i> سقف استخراج إلزامي لكل حساب في كل دورة</div>
+      </div>
+    </div>
+
+    <div class="hint" id="keyHint"><i class="ic" data-ic="warning"></i> لم يُضبط مفتاح الاستخراج بعد — <a href="settings.html">اضبطه من صفحة الإعدادات <i class="ic" data-ic="settings"></i></a>.</div>
+    <div class="hint" style="margin-top:14px"><i class="ic" data-ic="bulb"></i> مفتاح الاستخراج وقاعدة البيانات يُضبطان من <a href="settings.html">صفحة الإعدادات <i class="ic" data-ic="settings"></i></a> ويُطبَّقان تلقائياً هنا.</div>
+  </section>
+
+  <!-- Control band -->
+  <section class="control-band">
+    <div class="pulse-dot" id="pulseDot"></div>
+    <div class="control-info">
+      <h3 id="monitorTitle">الرصد متوقف</h3>
+      <p>يرصد <strong>دفعة محدودة</strong> من تغريدات كل حساب كل دورة · تحليل وتصنيف تلقائي · بسقف استخراج إلزامي</p>
+    </div>
+    <select class="interval-select" id="intervalSelect" title="مدة الدورة">
+      <option value="15">كل 15 دقيقة</option>
+      <option value="30" selected>كل 30 دقيقة</option>
+      <option value="60">كل ساعة</option>
+      <option value="180">كل 3 ساعات</option>
+    </select>
+    <div class="countdown" id="countdown">--:--</div>
+    <button class="btn btn-cream" id="toggleBtn"><i class="ic" data-ic="play"></i> بدء الرصد</button>
+    <button class="btn btn-ghost btn-sm" id="runNowBtn"><i class="ic" data-ic="bolt"></i> رصد فوري</button>
+    <div class="mini-status">
+      <div class="mini-spinner" id="miniSpinner"></div>
+      <span id="miniStatus">آخر رصد: لم يتم بعد</span>
+    </div>
+    <div class="band-alert" id="bandAlert"></div>
+  </section>
+
+  <!-- Dashboard -->
+  <section id="dashboard">
+    <div class="asum-grid" id="asumGrid"></div>
+
+    <div class="filters">
+      <div class="filter-group" id="platformFilter">
+        <span class="filter-label">الحساب:</span>
+        <!-- pills injected -->
+      </div>
+      <div class="spacer"></div>
+      <div class="filter-group" id="classFilter">
+        <span class="filter-label">التصنيف:</span>
+        <!-- pills injected -->
+      </div>
+      <div class="filter-group" id="rangeFilter">
+        <span class="filter-label">الفترة:</span>
+        <button class="pill" data-range="7">7 أيام</button>
+        <button class="pill active" data-range="30">30 يوم</button>
+        <button class="pill" data-range="90">90 يوم</button>
+        <button class="pill" data-range="0">الكل</button>
+      </div>
+    </div>
+
+    <div class="stats-grid" id="statsGrid"></div>
+
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h4><i class="ic" data-ic="chart"></i> نشاط النشر عبر الزمن</h4>
+        <div class="chart-sub">عدد التغريدات المرصودة يومياً</div>
+        <div class="chart-holder" id="timeHolder"></div>
+      </div>
+      <div class="chart-card">
+        <h4><i class="ic" data-ic="trophy"></i> التفاعل حسب الحساب</h4>
+        <div class="chart-sub">إجمالي (إعجابات + ردود + إعادة نشر)</div>
+        <div class="chart-holder" id="platHolder"></div>
+      </div>
+    </div>
+
+    <div class="feed-head">
+      <h3><i class="ic" data-ic="news"></i> التغريدات <span class="feed-count" id="feedCount">0</span></h3>
+      <div class="search-wrap"><input class="input" type="search" id="searchInput" placeholder="ابحث في التغريدات..."></div>
+      <select class="input" id="sortSelect">
+        <option value="newest">الأحدث أولاً</option>
+        <option value="oldest">الأقدم أولاً</option>
+        <option value="engage">الأكثر تفاعلاً</option>
+      </select>
+      <div class="view-toggle">
+        <button id="gridViewBtn" class="active" title="عرض بطاقات"><i class="ic" data-ic="grid"></i></button>
+        <button id="listViewBtn" title="عرض جدول"><i class="ic" data-ic="rows"></i></button>
+      </div>
+      <div class="spacer"></div>
+      <button class="btn btn-primary btn-sm" id="exportExcelBtn"><i class="ic" data-ic="chart"></i> تصدير Excel</button>
+      <button class="btn btn-ghost btn-sm" id="exportBtn"><i class="ic" data-ic="download"></i> تصدير JSON</button>
+      <button class="btn btn-danger-ghost btn-sm" id="clearBtn"><i class="ic" data-ic="trash"></i> مسح السجل</button>
+    </div>
+    <div class="feed" id="feed"></div>
+    <div class="empty-state" id="feedEmpty" style="display:none"><div class="big"><i class="ic" data-ic="search"></i></div><p>لا تغريدات ضمن هذه التصفية</p></div>
+  </section>
+
+  <div class="empty-state" id="bootEmpty">
+    <div class="big"><i class="ic" data-ic="chart"></i></div>
+    <p>أضف حساباتك الرسمية (واضبط مفتاحك من الإعدادات <i class="ic" data-ic="settings"></i>)، ثم اضغط «بدء الرصد» لتظهر لوحة التحليل التفاعلية هنا.</p>
+  </div>
+
+    </main>
+
+    <footer>الإعلام الرقمي — الرصد التلقائي لتغريدات X (تويتر) · صور وفيديو · تصدير Excel · الإصدار 6.0 <i class="ic" data-ic="logo"></i></footer>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+<script src="android.js"></script>
+<script src="icons.js"></script>
+<script src="auth.js"></script>
+<script src="analyzer.js"></script>
+<script src="media.js"></script>
+<script src="card.js"></script>
+<script src="xlsx-export.js"></script>
+<script src="common.js"></script>
+<script src="xlsx-import.js"></script>
+<script src="pages.js"></script>
+<script>
+'use strict';
+FBXAnalyzer.injectStyles();
+FBXMedia.injectStyles();
+
+/* =============== Constants =============== */
+const ACTOR_ID = 'pzMmk1t7AZ8OKJhfU';
+const API_BASE = 'https://api.apify.com/v2';
+const KEY_STORAGE = 'fbx_apify_key';
+const THEME_STORAGE = 'fbx_theme';
+const ACCOUNTS_STORAGE = 'fbx_x_tweet_monitor_accounts';
+const FEED_STORAGE = 'fbx_x_tweet_monitor_feed';
+const ON_STORAGE = 'fbx_x_tweet_monitor_on';
+const LAST_STORAGE = 'fbx_x_tweet_monitor_last';
+const INTERVAL_STORAGE = 'fbx_x_tweet_monitor_interval';
+const PER_CYCLE_STORAGE = 'fbx_x_tweet_monitor_per_cycle';
+const DB_URL_STORAGE = 'fbx_db_url';
+
+const FEED_CAP = 800;
+
+const $ = id => document.getElementById(id);
+const toast = $('toast');
+
+/* =============== Theme =============== */
+initTheme();
+initNav();
+// تسجيل الخروج: يمسح جلسة المدير ويعيد فوراً إلى شاشة الدخول. الاستبدال
+// (replace) يمنع العودة بزرّ رجوع المتصفح إلى صفحة تتطلّب الجلسة.
+$('logoutBtn').onclick = () => { FBXAuth.logout(); location.replace('login.html'); };
+
+/* =============== State =============== */
+let accounts = load(ACCOUNTS_STORAGE, []);
+let feed = load(FEED_STORAGE, []);
+let monitorOn = localStorage.getItem(ON_STORAGE) === '1';
+let lastRunAt = parseInt(localStorage.getItem(LAST_STORAGE), 10) || 0;
+let intervalMin = parseInt(localStorage.getItem(INTERVAL_STORAGE), 10) || 30;
+let tweetsPerCycle = parseInt(localStorage.getItem(PER_CYCLE_STORAGE), 10) || 3;
+let cycleRunning = false;
+let freshKeys = new Set();
+
+let filterAccount = 'all';
+let filterRange = 30;
+let filterClass = 'all';
+let searchQ = '';
+let sortMode = 'newest';
+
+function load(k, fb) { try { const v = JSON.parse(localStorage.getItem(k)); return Array.isArray(v) ? v : fb; } catch (_) { return fb; } }
+function save(k, v) { localStorage.setItem(k, JSON.stringify(v)); }
+function saveFeed() {
+  try { localStorage.setItem(FEED_STORAGE, JSON.stringify(feed)); return; }
+  catch (e) {
+    for (let i = feed.length - 1; i >= 0; i--) {
+      if (feed[i].raw) delete feed[i].raw;
+      try { localStorage.setItem(FEED_STORAGE, JSON.stringify(feed)); return; } catch (_) {}
+    }
+    while (feed.length > 50) {
+      feed = feed.slice(0, Math.floor(feed.length * 0.8));
+      try { localStorage.setItem(FEED_STORAGE, JSON.stringify(feed)); return; } catch (_) {}
+    }
+  }
+}
+
+/* =============== API key (managed from settings.html) =============== */
+function refreshKeyUi() {
+  document.documentElement.toggleAttribute('data-nokey', !getToken());
+}
+
+/* =============== Accounts =============== */
+$('addAccountBtn').onclick = addAccount;
+$('newAccount').addEventListener('keydown', e => { if (e.key === 'Enter') addAccount(); });
+function parseHandle(raw) {
+  let s = (raw || '').trim();
+  s = s.replace(/^https?:\/\/(www\.)?(twitter|x)\.com\//i, '');
+  s = s.replace(/^@/, '');
+  s = s.split(/[/?#]/)[0];
+  return s.trim();
+}
+function addAccount() {
+  const handle = parseHandle($('newAccount').value);
+  if (!handle) return;
+  if (!/^[A-Za-z0-9_]{1,15}$/.test(handle)) return showToast('أدخل اسم مستخدم صالحاً على X');
+  if (accounts.includes(handle)) return showToast('هذا الحساب مضاف مسبقاً');
+  accounts.push(handle); save(ACCOUNTS_STORAGE, accounts); $('newAccount').value = '';
+  renderChips(); showToast('تمت إضافة الحساب');
+}
+function removeAccount(i) { accounts.splice(i, 1); save(ACCOUNTS_STORAGE, accounts); renderChips(); }
+function renderChips() {
+  const box = $('accountChips');
+  box.innerHTML = accounts.map((u, i) => `<span class="chip"><span class="chip-url">@${esc(u)}</span><button data-i="${i}" title="حذف">${FBXIcons.svg('close')}</button></span>`).join('');
+  box.querySelectorAll('button').forEach(b => b.onclick = () => removeAccount(+b.dataset.i));
+  $('noAccounts').style.display = accounts.length ? 'none' : 'block';
+}
+$('tweetsPerCycle').value = tweetsPerCycle;
+$('tweetsPerCycle').addEventListener('change', () => {
+  tweetsPerCycle = Math.max(1, Math.min(20, parseInt($('tweetsPerCycle').value, 10) || 3));
+  localStorage.setItem(PER_CYCLE_STORAGE, String(tweetsPerCycle));
+});
+
+/* =============== Monitor engine =============== */
+$('intervalSelect').value = String(intervalMin);
+$('intervalSelect').onchange = () => { intervalMin = parseInt($('intervalSelect').value, 10); localStorage.setItem(INTERVAL_STORAGE, String(intervalMin)); };
+function intervalMs() { return intervalMin * 60 * 1000; }
+
+$('toggleBtn').onclick = () => (monitorOn ? stopMonitor() : startMonitor());
+$('runNowBtn').onclick = () => runCycle(true);
+
+function startMonitor() {
+  if (!getToken()) { refreshKeyUi(); return showToast('اضبط مفتاح الاستخراج من صفحة الإعدادات'); }
+  if (!accounts.length) return showToast('أضف حساباً واحداً على الأقل');
+  monitorOn = true; localStorage.setItem(ON_STORAGE, '1'); refreshControlUi();
+  if (Date.now() - lastRunAt >= intervalMs()) runCycle();
+  showToast('بدأ الرصد الدوري');
+}
+function stopMonitor() { monitorOn = false; localStorage.setItem(ON_STORAGE, '0'); refreshControlUi(); showToast('توقف الرصد'); }
+function refreshControlUi() {
+  $('pulseDot').classList.toggle('on', monitorOn);
+  $('monitorTitle').textContent = monitorOn ? 'الرصد نشط الآن' : 'الرصد متوقف';
+  $('toggleBtn').innerHTML = monitorOn
+    ? FBXIcons.svg('pause') + ' إيقاف الرصد'
+    : FBXIcons.svg('play') + ' بدء الرصد';
+  $('toggleBtn').classList.toggle('btn-stop', monitorOn);
+  $('toggleBtn').classList.toggle('btn-cream', !monitorOn);
+}
+// بعد فشل دورة لا ننتظر دورة كاملة (قد تكون ساعة): نعيد المحاولة بعد دقيقتين.
+// ويبقى lastRunAt هو وقت آخر نجاح فعلي، فلا يكذب سطر «آخر رصد» على المستخدم.
+let nextRetryAt = 0;
+
+function tick() {
+  if (monitorOn && !cycleRunning) {
+    const dueAt = nextRetryAt || (lastRunAt + intervalMs());
+    const remaining = dueAt - Date.now();
+    if (remaining <= 0) runCycle();
+    else { const m = Math.floor(remaining / 60000), s = Math.floor((remaining % 60000) / 1000); $('countdown').textContent = `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`; }
+  } else if (!monitorOn) $('countdown').textContent = '--:--';
+  setTimeout(tick, 1000);
+}
+
+async function runCycle(manual) {
+  if (cycleRunning) return;
+  const token = getToken();
+  if (!token) { refreshKeyUi(); return showToast('اضبط مفتاح الاستخراج من صفحة الإعدادات'); }
+  if (!accounts.length) return showToast('أضف حساباً واحداً على الأقل');
+
+  cycleRunning = true;
+  $('bandAlert').style.display = 'none';
+  $('miniSpinner').style.display = 'block';
+  $('countdown').textContent = '···';
+  $('miniStatus').textContent = manual ? 'رصد فوري قيد التنفيذ...' : 'دورة رصد قيد التنفيذ...';
+  try {
+    // هذه الأداة أداة بحث (query + mode + query_type)، وليست "جلب تايملاين حساب" مباشرة —
+    // نبني استعلام بحث بمشغّل from: القياسي في X لجلب تغريدات الحسابات المحدَّدة تحديداً
+    const query = accounts.map(h => `from:${h}`).join(' OR ');
+    const input = {
+      query,
+      mode: 'Advanced Search',
+      query_type: 'Latest',
+      max_results: tweetsPerCycle * accounts.length
+    };
+    const maxItems = tweetsPerCycle * accounts.length;
+    const startRes = await apiPost(`${API_BASE}/acts/${ACTOR_ID}/runs?token=${encodeURIComponent(token)}&maxItems=${maxItems}`, input);
+    if (!startRes.ok) throw await apiError(startRes);
+    const run = (await startRes.json()).data;
+    let status = run.status, datasetId = run.defaultDatasetId;
+    const deadline = Date.now() + 20 * 60000;
+    // استطلاع متدرّج: يبدأ سريعاً فيلتقط الدورات القصيرة فور انتهائها،
+    // ويتصاعد إلى أربع ثوانٍ فلا يُغرق الخدمة في الدورات الطويلة.
+    let wait = 700;
+    while (['READY', 'RUNNING'].includes(status)) {
+      if (Date.now() > deadline) throw new Error('تجاوز التشغيل عشرين دقيقة دون أن ينتهي — أُلغيت الدورة وستُعاد المحاولة.');
+      await sleep(wait);
+      wait = Math.min(4000, Math.round(wait * 1.45));
+      const st = await apiGet(`${API_BASE}/actor-runs/${run.id}?token=${encodeURIComponent(token)}`);
+      if (!st.ok) throw await apiError(st);
+      const d = (await st.json()).data; status = d.status; datasetId = d.defaultDatasetId;
+    }
+    if (status !== 'SUCCEEDED' && status !== 'ABORTED') throw new Error(`انتهى التشغيل بحالة "${status}". تحقق من الرصيد أو أسماء الحسابات.`);
+    const itemsRes = await apiGet(`${API_BASE}/datasets/${datasetId}/items?clean=true&format=json&token=${encodeURIComponent(token)}`);
+    if (!itemsRes.ok) throw await apiError(itemsRes);
+    const items = await itemsRes.json();
+
+    const existing = new Set(feed.map(p => p.key));
+    freshKeys = new Set();
+    let added = 0;
+    for (const raw of items) {
+      const p = normalizeTweet(raw);
+      if (!p.text && !p.url) continue;
+      if (!p.key || existing.has(p.key)) continue;
+      existing.add(p.key); p.seenAt = Date.now();
+      feed.push(p); freshKeys.add(p.key); added++;
+    }
+    feed.sort((a, b) => (b.ts || b.seenAt || 0) - (a.ts || a.seenAt || 0));
+    if (feed.length > FEED_CAP) feed = feed.slice(0, FEED_CAP);
+    saveFeed();
+    lastRunAt = Date.now(); nextRetryAt = 0; localStorage.setItem(LAST_STORAGE, String(lastRunAt));
+    $('miniStatus').textContent = `آخر رصد: ${new Date(lastRunAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })} · ` + (added ? `${added} تغريدة جديدة` : 'لا جديد');
+    if (added) { showToast(`${added} تغريدة جديدة`); saveToDb(feed.filter(p => freshKeys.has(p.key)), 'monitor'); }
+    showDashboard();
+    renderDashboard();
+  } catch (err) {
+    $('bandAlert').textContent = err.message || String(err);
+    $('bandAlert').style.display = 'block';
+    $('miniStatus').textContent = 'فشلت الدورة — ستُعاد المحاولة بعد دقيقتين';
+    nextRetryAt = Date.now() + 120000;
+  } finally { cycleRunning = false; $('miniSpinner').style.display = 'none'; }
+}
+
+
+/* =============== Normalization =============== */
+// خرائط حقول دفاعية: مخطط مخرجات الأداة غير مؤكَّد رسمياً، فتُغطّى عدة تسميات شائعة معاً
+function normalizeTweet(raw, targetHandle) {
+  const isRetweet = !!(raw.retweeted_status || raw.retweeted_tweet || raw.isRetweet);
+  const source = raw.retweeted_status || raw.retweeted_tweet || raw;
+  const user = source.user || source.author || raw.user || raw.author || {};
+  const text = source.full_text || source.fullText || source.text || source.content || '';
+  const screenName = user.screen_name || user.username || user.screenName || raw.username || raw.authorUsername || targetHandle || '';
+  const author = user.name || user.fullName || user.displayName || screenName || 'حساب X';
+  const idStr = String(source.id_str || source.id || source.tweetId || raw.id_str || raw.id || raw.tweetId || '');
+  const url = source.url || source.tweetUrl || raw.url || raw.tweetUrl || (screenName && idStr ? `https://x.com/${screenName}/status/${idStr}` : '');
+  const createdRaw = source.created_at || source.createdAt || source.date || source.timestamp;
+  let ts = null;
+  if (createdRaw) { const d = new Date(createdRaw); if (!isNaN(d)) ts = d.getTime(); }
+  const mediaRaw = source.extended_entities?.media || source.entities?.media || source.media || [];
+  const mediaList = mediaRaw.map(m => ({
+    type: (m.type === 'photo' || m.type === 'image') ? 'image' : 'video',
+    src: m.media_url_https || m.media_url || m.url || m.thumbnailUrl || ''
+  })).filter(m => m.src);
+  const firstImg = mediaList.find(m => m.type === 'image');
+  const media = firstImg ? firstImg.src : (mediaList[0]?.src || '');
+  /* المفتاح يجب أن يبقى فريداً لكل تغريدة. حين تعيد أداة الاستخراج تغريدات بلا
+     رابط وبلا مُعرِّف، كان `${screenName}|${idStr}` ينهار إلى قيمة واحدة لكل
+     تغريدات الحساب — فتُهمَل جميعها إلا الأولى باعتبارها مكرَّرة، ويبدو الرصد
+     كأنه لا يعمل. فالبديل الأخير يتضمّن الوقت وبداية النص. */
+  const key = url || (idStr ? `${screenName}|${idStr}` : `${screenName}|${ts || ''}|${text.slice(0, 80)}`);
+  const p = {
+    key, text, url, ts, author, screenName,
+    avatar: user.profile_image_url_https || user.profile_image_url || user.profilePicture || user.avatar || '',
+    media, mediaList, isRetweet, platform: 'twitter',
+    retweetedFrom: isRetweet ? (raw.user?.screen_name || raw.user?.username || raw.username || raw.user?.name || '') : '',
+    likes: num(source.favorite_count ?? source.favouriteCount ?? source.likeCount ?? source.likes),
+    comments: num(source.reply_count ?? source.replyCount ?? source.repliesCount ?? source.comments),
+    shares: num(source.retweet_count ?? source.retweetCount ?? source.retweetsCount ?? source.shares) + num(source.quote_count ?? source.quoteCount),
+    views: num(source.view_count ?? source.viewCount ?? source.viewsCount ?? source.ext_views?.count ?? 0),
+    postId: idStr, pageUrl: screenName ? `https://x.com/${screenName}` : '',
+    raw
+  };
+  p.analysis = FBXAnalyzer.analyze(p);
+  return p;
+}
+function ensureAnalysis(p) { if (!p.analysis || !p.analysis.classification) p.analysis = FBXAnalyzer.analyze(p); return p; }
+function engagement(p) { return (p.likes || 0) + (p.comments || 0) + (p.shares || 0); }
+// لون الشريط الجانبي للبطاقة: يعكس التصنيف ومستوى الخطورة فوراً
+
+/* =============== Dashboard visibility =============== */
+function showDashboard() { $('dashboard').style.display = 'block'; $('bootEmpty').style.display = 'none'; }
+
+/* =============== Filtering =============== */
+function platformKey(p) { return p.screenName || p.author || 'غير معروف'; }
+function platformList() { return [...new Set(feed.map(platformKey))]; }
+function inRange(p) {
+  if (!filterRange) return true;
+  const t = p.ts || p.seenAt || 0;
+  return t >= Date.now() - filterRange * 86400000;
+}
+function passesClass(p) {
+  if (filterClass === 'all') return true;
+  const a = ensureAnalysis(p).analysis;
+  if (filterClass === 'flagged') return a.flagged;
+  return a.classification === filterClass;
+}
+function filteredPosts() {
+  return feed.filter(p =>
+    (filterAccount === 'all' || platformKey(p) === filterAccount) &&
+    inRange(p) &&
+    passesClass(p) &&
+    (!searchQ || (p.text || '').toLowerCase().includes(searchQ) || platformKey(p).toLowerCase().includes(searchQ))
+  );
+}
+
+/* =============== Render dashboard =============== */
+function renderDashboard() {
+  renderAccountFilter();
+  renderClassFilter();
+  const posts = filteredPosts();
+  renderClassSummary(posts);
+  renderStats(posts);
+  renderTimeChart(posts);
+  renderPlatformChart();
+  renderFeed(posts);
+}
+
+function renderAccountFilter() {
+  const box = $('platformFilter');
+  const plats = platformList();
+  const pills = ['<span class="filter-label">الحساب:</span>',
+    `<button class="pill ${filterAccount === 'all' ? 'active' : ''}" data-plat="all">كل الحسابات</button>`,
+    ...plats.map(pl => `<button class="pill ${filterAccount === pl ? 'active' : ''}" data-plat="${esc(pl)}">@${esc(pl)}</button>`)
+  ];
+  box.innerHTML = pills.join('');
+  box.querySelectorAll('.pill').forEach(b => b.onclick = () => { filterAccount = b.dataset.plat; renderDashboard(); });
+}
+
+// نقطة ملوّنة صغيرة تسبق تسمية التصنيف — نفس دلالة الإيموجي بلون اللوحة وشكل ثابت
+const dot = tone => `<i class="ic tone-${tone}" data-ic="dot" style="font-size:.5em"></i> `;
+
+function renderClassFilter() {
+  const box = $('classFilter');
+  const opts = [
+    ['all', 'الكل'],
+    ['NEGATIVE', dot('bad') + 'سلبي'], ['flagged', dot('warn') + 'مرفوع العلم'],
+    ['POSITIVE', dot('ok') + 'إيجابي'], ['NEUTRAL', dot('mute') + 'محايد']
+  ];
+  box.innerHTML = ['<span class="filter-label">التصنيف:</span>',
+    ...opts.map(([id, label]) => `<button class="pill ${filterClass === id ? 'active' : ''}" data-cls="${id}">${label}</button>`)
+  ].join('');
+  FBXIcons.hydrate(box);
+  box.querySelectorAll('.pill').forEach(b => b.onclick = () => { filterClass = b.dataset.cls; renderDashboard(); });
+}
+
+function renderClassSummary(posts) {
+  const g = FBXAnalyzer.aggregate(posts.map(p => ensureAnalysis(p).analysis));
+  $('asumGrid').innerHTML = [
+    ['sev', g.high, 'خطورة/أهمية عالية'],
+    ['pos', g.positive, 'إيجابي'],
+    ['neg', g.negative, 'سلبي'],
+    ['neu', g.neutral, 'محايد'],
+    ['flag', g.flagged, 'مرفوع العلم'],
+    ['esc', g.needsDelete + g.needsReview, 'يتطلب حذف/مراجعة']
+    // الرقم الكبير الملوّن + الشريط العلوي يحملان الدلالة، فلا حاجة لإيموجي يضيف ضجيجاً
+  ].map(([cls, v, l]) => `<div class="asum-card ${cls}"><div class="v">${v}</div><div class="l">${l}</div></div>`).join('');
+}
+
+function renderStats(posts) {
+  const total = posts.length;
+  const eng = posts.reduce((s, p) => s + engagement(p), 0);
+  const avg = total ? Math.round(eng / total) : 0;
+  const byPlat = {};
+  feed.filter(inRange).forEach(p => { byPlat[platformKey(p)] = (byPlat[platformKey(p)] || 0) + 1; });
+  let topPlat = '—', topN = 0;
+  for (const [k, v] of Object.entries(byPlat)) if (v > topN) { topN = v; topPlat = k; }
+  const lastStr = lastRunAt ? new Date(lastRunAt).toLocaleString('ar', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' }) : '—';
+  const tiles = [
+    ['edit', 'التغريدات', fmtNum(total), `حسابات: ${platformList().length}`],
+    ['sparkle', 'إجمالي التفاعل', fmtNum(eng), `متوسط: ${fmtNum(avg)}/تغريدة`],
+    ['trophy', 'الأنشط', `<div class="v small">@${esc(topPlat)}</div>`, `${fmtNum(topN)} تغريدة`, true],
+    ['clock', 'آخر رصد', `<div class="v small">${lastStr}</div>`, monitorOn ? 'الرصد نشط' : 'الرصد متوقف', true]
+  ];
+  $('statsGrid').innerHTML = tiles.map(([icon, label, val, sub, raw]) => `
+    <div class="stat-tile">
+      <div class="stat-icon">${FBXIcons.svg(icon)}</div>
+      <div class="stat-body">
+        <div class="k">${label}</div>
+        ${raw ? val : `<div class="v">${val}</div>`}
+        <div class="sub">${sub}</div>
+      </div>
+    </div>`).join('');
+}
+
+/* ---- time chart: tweets per day ---- */
+function renderTimeChart(posts) {
+  const holder = $('timeHolder');
+  if (!posts.length) { holder.innerHTML = '<div class="chart-empty">لا بيانات ضمن هذه التصفية</div>'; return; }
+  const days = filterRange || 30;
+  const spanDays = Math.min(Math.max(days, 7), 90);
+  const today = new Date(); today.setHours(0, 0, 0, 0);
+  const buckets = [];
+  for (let i = spanDays - 1; i >= 0; i--) { const d = new Date(today); d.setDate(d.getDate() - i); buckets.push({ d, n: 0 }); }
+  const idx = new Map(buckets.map((b, i) => [b.d.getTime(), i]));
+  posts.forEach(p => { const t = p.ts || p.seenAt; if (!t) return; const d = new Date(t); d.setHours(0, 0, 0, 0); const i = idx.get(d.getTime()); if (i != null) buckets[i].n++; });
+
+  const W = 640, H = 240, padL = 34, padR = 14, padT = 16, padB = 30;
+  const maxN = Math.max(1, ...buckets.map(b => b.n));
+  const n = buckets.length;
+  const x = i => padL + (n === 1 ? (W - padL - padR) / 2 : i * (W - padL - padR) / (n - 1));
+  const y = v => padT + (1 - v / maxN) * (H - padT - padB);
+
+  const ticks = 3;
+  let grid = '';
+  for (let g = 0; g <= ticks; g++) {
+    const val = Math.round(maxN * g / ticks), yy = y(val);
+    grid += `<line x1="${padL}" y1="${yy}" x2="${W - padR}" y2="${yy}" stroke="var(--c-grid)" stroke-width="1"/>`;
+    grid += `<text class="num" x="${padL - 6}" y="${yy + 4}" text-anchor="end" font-size="11" fill="var(--c-muted)">${val}</text>`;
+  }
+  const linePts = buckets.map((b, i) => `${x(i)},${y(b.n)}`).join(' ');
+  const areaPts = `${x(0)},${y(0)} ${linePts} ${x(n - 1)},${y(0)}`;
+  let xlabels = '';
+  const step = Math.max(1, Math.round(n / 5));
+  for (let i = 0; i < n; i += step) {
+    xlabels += `<text class="num" x="${x(i)}" y="${H - padB + 18}" text-anchor="middle" font-size="10.5" fill="var(--c-muted)">${buckets[i].d.toLocaleDateString('ar', { day: 'numeric', month: 'short' })}</text>`;
+  }
+  const dots = buckets.map((b, i) => `<circle cx="${x(i)}" cy="${y(b.n)}" r="0" fill="var(--c-accent)"/>`).join('');
+
+  holder.innerHTML = `
+    <svg viewBox="0 0 ${W} ${H}" role="img" aria-label="نشاط النشر عبر الزمن">
+      <defs><linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0" stop-color="var(--c-fill-top)"/><stop offset="1" stop-color="var(--c-fill-bot)"/>
+      </linearGradient></defs>
+      ${grid}
+      <polygon points="${areaPts}" fill="url(#areaGrad)"/>
+      <polyline points="${linePts}" fill="none" stroke="var(--c-accent)" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>
+      ${dots}
+      ${xlabels}
+      <line id="tcCross" x1="0" y1="${padT}" x2="0" y2="${H - padB}" stroke="var(--c-accent-2)" stroke-width="1" stroke-dasharray="4 3" opacity="0"/>
+      <circle id="tcDot" r="4.5" fill="var(--c-accent)" stroke="var(--c-surface)" stroke-width="2" opacity="0"/>
+      <rect x="${padL}" y="${padT}" width="${W - padL - padR}" height="${H - padT - padB}" fill="transparent" id="tcHit"/>
+    </svg>
+    <div class="chart-tooltip" id="tcTip"></div>`;
+
+  const svg = holder.querySelector('svg'), tip = $('tcTip'), cross = $('tcCross'), dot = $('tcDot'), hit = $('tcHit');
+  function move(ev) {
+    const pt = svgPoint(svg, ev);
+    let i = Math.round((pt.x - padL) / ((W - padL - padR) / Math.max(1, n - 1)));
+    i = Math.max(0, Math.min(n - 1, i));
+    const b = buckets[i], cx = x(i), cy = y(b.n);
+    cross.setAttribute('x1', cx); cross.setAttribute('x2', cx); cross.setAttribute('opacity', '.7');
+    dot.setAttribute('cx', cx); dot.setAttribute('cy', cy); dot.setAttribute('opacity', '1');
+    const rect = holder.getBoundingClientRect();
+    tip.style.left = (cx / W * rect.width) + 'px';
+    tip.style.top = (cy / H * rect.height) + 'px';
+    tip.style.opacity = '1';
+    tip.innerHTML = `<div class="tt-v">${b.n} تغريدة</div><div class="tt-k">${b.d.toLocaleDateString('ar', { weekday: 'long', day: 'numeric', month: 'long' })}</div>`;
+  }
+  function leave() { tip.style.opacity = '0'; cross.setAttribute('opacity', '0'); dot.setAttribute('opacity', '0'); }
+  hit.addEventListener('pointermove', move);
+  hit.addEventListener('pointerdown', move);
+  hit.addEventListener('pointerleave', leave);
+}
+
+/* ---- platform chart: horizontal single-hue bars, per-bar hover ---- */
+function renderPlatformChart() {
+  const holder = $('platHolder');
+  const inR = feed.filter(inRange);
+  const map = {};
+  inR.forEach(p => { const k = platformKey(p); (map[k] = map[k] || { eng: 0, n: 0 }); map[k].eng += engagement(p); map[k].n++; });
+  let rows = Object.entries(map).map(([k, v]) => ({ k, eng: v.eng, n: v.n })).sort((a, b) => b.eng - a.eng).slice(0, 8);
+  if (!rows.length) { holder.innerHTML = '<div class="chart-empty">لا بيانات ضمن هذه التصفية</div>'; return; }
+
+  const W = 460, rowH = 40, padT = 8, padB = 8, padL = 10, padR = 12;
+  const H = padT + padB + rows.length * rowH;
+  const labelW = 118, valW = 42;
+  const trackRight = W - padR - labelW;
+  const trackLeft = padL + valW;
+  const barMax = trackRight - trackLeft;
+  const maxE = Math.max(1, ...rows.map(r => r.eng));
+
+  let bars = '';
+  rows.forEach((r, i) => {
+    const yy = padT + i * rowH, bh = 18, by = yy + (rowH - bh) / 2;
+    const bw = Math.max(3, r.eng / maxE * barMax);
+    const bx = trackRight - bw;
+    const active = filterAccount === r.k;
+    bars += `<g class="pbar" data-k="${esc(r.k)}" style="cursor:pointer">
+      <text x="${W - padR}" y="${by + bh / 2 + 4}" text-anchor="end" font-size="12" font-weight="700" fill="var(--c-text)">@${esc(clip(r.k, 13))}</text>
+      <rect x="${trackLeft}" y="${by}" width="${barMax}" height="${bh}" rx="9" fill="var(--c-grid)" opacity=".5"/>
+      <rect x="${bx}" y="${by}" width="${bw}" height="${bh}" rx="9" fill="var(--c-accent)" opacity="${active ? 1 : .85}"/>
+      <text class="num" x="${bx - 6}" y="${by + bh / 2 + 4}" text-anchor="end" font-size="11.5" font-weight="700" fill="var(--c-text-2)">${fmtNum(r.eng)}</text>
+      <rect x="${padL}" y="${yy}" width="${W - padL - padR}" height="${rowH}" fill="transparent"/>
+    </g>`;
+  });
+  holder.innerHTML = `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="التفاعل حسب الحساب">${bars}</svg><div class="chart-tooltip" id="pbTip"></div>`;
+  const tip = $('pbTip');
+  holder.querySelectorAll('.pbar').forEach(g => {
+    const r = rows.find(x => x.k === g.dataset.k);
+    g.addEventListener('pointermove', ev => {
+      const rect = holder.getBoundingClientRect();
+      tip.style.left = (ev.clientX - rect.left) + 'px';
+      tip.style.top = (ev.clientY - rect.top) + 'px';
+      tip.style.opacity = '1';
+      tip.innerHTML = `<div class="tt-v">${fmtNum(r.eng)} تفاعل</div><div class="tt-k">@${esc(r.k)} · ${r.n} تغريدة</div>`;
+    });
+    g.addEventListener('pointerleave', () => tip.style.opacity = '0');
+    g.addEventListener('click', () => { filterAccount = filterAccount === r.k ? 'all' : r.k; renderDashboard(); });
+  });
+}
+
+function svgPoint(svg, ev) {
+  const pt = svg.createSVGPoint(); pt.x = ev.clientX; pt.y = ev.clientY;
+  const ctm = svg.getScreenCTM(); return ctm ? pt.matrixTransform(ctm.inverse()) : { x: 0, y: 0 };
+}
+
+/* =============== Feed =============== */
+
+function renderFeed(posts) {
+  let list = posts.slice();
+  list.sort((a, b) => {
+    if (sortMode === 'oldest') return (a.ts || a.seenAt || 0) - (b.ts || b.seenAt || 0);
+    if (sortMode === 'engage') return engagement(b) - engagement(a);
+    return (b.ts || b.seenAt || 0) - (a.ts || a.seenAt || 0);
+  });
+  list.forEach(ensureAnalysis);
+  $('feedCount').textContent = list.length;
+  $('feedEmpty').style.display = list.length ? 'none' : 'block';
+  FBXCard.render($('feed'), list, {
+    view: viewMode, prefix: 'd',
+    isFresh: p => freshKeys.has(p.key),
+    openLabel: 'التغريدة', emptyLabel: 'تغريدة بدون نص'
+  });
+}
+
+/* تبديل نموذج العرض: بطاقات للتصفّح البصري، جدول للفرز السريع لمئات المنشورات */
+let viewMode = 'cards';
+$('gridViewBtn').onclick = () => setView('cards');
+$('listViewBtn').onclick = () => setView('table');
+function setView(mode) {
+  viewMode = mode;
+  $('gridViewBtn').classList.toggle('active', mode === 'cards');
+  $('listViewBtn').classList.toggle('active', mode === 'table');
+  renderDashboard();
+}
+
+/* filters wiring */
+$('rangeFilter').querySelectorAll('.pill').forEach(b => b.onclick = () => {
+  $('rangeFilter').querySelectorAll('.pill').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); filterRange = parseInt(b.dataset.range, 10); renderDashboard();
+});
+$('searchInput').addEventListener('input', debounce(e => { searchQ = e.target.value.trim().toLowerCase(); renderDashboard(); }));
+$('sortSelect').addEventListener('change', e => { sortMode = e.target.value; renderDashboard(); });
+
+$('clearBtn').onclick = () => {
+  if (!feed.length) return;
+  if (!confirm('سيتم مسح جميع التغريدات المرصودة من المتصفح. متابعة؟')) return;
+  feed = []; freshKeys = new Set(); saveFeed();
+  $('dashboard').style.display = 'none'; $('bootEmpty').style.display = 'block';
+  showToast('تم مسح السجل');
+};
+$('exportExcelBtn').onclick = () => {
+  const list = filteredPosts();
+  if (!list.length) return showToast('لا بيانات للتصدير');
+  list.forEach(ensureAnalysis);
+  const n = FBXExcel.exportPosts('رصد-تغريدات-X-' + new Date().toISOString().slice(0, 16).replace(/[:T]/g, '-') + '.xlsx', list, 'تغريدات X');
+  showToast(`تم تصدير ${n} تغريدة إلى Excel`);
+};
+$('exportBtn').onclick = () => {
+  const list = filteredPosts();
+  if (!list.length) return showToast('لا بيانات للتصدير');
+  const blob = new Blob([JSON.stringify(list, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'x-dashboard-tweets.json'; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 3000); showToast('تم التصدير');
+};
+
+/* =============== Local database (configured in settings.html) =============== */
+
+/* =============== Utils =============== */
+function clip(s, n) { s = String(s || ''); return s.length > n ? s.slice(0, n - 1) + '…' : s; }
+function esc(s) { return String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c])); }
+
+/* =============== Boot =============== */
+renderChips();
+refreshKeyUi();
+refreshControlUi();
+$('intervalSelect').value = String(intervalMin);
+if (FBXCommon.db.url) dbCheck(true);
+if (lastRunAt) $('miniStatus').textContent = `آخر رصد: ${new Date(lastRunAt).toLocaleTimeString('ar', { hour: '2-digit', minute: '2-digit' })}`;
+if (feed.length) { showDashboard(); renderDashboard(); }
+tick();
+
+/* =============== دليل الحسابات =============== */
+$('pickPagesBtn').onclick = () => FBXPages.openPicker({
+  platform: 'twitter',
+  onPick: picked => {
+    let added = 0;
+    for (const p of picked) {
+      const handle = parseHandle(p.handle || p.url || '');
+      if (!handle || !/^[A-Za-z0-9_]{1,15}$/.test(handle)) continue;
+      if (accounts.includes(handle)) continue;
+      accounts.push(handle); added++;
+    }
+    save(ACCOUNTS_STORAGE, accounts); renderChips();
+    showToast(added ? `أُضيف ${added} حساب للرصد` : 'كل ما اخترته مضاف مسبقاً');
+  }
+});
+</script>
+</body>
+</html>

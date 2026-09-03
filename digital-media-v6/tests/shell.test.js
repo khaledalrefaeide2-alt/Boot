@@ -1,0 +1,469 @@
+'use strict';
+
+/*
+ * اختبارات قشرة الصفحة — ما يجب أن يكون صحيحاً قبل أوّل رسمة
+ * ------------------------------------------------------------------
+ * كل تأكيد هنا وُلد من عطل مقيس لا من قاعدة نظرية:
+ *
+ * (1) مقاس الأيقونة. كان محجوزاً في الـ SVG نفسه (width: 1.15em)، فنقلناه إلى
+ *     الغلاف وجعلنا الرسم 100% — فانفجر كل استعمال بلا غلاف إلى 300px
+ *     الافتراضية: زرّ «بدء الرصد» صار 318px وشريط التحكم 380px. الصواب أن
+ *     يحمل الطرفان مقاساً: الغلاف يحجز المكان، والرسم يكفي نفسه بلا غلاف.
+ *
+ * (2) موطن القاعدة. الأيقونات تُحقن بـ JS من نهاية الصفحة؛ فلو كان مقاسها
+ *     معرَّفاً في ذلك الـ JS لبدأت بعرض صفر ثم قفزت — قِيست CLS = 0.0219.
+ *     theme.css يحجب الرسم، فالتعريف فيه يحجز المكان منذ اللحظة الأولى.
+ *
+ * (3) حالة المفتاح والمظهر. كانتا تُقرآن بعد التحميل، فيظهر تنبيه «اضبط
+ *     مفتاحك» متأخراً ويدفع ما تحته 135px. صارتا تُقرآن في <head> قبل الرسم.
+ *
+ * القياس النهائي بعد هذه الإصلاحات: CLS = 0 على الصفحات الخمس، في المظهرين،
+ * وبمفتاح محفوظ وبدونه.
+ */
+
+const test = require('node:test');
+const assert = require('node:assert');
+const fs = require('node:fs');
+const path = require('node:path');
+
+const root = path.join(__dirname, '..');
+const read = f => fs.readFileSync(path.join(root, f), 'utf8');
+
+const PAGES = ['index.html', 'twitter.html', 'dashboard.html', 'twitter-dashboard.html', 'settings.html'];
+const theme = read('theme.css');
+const icons = read('icons.js');
+
+/* ============================================================
+ * مقاس الأيقونة — الطرفان يحملان مقاساً
+ * ============================================================ */
+test('الرسم يكفي نفسه: .ic-svg له مقاس em لا 100% فقط', () => {
+  // 100% وحدها تعني «مقاس الأب»، وبلا أب مقيس يرجع المتصفح إلى 300px
+  const rule = theme.match(/^\.ic-svg\s*\{([^}]*)\}/m);
+  assert.ok(rule, '.ic-svg يجب أن يكون معرَّفاً في theme.css');
+  assert.match(rule[1], /width:\s*[\d.]+em/, 'عرض بوحدة em لا نسبة');
+  assert.match(rule[1], /height:\s*[\d.]+em/, 'ارتفاع بوحدة em لا نسبة');
+});
+
+test('داخل الغلاف يرث الرسم مقاس الغلاف فيصحّ المقاس الكبير', () => {
+  assert.match(theme, /\.ic\s*>\s*\.ic-svg\s*\{[^}]*width:\s*100%/,
+    'الرسم داخل .ic يملأ الغلاف حتى يعمل .ic.lg');
+});
+
+test('الغلاف يحجز مكانه قبل الحقن', () => {
+  const rule = theme.match(/^\.ic\s*\{([^}]*)\}/m);
+  assert.ok(rule, '.ic يجب أن يكون معرَّفاً في theme.css');
+  assert.match(rule[1], /width:\s*[\d.]+em/, 'بلا عرض معلن يبدأ الغلاف بصفر ثم يقفز');
+  assert.match(rule[1], /height:\s*[\d.]+em/);
+});
+
+test('نسخة icons.js الاحتياطية لا تتعارض مع theme.css', () => {
+  // الملف يبقى صالحاً وحده، لكنه يمتنع عن الحقن متى وجد علامة theme.css
+  assert.match(theme, /--fbx-ic\s*:/, 'theme.css يضع العلامة');
+  assert.match(icons, /--fbx-ic/, 'icons.js يقرأ العلامة فيمتنع');
+  assert.match(icons, /\.ic-svg\s*\{[^}]*width:\s*[\d.]+em/,
+    'النسخة الاحتياطية تحمل المقاس الذاتي نفسه');
+});
+
+/* ============================================================
+ * ما يُقرأ قبل الرسم
+ * ============================================================ */
+for (const page of PAGES) {
+  test(`${page}: المظهر والمفتاح يُقرآن في <head> قبل ورقة الأنماط`, () => {
+    const html = read(page);
+    const head = html.slice(0, html.indexOf('</head>'));
+    const iBoot = head.indexOf('fbx_apify_key');
+    const iCss = head.indexOf('href="theme.css"');
+    assert.notStrictEqual(iBoot, -1, 'حالة المفتاح تُقرأ في الرأس');
+    assert.match(head, /fbx_theme/, 'المظهر يُقرأ في الرأس فلا يومض الفاتح');
+    // السكربت قبل الرابط: السكربتات تنتظر أوراق الأنماط المعلَّقة قبلها
+    assert.ok(iBoot < iCss, 'سكربت التهيئة يسبق ورقة الأنماط');
+    assert.match(head, /data-nokey/, 'النتيجة تُثبَّت على <html>');
+  });
+}
+
+test('تنبيهات المفتاح تُخفى بقاعدة CSS لا بسمة سطرية', () => {
+  // السمة السطرية display:none تغلب CSS، فيعود التبديل إلى JS بعد التحميل
+  for (const page of PAGES) {
+    const html = read(page);
+    for (const id of ['setupPanel', 'keyHint']) {
+      const m = html.match(new RegExp(`<[^>]*id="${id}"[^>]*>`));
+      if (m) assert.ok(!/style="[^"]*display\s*:\s*none/.test(m[0]),
+        `${page}: ${id} لا يجوز أن يُخفى بسمة سطرية`);
+    }
+  }
+  assert.match(theme, /:root\[data-nokey\][^{]*#setupPanel/, 'الإظهار مشروط بالعلامة');
+});
+
+test('لا صفحة تعيد إخفاء التنبيه بأمر JS بعد التحميل', () => {
+  for (const page of PAGES) {
+    const html = read(page);
+    assert.ok(!/\$\('(setupPanel|keyHint)'\)\.style\.display/.test(html),
+      `${page}: التبديل يجب أن يمرّ عبر data-nokey لا عبر style.display`);
+  }
+});
+
+/* ============================================================
+ * ثبات الشرط الأساسي: صفر طلبات خارجية
+ * ============================================================
+ * الموقع يُفتح من القرص (file://) وقد يُستعمل بلا إنترنت. أيّ خطّ بعيد أو
+ * مكتبة من CDN يحوّل صفحة تعمل إلى صفحة معطوبة نصفها. هذا الاختبار يمنع
+ * تسرّب مرجع خارجي مع أيّ تعديل لاحق. */
+for (const page of PAGES) {
+  test(`${page}: لا مرجع خارجي في وسوم التحميل`, () => {
+    const html = read(page);
+    const tags = html.match(/<(?:script|link|img|iframe)\b[^>]*>/gi) || [];
+    for (const t of tags) {
+      const m = t.match(/\b(?:src|href)\s*=\s*"([^"]*)"/i);
+      if (!m) continue;
+      assert.ok(!/^(https?:)?\/\//i.test(m[1]), `${page}: مرجع خارجي ← ${m[1]}`);
+    }
+    assert.ok(!/@import\s+url\(\s*["']?https?:/i.test(html), 'لا @import خارجي');
+  });
+}
+
+test('ورقة الأنماط لا تجلب خطاً أو صورة من الشبكة', () => {
+  assert.ok(!/@import/i.test(theme), 'بلا @import');
+  assert.ok(!/url\(\s*["']?https?:/i.test(theme), 'بلا url() خارجي');
+  assert.ok(!/fonts\.googleapis|fonts\.gstatic/i.test(theme), 'بلا خطوط Google');
+});
+
+/* ============================================================
+ * البنية الدلالية — قِيست غائبة في المراجعة نفسها
+ * ============================================================ */
+for (const page of PAGES) {
+  test(`${page}: معالم ARIA ورابط التخطّي وعنوان h1 واحد للصفحة`, () => {
+    const html = read(page);
+    assert.match(html, /class="skip-link"/, 'رابط تخطٍّ للمحتوى (WCAG 2.4.1)');
+    assert.match(html, /<main[^>]*id="main-content"/, 'هدف الرابط موجود');
+    assert.match(html, /<aside[^>]*aria-label=/, 'القائمة الجانبية معنونة');
+    assert.match(html, /<nav[^>]*aria-label=/, 'التنقّل معنون');
+    const h1 = html.match(/<h1[^>]*>/g) || [];
+    assert.strictEqual(h1.length, 1, 'عنوان رئيسي واحد لا أكثر');
+    // العنوان الرئيسي هو عنوان الصفحة لا اسم الأداة المكرَّر في كل صفحة
+    assert.ok(!/<h1[^>]*class="[^"]*brand-name/.test(html),
+      'اسم الأداة في الشريط الجانبي ليس عنوان الصفحة');
+  });
+}
+
+/* ============================================================
+ * أطروحة الإصدار السادس: اللون كلّه للحكم
+ * ============================================================
+ * الإرشاد الأعلى شدّةً في قاعدة المهارة هو «لا تنقل معلومة باللون
+ * وحده». الأداة كلّها فرزُ أحكام، فهذا ليس تفصيلاً فيها بل صلبها.
+ * الاختبارات التالية تثبّت أن الحكم يصل بثلاث طرق مستقلّة، وأن
+ * الإطار حول الحكم يبقى بلا لون حتى لا ينازعه على الانتباه. */
+const card = read('card.js');
+
+test('الحكم يصل بنصّ صريح لا بلون وحده', () => {
+  // الشارة تحمل نصّ التصنيف من المحرّك، لا صنفاً لونياً فقط
+  assert.match(card, /class="fx-vd fx-vd-\$\{a\.classification\.toLowerCase\(\)\}"\>\$\{esc\(a\.classificationLabel\)/,
+    'شارة الحكم تطبع نصّ التصنيف');
+  // والإجراء غير «الإبقاء» يصحبه رسم تحذير لا لون خلفية فقط
+  assert.match(card, /fx-vd-act">\$\{icon\('warning'/, 'تنبيه الإجراء يحمل رسماً');
+});
+
+test('مقياس الخطورة شكل يُقرأ بلا لون', () => {
+  // ثلاث شُرَط تمتلئ بقدر المستوى: الامتلاء معلومة هندسية لا لونية
+  assert.match(card, /\[1, 2, 3\]\.map\(i => `<i class="\$\{i <= filled \? 'on' : ''\}"/);
+  assert.match(card, /\.fx-meter i\s*\{[^}]*background: var\(--rule\)/, 'الشُرَط الفارغة محايدة');
+});
+
+test('البطاقة تحمل قضيب حكم على الحافة الابتدائية', () => {
+  assert.match(card, /\.fx-card\s*\{[^}]*border-inline-start: 3px solid var\(--acc/,
+    'القضيب منطقي الاتجاه فينقلب مع RTL بلا قاعدة ثانية');
+});
+
+test('ألوان الدلالة لا تُستعمل في الإطار', () => {
+  // نفحص قواعد القشرة وحدها: ما يخصّ الحكم مسموح له اللون، وما عداه لا
+  const chrome = ['.side-nav a.active', '.btn-primary', '.pill.active', '.panel-title .num',
+                  '.hero-cta', '.view-toggle button.active'];
+  for (const sel of chrome) {
+    const m = theme.match(new RegExp(sel.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*\\{([^}]*)\\}'));
+    assert.ok(m, `${sel} معرَّف`);
+    assert.ok(!/--keep|--review|--remove|--success|--warn|--danger/.test(m[1]),
+      `${sel} يجب أن يخلو من ألوان الدلالة — هي ملك الحكم وحده`);
+  }
+});
+
+/* ============================================================
+ * قائمة التسليم التي تنصّ عليها المهارة
+ * ============================================================ */
+test('هدف اللمس 44×44 متوفّر دون تضخيم الشكل', () => {
+  assert.match(theme, /\.btn::after\s*\{[^}]*height: 44px[^}]*min-width: 44px/s,
+    'الزرّ يمدّ منطقة لمس شفافة بدل أن يكبر');
+  assert.match(card, /\.fx-btn::after[^}]*width: 44px; height: 44px/s);
+});
+
+test('حلقة التركيز 3px كما تشترط فئة الوصول', () => {
+  assert.match(theme, /:focus-visible\s*\{\s*outline: 3px solid var\(--focus\)/);
+});
+
+test('أرضية مقاس الخطّ 12px لا تُخترق', () => {
+  const sizes = [...theme.matchAll(/--fs-[a-z0-9]+:\s*(\d+)px/g)].map(m => +m[1]);
+  assert.ok(sizes.length >= 5, 'مقياس الخطّ معرَّف بالبكسل');
+  assert.ok(Math.min(...sizes) >= 12, `أصغر مقاس ${Math.min(...sizes)}px — الحدّ 12px`);
+});
+
+test('التصميم يخلو من مفردات الإصدار الخامس البصرية', () => {
+  // السجلّ لا يتدرّج ولا يزجّج ولا يميل. هذه ليست ذوقاً بل تعريف الهوية.
+  assert.ok(!/linear-gradient|radial-gradient/.test(theme), 'بلا تدرّجات لونية');
+  assert.ok(!/backdrop-filter:\s*(?!none)/.test(theme), 'بلا زجاج مموّه');
+  assert.ok(!/rotateX|rotateY|translate3d|perspective:\s*\d/.test(theme + card), 'بلا ميل ثلاثي الأبعاد');
+});
+
+test('الاستجابة مغطّاة عند المقاسات الأربعة', () => {
+  for (const bp of [1024, 768, 375]) {
+    assert.match(theme, new RegExp(`@media \\(max-width: ${bp}px\\)`), `نقطة الانكسار ${bp}px`);
+  }
+});
+
+test('القائمة الجانبية دَرجٌ منزلق على الشاشة الضيّقة لا شريط سفلي ثابت', () => {
+  // حدّ «خمسة بنود» في إرشاد الشريط السفلي (bottom-nav) خاصّ بتبويبات
+  // أفقية بعرض ثابت؛ القائمة هنا دَرجٌ رأسي قابل للتمرير (translateX
+  // وinset-block: 0 وheight: 100vh)، فلا ينطبق عليه ذلك الحدّ — وسّاعته
+  // الفعلية مجموعات معنونة (الاستخراج، الرصد التلقائي، النظام، عام) لا
+  // عدّاً أقصى للبنود.
+  const rule = theme.match(/@media \(max-width: 1024px\)\s*\{[\s\S]*?\n\s*\.sidebar\s*\{([^}]*)\}/);
+  assert.ok(rule, 'قاعدة الدرج عند 1024px موجودة');
+  assert.match(rule[1], /transform: translateX/, 'العرض بالانزلاق لا بإخفاء بنود');
+  assert.match(rule[1], /height: 100vh/, 'ارتفاع كامل — دَرج لا شريط سفلي');
+  const groups = (read('index.html').match(/<span class="nav-label">/g) || []).length;
+  assert.ok(groups >= 3, `مجموعات التنقّل ${groups} — أقلّ ممّا يفترضه التصميم`);
+});
+
+test('روابط التنقّل تحمل أسماء مستقلّة تصمد عند طيّ السكّة', () => {
+  // «فيسبوك» تتكرّر مرّتين — استخراجاً ورصداً — وقارئ الشاشة لا يرى عنوان
+  // المجموعة فيميّز بينهما، فالسياق يُدمج في الاسم نفسه.
+  for (const page of PAGES) {
+    const html = read(page);
+    const links = html.match(/<a href="[^"]*\.html"[^>]*><span class="ico">/g) || [];
+    assert.ok(links.length >= 5, `${page}: روابط التنقّل موجودة`);
+    for (const l of links) assert.match(l, /aria-label="[^"]{3,}"/, `${page}: رابط بلا اسم ← ${l}`);
+    const names = [...html.matchAll(/<a href="[^"]*\.html" (?:class="active" )?aria-label="([^"]+)"><span class="ico">/g)].map(m => m[1]);
+    assert.strictEqual(new Set(names).size, names.length, `${page}: أسماء التنقّل متكرّرة ← ${names}`);
+  }
+});
+
+test('التسميات المطويّة تُخفى بصرياً لا تُحذف من شجرة الوصول', () => {
+  // display:none يمحو النصّ من قارئ الشاشة أيضاً، فتصير السكّة المطويّة
+  // روابط بلا اسم. القاعدة تُخرج النصّ من الرسم وتُبقيه للقارئ الصوتي.
+  const rule = theme.match(/:root\[data-nav="collapsed"\] \.side-nav a \.label,[\s\S]*?\{([^}]*)\}/);
+  assert.ok(rule, 'قاعدة التسمية المطويّة موجودة');
+  assert.ok(!/display:\s*none/.test(rule[1]), 'الإخفاء بصريّ لا بـ display:none');
+  assert.match(rule[1], /clip-path: inset\(50%\)/, 'يُستعمل الإخفاء البصري القياسي');
+});
+
+test('القائمة تُطوى وتنزلق، وكلاهما قابل للتشغيل بلوحة المفاتيح', () => {
+  const common = read('common.js');
+  for (const page of PAGES) {
+    const html = read(page);
+    assert.match(html, /id="navToggle"[^>]*aria-controls="mainNav"/s, `${page}: الزرّ مربوط بالقائمة`);
+    assert.match(html, /id="navToggle"[^>]*aria-expanded=/s, `${page}: الزرّ يعلن حالته`);
+    assert.match(html, /<aside class="sidebar" id="mainNav"/, `${page}: القائمة تحمل المعرّف المشار إليه`);
+    assert.match(html, /id="navScrim"/, `${page}: الحجاب موجود`);
+    assert.match(html, /initNav\(\);/, `${page}: التهيئة مستدعاة`);
+    // الحالة المطويّة تُقرأ قبل أوّل رسمة وإلا انكمشت السكّة بعد رسمها
+    const head = html.slice(0, html.indexOf('</head>'));
+    assert.match(head, /fbx_nav_collapsed/, `${page}: الحالة تُقرأ في الرأس`);
+  }
+  assert.match(common, /e\.key === 'Escape'/, 'Escape يغلق الدرج');
+  assert.match(common, /scrim\.onclick/, 'النقر على الحجاب يغلق');
+  assert.match(common, /btn\.focus\(\)/, 'التركيز يعود إلى الزرّ عند الإغلاق');
+  assert.match(common, /setAttribute\('inert'/, 'بقية الصفحة تصير inert فلا يتسلّل التبويب خلف الحجاب');
+  assert.match(common, /removeAttribute\('inert'/, 'وتعود عند الإغلاق');
+});
+
+test('انزلاق الدرج بـ transform لا بخصائص تُعيد التخطيط', () => {
+  // تحريك inset أو width يُعيد تخطيط الصفحة كل إطار؛ transform يجري على
+  // بطاقة الرسم وحدها.
+  const rule = theme.match(/@media \(max-width: 1024px\)[\s\S]*?\.sidebar\s*\{([^}]*)\}/);
+  assert.ok(rule, 'قاعدة الدرج موجودة');
+  assert.match(rule[1], /transform: translateX/, 'الانزلاق بـ transform');
+  assert.match(rule[1], /transition: transform/, 'والانتقال على transform وحده');
+});
+
+test('لا لون مثبَّت في سمة style السطرية', () => {
+  /* السمة السطرية تغلب ورقة الأنماط، فلونٌ مثبَّت فيها يبقى كما هو مهما
+     تغيّر المظهر أو الهوية. زرّ «رصد فوري» كان يحمل نصّاً أبيض من يوم كان
+     شريط الرصد كحلياً في الإصدار الخامس؛ ولمّا صار الشريط ورقاً فاتحاً
+     اختفى الزرّ تماماً — أبيضُ على أبيض. الألوان تأتي من الرموز لتتبع
+     السياق، والسمة السطرية للتخطيط لا للّون. */
+  for (const page of PAGES) {
+    const html = read(page);
+    for (const m of html.matchAll(/style="([^"]*)"/g)) {
+      assert.ok(!/#[0-9a-fA-F]{3,8}\b|rgba?\(/.test(m[1]),
+        `${page}: لون مثبَّت في سمة سطرية ← ${m[1]}`);
+    }
+  }
+});
+
+/* ============================================================
+ * الأداء: شروط مقيسة لا تفضيلات
+ * ============================================================
+ * كل تأكيد هنا يحرس رقماً قِيس فعلاً، وإرجاعه يُعيد بطئاً معروفاً. */
+const iconsSrc = read('icons.js');
+
+test('الأيقونات تُشار إليها من ورقة رموز لا تُضمَّن في كل بطاقة', () => {
+  // 1500 بطاقة تحمل 17929 أيقونة؛ تضمين مسارها في كلٍّ ضخّم صفحة الرسم
+  // إلى 10.4 ميغابايت وكلّف 800ms من أصل 1313 في تحليل innerHTML وحده.
+  assert.match(iconsSrc, /function injectSprite/, 'ورقة الرموز تُحقن مرّة واحدة');
+  assert.match(iconsSrc, /<symbol id="fbx-i-\$\{n\}"/, 'كل أيقونة تُعرَّف كـ symbol');
+  assert.match(iconsSrc, /<use href="#fbx-i-\$\{name\}"\/>/, 'والاستعمال إشارة لا تضمين');
+  assert.match(card, /<use href="#fbx-i-\$\{name\}"\/>/, 'وبطاقات المنشورات كذلك');
+  // ولا يُشار إلى تعريف غائب: المرجع لا يُحلّ فتظهر فجوة صامتة
+  assert.match(card, /if \(!PATHS\[name\]\)/, 'اسم غير معروف يعود برسم فارغ لا بمرجع معطَّل');
+});
+
+test('لوحة التحليل تُبنى عند أول فتح لا مع البطاقة', () => {
+  // كانت تُبنى كاملةً لكل بطاقة وإن لم تُفتح: 22500 عنصر رسم مهدور
+  assert.match(card, /<div class="fx-panel" id="fxp-\$\{id\}" hidden><\/div>/, 'حاوية فارغة في القالب');
+  assert.match(card, /if \(!el\.dataset\.built && el\._analysis/, 'تُبنى مرّة واحدة عند الطلب');
+  assert.match(card, /container\._panelData = data/, 'التحليل مربوط بمعرّف اللوحة صراحةً');
+});
+
+test('حقول البحث مؤخَّرة فلا تُعيد الرسم مع كل ضغطة', () => {
+  // كتابة ست أحرف على 1500 منشور قِيست عند 38 ثانية بلا تأخير، و1.06 معه
+  const common = read('common.js');
+  assert.match(common, /function debounce\(fn, wait\)/, 'الأداة معرَّفة مرّة في مكان مشترك');
+  for (const page of ['index.html', 'twitter.html', 'dashboard.html', 'twitter-dashboard.html']) {
+    const html = read(page);
+    assert.match(html, /searchInput/, `${page}: حقل البحث موجود`);
+    assert.match(html, /addEventListener\('input', debounce\(/, `${page}: الإدخال مؤخَّر`);
+  }
+});
+
+test('استطلاع حالة التشغيل متدرّج لا ثابت', () => {
+  // الفاصل الثابت عند أربع ثوانٍ كان يفرض انتظاراً كاملاً على طلب ينتهي
+  // في جزء من الثانية: قِيس استخراج قصير عند 4.4 ثانية، وعند 1.08 بعده
+  for (const page of ['index.html', 'twitter.html', 'dashboard.html', 'twitter-dashboard.html']) {
+    const html = read(page);
+    assert.ok(!/await sleep\(4000\)/.test(html), `${page}: لا فاصل ثابت عند 4000`);
+    assert.match(html, /wait = Math\.min\(4000, Math\.round\(wait \* 1\.45\)\)/, `${page}: تصاعد محكوم بسقف`);
+  }
+});
+
+test('سقف الاستخراج 1500 في الحقل وفي الحدّ معاً', () => {
+  const html = read('index.html');
+  assert.match(html, /id="postsLimit"[^>]*max="1500"/, 'حدّ الحقل');
+  assert.match(html, /Math\.min\(1500, parseInt\(postsLimitInput\.value/, 'وحدّ الشيفرة — والحقل وحده يُتجاوز بالكتابة');
+});
+
+/* ============================================================
+ * الفصل بين لوحة التحكّم الكامل ولوحة عرض النتائج
+ * ============================================================
+ * القيد الحاكم لا يتغيّر: لا خادم يتحقّق من هوية الزائر، فالبوّابة هنا
+ * سلوكية لا أمنية — موثَّق بصراحة في auth.js وAGENTS.md. ما تختبره هذه
+ * المجموعة: أن البوّابة تُغلق الصفحات الخمس فعلياً قبل أي رسم، وأن
+ * results.html مفتوحة بلا أي إجراء إداري فيها، وأن كلمة المرور لا
+ * تُخزَّن أبداً بنصّها الصريح.
+ */
+const auth = read('auth.js');
+const ADMIN_PAGES = PAGES; // index/twitter/dashboard/twitter-dashboard/settings
+
+test('auth.js لا يخزّن كلمة المرور بنصّها الصريح', () => {
+  assert.match(auth, /crypto\.subtle\.digest\('SHA-256'/, 'التجزئة عبر Web Crypto لا اعتمادية خارجية');
+  assert.match(auth, /randomHex\(16\)/, 'ملح عشوائي لكل كلمة مرور');
+  // القيمة المخزَّنة كائن {salt, hash} لا كلمة المرور نفسها
+  assert.match(auth, /JSON\.stringify\(\{ salt, hash \}\)/, 'المخزَّن ملح وناتج تجزئة لا نصّاً صريحاً');
+  assert.ok(!/localStorage\.setItem\([^)]*\bpw\b/.test(auth), 'لا استدعاء يخزّن متغيّر كلمة المرور مباشرة');
+});
+
+test('auth.js يوثّق صراحةً أن البوّابة سلوكية لا أمنية', () => {
+  assert.match(auth, /ليس أماناً حقيقياً/, 'الإخلاء موجود ومقروء لا مطموراً في التنفيذ');
+});
+
+for (const page of ADMIN_PAGES) {
+  test(`${page}: بوّابة المدير تُغلق الصفحة قبل أوّل رسمة`, () => {
+    const html = read(page);
+    const head = html.slice(0, html.indexOf('</head>'));
+    const iGuard = head.indexOf("fbx_admin_session");
+    const iTheme = head.indexOf('fbx_theme');
+    assert.notStrictEqual(iGuard, -1, 'فحص الجلسة موجود في الرأس');
+    assert.ok(iGuard < iTheme, 'فحص الجلسة يسبق حتى قراءة المظهر — أوّل شيء يُنفَّذ');
+    assert.match(head, /location\.replace\('login\.html/, 'إعادة توجيه بـ replace لا href — لا رجوع بزرّ المتصفح');
+    assert.match(head, /encodeURIComponent\(location\.pathname\)/, 'الوجهة الأصلية تُحفظ لإعادة التوجيه بعد الدخول');
+  });
+
+  test(`${page}: يحمل زرّ تسجيل خروج فعلياً موصولاً`, () => {
+    const html = read(page);
+    assert.match(html, /id="logoutBtn"/, 'الزرّ موجود');
+    assert.match(html, /FBXAuth\.logout\(\)/, 'ويستدعي auth.js فعلياً لا زخرفة بلا وظيفة');
+    assert.match(html, /<script src="auth\.js"><\/script>/, 'الوحدة محمَّلة في الصفحة');
+  });
+}
+
+test('login.html لا يدخل في حلقة توجيه مع نفسه', () => {
+  const html = read('login.html');
+  const head = html.slice(0, html.indexOf('</head>'));
+  // لو حمل login.html نفس حارس الصفحات الإدارية لأعاد توجيه نفسه إلى
+  // نفسه إلى ما لا نهاية عند غياب الجلسة
+  assert.ok(!/location\.replace\('login\.html/.test(head), 'بوّابة الدخول لا تُوجَّه إلى نفسها');
+  // التمييز بين «إعداد أوّل» و«دخول عادي» يُقرأ في الرأس قبل الرسم (data-setup)
+  // لا بعد التحميل عبر FBXAuth.isSetup() — تلك القراءة المتأخّرة كانت تُظهر
+  // النموذج بحقلين ثم تُضيف حقل التأكيد وملاحظة الإعداد بعد جزء من الثانية،
+  // فتقفز الصفحة (CLS قِيست 0.0099). القراءتان تتّفقان على المصدر نفسه
+  // (fbx_admin_hash) فلا تناقض بينهما، إحداهما فقط أبكر من الأخرى.
+  assert.match(head, /fbx_admin_hash/, 'حالة الإعداد تُقرأ في الرأس قبل الرسم');
+  assert.match(html, /data-setup/, 'والنموذج يتفرّع عنها بقاعدة CSS/DOM لا بتبديل عرض متأخّر');
+  assert.match(html, /FBXAuth\.setPassword/, 'مسار الإعداد الأوّل موجود — وإلا حُبس أوّل مدير خارج أداته');
+  assert.match(html, /FBXAuth\.login/, 'مسار الدخول العادي موجود');
+});
+
+test('results.html مفتوحة بلا بوّابة، وبلا أي إجراء إداري فيها', () => {
+  const html = read('results.html');
+  const head = html.slice(0, html.indexOf('</head>'));
+  assert.ok(!/fbx_admin_session/.test(head), 'لا فحص جلسة — الصفحة مفتوحة للجميع');
+  // ولا وسيلة تنفّذ استخراجاً أو تعدّل إعداداً أو تكشف مفتاحاً
+  assert.ok(!/id="runBtn"/.test(html), 'لا زرّ استخراج');
+  assert.ok(!/id="toggleBtn"/.test(html), 'لا زرّ بدء/إيقاف رصد');
+  assert.ok(!/href="settings\.html"/.test(html), 'لا رابط مباشر إلى الإعدادات');
+  assert.ok(!/type="password"/.test(html), 'لا حقل سرّي من أي نوع');
+  assert.ok(!/id="clearBtn"|id="exportBtn"|id="exportExcelBtn"|id="saveDbBtn"/.test(html), 'لا إجراء يكتب أو يحذف أو يصدّر');
+  assert.ok(!/<script src="(pages|ai|report|xlsx-import|xlsx-export)\.js">/.test(html),
+    'وحدات الإدارة غير محمَّلة أصلاً — لا إمكانية استعمالها ولو بالخطأ');
+  // وما تسمح به فعلاً: بحث وفرز بالتصنيف
+  assert.match(html, /id="searchInput"/, 'حقل البحث موجود');
+  assert.match(html, /id="classFilter"/, 'فلتر التصنيف موجود');
+  assert.match(html, /FBXCard\.render/, 'يعرض النتائج عبر الوحدة المشتركة');
+});
+
+test('results.html تُفصح عن نطاق بياناتها — متصفح واحد أم قاعدة مشتركة', () => {
+  // بلا هذا الإفصاح يظنّ من يفتحها من جهاز آخر أن غياب النتائج يعني
+  // «لا شيء رُصد بعد» بينما الحقيقة أن بيانات جهاز آخر لا تصله
+  const html = read('results.html');
+  assert.match(html, /id="sourceNote"/, 'شارة توضّح النطاق');
+  assert.match(html, /بيانات هذا المتصفح فقط/, 'الحالة الافتراضية بلا قاعدة بيانات معروفة صراحةً');
+  assert.match(html, /متصل بقاعدة البيانات المحلية/, 'وحالة الاتصال المشترك معروفة كذلك');
+});
+
+test('settings.html تُدير كلمة مرور المدير عبر auth.js لا بمنطق مواز', () => {
+  const html = read('settings.html');
+  assert.match(html, /FBXAuth\.changePassword\(cur, n1\)/, 'التغيير يمرّ عبر الوحدة المشتركة');
+  assert.match(html, /هذه بوّابة سلوكية لا حماية حقيقية/, 'التحذير يظهر للمدير في مكان قراره لا في الشيفرة فقط');
+});
+
+test('results.html: القسم الديناميكي مخفيّ حتى يكتمل أوّل رسم', () => {
+  // نصف عناصر الصفحة (ملخّص التصنيف والفلاتر) تُبنى بالكامل من JS بلا
+  // بيانات معروفة مسبقاً كما في الصفحات الإدارية (التي تُخفي قسمها
+  // بالكامل خلف "لم يبدأ الرصد بعد"). بلا هذا الإخفاء يرسم المتصفح
+  // الشكل الفارغ في إطار أول أثناء تحميل السكربتات المتتابعة ثم يقفز
+  // بعد اكتمال الرسم — قِيست إزاحة 0.0562 قبل الإصلاح، وصفر بعده عبر
+  // ثمانية تشغيلات متتابعة.
+  const html = read('results.html');
+  assert.match(html, /<section id="results" hidden>/, 'القسم يبدأ مخفياً بسمة hidden لا بصفّ CSS يمكن نسيانه');
+  assert.match(html, /\$\('results'\)\.hidden = false;/, 'ويُكشَف فور اكتمال الرسم المتزامن الأوّل — لا داخل دالّة غير متزامنة');
+});
+
+test('common.js: عنوان قاعدة بيانات احتياطي لزائر لم يضبط شيئاً، لا يطغى على إعداد صريح', () => {
+  // رابط results.html العام (GitHub Pages مثلاً) يُفتح من زائر لم يمرّ
+  // بصفحة الإعدادات إطلاقاً؛ بلا احتياطي مُضمَّن في الشيفرة يبقى db.url
+  // فارغاً له دائماً مهما نُشر خادم مشترك. لكن جهازاً ضبط عنوانه الخاص
+  // (اختبار محلي، أو خادم آخر) يجب ألا يُطغى عليه بهذا الاحتياطي.
+  const js = read('common.js');
+  assert.match(js, /const DEFAULT_DB_URL = /, 'ثابت احتياطي معرَّف صراحةً بجانب db، لا رقماً سحرياً متفرّقاً');
+  assert.match(
+    js,
+    /localStorage\.getItem\(STORAGE\.dbUrl\)\s*\|\|\s*DEFAULT_DB_URL\s*\|\|\s*''/,
+    'الأولوية: إعداد هذا الجهاز، ثم الاحتياطي العام، ثم فارغ — بهذا الترتيب بالذات'
+  );
+});

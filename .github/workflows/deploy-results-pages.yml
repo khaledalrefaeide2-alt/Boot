@@ -1,0 +1,65 @@
+name: نشر صفحة عرض النتائج على GitHub Pages
+
+# ينشر رابطاً عاماً لعرض النتائج فقط (results.html وملحقاته الضرورية):
+# استعراض وبحث وفلترة، بلا أي صفحة إدارية ولا مفتاح Apify ولا auth.js.
+# التشغيل: أعطِ Settings → Pages → Build and deployment → Source
+# قيمة "GitHub Actions" مرّة واحدة (خطوة يدوية لا تفعّلها هذه الملفّات
+# نفسها)، ثم كل دفعة على الفرع أدناه تُحدَّث الرابط تلقائياً.
+
+on:
+  push:
+    branches:
+      - claude/facebook-posts-analysis-platform-pcm6fl
+    paths:
+      - 'digital-media-v6/results.html'
+      - 'digital-media-v6/theme.css'
+      - 'digital-media-v6/icons.js'
+      - 'digital-media-v6/analyzer.js'
+      - 'digital-media-v6/card.js'
+      - 'digital-media-v6/common.js'
+      - 'digital-media-v6/media.js'
+      - '.github/workflows/deploy-results-pages.yml'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: تجميع ملفّات العرض فقط — بلا أي صفحة إدارية
+        run: |
+          set -e
+          mkdir -p _site
+          cp digital-media-v6/results.html _site/index.html
+          cp digital-media-v6/results.html _site/results.html
+          cp digital-media-v6/theme.css    _site/theme.css
+          cp digital-media-v6/icons.js     _site/icons.js
+          cp digital-media-v6/analyzer.js  _site/analyzer.js
+          cp digital-media-v6/card.js      _site/card.js
+          cp digital-media-v6/common.js    _site/common.js
+          cp digital-media-v6/media.js     _site/media.js
+          ls -la _site
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - uses: actions/deploy-pages@v4
+        id: deployment

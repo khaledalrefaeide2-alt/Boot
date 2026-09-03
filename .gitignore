@@ -1,2 +1,15 @@
 facebook-extractor/local-server/fbx-posts.db
 node_modules/
+
+# مهارات الوكيل المثبَّتة محلياً (npx skills add)
+# لا تُودَع في المستودع لسببين: بيانات المهارة 3.6MB ليست جزءاً من المشروع،
+# و.claude/skills/* رابط رمزي (symlink) أُنشئ على لينكس — وسحبه على ويندوز
+# بلا core.symlinks يحوّله إلى ملف نصّي فيه المسار، أي مهارة معطوبة.
+# لإعادة تثبيتها على أي جهاز:
+#   npx skills add https://github.com/nextlevelbuilder/ui-ux-pro-max-skill --skill ui-ux-pro-max
+.agents/
+.claude/
+skills-lock.json
+
+# نظام التصميم المولَّد من مهارة ui-ux-pro-max — مرجع عمل لا شيفرة منتج
+design-system/

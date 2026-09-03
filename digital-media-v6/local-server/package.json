@@ -1,0 +1,13 @@
+{
+  "name": "fbx-local-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "خادم قاعدة بيانات PostgreSQL المحلية/المشتركة لمشروع الإعلام الرقمي",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "pg": "^8.13.1"
+  }
+}
