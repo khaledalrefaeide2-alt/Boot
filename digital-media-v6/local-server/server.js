@@ -60,7 +60,11 @@ try {
 }
 
 const PORT = parseInt(process.env.PORT, 10) || 3300;
-const DB_PATH = path.join(__dirname, 'fbx-posts.db');
+// DB_PATH قابل للتجاوز عبر متغيّر بيئة — ضروري على استضافة سحابية حيث
+// يُعاد بناء مجلّد الكود عند كل نشر فيُمحى أيّ ملف بداخله؛ ضبط DB_PATH
+// على مسار قرص دائم (persistent disk) هناك يحافظ على البيانات بين عمليات
+// النشر. الافتراضي (بجانب هذا الملف) يبقى كما هو للاستخدام المحلي.
+const DB_PATH = process.env.DB_PATH || path.join(__dirname, 'fbx-posts.db');
 
 const db = new DatabaseSync(DB_PATH);
 db.exec(`
