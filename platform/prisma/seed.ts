@@ -120,7 +120,9 @@ async function seedOwner(): Promise<void> {
 
   const existing = await prisma.user.findUnique({ where: { email } });
   if (existing) {
-    console.log(`✅ المالك موجود مسبقاً: ${email} — لم تُغيَّر كلمة المرور`);
+    console.log(`>> Owner already exists: ${email} (password unchanged)`);
+    console.log('   المالك موجود مسبقاً ولم تُغيَّر كلمة مروره.');
+    console.log('   لتغييرها:   npm run owner:reset -- "MyNewPassword123"');
     return;
   }
 
@@ -135,7 +137,8 @@ async function seedOwner(): Promise<void> {
       jobTitle: 'مالك المنصة',
     },
   });
-  console.log(`✅ أُنشئ حساب المالك: ${email}`);
+  console.log(`>> Owner account created: ${email}`);
+  console.log('   أُنشئ حساب المالك — كلمة المرور هي SEED_OWNER_PASSWORD من ملف .env');
 }
 
 async function seedPlatforms(): Promise<void> {
@@ -173,12 +176,13 @@ async function seedSettings(): Promise<void> {
 }
 
 async function main(): Promise<void> {
-  console.log('🌱 بدء تهيئة البيانات الأولية...\n');
+  console.log('-- SEEDING / بدء تهيئة البيانات الأولية --\n');
   await seedPlatforms();
   await seedTopics();
   await seedSettings();
   await seedOwner();
-  console.log('\n🎉 اكتملت التهيئة.');
+  console.log('\n>> Seeding complete. Start the app with:   npm run dev');
+  console.log('   اكتملت التهيئة.');
 }
 
 main()
