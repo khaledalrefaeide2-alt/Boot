@@ -34,7 +34,7 @@ export function ComparisonBars({
   onItemClick?: (label: string) => void;
 }) {
   const max = Math.max(1, ...data.map((item) => item.value));
-  const computedHeight = height ?? Math.max(200, Math.min(data.length * 38 + 16, 420));
+  const computedHeight = height ?? Math.max(120, Math.min(data.length * 38 + 16, 420));
 
   return (
     <ChartFrame
