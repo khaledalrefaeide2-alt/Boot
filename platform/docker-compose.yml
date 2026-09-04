@@ -20,7 +20,9 @@ services:
       - ./backups:/backups
     ports:
       # يُنشر على الجهاز المحلي فقط — النظام داخلي
-      - '127.0.0.1:5432:5432'
+      # منفذ القاعدة على جهازك — ويندوز يحجز مدى 5432 أحياناً لصالح Hyper-V،
+      # فالافتراضي هنا 55432 لتفادي التعارض. داخل شبكة Docker يبقى 5432 دائماً.
+      - '127.0.0.1:${POSTGRES_PORT:-55432}:5432'
     healthcheck:
       test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-monitor} -d ${POSTGRES_DB:-monitoring}']
       interval: 10s
@@ -39,7 +41,8 @@ services:
     volumes:
       - redis_data:/data
     ports:
-      - '127.0.0.1:6379:6379'
+      # منفذ Redis على جهازك — الافتراضي 6380 لتفادي تعارض شائع مع 6379
+      - '127.0.0.1:${REDIS_PORT:-6380}:6379'
     healthcheck:
       test: ['CMD', 'redis-cli', 'ping']
       interval: 10s
