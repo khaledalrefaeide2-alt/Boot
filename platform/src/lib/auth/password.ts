@@ -1,6 +1,7 @@
 import 'server-only';
 import bcrypt from 'bcryptjs';
-import { randomBytes, createHash } from 'node:crypto';
+import { randomBytes, createHmac } from 'node:crypto';
+import { env } from '@/lib/env';
 
 const BCRYPT_ROUNDS = 12;
 
@@ -24,9 +25,18 @@ export function generateToken(bytes = 32): string {
   return randomBytes(bytes).toString('base64url');
 }
 
-/** تجزئة الرمز قبل تخزينه — لا نخزّن الرموز الخام في القاعدة */
+/**
+ * تجزئة الرمز قبل تخزينه — لا نخزّن الرموز الخام في القاعدة إطلاقاً.
+ *
+ * نستخدم HMAC بمفتاح SESSION_SECRET بدل تجزئة عادية، فيصبح المفتاح خط دفاع
+ * ثانياً: من يحصل على نسخة من قاعدة البيانات وحدها لا يستطيع مطابقة أي رمز
+ * جلسة أو استعادة مسرَّب من مكان آخر ما لم يحصل على المفتاح من بيئة الخادم.
+ *
+ * تنبيه تشغيلي: تغيير SESSION_SECRET يُبطل كل الجلسات وروابط الاستعادة القائمة،
+ * ويحتاج المستخدمون إلى تسجيل الدخول من جديد.
+ */
 export function hashToken(token: string): string {
-  return createHash('sha256').update(token).digest('hex');
+  return createHmac('sha256', env.SESSION_SECRET).update(token).digest('hex');
 }
 
 export interface PasswordStrength {
