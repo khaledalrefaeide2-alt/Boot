@@ -40,6 +40,9 @@ OWNER_PASS=$(read_required "كلمة مرور دخولك (10 محارف فأكث
 read -r -p "رمز Apify (اضغط Enter لتخطيه الآن): " APIFY_TOKEN
 APIFY_TOKEN="${APIFY_TOKEN:-}"
 
+read -r -p "المنفذ على جهازك (اضغط Enter للمنفذ 3000): " APP_PORT
+APP_PORT="${APP_PORT:-3000}"
+
 SESSION_SECRET=$(openssl rand -base64 48 2>/dev/null || head -c 48 /dev/urandom | base64)
 
 cat > "$ENV_PATH" <<EOF
@@ -51,7 +54,8 @@ DATABASE_URL="postgresql://monitor:$DB_PASSWORD@localhost:5432/monitoring?schema
 REDIS_URL="redis://localhost:6379"
 SESSION_SECRET="$SESSION_SECRET"
 SESSION_TTL_DAYS="7"
-APP_URL="http://localhost:3000"
+APP_PORT="$APP_PORT"
+APP_URL="http://localhost:$APP_PORT"
 APIFY_TOKEN="$APIFY_TOKEN"
 APIFY_API_BASE="https://api.apify.com/v2"
 APIFY_MAX_ITEMS_HARD_CAP="1000"
@@ -71,6 +75,6 @@ echo
 echo "  الخطوة التالية:"
 echo "      docker compose up -d --build"
 echo
-echo "  ثم افتح المتصفح على http://localhost:3000"
+echo "  ثم افتح المتصفح على http://localhost:$APP_PORT"
 echo "  وسجّل الدخول بالبريد: $OWNER_EMAIL"
 echo

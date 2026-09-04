@@ -54,7 +54,8 @@ DATABASE_URL="postgresql://monitor:$dbPassword@localhost:5432/monitoring?schema=
 REDIS_URL="redis://localhost:6379"
 SESSION_SECRET="$sessionSecret"
 SESSION_TTL_DAYS="7"
-APP_URL="http://localhost:3000"
+APP_PORT="$appPort"
+APP_URL="http://localhost:$appPort"
 APIFY_TOKEN="$apifyToken"
 APIFY_API_BASE="https://api.apify.com/v2"
 APIFY_MAX_ITEMS_HARD_CAP="1000"
@@ -76,6 +77,7 @@ Write-Host ''
 Write-Host '  الخطوة التالية:' -ForegroundColor Cyan
 Write-Host '      docker compose up -d --build'
 Write-Host ''
-Write-Host '  ثم افتح المتصفح على http://localhost:3000'
+Write-Host "  ثم افتح المتصفح على http://localhost:$appPort"
+
 Write-Host "  وسجّل الدخول بالبريد: $ownerEmail"
 Write-Host ''
