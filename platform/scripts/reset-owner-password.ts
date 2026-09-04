@@ -10,6 +10,7 @@
  */
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
+import Redis from 'ioredis';
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '../src/generated/prisma';
 
@@ -78,10 +79,35 @@ async function main(): Promise<void> {
     data: { revokedAt: new Date() },
   });
 
+  // إزالة عدّادات تحديد المعدل من Redis أيضاً — القفل في قاعدة البيانات وحده
+  // لا يكفي، فحدّ المحاولات المتكررة يُحفظ في Redis ويستمر رغم إعادة التعيين
+  await clearRateLimits(email);
+
   console.log(`\n✅ أُعيد تعيين كلمة مرور ${target.name}`);
   console.log(`   البريد: ${email}`);
   console.log(`   كلمة المرور: ${newPassword}`);
-  console.log('   الحساب مفعّل وأي إيقاف مؤقت أُزيل.\n');
+  console.log('   الحساب مفعّل، وأُزيل القفل وعدّاد المحاولات الفاشلة.');
+  console.log('   يمكنك تسجيل الدخول فوراً دون انتظار.\n');
+}
+
+/** إزالة عدّادات محاولات الدخول من Redis حتى لا يبقى الحجب سارياً */
+async function clearRateLimits(email: string): Promise<void> {
+  const url = process.env.REDIS_URL;
+  if (!url) return;
+
+  const redis = new Redis(url, { maxRetriesPerRequest: 1, lazyConnect: true });
+  try {
+    await redis.connect();
+    const keys = await redis.keys('rl:login:*');
+    const reset = await redis.keys('rl:reset*');
+    const all = [...keys, ...reset];
+    if (all.length > 0) await redis.del(...all);
+    console.log(`   أُزيلت ${all.length} من عدّادات المحاولات في Redis.`);
+  } catch {
+    console.log('   تعذّر الاتصال بـ Redis — إن بقي الحجب فانتظر 15 دقيقة.');
+  } finally {
+    redis.disconnect();
+  }
 }
 
 main()
