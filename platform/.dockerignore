@@ -1,0 +1,43 @@
+# =============================================================================
+# ما يُستبعد من سياق بناء الصورة
+# =============================================================================
+
+# الأسرار — لا يجوز أن تدخل الصورة إطلاقاً، فهي تُمرَّر كمتغيرات بيئة عند التشغيل
+.env
+.env.*
+!.env.example
+
+# اعتماديات ومخرجات بناء خاصة بجهاز المطوّر — تُبنى داخل الصورة من جديد
+node_modules
+.next
+out
+build
+dist
+src/generated
+*.tsbuildinfo
+next-env.d.ts
+
+# سجلات ونسخ احتياطية وملفات تصدير
+*.log
+npm-debug.log*
+exports
+backups/*.dump
+backups/*.sql
+
+# بيانات المستودع وأدوات التطوير
+.git
+.gitignore
+.gitattributes
+.vscode
+.idea
+.DS_Store
+Thumbs.db
+
+# ملفات لا تؤثر في التشغيل
+README.md
+AGENTS.md
+CLAUDE.md
+setup.ps1
+setup.bat
+setup.sh
+scripts
