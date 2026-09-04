@@ -11,7 +11,13 @@ ENV NEXT_TELEMETRY_DISABLED=1
 # --- تثبيت الاعتماديات ---
 FROM base AS deps
 COPY package.json package-lock.json ./
-RUN npm ci --no-audit --no-fund
+# إعدادات مقاومة لتذبذب الشبكة: تحميل 358 حزمة قد يتعثر على اتصال غير مستقر،
+# فنزيد عدد المحاولات ومهلة كل طلب بدل أن يفشل البناء كله من أول تعثّر
+RUN npm config set fetch-retries 5 \
+  && npm config set fetch-retry-mintimeout 20000 \
+  && npm config set fetch-retry-maxtimeout 180000 \
+  && npm config set fetch-timeout 600000 \
+  && npm ci --no-audit --no-fund
 
 # --- البناء ---
 FROM deps AS builder
