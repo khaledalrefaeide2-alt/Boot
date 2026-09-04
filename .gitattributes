@@ -8,6 +8,7 @@ docker-entrypoint.sh text eol=lf
 # ملفات ويندوز تبقى بنهايات CRLF
 *.bat text eol=crlf
 *.cmd text eol=crlf
+*.ps1 text eol=crlf
 
 # ملفات ثنائية لا تُمس
 *.png binary
