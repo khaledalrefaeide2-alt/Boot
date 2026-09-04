@@ -11,7 +11,7 @@ services:
     restart: unless-stopped
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-monitor}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?يجب تعريف POSTGRES_PASSWORD في ملف .env}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?عرّف POSTGRES_PASSWORD في ملف .env — انسخه من .env.example}
       POSTGRES_DB: ${POSTGRES_DB:-monitoring}
       # ترتيب عربي صحيح وحساسية أحرف مناسبة
       LANG: ar_SA.utf8
@@ -56,7 +56,7 @@ services:
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-monitor}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-monitoring}?schema=public
       REDIS_URL: redis://redis:6379
-      SESSION_SECRET: ${SESSION_SECRET:?يجب تعريف SESSION_SECRET في ملف .env}
+      SESSION_SECRET: ${SESSION_SECRET:?عرّف SESSION_SECRET في ملف .env — ولّده بـ openssl rand -base64 48}
       SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:-7}
       APP_URL: ${APP_URL:-http://localhost:3000}
       APIFY_TOKEN: ${APIFY_TOKEN:-}
