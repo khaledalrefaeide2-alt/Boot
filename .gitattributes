@@ -1,0 +1,23 @@
+# التطبيع الافتراضي لنهايات الأسطر
+* text=auto eol=lf
+
+# سكربتات الصدفة يجب أن تبقى بنهايات LF دائماً، وإلا فشلت داخل حاويات لينكس
+*.sh text eol=lf
+docker-entrypoint.sh text eol=lf
+
+# ملفات ويندوز تبقى بنهايات CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# ملفات ثنائية لا تُمس
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.webp binary
+*.woff binary
+*.woff2 binary
+*.pdf binary
+*.xlsx binary
+*.db binary

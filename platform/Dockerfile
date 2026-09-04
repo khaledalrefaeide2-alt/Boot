@@ -38,7 +38,9 @@ COPY --from=builder /app/next.config.ts ./next.config.ts
 COPY --from=builder /app/tsconfig.json ./tsconfig.json
 COPY --from=builder /app/package.json ./package.json
 COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
-RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
+# تجريد أحرف CR التي يضيفها Git على ويندوز — بدونها تفشل نقطة الدخول داخل الحاوية
+RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh \
+  && chmod +x /usr/local/bin/docker-entrypoint.sh \
   && mkdir -p /app/exports && chown -R nextjs:nodejs /app/exports
 
 USER nextjs
