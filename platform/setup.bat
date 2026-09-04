@@ -1,13 +1,13 @@
 @echo off
 chcp 65001 >nul
-REM ============================================================================
-REM  إعداد منصة الرصد على ويندوز
+REM ===========================================================================
+REM  Media Monitoring Platform - Windows setup
 REM
-REM  الاستخدام: انقر عليه نقرتين، أو نفّذه من الطرفية بالأمر:  .\setup.bat
+REM  Usage: double-click this file, or run from the terminal:  .\setup.bat
 REM
-REM  هذا الملف يتجاوز قيد تشغيل السكربتات في ويندوز لهذه المرة فقط،
-REM  ولا يغيّر أي إعداد أمني في نظامك.
-REM ============================================================================
+REM  Bypasses the PowerShell execution-policy restriction for this run only.
+REM  It does NOT change any security setting on your system.
+REM ===========================================================================
 powershell -NoProfile -ExecutionPolicy Bypass -File "%~dp0setup.ps1"
 echo.
 pause

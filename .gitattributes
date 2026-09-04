@@ -8,7 +8,10 @@ docker-entrypoint.sh text eol=lf
 # ملفات ويندوز تبقى بنهايات CRLF
 *.bat text eol=crlf
 *.cmd text eol=crlf
-*.ps1 text eol=crlf
+
+# سكربتات PowerShell تُنقل كما هي: PowerShell على ويندوز يتطلب ترميز
+# UTF-8 مع علامة BOM ونهايات أسطر CRLF، وأي تطبيع من Git يفسد قراءتها
+*.ps1 -text
 
 # ملفات ثنائية لا تُمس
 *.png binary
