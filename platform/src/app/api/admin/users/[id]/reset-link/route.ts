@@ -3,6 +3,7 @@ import { prisma } from '@/lib/db';
 import { errors, guardMutationRate, jsonError, jsonOk, requireCsrf, requirePermission } from '@/lib/api';
 import { PERMISSIONS, canManageUserWithRole } from '@/lib/auth/rbac';
 import { generateToken, hashToken } from '@/lib/auth/password';
+import { resetRateLimit } from '@/lib/rate-limit';
 import { audit, AUDIT_ACTIONS } from '@/lib/audit';
 
 type Params = { params: Promise<{ id: string }> };
@@ -43,8 +44,14 @@ export async function POST(_request: NextRequest, { params }: Params) {
           expiresAt: new Date(Date.now() + TOKEN_TTL_MINUTES * 60 * 1000),
         },
       }),
-      prisma.user.update({ where: { id }, data: { mustChangePassword: true } }),
+      prisma.user.update({
+        where: { id },
+        data: { mustChangePassword: true, failedLoginCount: 0, lockedUntil: null },
+      }),
     ]);
+
+    // رفع الحجب المؤقت أيضاً — الرابط بلا فائدة إن بقي الدخول محجوباً
+    await resetRateLimit(`login:email:${target.email}`);
 
     await audit(actor, {
       action: AUDIT_ACTIONS.USER_PASSWORD_RESET_BY_ADMIN,

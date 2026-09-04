@@ -4,7 +4,7 @@ import { jsonError, jsonOk, parseBody, errors } from '@/lib/api';
 import { resetPasswordSchema } from '@/lib/validation/auth';
 import { hashPassword, hashToken } from '@/lib/auth/password';
 import { revokeAllSessions } from '@/lib/auth/session';
-import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { rateLimit, resetRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { audit, AUDIT_ACTIONS, requestMeta } from '@/lib/audit';
 
 export async function POST(request: NextRequest) {
@@ -59,6 +59,9 @@ export async function POST(request: NextRequest) {
 
     // كل الجلسات القديمة تُبطل بعد تغيير كلمة المرور
     await revokeAllSessions(record.user.id);
+
+    // رفع أي حجب على محاولات الدخول حتى يدخل المستخدم فوراً بكلمته الجديدة
+    await resetRateLimit(`login:email:${record.user.email}`);
 
     await audit(
       { id: record.user.id, email: record.user.email, role: record.user.role },

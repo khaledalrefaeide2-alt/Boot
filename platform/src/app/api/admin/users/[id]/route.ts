@@ -12,6 +12,7 @@ import {
 import { PERMISSIONS, assignableRoles, canManageUserWithRole } from '@/lib/auth/rbac';
 import { updateUserSchema } from '@/lib/validation/users';
 import { revokeAllSessions } from '@/lib/auth/session';
+import { resetRateLimit } from '@/lib/rate-limit';
 import { audit, AUDIT_ACTIONS } from '@/lib/audit';
 
 type Params = { params: Promise<{ id: string }> };
@@ -102,6 +103,8 @@ export async function PATCH(request: NextRequest, { params }: Params) {
               approvedAt: input.status === 'ACTIVE' ? new Date() : undefined,
               approvedById: input.status === 'ACTIVE' ? actor.id : undefined,
               disabledAt: input.status === 'DISABLED' ? new Date() : null,
+              // تفعيل الحساب يرفع عنه قفل المحاولات الفاشلة
+              ...(input.status === 'ACTIVE' ? { failedLoginCount: 0, lockedUntil: null } : {}),
             }
           : {}),
       },
@@ -110,6 +113,9 @@ export async function PATCH(request: NextRequest, { params }: Params) {
 
     // تعطيل المستخدم يُنهي جلساته فوراً
     if (input.status === 'DISABLED') await revokeAllSessions(id);
+
+    // تفعيل الحساب يرفع عدّاد المحاولات الفاشلة كذلك، وإلا بقي محجوباً بعد التفعيل
+    if (input.status === 'ACTIVE') await resetRateLimit(`login:email:${target.email}`);
 
     if (input.role && input.role !== target.role) {
       await audit(actor, {
