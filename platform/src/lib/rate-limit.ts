@@ -51,10 +51,30 @@ export async function rateLimit(
 
 /** إعادة تعيين العدّاد — يُستدعى بعد نجاح تسجيل الدخول */
 export async function resetRateLimit(key: string): Promise<void> {
+  // نمسح المخزنين معاً دائماً: العدّاد قد يكون في الذاكرة إذا تعذّر Redis
+  // لحظة تسجيله، ثم عاد Redis للعمل — فمسح أحدهما فقط يترك الحجب سارياً
+  memoryBuckets.delete(key);
   try {
     await redis.del(`rl:${key}`);
   } catch {
-    memoryBuckets.delete(key);
+    // Redis غير متاح — المسح من الذاكرة تم بالفعل أعلاه
+  }
+}
+
+/**
+ * رفع الحجب عن محاولات دخول بريد معيّن، من المخزنين معاً.
+ * يُستدعى بعد إعادة تعيين كلمة المرور حتى لا يبقى المستخدم محجوباً.
+ */
+export async function clearLoginBlock(email: string): Promise<void> {
+  await resetRateLimit(`login:email:${email}`);
+  for (const key of memoryBuckets.keys()) {
+    if (key.startsWith('login:')) memoryBuckets.delete(key);
+  }
+  try {
+    const keys = await redis.keys('rl:login:*');
+    if (keys.length > 0) await redis.del(...keys);
+  } catch {
+    // لا شيء إضافي — الذاكرة نُظّفت أعلاه
   }
 }
 
