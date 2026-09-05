@@ -53,7 +53,8 @@ if (await portIsBusy(Number(port))) {
   console.error('   أغلق تلك النافذة، أو حرّر المنفذ بهذا الأمر:');
   console.error(
     onWindows
-      ? `      Get-NetTCPConnection -LocalPort ${port} | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }`
+      // ErrorAction SilentlyContinue يمنع خطأً أحمر مربكاً لو كان المنفذ حراً أصلاً
+      ? `      Get-NetTCPConnection -LocalPort ${port} -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }`
       : `      lsof -ti tcp:${port} | xargs kill -9`,
   );
   console.error('');

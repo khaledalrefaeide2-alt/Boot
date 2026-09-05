@@ -117,8 +117,10 @@ npm run worker                # العامل الخلفي — في نافذة أ
 أخرى لم تُغلق. أغلق تلك النافذة، أو حرّر المنفذ:
 
 ```powershell
-Get-NetTCPConnection -LocalPort 3111 | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }
+Get-NetTCPConnection -LocalPort 3111 -ErrorAction SilentlyContinue | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }
 ```
+
+إن لم يُطبع الأمر شيئاً فالمنفذ حرّ أصلاً، وهذه هي الحالة المطلوبة.
 
 **مهم:** ما دام المنفذ مشغولاً بالنسخة القديمة فالموقع الذي تراه في المتصفح هو
 النسخة القديمة بإعداداتها القديمة. أي تعديل على ملف `.env` — رمز Apify مثلاً —
