@@ -27,6 +27,14 @@ export interface CreateRunOptions {
   maxItems?: number;
   /** تجاوز نافذة الاستخراج المحددة في إعدادات الحساب */
   windowDays?: number;
+  /** بداية النافذة الزمنية YYYY-MM-DD — إلزامية في التشغيل اليدوي */
+  fromDate?: string | null;
+  /** نهاية النافذة الزمنية YYYY-MM-DD — إلزامية في التشغيل اليدوي */
+  toDate?: string | null;
+  /** ترتيب النتائج — إكس وحدها */
+  sort?: 'Latest' | 'Top' | null;
+  /** نوع المحتوى — إنستغرام وحدها */
+  resultsType?: 'posts' | 'reels' | null;
 }
 
 export class ExtractionError extends Error {
@@ -88,10 +96,36 @@ export async function createExtractionRun(options: CreateRunOptions) {
   if (active) throw new ExtractionError('توجد عملية استخراج قائمة لهذا الحساب بالفعل');
 
   const settings = await getOperationalSettings();
+
+  /*
+   * التشغيل اليدوي يلزمه تحديد صريح لكل فلتر: لا نافذة زمنية مفترضة ولا
+   * عدد افتراضي. الاستخراج يستهلك حصة مدفوعة ويجلب بيانات تدخل التقارير،
+   * فترك القرار لقيمة محفوظة في الإعدادات يعني تشغيلاً لا يعرف صاحبه ما
+   * طلبه بالضبط. أما الجدولة التلقائية فتستعمل إعدادات الحساب لأنها لا
+   * تجد من يحدد لها شيئاً وقت التشغيل.
+   */
+  if (options.trigger === 'MANUAL' && (!options.fromDate || !options.toDate || !options.maxItems)) {
+    throw new ExtractionError(
+      'التشغيل اليدوي يتطلب تحديد النطاق الزمني وأقصى عدد للمنشورات قبل البدء',
+    );
+  }
+
   const requestedMax = options.maxItems ?? account.maxItemsPerRun ?? settings.defaultMaxItems;
   // سقف الفوترة الصارم يمنع أي استهلاك زائد مهما كانت الإعدادات
   const maxItems = Math.min(Math.max(1, requestedMax), env.APIFY_MAX_ITEMS_HARD_CAP);
-  const windowDays = options.windowDays ?? account.extractionWindowDays ?? settings.defaultWindowDays;
+
+  const windowFrom = options.fromDate ? new Date(`${options.fromDate}T00:00:00.000Z`) : null;
+  const windowTo = options.toDate ? new Date(`${options.toDate}T23:59:59.999Z`) : null;
+
+  if (windowFrom && windowTo && windowFrom > windowTo) {
+    throw new ExtractionError('تاريخ البداية بعد تاريخ النهاية');
+  }
+
+  // النافذة بالأيام تُشتق من الحدود عند تحديدها، وإلا فمن إعدادات الحساب
+  const windowDays =
+    windowFrom !== null
+      ? Math.max(1, Math.ceil((Date.now() - windowFrom.getTime()) / 86_400_000))
+      : (options.windowDays ?? account.extractionWindowDays ?? settings.defaultWindowDays);
 
   const input = buildActorInput({
     platformCode: account.platform.code,
@@ -99,6 +133,10 @@ export async function createExtractionRun(options: CreateRunOptions) {
     username: account.username,
     maxItems,
     windowDays,
+    fromDate: options.fromDate ?? null,
+    toDate: options.toDate ?? null,
+    sort: options.sort ?? null,
+    resultsType: options.resultsType ?? null,
     overrides: {
       ...((account.platform.defaultActorInput as Record<string, unknown> | null) ?? {}),
       ...((account.actorInputOverride as Record<string, unknown> | null) ?? {}),
@@ -114,6 +152,8 @@ export async function createExtractionRun(options: CreateRunOptions) {
       trigger: options.trigger,
       requestedById: options.requestedById ?? null,
       maxItems,
+      windowFrom,
+      windowTo,
       input: input as never,
     },
     select: { id: true, actorId: true, maxItems: true, status: true },
@@ -154,6 +194,8 @@ export async function executeExtractionRun(runId: string): Promise<void> {
       status: true,
       actorId: true,
       maxItems: true,
+      windowFrom: true,
+      windowTo: true,
       input: true,
       attempt: true,
       accountId: true,
@@ -233,6 +275,8 @@ export async function executeExtractionRun(runId: string): Promise<void> {
       accountId: run.accountId,
       platformId: run.platformId,
       extractionRunId: runId,
+      windowFrom: run.windowFrom,
+      windowTo: run.windowTo,
     });
 
     // تحديث عدد المتابعين إن أرجعه الـ Actor

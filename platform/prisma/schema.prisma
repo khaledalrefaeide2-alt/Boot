@@ -353,6 +353,10 @@ model ExtractionRun {
 
   /// سقف الفوترة الممرَّر إلى Apify
   maxItems Int?
+  /// بداية النافذة الزمنية المطلوبة — يحددها المشغّل يدوياً في التشغيل اليدوي
+  windowFrom DateTime?
+  /// نهاية النافذة الزمنية المطلوبة
+  windowTo   DateTime?
   /// المدخلات المرسلة إلى الـ Actor (بدون أي أسرار)
   input    Json?
 

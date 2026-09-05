@@ -54,7 +54,14 @@ async function loadAnalysisContext() {
  */
 export async function importPosts(
   posts: MappedPost[],
-  context: { accountId: string; platformId: string; extractionRunId: string },
+  context: {
+    accountId: string;
+    platformId: string;
+    extractionRunId: string;
+    /** حدود النافذة الزمنية المطلوبة — ما خرج عنها لا يُخزَّن */
+    windowFrom?: Date | null;
+    windowTo?: Date | null;
+  },
 ): Promise<ImportResult> {
   const result: ImportResult = {
     saved: 0,
@@ -76,6 +83,20 @@ export async function importPosts(
 
   for (const post of posts) {
     try {
+      /*
+       * الالتزام بالنافذة التي حددها المشغّل يُفرض هنا أيضاً لا في الـ Actor
+       * وحده: بعض الـ Actors تتجاهل حد النهاية أو تُرجع منشورات مثبّتة خارج
+       * المدى. الفلترة عندنا تضمن أن ما يدخل التقارير هو ما طُلب بالضبط.
+       */
+      if (post.publishedAt) {
+        const beforeWindow = context.windowFrom && post.publishedAt < context.windowFrom;
+        const afterWindow = context.windowTo && post.publishedAt > context.windowTo;
+        if (beforeWindow || afterWindow) {
+          result.skipped += 1;
+          continue;
+        }
+      }
+
       const engagementTotal = post.likes + post.comments + post.shares + post.saves;
       const sentiment = analyzeSentiment(post.text);
       const matchedKeywords = detectKeywords(post.text, analysis.keywords);

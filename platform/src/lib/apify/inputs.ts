@@ -15,8 +15,16 @@ export interface BuildInputContext {
   username?: string | null;
   /** أقصى عدد منشورات — سقف الفوترة أيضاً */
   maxItems: number;
-  /** نافذة الاستخراج بالأيام */
+  /** نافذة الاستخراج بالأيام — تُشتق من الحدود عند تحديدها يدوياً */
   windowDays: number;
+  /** بداية النافذة الزمنية بصيغة YYYY-MM-DD — تُقدَّم على windowDays */
+  fromDate?: string | null;
+  /** نهاية النافذة الزمنية بصيغة YYYY-MM-DD */
+  toDate?: string | null;
+  /** ترتيب النتائج — تدعمه إكس وحدها */
+  sort?: 'Latest' | 'Top' | null;
+  /** نوع المحتوى — تدعمه إنستغرام وحدها */
+  resultsType?: 'posts' | 'reels' | null;
   /** مدخلات إضافية من إعدادات المنصة أو الحساب تُدمج فوق الافتراضي */
   overrides?: Record<string, unknown> | null;
 }
@@ -45,11 +53,13 @@ export function usernameFromUrl(url: string): string | null {
 
 /** فيسبوك — apify/facebook-posts-scraper */
 function facebookInput(ctx: BuildInputContext): Record<string, unknown> {
-  return {
+  const input: Record<string, unknown> = {
     startUrls: [{ url: ctx.url }],
     resultsLimit: ctx.maxItems,
-    onlyPostsNewerThan: daysAgoDate(ctx.windowDays),
+    onlyPostsNewerThan: ctx.fromDate ?? daysAgoDate(ctx.windowDays),
   };
+  if (ctx.toDate) input.onlyPostsOlderThan = ctx.toDate;
+  return input;
 }
 
 /** إكس — apidojo/tweet-scraper */
@@ -57,10 +67,11 @@ function xInput(ctx: BuildInputContext): Record<string, unknown> {
   const handle = ctx.username ?? usernameFromUrl(ctx.url);
   const base: Record<string, unknown> = {
     maxItems: ctx.maxItems,
-    sort: 'Latest',
-    start: daysAgoDate(ctx.windowDays),
+    sort: ctx.sort ?? 'Latest',
+    start: ctx.fromDate ?? daysAgoDate(ctx.windowDays),
     includeSearchTerms: false,
   };
+  if (ctx.toDate) base.end = ctx.toDate;
   // نفضّل المعرّف على الرابط لأنه أدق في هذا الـ Actor
   if (handle) base.twitterHandles = [handle];
   else base.startUrls = [ctx.url];
@@ -69,13 +80,16 @@ function xInput(ctx: BuildInputContext): Record<string, unknown> {
 
 /** إنستغرام — apify/instagram-scraper */
 function instagramInput(ctx: BuildInputContext): Record<string, unknown> {
-  return {
+  const input: Record<string, unknown> = {
     directUrls: [ctx.url],
-    resultsType: 'posts',
+    // لا نطلب التعليقات إطلاقاً — المواصفة تستثنيها صراحةً
+    resultsType: ctx.resultsType ?? 'posts',
     resultsLimit: ctx.maxItems,
     searchLimit: 1,
     addParentData: false,
   };
+  if (ctx.fromDate) input.onlyPostsNewerThan = ctx.fromDate;
+  return input;
 }
 
 /** مدخلات عامة لمنصة أُضيفت لاحقاً بلا بانٍ مخصص */

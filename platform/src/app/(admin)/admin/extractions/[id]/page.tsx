@@ -16,7 +16,7 @@ import {
   EXTRACTION_STATUS_TONE,
   EXTRACTION_TRIGGER_LABELS,
 } from '@/lib/domain/constants';
-import { formatDateTime, formatDuration, formatNumber, truncate } from '@/lib/utils';
+import { formatDate, formatDateTime, formatDuration, formatNumber, truncate } from '@/lib/utils';
 
 export const metadata: Metadata = { title: 'تفاصيل عملية الاستخراج' };
 
@@ -129,6 +129,16 @@ export default async function ExtractionDetailPage({
             </DetailRow>
             <DetailRow label="سقف الفوترة">
               <span className="num">{run.maxItems ? formatNumber(run.maxItems) : '—'}</span>
+            </DetailRow>
+            {/* النافذة المطلوبة تُعرض ليعرف المراجع ما الذي غطّته العملية بالضبط */}
+            <DetailRow label="النطاق الزمني المطلوب">
+              {run.windowFrom && run.windowTo ? (
+                <span className="num">
+                  {formatDate(run.windowFrom)} — {formatDate(run.windowTo)}
+                </span>
+              ) : (
+                <span className="text-subtle-foreground">حسب إعدادات الحساب (تشغيل مجدول)</span>
+              )}
             </DetailRow>
             <DetailRow label="طلبها">{run.requestedBy?.name ?? 'النظام (مجدولة)'}</DetailRow>
             <DetailRow label="وقت البدء">{formatDateTime(run.startedAt)}</DetailRow>

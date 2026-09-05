@@ -7,7 +7,7 @@ import { Activity, CircleStop, Play, RefreshCw } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardBody } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Select } from '@/components/ui/field';
+import { Input, Select } from '@/components/ui/field';
 import { Badge, StatusDot } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
 import { Table, TBody, TD, TH, THead, TR, TableWrapper } from '@/components/ui/table';
@@ -67,6 +67,12 @@ export function ExtractionsClient({ canRun, canCancel }: { canRun: boolean; canC
   const [statusFilter, setStatusFilter] = useState('');
   const [runModalOpen, setRunModalOpen] = useState(false);
   const [selectedAccount, setSelectedAccount] = useState('');
+  // لا قيم مبدئية: كل فلتر يُحدَّد يدوياً قبل التشغيل
+  const [fromDate, setFromDate] = useState('');
+  const [toDate, setToDate] = useState('');
+  const [maxItems, setMaxItems] = useState('');
+  const [sort, setSort] = useState<'Latest' | 'Top'>('Latest');
+  const [resultsType, setResultsType] = useState<'posts' | 'reels'>('posts');
   const [cancelTarget, setCancelTarget] = useState<RunRow | null>(null);
 
   const statusQuery = useQuery({
@@ -78,7 +84,7 @@ export function ExtractionsClient({ canRun, canCancel }: { canRun: boolean; canC
   const accountsQuery = useQuery({
     queryKey: ['accounts-for-run'],
     queryFn: () =>
-      api.get<{ accounts: { id: string; name: string; platform: { name: string } }[] }>(
+      api.get<{ accounts: { id: string; name: string; platform: { name: string; code: string } }[] }>(
         buildQuery('/api/accounts', { pageSize: 200, status: 'ACTIVE' }),
       ),
     enabled: runModalOpen,
@@ -98,12 +104,39 @@ export function ExtractionsClient({ canRun, canCancel }: { canRun: boolean; canC
     void queryClient.invalidateQueries({ queryKey: ['apify-status'] });
   };
 
+  const accountRows = accountsQuery.data?.accounts ?? [];
+  const activeAccount = accountRows.find((account) => account.id === selectedAccount);
+  const platformCode = activeAccount?.platform.code ?? '';
+
+  const today = new Date().toISOString().slice(0, 10);
+  const parsedMax = Number.parseInt(maxItems, 10);
+  const maxItemsValid = Number.isInteger(parsedMax) && parsedMax >= 1 && parsedMax <= 1000;
+  const rangeValid = Boolean(fromDate) && Boolean(toDate) && fromDate <= toDate;
+  const canSubmit = Boolean(selectedAccount) && rangeValid && maxItemsValid;
+
+  const resetRunForm = () => {
+    setSelectedAccount('');
+    setFromDate('');
+    setToDate('');
+    setMaxItems('');
+    setSort('Latest');
+    setResultsType('posts');
+  };
+
   const runMutation = useMutation({
-    mutationFn: () => api.post<{ message: string }>('/api/extractions', { accountId: selectedAccount }),
+    mutationFn: () =>
+      api.post<{ message: string }>('/api/extractions', {
+        accountId: selectedAccount,
+        fromDate,
+        toDate,
+        maxItems: parsedMax,
+        ...(platformCode === 'x' || platformCode === 'twitter' ? { sort } : {}),
+        ...(platformCode === 'instagram' ? { resultsType } : {}),
+      }),
     onSuccess: (data) => {
       toast.success('بدأت العملية', data.message);
       setRunModalOpen(false);
-      setSelectedAccount('');
+      resetRunForm();
       invalidate();
     },
     onError: (error) =>
@@ -314,19 +347,24 @@ export function ExtractionsClient({ canRun, canCancel }: { canRun: boolean; canC
 
       <Modal
         open={runModalOpen}
-        onClose={() => setRunModalOpen(false)}
+        onClose={() => {
+          setRunModalOpen(false);
+          resetRunForm();
+        }}
         title="تشغيل عملية استخراج"
-        description="اختر الحساب المراد جلب منشوراته الآن"
+        description="حدّد الحساب والنطاق الزمني وحدود العدد قبل بدء العملية"
         footer={
           <>
-            <Button variant="secondary" onClick={() => setRunModalOpen(false)}>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                setRunModalOpen(false);
+                resetRunForm();
+              }}
+            >
               إلغاء
             </Button>
-            <Button
-              onClick={() => runMutation.mutate()}
-              loading={runMutation.isPending}
-              disabled={!selectedAccount}
-            >
+            <Button onClick={() => runMutation.mutate()} loading={runMutation.isPending} disabled={!canSubmit}>
               تشغيل الآن
             </Button>
           </>
@@ -335,21 +373,88 @@ export function ExtractionsClient({ canRun, canCancel }: { canRun: boolean; canC
         <div className="space-y-4">
           <Select
             label="الحساب"
+            required
             value={selectedAccount}
             onChange={(event) => setSelectedAccount(event.target.value)}
-            hint="تُستخدم إعدادات الاستخراج المحفوظة للحساب (المدة والعدد الأقصى)"
           >
             <option value="">— اختر الحساب —</option>
-            {accountsQuery.data?.accounts.map((account) => (
+            {accountRows.map((account) => (
               <option key={account.id} value={account.id}>
                 {account.name} — {account.platform.name}
               </option>
             ))}
           </Select>
 
-          <Alert tone="info">
-            يُمرَّر العدد الأقصى المحدد للحساب إلى Apify كسقف فوترة إلزامي، فلن تُحاسَب على أكثر منه.
-          </Alert>
+          <fieldset className="space-y-3 rounded-lg border border-border p-3">
+            <legend className="px-1 text-xs font-semibold text-muted-foreground">النطاق الزمني</legend>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <Input
+                type="date"
+                label="من تاريخ"
+                required
+                value={fromDate}
+                max={toDate || today}
+                onChange={(event) => setFromDate(event.target.value)}
+              />
+              <Input
+                type="date"
+                label="إلى تاريخ"
+                required
+                value={toDate}
+                min={fromDate || undefined}
+                max={today}
+                onChange={(event) => setToDate(event.target.value)}
+                error={
+                  fromDate && toDate && fromDate > toDate
+                    ? 'تاريخ النهاية يجب ألا يسبق تاريخ البداية'
+                    : undefined
+                }
+              />
+            </div>
+          </fieldset>
+
+          <Input
+            type="number"
+            label="أقصى عدد منشورات"
+            required
+            min={1}
+            max={1000}
+            value={maxItems}
+            onChange={(event) => setMaxItems(event.target.value)}
+            hint="سقف الفوترة على Apify — لن تُحاسَب على أكثر من هذا العدد"
+            error={maxItems !== '' && !maxItemsValid ? 'العدد بين 1 و1000' : undefined}
+          />
+
+          {(platformCode === 'x' || platformCode === 'twitter') && (
+            <Select
+              label="ترتيب النتائج"
+              value={sort}
+              onChange={(event) => setSort(event.target.value as 'Latest' | 'Top')}
+              hint="خيار خاص بمنصة إكس"
+            >
+              <option value="Latest">الأحدث نشراً</option>
+              <option value="Top">الأكثر تفاعلاً</option>
+            </Select>
+          )}
+
+          {platformCode === 'instagram' && (
+            <Select
+              label="نوع المحتوى"
+              value={resultsType}
+              onChange={(event) => setResultsType(event.target.value as 'posts' | 'reels')}
+              hint="خيار خاص بمنصة إنستغرام"
+            >
+              <option value="posts">منشورات</option>
+              <option value="reels">ريلز</option>
+            </Select>
+          )}
+
+          {!canSubmit && (
+            <Alert tone="warning">
+              لا تبدأ العملية قبل تحديد الحساب والنطاق الزمني وأقصى عدد للمنشورات. الاستخراج يستهلك
+              حصة مدفوعة، والتحديد الصريح يمنع جلب مدى غير مقصود.
+            </Alert>
+          )}
         </div>
       </Modal>
 

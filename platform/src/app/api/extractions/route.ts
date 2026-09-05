@@ -25,10 +25,27 @@ const listSchema = paginationSchema.extend({
   trigger: z.enum(['MANUAL', 'SCHEDULED', 'WEBHOOK']).optional(),
 });
 
+/**
+ * التشغيل اليدوي يفرض تحديد الفلاتر صراحةً.
+ * الفرض هنا لا في الواجهة وحدها: مسار API متاح لمن يملك الصلاحية، ولو
+ * اكتفينا بتعطيل زر في الشاشة لظل بالإمكان تشغيل عملية بلا حدود معلومة.
+ */
+const DATE = z
+  .string()
+  .trim()
+  .regex(/^\d{4}-\d{2}-\d{2}$/, 'صيغة التاريخ يجب أن تكون YYYY-MM-DD');
+
 const startSchema = z.object({
   accountId: z.string().trim().min(1, 'يجب اختيار حساب').max(64),
-  maxItems: z.coerce.number().int().min(1).max(1000).optional(),
-  windowDays: z.coerce.number().int().min(1).max(365).optional(),
+  maxItems: z.coerce
+    .number({ message: 'حدّد أقصى عدد للمنشورات' })
+    .int('العدد يجب أن يكون صحيحاً')
+    .min(1, 'أقل عدد منشور واحد')
+    .max(1000, 'أقصى عدد 1000 منشور'),
+  fromDate: DATE,
+  toDate: DATE,
+  sort: z.enum(['Latest', 'Top']).optional(),
+  resultsType: z.enum(['posts', 'reels']).optional(),
 });
 
 /** سجل عمليات الاستخراج */
@@ -103,15 +120,26 @@ export async function POST(request: NextRequest) {
       trigger: 'MANUAL',
       requestedById: actor.id,
       maxItems: input.maxItems,
-      windowDays: input.windowDays,
+      fromDate: input.fromDate,
+      toDate: input.toDate,
+      sort: input.sort ?? null,
+      resultsType: input.resultsType ?? null,
     });
 
     await audit(actor, {
       action: AUDIT_ACTIONS.EXTRACTION_STARTED,
       entityType: 'extraction_run',
       entityId: run.id,
-      summary: `تشغيل استخراج يدوي للحساب ${accountName}`,
-      metadata: { actorId: run.actorId, maxItems: run.maxItems, queued },
+      summary: `تشغيل استخراج يدوي للحساب ${accountName} من ${input.fromDate} إلى ${input.toDate}`,
+      metadata: {
+        actorId: run.actorId,
+        maxItems: run.maxItems,
+        fromDate: input.fromDate,
+        toDate: input.toDate,
+        sort: input.sort ?? null,
+        resultsType: input.resultsType ?? null,
+        queued,
+      },
     });
 
     return jsonOk(
