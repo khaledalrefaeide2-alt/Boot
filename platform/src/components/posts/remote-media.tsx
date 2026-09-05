@@ -54,7 +54,7 @@ export function RemoteMedia({
 
       {state === 'failed' ? (
         <span
-          className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-2 text-center text-subtle-foreground"
+          className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-2 text-center text-muted-foreground"
           role="img"
           aria-label={`${fallbackLabel} من مصدرها`}
         >

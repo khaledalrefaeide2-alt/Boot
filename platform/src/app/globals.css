@@ -18,7 +18,7 @@
 
   --foreground: #0f1b2d;
   --muted-foreground: #5a6779;
-  --subtle-foreground: #7c8899;
+  --subtle-foreground: #667283;
 
   --primary: #123a63;
   --primary-hover: #0d2c4c;
@@ -201,6 +201,23 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+  }
+
+  /*
+   * Tailwind v4 يجعل مؤشر الأزرار `default` خلافاً للإصدار السابق، فيبدو
+   * الزر غير قابل للنقر. المؤشر إشارة تفاعل أساسية، فنعيدها لكل ما يُنقر
+   * ونستثني المعطّل لأنه لا يستجيب أصلاً.
+   */
+  button:not(:disabled),
+  [role='button']:not([aria-disabled='true']),
+  summary,
+  label[for] {
+    cursor: pointer;
+  }
+
+  button:disabled,
+  [aria-disabled='true'] {
+    cursor: not-allowed;
   }
 
   body {

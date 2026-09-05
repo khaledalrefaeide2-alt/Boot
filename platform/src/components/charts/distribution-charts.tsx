@@ -189,20 +189,47 @@ export function WordCloud({
         {words.map((item) => {
           const weight = item.count / max;
           const fontSize = 0.75 + weight * 0.85;
+          /*
+           * الكلمة هنا نصٌّ يُقرأ لا علامة في رسم، فتأخذ ألوان النص لا ألوان
+           * الرسوم: ألوان الرسوم مضبوطة على 3:1 وهو حد العلامات، ودونه بكثير
+           * حدّ النص 4.5:1. ولأن الحجم والوزن يحملان دلالة التكرار أصلاً،
+           * لا حاجة إلى شفافية تخفض التباين مقابل معلومة مكرّرة.
+           */
+          const tone =
+            weight > 0.6
+              ? 'var(--primary)'
+              : weight > 0.3
+                ? 'var(--foreground)'
+                : 'var(--muted-foreground)';
+          const style = {
+            fontSize: `${fontSize}rem`,
+            color: tone,
+            fontWeight: weight > 0.6 ? 700 : weight > 0.3 ? 600 : 500,
+          };
+          const label = `${item.word}: ${formatNumber(item.count)} مرة`;
+
+          /*
+           * الكلمة تصير زراً حين يكون لها فعل فقط. بدون معالج نقر كان
+           * الزر يبدو قابلاً للنقر ولا يفعل شيئاً، ويضيف لمستخدم لوحة
+           * المفاتيح عشرات المحطات الفارغة ويُعلن قارئ الشاشة أزراراً
+           * بلا وظيفة. العنصر غير التفاعلي نصٌّ لا زر.
+           */
+          if (!onWordClick) {
+            return (
+              <span key={item.word} title={label} className="rounded px-1" style={style}>
+                {item.word}
+              </span>
+            );
+          }
+
           return (
             <button
               key={item.word}
               type="button"
-              onClick={() => onWordClick?.(item.word)}
-              title={`${item.word}: ${formatNumber(item.count)} مرة`}
+              onClick={() => onWordClick(item.word)}
+              title={label}
               className="rounded px-1 transition-colors hover:bg-surface-2"
-              style={{
-                fontSize: `${fontSize}rem`,
-                color: 'var(--chart-1)',
-                opacity: 0.55 + weight * 0.45,
-                fontWeight: weight > 0.6 ? 700 : weight > 0.3 ? 600 : 500,
-                cursor: onWordClick ? 'pointer' : 'default',
-              }}
+              style={style}
             >
               {item.word}
             </button>
