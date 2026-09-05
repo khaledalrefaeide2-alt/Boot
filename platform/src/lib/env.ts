@@ -14,6 +14,13 @@ const envSchema = z.object({
     .min(32, 'SESSION_SECRET يجب ألا يقل عن 32 محرفاً'),
   SESSION_TTL_DAYS: z.coerce.number().int().positive().max(90).default(7),
   APP_URL: z.string().min(1).default('http://localhost:3000'),
+  /**
+   * عناوين إضافية يُقبل منها الطلب، مفصولة بفواصل.
+   * تُستعمل للوصول من أجهزة أخرى على الشبكة المحلية (الجوال مثلاً)، إذ
+   * يرسل المتصفح عنوان الخادم على الشبكة لا localhost، فيرفضه فحص المصدر.
+   * قائمة صريحة لا حرف بدل: كل عنوان يُضاف قرار واعٍ يُراجَع لاحقاً.
+   */
+  APP_ALLOWED_ORIGINS: z.string().default(''),
 
   APIFY_TOKEN: z.string().default(''),
   APIFY_API_BASE: z.string().default('https://api.apify.com/v2'),

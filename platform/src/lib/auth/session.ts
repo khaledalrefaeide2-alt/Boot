@@ -154,6 +154,30 @@ function safeEqual(a: string, b: string): boolean {
   return timingSafeEqual(bufA, bufB);
 }
 
+/** العناوين الموثوقة: عنوان التطبيق، وما أُضيف صراحةً في ملف البيئة */
+function trustedOrigins(): string[] {
+  const list = [env.APP_URL, ...env.APP_ALLOWED_ORIGINS.split(',')];
+  const origins: string[] = [];
+  for (const entry of list) {
+    const value = entry.trim();
+    if (!value) continue;
+    try {
+      origins.push(new URL(value).origin);
+    } catch {
+      // عنوان غير صالح في الإعدادات يُتجاهل ولا يُسقط الفحص كله
+    }
+  }
+  return origins;
+}
+
+function isTrustedOrigin(origin: string): boolean {
+  try {
+    return trustedOrigins().includes(new URL(origin).origin);
+  } catch {
+    return false;
+  }
+}
+
 /**
  * التحقق من CSRF للطلبات المغيِّرة: فحص المصدر + رمز الإرسال المزدوج.
  * يُعيد رسالة الخطأ عند الفشل، أو null عند النجاح.
@@ -163,15 +187,7 @@ export async function verifyCsrf(): Promise<string | null> {
   const cookieStore = await cookies();
 
   const origin = headerStore.get('origin');
-  if (origin) {
-    let allowed = false;
-    try {
-      allowed = new URL(origin).origin === new URL(env.APP_URL).origin;
-    } catch {
-      allowed = false;
-    }
-    if (!allowed) return 'مصدر الطلب غير موثوق';
-  }
+  if (origin && !isTrustedOrigin(origin)) return 'مصدر الطلب غير موثوق';
 
   const cookieToken = cookieStore.get(CSRF_COOKIE)?.value;
   const headerToken = headerStore.get(CSRF_HEADER);
