@@ -27,12 +27,17 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        {/* الخط يُحمَّل وقت التشغيل — يعمل النظام بخطوط النظام إذا كانت البيئة معزولة */}
+        {/*
+          الخط مستضاف محلياً (public/fonts) ومُعرَّف في globals.css — لا طلب
+          خارجي وقت التشغيل، فتعمل الهوية البصرية كاملة على شبكة معزولة.
+          نُحمّل نطاق العربية مسبقاً لأنه الخط الفعلي لكل نص في الواجهة.
+        */}
         <link
-          href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;500;600;700;800&display=swap"
-          rel="stylesheet"
+          rel="preload"
+          href="/fonts/cairo-arabic.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
         />
       </head>
       <body className="min-h-dvh antialiased">

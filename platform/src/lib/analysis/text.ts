@@ -58,8 +58,17 @@ const STOP_WORDS = new Set(
   ].map(normalizeArabic),
 );
 
-/** تقسيم النص إلى كلمات ذات معنى */
-export function tokenize(text: string | null | undefined): string[] {
+/**
+ * تقسيم النص إلى كلمات ذات معنى، مع الاحتفاظ بالكلمة كما وردت.
+ *
+ * `key` هو الشكل المطبَّع ويُستخدم للتجميع والمطابقة، و`surface` هو الشكل
+ * الأصلي في النص ويُستخدم للعرض. الفصل بينهما ضروري: التطبيع يحوّل
+ * «ة» إلى «ه» و«أ» إلى «ا» ليجمع صيغ الكلمة الواحدة، فلو عُرض الشكل
+ * المطبَّع لرأى المستخدم كلمات عربية مكتوبة خطأ («ورشه» بدل «ورشة»).
+ */
+export function tokenizeWithSurface(
+  text: string | null | undefined,
+): { key: string; surface: string }[] {
   if (!text) return [];
   const cleaned = text
     .replace(/https?:\/\/\S+/g, ' ')
@@ -68,20 +77,50 @@ export function tokenize(text: string | null | undefined): string[] {
 
   return cleaned
     .split(/\s+/)
-    .map((word) => normalizeArabic(word))
-    .filter((word) => word.length >= 3 && word.length <= 40 && !STOP_WORDS.has(word) && !/^\d+$/.test(word));
+    .map((word) => ({ key: normalizeArabic(word), surface: word.trim() }))
+    .filter(
+      ({ key }) =>
+        key.length >= 3 && key.length <= 40 && !STOP_WORDS.has(key) && !/^\d+$/.test(key),
+    );
 }
 
-/** أكثر الكلمات تكراراً في مجموعة نصوص */
+/** تقسيم النص إلى كلمات مطبَّعة — للمطابقة والإحصاء */
+export function tokenize(text: string | null | undefined): string[] {
+  return tokenizeWithSurface(text).map(({ key }) => key);
+}
+
+/**
+ * أكثر الكلمات تكراراً في مجموعة نصوص.
+ * التجميع على الشكل المطبَّع، والعرض بأكثر الأشكال الأصلية وروداً.
+ */
 export function topWords(texts: (string | null)[], limit = 40): { word: string; count: number }[] {
   const counts = new Map<string, number>();
+  const surfaces = new Map<string, Map<string, number>>();
+
   for (const text of texts) {
-    for (const word of tokenize(text)) {
-      counts.set(word, (counts.get(word) ?? 0) + 1);
+    for (const { key, surface } of tokenizeWithSurface(text)) {
+      counts.set(key, (counts.get(key) ?? 0) + 1);
+      let forms = surfaces.get(key);
+      if (!forms) {
+        forms = new Map<string, number>();
+        surfaces.set(key, forms);
+      }
+      forms.set(surface, (forms.get(surface) ?? 0) + 1);
     }
   }
+
   return Array.from(counts.entries())
-    .map(([word, count]) => ({ word, count }))
+    .map(([key, count]) => {
+      let word = key;
+      let best = 0;
+      for (const [surface, times] of surfaces.get(key) ?? []) {
+        if (times > best) {
+          best = times;
+          word = surface;
+        }
+      }
+      return { word, count };
+    })
     .sort((a, b) => b.count - a.count)
     .slice(0, limit);
 }

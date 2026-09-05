@@ -18,6 +18,7 @@ import {
   languageLabel,
 } from '@/lib/domain/constants';
 import { formatDateTime, formatNumber } from '@/lib/utils';
+import { RemoteMedia } from '@/components/posts/remote-media';
 
 export const metadata: Metadata = { title: 'تفاصيل المنشور' };
 
@@ -106,14 +107,10 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
                   .filter((url, index, list): url is string => Boolean(url) && list.indexOf(url) === index)
                   .slice(0, 6)
                   .map((url) => (
-                    // نخزّن الروابط فقط ولا نحمّل الملفات — الصور تُعرض من مصدرها
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img
+                    <RemoteMedia
                       key={url}
                       src={url}
-                      alt=""
-                      loading="lazy"
-                      className="w-full rounded-md border border-border object-cover"
+                      className="aspect-video w-full rounded-md border border-border object-cover"
                     />
                   ))}
               </div>

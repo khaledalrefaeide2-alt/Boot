@@ -37,7 +37,12 @@ Thumbs.db
 README.md
 AGENTS.md
 CLAUDE.md
+
+# سكربتات تهيئة تخص جهاز المستخدم لا الحاوية
 setup.ps1
 setup.bat
 setup.sh
-scripts
+
+# ملاحظة: مجلد scripts يجب أن يبقى داخل الصورة.
+# npm run start يشغّل scripts/next-with-port.mjs، كما أن استعادة كلمة مرور
+# المالك تُنفَّذ داخل الحاوية عبر:  docker compose exec web npm run owner:reset

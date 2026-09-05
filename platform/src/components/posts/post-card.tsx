@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { ExternalLink, EyeOff, Heart, MessageSquare, Play, Share2 } from 'lucide-react';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
+import { RemoteMedia } from '@/components/posts/remote-media';
 import { TD, TH, THead, TR } from '@/components/ui/table';
 import {
   POST_TYPE_LABELS,
@@ -68,16 +69,10 @@ export function PostCard({ post, canReview }: { post: PostListItemView; canRevie
     <article className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs transition-colors hover:border-border-strong print-avoid-break">
       {(post.thumbnailUrl || post.imageUrl) && (
         <Link href={`/posts/${post.id}`} className="relative block bg-surface-2">
-          {/* نخزّن الروابط فقط ولا نحمّل الملفات — الصورة تُعرض من مصدرها */}
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
+          <RemoteMedia
             src={post.thumbnailUrl ?? post.imageUrl ?? ''}
-            alt=""
-            loading="lazy"
             className="h-36 w-full object-cover"
-            onError={(event) => {
-              (event.currentTarget.parentElement as HTMLElement).style.display = 'none';
-            }}
+            fallback="placeholder"
           />
           {post.videoUrl && (
             <span className="absolute bottom-2 start-2 flex items-center gap-1 rounded bg-black/65 px-1.5 py-0.5 text-[0.6875rem] text-white">
