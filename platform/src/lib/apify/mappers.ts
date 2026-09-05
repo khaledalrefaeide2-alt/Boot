@@ -144,6 +144,53 @@ const PLATFORM_PAGE_HOSTS =
 
 const MEDIA_EXTENSION = /\.(jpe?g|png|gif|webp|avif|bmp|heic|mp4|mov|webm|m4v|mkv|m3u8)$/i;
 
+/**
+ * البحث العميق عن روابط الوسائط.
+ *
+ * الـ Actors تدفن روابط الملفات داخل كائنات متداخلة تختلف بنيتها من واحد
+ * إلى آخر (thumbnailImage.uri داخل مرفق داخل منشور مثلاً)، فتعداد مسارات
+ * ثابتة لا يكفي ويتعطّل مع أي تغيير في شكل المخرجات. لذلك نمشي في الكائن
+ * كله ونلتقط ما يقع تحت مفتاح يدل على وسائط.
+ *
+ * ولأن المخرجات تحوي صوراً ليست صور المنشور — أشرطة معاينة التمرير في
+ * الفيديو (sprite_uris) وصور الحسابات والأيقونات — نتخطّى تلك الفروع
+ * بالاسم، وإلا ظهرت شريحة معاينة مكان صورة المنشور.
+ */
+const MEDIA_KEY =
+  /^(thumbnail|thumbnailUrl|thumbnail_url|thumbnailImage|image|imageUrl|image_url|photo|photoImage|photo_image|picture|full_picture|displayUrl|display_url|previewImageUrl|preview_image|src|uri|url|playableUrl|playable_url|videoUrl|video_url)$/i;
+
+/** فروع لا تحوي وسائط المنشور مهما بدت روابطها صحيحة */
+const SKIP_BRANCH =
+  /(sprite|scrubber|profile|avatar|owner|actor|page_info|reaction|emoji|icon|badge|logo|favicon|watermark)/i;
+
+function collectMediaDeep(value: unknown, depth = 0, found: string[] = []): string[] {
+  if (depth > 6 || found.length >= 20) return found;
+
+  if (Array.isArray(value)) {
+    for (const item of value) collectMediaDeep(item, depth + 1, found);
+    return found;
+  }
+
+  const record = asRecord(value);
+  if (!record) return found;
+
+  for (const [key, child] of Object.entries(record)) {
+    if (SKIP_BRANCH.test(key)) continue;
+    if (typeof child === 'string') {
+      if (MEDIA_KEY.test(key) && isMediaUrl(child) && !found.includes(child)) found.push(child);
+    } else {
+      collectMediaDeep(child, depth + 1, found);
+    }
+  }
+
+  return found;
+}
+
+/** هل الرابط ملف فيديو؟ الصور والفيديو يُفصلان بالامتداد */
+function looksLikeVideo(url: string): boolean {
+  return /\.(mp4|mov|webm|m4v|mkv|m3u8)(\?|$)/i.test(url);
+}
+
 /** يُبقي الرابط إن كان وسائط فعلية، وإلا يُهمله */
 function keepMedia(value: string | null): string | null {
   return isMediaUrl(value) ? value : null;
@@ -410,14 +457,24 @@ export function mapApifyItem(raw: unknown, platformCode: string): MappedPost | n
     : [];
   const hashtags = Array.from(new Set([...hashtagsFromText, ...declaredHashtags])).slice(0, 50);
 
-  // بعض الـ Actors ترجع الوسائط في مصفوفة فقط بلا حقل صورة صريح
-  const resolvedImageUrl = imageUrl ?? mediaUrls.find((url) => !url.match(/\.(mp4|mov|webm)(\?|$)/i)) ?? null;
+  // الحقول الصريحة أولاً، فإن خلت بحثنا في عمق الكائن عن أي وسائط صالحة
+  const deepMedia = collectMediaDeep(source);
+  const deepImages = deepMedia.filter((url) => !looksLikeVideo(url));
+  const deepVideos = deepMedia.filter(looksLikeVideo);
+
+  const resolvedVideoUrl = videoUrl ?? deepVideos[0] ?? null;
+  const resolvedImageUrl =
+    imageUrl ??
+    mediaUrls.find((url) => !looksLikeVideo(url)) ??
+    deepImages[0] ??
+    null;
+  const allMediaUrls = Array.from(new Set([...mediaUrls, ...deepMedia])).slice(0, 20);
 
   const postType = resolvePostType(
     source,
-    Boolean(videoUrl),
+    Boolean(resolvedVideoUrl),
     Boolean(resolvedImageUrl),
-    mediaUrls.length,
+    allMediaUrls.length,
     text,
     url,
   );
@@ -434,9 +491,9 @@ export function mapApifyItem(raw: unknown, platformCode: string): MappedPost | n
     location: location?.slice(0, 200) ?? null,
     authorName: authorName?.slice(0, 200) ?? null,
     imageUrl: resolvedImageUrl,
-    videoUrl,
+    videoUrl: resolvedVideoUrl,
     thumbnailUrl: thumbnailUrl ?? resolvedImageUrl,
-    mediaUrls: mediaUrls.length > 0 ? mediaUrls : null,
+    mediaUrls: allMediaUrls.length > 0 ? allMediaUrls : null,
     likes,
     comments,
     shares,
