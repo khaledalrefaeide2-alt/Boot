@@ -75,6 +75,7 @@ export const POST_LIST_SELECT = {
   imageUrl: true,
   videoUrl: true,
   thumbnailUrl: true,
+  mediaUrls: true,
   likes: true,
   comments: true,
   shares: true,

@@ -18,7 +18,7 @@ import {
   languageLabel,
 } from '@/lib/domain/constants';
 import { formatDateTime, formatNumber } from '@/lib/utils';
-import { RemoteMedia } from '@/components/posts/remote-media';
+import { MediaGallery } from '@/components/posts/media-gallery';
 
 export const metadata: Metadata = { title: 'تفاصيل المنشور' };
 
@@ -101,20 +101,11 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
               <p className="text-sm text-subtle-foreground">منشور بلا نص</p>
             )}
 
-            {(post.imageUrl || mediaUrls.length > 0) && (
-              <div className="mt-4 grid gap-2 sm:grid-cols-2">
-                {[post.imageUrl, ...mediaUrls]
-                  .filter((url, index, list): url is string => Boolean(url) && list.indexOf(url) === index)
-                  .slice(0, 6)
-                  .map((url) => (
-                    <RemoteMedia
-                      key={url}
-                      src={url}
-                      className="aspect-video w-full rounded-md border border-border object-cover"
-                    />
-                  ))}
-              </div>
-            )}
+            <MediaGallery
+              urls={[post.imageUrl, ...mediaUrls]
+                .filter((url, index, list): url is string => Boolean(url) && list.indexOf(url) === index)
+                .slice(0, 12)}
+            />
 
             {post.videoUrl && (
               <a

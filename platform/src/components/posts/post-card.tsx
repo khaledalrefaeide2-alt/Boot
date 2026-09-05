@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { ExternalLink, EyeOff, Heart, MessageSquare, Play, Share2 } from 'lucide-react';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
-import { RemoteMedia } from '@/components/posts/remote-media';
+import { PostThumb } from '@/components/posts/post-thumb';
 import { TD, TH, THead, TR } from '@/components/ui/table';
 import {
   POST_TYPE_LABELS,
@@ -25,6 +25,7 @@ export interface PostListItemView {
   imageUrl: string | null;
   videoUrl: string | null;
   thumbnailUrl: string | null;
+  mediaUrls?: string[] | null;
   likes: number;
   comments: number;
   shares: number;
@@ -68,19 +69,12 @@ export function PostCard({ post, canReview }: { post: PostListItemView; canRevie
   return (
     <article className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs transition-colors hover:border-border-strong print-avoid-break">
       {(post.thumbnailUrl || post.imageUrl) && (
-        <Link href={`/posts/${post.id}`} className="relative block bg-surface-2">
-          <RemoteMedia
-            src={post.thumbnailUrl ?? post.imageUrl ?? ''}
-            className="h-36 w-full object-cover"
-            fallback="placeholder"
-          />
-          {post.videoUrl && (
-            <span className="absolute bottom-2 start-2 flex items-center gap-1 rounded bg-black/65 px-1.5 py-0.5 text-[0.6875rem] text-white">
-              <Play className="h-3 w-3" aria-hidden />
-              فيديو
-            </span>
-          )}
-        </Link>
+        <PostThumb
+          postId={post.id}
+          src={post.thumbnailUrl ?? post.imageUrl ?? ''}
+          isVideo={Boolean(post.videoUrl) || post.postType === 'VIDEO' || post.postType === 'REEL'}
+          extraCount={Math.max(0, (post.mediaUrls?.length ?? 0) - 1)}
+        />
       )}
 
       <div className="flex flex-1 flex-col gap-2.5 p-3.5">
