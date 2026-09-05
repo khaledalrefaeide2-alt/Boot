@@ -33,11 +33,15 @@ services:
     image: redis:7-alpine
     container_name: mm_redis
     restart: unless-stopped
+    # noeviction إلزامية لا اختيارية: الطابور يخزّن بيانات المهام في Redis،
+    # وسياسة allkeys-lru تسمح بحذف أي مفتاح عند امتلاء الذاكرة — بما فيه
+    # مهمة استخراج منتظرة. النتيجة عمليات تختفي بصمت دون أثر ولا رسالة خطأ.
+    # مع noeviction ترفض Redis الكتابة عند الامتلاء، فيظهر الخطأ بدل ضياع العمل.
     command: >
       redis-server
       --appendonly yes
       --maxmemory 512mb
-      --maxmemory-policy allkeys-lru
+      --maxmemory-policy noeviction
     volumes:
       - redis_data:/data
     ports:

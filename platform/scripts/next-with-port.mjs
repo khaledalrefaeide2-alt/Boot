@@ -8,6 +8,7 @@
 import 'dotenv/config';
 import { spawn } from 'node:child_process';
 import { createRequire } from 'node:module';
+import { createServer } from 'node:net';
 
 const mode = process.argv[2] === 'start' ? 'start' : 'dev';
 const port = (process.env.APP_PORT ?? '3000').trim();
@@ -25,6 +26,40 @@ if (appUrl && !appUrl.includes(`:${port}`)) {
   console.warn('    يجب أن يحمل APP_URL رقم المنفذ نفسه، وإلا رُفض تسجيل الدخول.');
   console.warn(`    الصحيح:  APP_URL="http://localhost:${port}"`);
   console.warn('');
+}
+
+/**
+ * فحص المنفذ قبل التشغيل.
+ *
+ * إن كان مشغولاً يخرج Next برسالة EADDRINUSE ومكدّس استدعاءات لا يفهم منه
+ * المستخدم ما العمل. الغالب أن نسخة سابقة من الخادم ما زالت تعمل في نافذة
+ * أخرى، فنقول ذلك صراحةً مع الأمر الذي يحرّر المنفذ على نظامه.
+ */
+async function portIsBusy(portNumber) {
+  return new Promise((resolve) => {
+    const probe = createServer();
+    probe.once('error', (error) => resolve(error.code === 'EADDRINUSE'));
+    probe.once('listening', () => probe.close(() => resolve(false)));
+    probe.listen(portNumber, '0.0.0.0');
+  });
+}
+
+if (await portIsBusy(Number(port))) {
+  const onWindows = process.platform === 'win32';
+  console.error('');
+  console.error(`>> Port ${port} is already in use. Free it, then run this again.`);
+  console.error(`   المنفذ ${port} مشغول — الغالب أن الخادم يعمل في نافذة أخرى.`);
+  console.error('');
+  console.error('   أغلق تلك النافذة، أو حرّر المنفذ بهذا الأمر:');
+  console.error(
+    onWindows
+      ? `      Get-NetTCPConnection -LocalPort ${port} | ForEach-Object { Stop-Process -Id $_.OwningProcess -Force }`
+      : `      lsof -ti tcp:${port} | xargs kill -9`,
+  );
+  console.error('');
+  console.error(`   أو شغّل على منفذ آخر بتغيير APP_PORT و APP_URL معاً في ملف .env`);
+  console.error('');
+  process.exit(1);
 }
 
 /*
