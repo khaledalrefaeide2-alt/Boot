@@ -126,6 +126,43 @@ function pickDate(source: Record<string, unknown>, keys: string[]): Date | null 
 }
 
 /** جمع روابط الوسائط من الأشكال المختلفة التي ترجعها الـ Actors */
+/**
+ * هل هذا رابط ملف وسائط فعلي؟
+ *
+ * الـ Actors تضع الرابط الدائم للمنشور في حقول تبدو حقول وسائط
+ * (attachments[].url مثلاً)، فيُخزَّن `facebook.com/photo/?fbid=...`
+ * على أنه رابط صورة. المتصفح يطلبه فيستقبل صفحة HTML لا صورة، فتظهر
+ * كل الوسائط مكسورة. لذلك نقبل ما يثبت أنه وسائط فقط:
+ * مضيف شبكة توصيل معروف، أو مسار ينتهي بامتداد ملف وسائط.
+ */
+const MEDIA_HOSTS =
+  /(^|\.)(fbcdn\.net|cdninstagram\.com|twimg\.com|licdn\.com|akamaihd\.net|cdninstagram\.net)$/i;
+
+/** مضيفات صفحات المنصات — روابطها صفحات لا ملفات، مهما بدا الحقل */
+const PLATFORM_PAGE_HOSTS =
+  /(^|\.)(facebook\.com|fb\.com|fb\.watch|instagram\.com|twitter\.com|x\.com|t\.co)$/i;
+
+const MEDIA_EXTENSION = /\.(jpe?g|png|gif|webp|avif|bmp|heic|mp4|mov|webm|m4v|mkv|m3u8)$/i;
+
+/** يُبقي الرابط إن كان وسائط فعلية، وإلا يُهمله */
+function keepMedia(value: string | null): string | null {
+  return isMediaUrl(value) ? value : null;
+}
+
+export function isMediaUrl(value: string | null | undefined): value is string {
+  if (!value) return false;
+  let parsed: URL;
+  try {
+    parsed = new URL(value);
+  } catch {
+    return false;
+  }
+  if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return false;
+  if (PLATFORM_PAGE_HOSTS.test(parsed.hostname)) return false;
+  if (MEDIA_HOSTS.test(parsed.hostname)) return true;
+  return MEDIA_EXTENSION.test(parsed.pathname);
+}
+
 function collectMediaUrls(source: Record<string, unknown>, keys: string[]): string[] {
   const urls: string[] = [];
 
@@ -147,7 +184,7 @@ function collectMediaUrls(source: Record<string, unknown>, keys: string[]): stri
     }
   }
 
-  return Array.from(new Set(urls)).slice(0, 20);
+  return Array.from(new Set(urls.filter(isMediaUrl))).slice(0, 20);
 }
 
 /** مفتاح منع التكرار: المعرّف الخارجي، أو بصمة الرابط، أو بصمة المحتوى */
@@ -159,12 +196,28 @@ function buildDedupeKey(externalId: string | null, url: string | null, text: str
 }
 
 /** تحديد نوع المنشور من الوسائط والحقول المتاحة */
+/**
+ * نوع المنشور من شكل رابطه الدائم.
+ * الرابط لا يصلح لعرض الوسائط، لكنه يصف نوعها بدقة: /reel/ ريل،
+ * و/photo/ صورة، و/videos/ فيديو. بدونه تصير كل هذه المنشورات «نصاً».
+ */
+function typeFromPermalink(url: string | null): PostType | null {
+  if (!url) return null;
+  if (/\/reel(s)?\//i.test(url)) return 'REEL';
+  if (/\/(videos?|watch)\//i.test(url) || /fb\.watch\//i.test(url)) return 'VIDEO';
+  if (/\/photo(s)?(\/|\?)/i.test(url)) return 'IMAGE';
+  if (/instagram\.com\/(p|tv)\//i.test(url)) return 'IMAGE';
+  if (/instagram\.com\/reel\//i.test(url)) return 'REEL';
+  return null;
+}
+
 function resolvePostType(
   source: Record<string, unknown>,
   hasVideo: boolean,
   hasImage: boolean,
   mediaCount: number,
   text: string | null,
+  permalink: string | null = null,
 ): PostType {
   const declared = pickString(source, ['type', 'postType', 'mediaType', 'product_type', '__typename']);
   if (declared) {
@@ -180,6 +233,11 @@ function resolvePostType(
   if (hasVideo) return 'VIDEO';
   if (mediaCount > 1) return 'ALBUM';
   if (hasImage) return 'IMAGE';
+
+  // الوسائط قد تُرفض لأن رابطها صفحة لا ملف، والرابط الدائم يبقى دالاً على النوع
+  const fromLink = typeFromPermalink(permalink);
+  if (fromLink) return fromLink;
+
   if (pickString(source, ['link', 'externalLink', 'linkUrl'])) return 'LINK';
   if (text) return 'TEXT';
   return 'OTHER';
@@ -230,24 +288,23 @@ export function mapApifyItem(raw: unknown, platformCode: string): MappedPost | n
   // عنصر بلا نص وبلا رابط وبلا معرّف لا يصلح منشوراً
   if (!text && !url && !externalId) return null;
 
-  const videoUrl = pickString(source, [
-    'videoUrl',
-    'video_url',
-    'videoUrls.0',
-    'media.video_url',
-    'videoPlayUrl',
-  ]);
+  // كل رابط وسائط يمرّ بالتحقق: الحقل الذي يبدو حقل وسائط قد يحمل رابط صفحة
+  const videoUrl = keepMedia(
+    pickString(source, ['videoUrl', 'video_url', 'videoUrls.0', 'media.video_url', 'videoPlayUrl']),
+  );
 
-  const imageUrl = pickString(source, [
-    'imageUrl',
-    'image',
-    'displayUrl',
-    'thumbnailUrl',
-    'media.image.uri',
-    'images.0',
-    'photos.0',
-    'media.0.url',
-  ]);
+  const imageUrl = keepMedia(
+    pickString(source, [
+      'imageUrl',
+      'image',
+      'displayUrl',
+      'thumbnailUrl',
+      'media.image.uri',
+      'images.0',
+      'photos.0',
+      'media.0.url',
+    ]),
+  );
 
   const mediaUrls = collectMediaUrls(source, [
     'images',
@@ -258,7 +315,9 @@ export function mapApifyItem(raw: unknown, platformCode: string): MappedPost | n
     'childPosts',
   ]);
 
-  const thumbnailUrl = pickString(source, ['thumbnailUrl', 'thumbnail', 'previewImageUrl', 'displayUrl']);
+  const thumbnailUrl = keepMedia(
+    pickString(source, ['thumbnailUrl', 'thumbnail', 'previewImageUrl', 'displayUrl']),
+  );
 
   const likes =
     pickNumber(source, [
@@ -360,6 +419,7 @@ export function mapApifyItem(raw: unknown, platformCode: string): MappedPost | n
     Boolean(resolvedImageUrl),
     mediaUrls.length,
     text,
+    url,
   );
 
   return {

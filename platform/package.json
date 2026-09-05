@@ -19,7 +19,8 @@
     "setup:db": "prisma migrate deploy && tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "verify:pipeline": "tsx --conditions=react-server scripts/verify-pipeline.ts",
-    "owner:reset": "tsx --conditions=react-server scripts/reset-owner-password.ts"
+    "owner:reset": "tsx --conditions=react-server scripts/reset-owner-password.ts",
+    "media:repair": "tsx --conditions=react-server scripts/repair-media-urls.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
