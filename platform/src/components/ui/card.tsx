@@ -1,9 +1,17 @@
 import { cn } from '@/lib/utils';
 
+/**
+ * البطاقة أساس كل الأقسام في الواجهة.
+ *
+ * `min-w-0` ضرورية لا تجميلية: عنصر الشبكة أو الفليكس عرضه الأدنى هو عرض
+ * محتواه الطبيعي افتراضياً، فبطاقة تحوي جدولاً عريضاً ترفض الانكماش،
+ * فيتمدد الجدول خارج الشاشة ويظهر تمرير أفقي في الصفحة كلها بدل أن ينحصر
+ * التمرير داخل الجدول وحده.
+ */
 export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('rounded-lg border border-border bg-surface shadow-xs', className)}
+      className={cn('min-w-0 rounded-lg border border-border bg-surface shadow-xs', className)}
       {...props}
     />
   );

@@ -122,9 +122,23 @@ export async function createExtractionRun(options: CreateRunOptions) {
   const jobId = await enqueueExtraction(run.id);
   if (jobId) {
     await prisma.extractionRun.update({ where: { id: run.id }, data: { queueJobId: jobId } });
+    return { run, queued: true, accountName: account.name };
   }
 
-  return { run, queued: Boolean(jobId), accountName: account.name };
+  // فشل الإضافة إلى الطابور يُنهي العملية فوراً بحالة «فشل».
+  // لو تُركت معلّقة لأقفلت الحساب إلى الأبد: التشغيل اليدوي يُرفض لوجود
+  // «عملية قائمة»، والجدولة تتخطّى الحساب للسبب نفسه، فلا يُستخرج منه شيء
+  // بعدها إطلاقاً. الفشل الصريح يُبقي الحساب قابلاً لإعادة المحاولة.
+  await prisma.extractionRun.update({
+    where: { id: run.id },
+    data: {
+      status: 'FAILED',
+      finishedAt: new Date(),
+      errorMessage: 'تعذّرت إضافة العملية إلى الطابور — تأكد من تشغيل Redis والعامل الخلفي ثم أعد المحاولة',
+    },
+  });
+
+  return { run: { ...run, status: 'FAILED' }, queued: false, accountName: account.name };
 }
 
 /**

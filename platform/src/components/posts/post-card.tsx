@@ -130,12 +130,14 @@ export function PostCard({ post, canReview }: { post: PostListItemView; canRevie
             </p>
           </div>
           {post.url && (
+            /* p-1.5 يجعل مساحة اللمس 26px: أقل من 24px يصعب إصابته على الجوال */
             <a
               href={post.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 rounded p-1 text-muted-foreground transition-colors hover:bg-surface-2 hover:text-primary"
+              className="inline-flex shrink-0 items-center justify-center rounded p-1.5 text-muted-foreground transition-colors hover:bg-surface-2 hover:text-primary"
               title="فتح المنشور في المنصة"
+              aria-label="فتح المنشور في المنصة"
             >
               <ExternalLink className="h-3.5 w-3.5" aria-hidden />
             </a>

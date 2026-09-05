@@ -2,7 +2,8 @@ import { cn } from '@/lib/utils';
 
 /** غلاف يمنع تمرير الصفحة أفقياً — الجدول وحده يتمرر */
 export function TableWrapper({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('w-full overflow-x-auto', className)} {...props} />;
+  // min-w-0 تسمح للحاوية بالانكماش فيبقى التمرير الأفقي داخل الجدول وحده
+  return <div className={cn('w-full min-w-0 overflow-x-auto', className)} {...props} />;
 }
 
 export function Table({ className, ...props }: React.TableHTMLAttributes<HTMLTableElement>) {

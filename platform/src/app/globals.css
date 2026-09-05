@@ -212,13 +212,20 @@
     text-rendering: optimizeLegibility;
   }
 
-  /* الأرقام دائماً من اليسار لليمين داخل النص العربي */
+  /*
+   * الأرقام دائماً من اليسار لليمين داخل النص العربي.
+   *
+   * العزل هنا بـ isolate لا بـ embed مع display: inline-block. الصندوق
+   * السطري كان يُستعمل ليأخذ الاتجاه مفعوله، لكنه على خلية جدول يلغي
+   * كونها table-cell فتخرج من شبكة الأعمدة: الأرقام لا تحاذي ترويستها
+   * وينكسر الجدول كله. isolate يعزل الرقم عن سياقه العربي دون أن يمسّ
+   * نوع العرض، فيعمل داخل الخلايا وخارجها معاً.
+   */
   .num,
   [data-num] {
     font-variant-numeric: tabular-nums;
     direction: ltr;
-    unicode-bidi: embed;
-    display: inline-block;
+    unicode-bidi: isolate;
   }
 
   /* روابط ومعرّفات لاتينية داخل واجهة عربية */
@@ -359,6 +366,35 @@
 
   a[href]::after {
     content: '';
+  }
+
+  /*
+   * حاويات التمرير الأفقي تقصّ ما يخرج عنها. على الشاشة يمرّر المستخدم
+   * ليرى بقية الأعمدة، أما في الورق فلا تمرير: تُطبع الجداول ناقصة أعمدتها
+   * الأخيرة صامتةً. لذلك نُلغي القص في الطباعة ونترك الجدول ينكمش ليسع الصفحة.
+   */
+  .overflow-x-auto,
+  .overflow-auto {
+    overflow: visible !important;
+  }
+
+  table {
+    min-width: 0 !important;
+    width: 100% !important;
+    table-layout: auto;
+    font-size: 0.6875rem;
+  }
+
+  th,
+  td {
+    padding: 0.25rem 0.375rem !important;
+    overflow-wrap: anywhere;
+  }
+
+  /* الرسوم تُقاس بعرض الشاشة، فنمنعها من تجاوز عرض الورقة */
+  .recharts-wrapper,
+  .recharts-responsive-container {
+    max-width: 100% !important;
   }
 }
 

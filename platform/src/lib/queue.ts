@@ -53,10 +53,23 @@ export function getMaintenanceQueue(): Queue<MaintenanceJobData> {
  * إذا كان Redis غير متاح نُرجع false ليتولى المستدعي التشغيل المباشر،
  * فلا يتعطل النظام كله بسبب الطابور.
  */
+/**
+ * معرّف المهمة في الطابور.
+ * BullMQ يرفض النقطتين في المعرّف المخصّص، ومعرّفنا cuid لا يحتويها،
+ * فالفاصل شرطة. تثبيت المعرّف يمنع ازدواج المهمة للتشغيل الواحد.
+ */
+function extractionJobId(runId: string): string {
+  return `run-${runId}`;
+}
+
 export async function enqueueExtraction(runId: string): Promise<string | null> {
   if (!(await isRedisReady())) return null;
   try {
-    const job = await getExtractionQueue().add('run', { runId }, { jobId: `run:${runId}` });
+    const job = await getExtractionQueue().add(
+      'run',
+      { runId },
+      { jobId: extractionJobId(runId) },
+    );
     return job.id ?? null;
   } catch (error) {
     console.error('[queue] تعذّرت إضافة المهمة إلى الطابور:', error);
@@ -67,7 +80,7 @@ export async function enqueueExtraction(runId: string): Promise<string | null> {
 /** إلغاء مهمة لم تبدأ بعد */
 export async function removeExtractionJob(runId: string): Promise<void> {
   try {
-    const job = await getExtractionQueue().getJob(`run:${runId}`);
+    const job = await getExtractionQueue().getJob(extractionJobId(runId));
     if (job) await job.remove();
   } catch {
     // المهمة قد تكون قيد التنفيذ — الإلغاء الفعلي يتم عبر Apify
