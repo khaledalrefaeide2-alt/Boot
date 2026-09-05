@@ -7,6 +7,7 @@
  */
 import 'dotenv/config';
 import { spawn } from 'node:child_process';
+import { createRequire } from 'node:module';
 
 const mode = process.argv[2] === 'start' ? 'start' : 'dev';
 const port = (process.env.APP_PORT ?? '3000').trim();
@@ -26,9 +27,18 @@ if (appUrl && !appUrl.includes(`:${port}`)) {
   console.warn('');
 }
 
-const child = spawn('npx', ['next', mode, '-p', port], {
+/*
+ * نشغّل ملف Next نفسه بمحرّك Node مباشرة، بلا صدفة وسيطة.
+ *
+ * تمرير المعاملات مع shell: true يجمعها في نص واحد دون تهريب، وهو ما
+ * حذّرت منه Node (DEP0190) لأنه يفتح باب حقن الأوامر. التشغيل المباشر
+ * يلغي الصدفة كلياً، ويعمل على ويندوز ولينكس معاً دون اختلاف.
+ */
+const require = createRequire(import.meta.url);
+const nextBin = require.resolve('next/dist/bin/next');
+
+const child = spawn(process.execPath, [nextBin, mode, '-p', port], {
   stdio: 'inherit',
-  shell: true,
 });
 
 child.on('exit', (code) => process.exit(code ?? 0));
