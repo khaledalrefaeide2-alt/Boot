@@ -122,7 +122,8 @@ async function seedOwner(): Promise<void> {
   if (existing) {
     console.log(`>> Owner already exists: ${email} (password unchanged)`);
     console.log('   المالك موجود مسبقاً ولم تُغيَّر كلمة مروره.');
-    console.log('   لتغييرها:   npm run owner:reset -- "MyNewPassword123"');
+    console.log('   لتغييرها شغّل الأمر التالي وحده:');
+    console.log('       npm run owner:reset -- "MyNewPassword123"');
     return;
   }
 
@@ -181,7 +182,9 @@ async function main(): Promise<void> {
   await seedTopics();
   await seedSettings();
   await seedOwner();
-  console.log('\n>> Seeding complete. Start the app with:   npm run dev');
+  console.log('\n>> Seeding complete.');
+  console.log('   شغّل الموقع بالأمر التالي وحده:');
+  console.log('       npm run dev');
   console.log('   اكتملت التهيئة.');
 }
 

@@ -35,7 +35,8 @@ async function main(): Promise<void> {
   });
 
   if (users.length === 0) {
-    console.log('>> Database is empty. Run:   npm run setup:db');
+    console.log('>> Database is empty. Run the command below on its own:');
+    console.log('       npm run setup:db');
     console.log('   قاعدة البيانات فارغة — لم يُنشأ حساب المالك بعد.');
     console.log('   شغّل الأمر أعلاه ثم سجّل الدخول بالبريد وكلمة المرور من ملف .env');
     return;
@@ -56,14 +57,16 @@ async function main(): Promise<void> {
   if (!newPassword || newPassword.length < 10) {
     console.error('\n>> Password must be at least 10 characters');
     console.error('   كلمة المرور يجب ألا تقل عن 10 محارف');
-    console.error('   Pass it like this:   npm run owner:reset -- "MyNewPassword123"');
+    console.error('   مرّرها في الأمر التالي وحده:');
+    console.error('       npm run owner:reset -- "MyNewPassword123"');
     process.exit(1);
   }
 
   const target = await prisma.user.findUnique({ where: { email }, select: { id: true, name: true } });
   if (!target) {
     console.error(`\n>> No account found for: ${email}`);
-    console.error('   لا يوجد حساب بهذا البريد. شغّل:   npm run setup:db');
+    console.error('   لا يوجد حساب بهذا البريد. شغّل الأمر التالي وحده:');
+    console.error('       npm run setup:db');
     process.exit(1);
   }
 
