@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FileSpreadsheet, Play, Plus, Search, Trash2, UsersRound } from 'lucide-react';
+import { FileSpreadsheet, Play, Plus, Search, Trash2, UsersRound, X } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -20,9 +20,10 @@ import {
   ACCOUNT_TYPE_LABELS,
   ENTITY_STATUS_LABELS,
 } from '@/lib/domain/constants';
-import { formatNumber, formatRelativeTime } from '@/lib/utils';
+import { arabicPlural, formatNumber, formatRelativeTime } from '@/lib/utils';
 import { AccountFormModal, type AccountRow } from './account-form-modal';
 import { AccountsImportModal } from './import-modal';
+import { BulkRunModal, type RunTarget } from './bulk-run-modal';
 
 interface AccountsResponse {
   accounts: AccountRow[];
@@ -45,6 +46,8 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
   const [editing, setEditing] = useState<AccountRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AccountRow | null>(null);
   const [importOpen, setImportOpen] = useState(false);
+  const [selected, setSelected] = useState<Map<string, RunTarget>>(new Map());
+  const [runTargets, setRunTargets] = useState<RunTarget[]>([]);
 
   const platformsQuery = useQuery({
     queryKey: ['admin-platforms'],
@@ -70,15 +73,16 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
 
   const invalidate = () => queryClient.invalidateQueries({ queryKey: ['admin-accounts'] });
 
-  const runMutation = useMutation({
-    mutationFn: (account: AccountRow) =>
-      api.post<{ message: string }>('/api/extractions', { accountId: account.id }),
-    onSuccess: (data, account) => {
-      toast.success(`بدأ استخراج ${account.name}`, data.message);
-      void invalidate();
-    },
-    onError: (error) =>
-      toast.error('تعذّر بدء الاستخراج', error instanceof ApiClientError ? error.message : undefined),
+  /*
+   * التشغيل — فردياً كان أو جماعياً — يمرّ بنافذة الفلاتر نفسها.
+   * كان هذا الزر يرسل معرّف الحساب وحده بلا نطاق زمني ولا عدد، فيرفضه
+   * الخادم لأن التشغيل اليدوي يشترطهما. توحيد المسارين يمنع تكرار ذلك.
+   */
+  const toTarget = (account: AccountRow): RunTarget => ({
+    id: account.id,
+    name: account.name,
+    platformCode: account.platform.code,
+    platformName: account.platform.name,
   });
 
   const deleteMutation = useMutation({
@@ -96,6 +100,35 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
   });
 
   const data = query.data;
+  const pageAccounts = data?.accounts ?? [];
+  const someOnPageSelected = pageAccounts.some((account) => selected.has(account.id));
+  const allOnPageSelected =
+    pageAccounts.length > 0 && pageAccounts.every((account) => selected.has(account.id));
+
+  /*
+   * المحدَّد يُخزَّن كاملاً لا كمعرّفات: التحديد يبقى عبر الصفحات، ولو حفظنا
+   * المعرّفات وحدها لما وجدنا بيانات حساب اختير في صفحة سابقة حين نبني
+   * قائمة التشغيل، فيقول الشريط «حُدِّد ٥» ويُشغَّل اثنان بلا أن يظهر الفرق.
+   */
+  function toggleOne(account: AccountRow) {
+    setSelected((current) => {
+      const next = new Map(current);
+      if (next.has(account.id)) next.delete(account.id);
+      else next.set(account.id, toTarget(account));
+      return next;
+    });
+  }
+
+  function togglePage() {
+    setSelected((current) => {
+      const next = new Map(current);
+      for (const account of pageAccounts) {
+        if (allOnPageSelected) next.delete(account.id);
+        else next.set(account.id, toTarget(account));
+      }
+      return next;
+    });
+  }
 
   return (
     <>
@@ -175,6 +208,28 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
           </Button>
         </form>
 
+        {canRunExtraction && selected.size > 0 && (
+          <div className="flex flex-wrap items-center gap-3 border-b border-border bg-primary-soft px-4 py-2.5">
+            <p className="flex-1 text-sm font-medium text-primary-soft-foreground">
+              حُدِّد <span className="num font-bold">{selected.size}</span>{' '}
+              {arabicPlural(selected.size, {
+                one: 'حساب',
+                two: 'حساب',
+                few: 'حسابات',
+                many: 'حساباً',
+              })}
+            </p>
+            <Button size="sm" variant="ghost" onClick={() => setSelected(new Map())}>
+              <X className="h-3.5 w-3.5" aria-hidden />
+              إلغاء التحديد
+            </Button>
+            <Button size="sm" onClick={() => setRunTargets(Array.from(selected.values()))}>
+              <Play className="h-3.5 w-3.5" aria-hidden />
+              استخراج جماعي
+            </Button>
+          </div>
+        )}
+
         {query.isPending ? (
           <SkeletonRows rows={6} />
         ) : query.isError ? (
@@ -209,6 +264,21 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
               <Table>
                 <THead>
                   <TR>
+                    {canRunExtraction && (
+                      <TH className="w-10">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 cursor-pointer accent-[var(--primary)]"
+                          checked={allOnPageSelected}
+                          ref={(node) => {
+                            // حالة ثالثة بين المحدَّد والفارغ: بعض الصفحة لا كلها
+                            if (node) node.indeterminate = someOnPageSelected && !allOnPageSelected;
+                          }}
+                          onChange={togglePage}
+                          aria-label="تحديد كل الحسابات في هذه الصفحة"
+                        />
+                      </TH>
+                    )}
                     <TH>الحساب</TH>
                     <TH>المنصة</TH>
                     <TH>النوع</TH>
@@ -223,6 +293,17 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
                 <TBody>
                   {data.accounts.map((account) => (
                     <TR key={account.id}>
+                      {canRunExtraction && (
+                        <TD>
+                          <input
+                            type="checkbox"
+                            className="h-4 w-4 cursor-pointer accent-[var(--primary)]"
+                            checked={selected.has(account.id)}
+                            onChange={() => toggleOne(account)}
+                            aria-label={`تحديد ${account.name}`}
+                          />
+                        </TD>
+                      )}
                       <TD>
                         <Link
                           href={`/accounts/${account.id}`}
@@ -263,8 +344,7 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
                             <Button
                               size="sm"
                               variant="soft"
-                              onClick={() => runMutation.mutate(account)}
-                              loading={runMutation.isPending && runMutation.variables?.id === account.id}
+                              onClick={() => setRunTargets([toTarget(account)])}
                               title="تشغيل استخراج يدوي"
                             >
                               <Play className="h-3.5 w-3.5" aria-hidden />
@@ -314,6 +394,15 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
         platforms={platformsQuery.data?.platforms ?? []}
         onSaved={() => {
           setFormOpen(false);
+          void invalidate();
+        }}
+      />
+
+      <BulkRunModal
+        targets={runTargets}
+        onClose={() => setRunTargets([])}
+        onStarted={() => {
+          setSelected(new Map());
           void invalidate();
         }}
       />

@@ -42,7 +42,7 @@ export interface AccountRow {
   maxItemsPerRun: number;
   actorIdOverride: string | null;
   lastExtractedAt: string | null;
-  platform: { id: string; name: string; defaultActorId: string | null };
+  platform: { id: string; name: string; code: string; defaultActorId: string | null };
   _count: { posts: number; runs: number };
 }
 
