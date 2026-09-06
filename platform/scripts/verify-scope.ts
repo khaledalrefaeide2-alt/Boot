@@ -23,6 +23,14 @@ const CONTROL_EMAIL = 'scope-check.control@internal.invalid';
 const PASSWORD = `Sc0pe#${randomBytes(9).toString('base64url')}`;
 
 const results: { name: string; pass: boolean; detail: string }[] = [];
+
+/*
+ * أخطاء الخادم تُجمع على حدة ولا تُخلط بنتيجة الفحص.
+ * مسار يردّ 500 لا يعيد بيانات أصلاً، فتمرّ فحوص الحصر عليه فارغةً وتسقط
+ * فحوص العدد، فتبدو النتيجة «تسريباً» وهي عطل. والفرق جوهري: التسريب خلل
+ * في الكود، والعطل غالباً خادم يعمل بنسخة سابقة أو قاعدة بيانات متوقفة.
+ */
+const serverErrors: string[] = [];
 function check(name: string, pass: boolean, detail = ''): void {
   results.push({ name, pass, detail });
   console.log(`  ${pass ? '✓' : '✗'} ${name}${detail ? `   (${detail})` : ''}`);
@@ -69,6 +77,7 @@ async function login(email: string): Promise<Jar> {
 
 async function get(jar: Jar, path: string): Promise<{ status: number; data: any; text: string }> {
   const response = await fetch(`${BASE}${path}`, { headers: { cookie: jar.header() }, redirect: 'manual' });
+  if (response.status >= 500) serverErrors.push(`${response.status}  ${path}`);
   const contentType = response.headers.get('content-type') ?? '';
   if (contentType.includes('json')) {
     const body = await response.json().catch(() => null);
@@ -79,10 +88,29 @@ async function get(jar: Jar, path: string): Promise<{ status: number; data: any;
 
 /* ---------------------------------- التنفيذ --------------------------------- */
 
+/*
+ * أول طلب على خادم تطوير بارد يستغرق وقتاً لأنه يبني الصفحة عند الطلب،
+ * فمهلة قصيرة تُسقط الفحص على خادم سليم. نحاول مراتٍ بمهلة واسعة.
+ */
 async function serverIsUp(): Promise<boolean> {
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    try {
+      const response = await fetch(`${BASE}/login`, { signal: AbortSignal.timeout(30_000) });
+      if (response.ok) return true;
+    } catch {
+      // الخادم لم يجهز بعد
+    }
+    if (attempt === 0) console.log('   بانتظار استجابة الخادم…');
+    await new Promise((resolve) => setTimeout(resolve, 3000));
+  }
+  return false;
+}
+
+/** قاعدة بيانات متوقفة تُفشل كل شيء، فيُقال ذلك صراحةً لا بأثر جانبي */
+async function databaseIsUp(): Promise<boolean> {
   try {
-    const response = await fetch(`${BASE}/login`, { signal: AbortSignal.timeout(5000) });
-    return response.ok;
+    await prisma.$queryRaw`SELECT 1`;
+    return true;
   } catch {
     return false;
   }
@@ -93,6 +121,13 @@ async function main(): Promise<void> {
     console.error(`\n>> The app is not responding at ${BASE}`);
     console.error('   التطبيق لا يستجيب. شغّله في نافذة أخرى ثم أعد الفحص:\n');
     console.error('     npm run dev\n');
+    process.exit(1);
+  }
+
+  if (!(await databaseIsUp())) {
+    console.error('\n>> The database is not reachable.');
+    console.error('   قاعدة البيانات لا تستجيب. شغّلها ثم أعد الفحص:\n');
+    console.error('     docker compose up -d\n');
     process.exit(1);
   }
 
@@ -188,6 +223,7 @@ async function main(): Promise<void> {
       const response = await fetch(`${BASE}/api/reports/export?range=all`, {
         headers: { cookie: scoped.header() },
       });
+      if (response.status >= 500) serverErrors.push(`${response.status}  /api/reports/export`);
       const workbook = Buffer.from(await response.arrayBuffer()).toString('latin1');
       const leaked = deniedNames.filter((name) =>
         workbook.includes(Buffer.from(name, 'utf8').toString('latin1')),
@@ -234,6 +270,20 @@ async function main(): Promise<void> {
 
   const failed = results.filter((r) => !r.pass);
   console.log(`\n   ${results.length - failed.length}/${results.length} فحصاً ناجحاً`);
+
+  if (serverErrors.length > 0) {
+    console.log('\n>> INCONCLUSIVE: the app returned server errors. This is not a leak result.');
+    console.log('   نتيجة غير معتبرة: التطبيق ردّ بأخطاء خادم، فلم يُفحص الحصر أصلاً.\n');
+    for (const failure of [...new Set(serverErrors)].slice(0, 8)) console.log(`     ${failure}`);
+    console.log('\n   السببان الأشيع، بالترتيب:');
+    console.log('   ١. الخادم يعمل بنسخة سابقة من الكود بعد الترحيل. أوقفه بـ Ctrl+C ثم:\n');
+    console.log('        npm run dev\n');
+    console.log('   ٢. قاعدة البيانات أو Redis متوقفة. تحقق منهما ثم:\n');
+    console.log('        docker compose up -d\n');
+    console.log('   وستجد الخطأ الأصلي في نافذة الخادم نفسها.\n');
+    process.exitCode = 1;
+    return;
+  }
 
   if (failed.length === 0) {
     console.log('\n>> Scope holds on every surface checked.');
