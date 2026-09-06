@@ -18,6 +18,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'user.enabled': 'تفعيل مستخدم',
   'user.role_changed': 'تغيير دور مستخدم',
   'user.password_reset_by_admin': 'إعادة تعيين كلمة مرور من الإدارة',
+  'user.scope_changed': 'تعديل نطاق الحسابات للمستخدم',
   'platform.created': 'إضافة منصة',
   'platform.updated': 'تعديل منصة',
   'platform.deleted': 'حذف منصة',

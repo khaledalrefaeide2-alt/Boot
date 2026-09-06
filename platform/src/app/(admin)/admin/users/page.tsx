@@ -13,6 +13,7 @@ export default async function UsersPage() {
       canCreate={can(user, PERMISSIONS.USERS_CREATE)}
       canUpdate={can(user, PERMISSIONS.USERS_UPDATE)}
       canApprove={can(user, PERMISSIONS.USERS_APPROVE)}
+      canScope={can(user, PERMISSIONS.USERS_ROLES)}
       assignable={user ? assignableRoles(user.role) : []}
       currentUserId={user?.id ?? ''}
     />

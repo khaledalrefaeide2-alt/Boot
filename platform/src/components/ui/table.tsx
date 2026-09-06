@@ -22,9 +22,15 @@ export function TR({ className, ...props }: React.HTMLAttributes<HTMLTableRowEle
   return <tr className={cn('transition-colors hover:bg-surface-2/60', className)} {...props} />;
 }
 
-export function TH({ className, ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
+/*
+ * `scope="col"` ليس تزييناً: بدونه يحسب المتصفح خلية الترويسة «خلية» عادية
+ * لا «ترويسة عمود»، فلا يُعلن قارئ الشاشة اسم العمود مع كل قيمة في الجدول.
+ * افتراضٌ يمكن تجاوزه بتمرير scope آخر لترويسة صف.
+ */
+export function TH({ className, scope = 'col', ...props }: React.ThHTMLAttributes<HTMLTableCellElement>) {
   return (
     <th
+      scope={scope}
       className={cn(
         'whitespace-nowrap px-3 py-2.5 text-start text-xs font-semibold text-muted-foreground',
         className,

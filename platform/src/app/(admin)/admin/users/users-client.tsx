@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, KeyRound, Plus, Search, ShieldOff, UserPlus } from 'lucide-react';
+import { CheckCircle2, KeyRound, Plus, Search, ShieldOff, Target, UserPlus } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,9 +17,10 @@ import { useToast } from '@/components/ui/toast';
 import { api, ApiClientError, buildQuery } from '@/lib/api-client';
 import { ROLE_LABELS } from '@/lib/auth/rbac';
 import { USER_STATUS_LABELS } from '@/lib/domain/constants';
-import { formatDateTime, formatRelativeTime } from '@/lib/utils';
-import type { Role, UserStatus } from '@/generated/prisma';
+import { arabicPlural, formatDateTime, formatRelativeTime } from '@/lib/utils';
+import type { AccountAccess, Role, UserStatus } from '@/generated/prisma';
 import { UserFormModal } from './user-form-modal';
+import { AccountScopeModal } from './account-scope-modal';
 
 interface UserRow {
   id: string;
@@ -32,6 +33,8 @@ interface UserRow {
   lastLoginAt: string | null;
   createdAt: string;
   mustChangePassword: boolean;
+  accountAccess: AccountAccess;
+  _count: { accountAssignments: number };
 }
 
 interface UsersResponse {
@@ -59,12 +62,14 @@ export function UsersClient({
   canCreate,
   canUpdate,
   canApprove,
+  canScope,
   assignable,
   currentUserId,
 }: {
   canCreate: boolean;
   canUpdate: boolean;
   canApprove: boolean;
+  canScope: boolean;
   assignable: Role[];
   currentUserId: string;
 }) {
@@ -81,6 +86,7 @@ export function UsersClient({
   const [editing, setEditing] = useState<UserRow | null>(null);
   const [disableTarget, setDisableTarget] = useState<UserRow | null>(null);
   const [resetLink, setResetLink] = useState<{ name: string; url: string } | null>(null);
+  const [scopeTarget, setScopeTarget] = useState<UserRow | null>(null);
 
   const pageSize = 25;
 
@@ -263,6 +269,7 @@ export function UsersClient({
                     <TH>المستخدم</TH>
                     <TH>الدور</TH>
                     <TH>الحالة</TH>
+                    <TH>نطاق البيانات</TH>
                     <TH>آخر دخول</TH>
                     <TH>تاريخ الإنشاء</TH>
                     <TH className="text-end">إجراءات</TH>
@@ -287,6 +294,21 @@ export function UsersClient({
                         <Badge tone={STATUS_TONE[user.status]}>
                           {USER_STATUS_LABELS[user.status]}
                         </Badge>
+                      </TD>
+                      <TD>
+                        {user.accountAccess === 'ASSIGNED' ? (
+                          <Badge tone="warning">
+                            <span className="num">{user._count.accountAssignments}</span>{' '}
+                            {arabicPlural(user._count.accountAssignments, {
+                              one: 'حساب',
+                              two: 'حساب',
+                              few: 'حسابات',
+                              many: 'حساباً',
+                            })}
+                          </Badge>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">كل الحسابات</span>
+                        )}
                       </TD>
                       <TD className="text-xs text-muted-foreground">
                         {user.lastLoginAt ? formatRelativeTime(user.lastLoginAt) : 'لم يدخل بعد'}
@@ -323,6 +345,16 @@ export function UsersClient({
                               >
                                 تعديل
                               </Button>
+                              {canScope && user.id !== currentUserId && (
+                                <Button
+                                  size="sm"
+                                  variant="ghost"
+                                  title="تحديد الحسابات التي يصل إليها"
+                                  onClick={() => setScopeTarget(user)}
+                                >
+                                  <Target className="h-3.5 w-3.5" aria-hidden />
+                                </Button>
+                              )}
                               <Button
                                 size="sm"
                                 variant="ghost"
@@ -382,6 +414,15 @@ export function UsersClient({
         assignable={assignable}
         onSaved={() => {
           setFormOpen(false);
+          void invalidate();
+        }}
+      />
+
+      <AccountScopeModal
+        user={scopeTarget}
+        onClose={() => setScopeTarget(null)}
+        onSaved={() => {
+          setScopeTarget(null);
           void invalidate();
         }}
       />

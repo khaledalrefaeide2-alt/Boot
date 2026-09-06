@@ -19,6 +19,7 @@
     "setup:db": "prisma migrate deploy && tsx prisma/seed.ts",
     "db:studio": "prisma studio",
     "verify:pipeline": "tsx --conditions=react-server scripts/verify-pipeline.ts",
+    "verify:scope": "tsx --conditions=react-server scripts/verify-scope.ts",
     "owner:reset": "tsx --conditions=react-server scripts/reset-owner-password.ts",
     "media:repair": "tsx --conditions=react-server scripts/repair-media-urls.ts"
   },

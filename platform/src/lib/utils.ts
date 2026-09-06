@@ -115,3 +115,24 @@ export function addDays(date: Date, days: number): Date {
   next.setUTCDate(next.getUTCDate() + days);
   return next;
 }
+
+/**
+ * صيغة المعدود العربي الصحيحة لعدد معطى.
+ *
+ * العربية تصرّف المعدود على أربع صيغ لا على اثنتين كالإنجليزية: المفرد،
+ * والمثنى، وجمع القلة من ثلاثة إلى عشرة، ثم المفرد المنصوب فيما فوقها.
+ * فـ«3 حساب» و«12 حسابات» كلاهما خطأ ظاهر لقارئ عربي.
+ *
+ * العدد نفسه يبقى على المستدعي ليضعه في عنصر مستقل، لأن الأرقام تُعرض
+ * يساراً داخل نص يمينيّ فتحتاج عزلاً باتجاهها.
+ */
+export function arabicPlural(
+  count: number,
+  forms: { one: string; two: string; few: string; many: string },
+): string {
+  const value = Math.abs(count) % 100;
+  if (value === 1) return forms.one;
+  if (value === 2) return forms.two;
+  if (value >= 3 && value <= 10) return forms.few;
+  return forms.many;
+}

@@ -36,7 +36,9 @@ export default async function PlatformDetailPage({
   const [stats, accounts] = await Promise.all([
     getOverviewStats({ platformId: id, range: 'all', includeHidden: 'false' }, scope),
     prisma.account.findMany({
-      where: { platformId: id },
+      // جدول الحسابات لا يتبع البطاقات تلقائياً: البطاقات تمرّ بـ buildPostWhere
+      // وهذا استعلام مباشر على الحسابات، فيُحصر بالنطاق صراحةً
+      where: { platformId: id, ...(scope === null ? {} : { id: { in: scope } }) },
       orderBy: { name: 'asc' },
       select: {
         id: true,

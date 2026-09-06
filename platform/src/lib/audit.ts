@@ -20,6 +20,7 @@ export const AUDIT_ACTIONS = {
   USER_ENABLED: 'user.enabled',
   USER_ROLE_CHANGED: 'user.role_changed',
   USER_PASSWORD_RESET_BY_ADMIN: 'user.password_reset_by_admin',
+  USER_SCOPE_CHANGED: 'user.scope_changed',
 
   PLATFORM_CREATED: 'platform.created',
   PLATFORM_UPDATED: 'platform.updated',

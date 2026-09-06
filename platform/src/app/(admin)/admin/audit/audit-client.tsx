@@ -41,6 +41,7 @@ const CRITICAL_ACTIONS = new Set([
   'post.deleted',
   'extraction.failed',
   'user.password_reset_by_admin',
+  'user.scope_changed',
 ]);
 
 export function AuditClient() {

@@ -55,6 +55,8 @@ export async function GET(request: NextRequest) {
           createdAt: true,
           approvedAt: true,
           mustChangePassword: true,
+          accountAccess: true,
+          _count: { select: { accountAssignments: true } },
         },
       }),
       prisma.user.count({ where: { status: 'PENDING' } }),
