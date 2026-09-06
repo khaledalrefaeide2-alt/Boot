@@ -18,7 +18,12 @@ export default function AuthLayout({ children }: { children: React.ReactNode }) 
       </header>
 
       <main className="flex flex-1 items-center justify-center px-4 py-8">
-        <div className="w-full max-w-md">{children}</div>
+        {/*
+          الحاوية تتسع على الشاشة الكبيرة لتحمل عمودَي صفحة الدخول، وكل
+          صفحة تضبط عرض محتواها بنفسها. صفحات الاستعادة تبقى ضيّقة لأن
+          نموذجها الداخلي محدود بـ max-w-md.
+        */}
+        <div className="w-full max-w-md lg:max-w-5xl">{children}</div>
       </main>
 
       <footer className="px-4 py-5 text-center text-xs text-muted-foreground">

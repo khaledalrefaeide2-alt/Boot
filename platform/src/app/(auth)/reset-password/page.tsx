@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: 'تعيين كلمة مرور جدي�
 export default function ResetPasswordPage() {
   return (
     <Suspense fallback={<LoadingState />}>
-      <ResetPasswordForm />
+      <div className="mx-auto max-w-md"><ResetPasswordForm /></div>
     </Suspense>
   );
 }

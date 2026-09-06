@@ -4,5 +4,5 @@ import { ForgotPasswordForm } from './forgot-form';
 export const metadata: Metadata = { title: 'استعادة كلمة المرور' };
 
 export default function ForgotPasswordPage() {
-  return <ForgotPasswordForm />;
+  return <div className="mx-auto max-w-md"><ForgotPasswordForm /></div>;
 }
