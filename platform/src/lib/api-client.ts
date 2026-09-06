@@ -30,15 +30,20 @@ async function request<T>(
   path: string,
   body?: unknown,
 ): Promise<T> {
+  /*
+   * رفع ملف يمرّ كـ FormData لا كـ JSON، ولا يُضبط له Content-Type يدوياً:
+   * المتصفح وحده يعرف الحدّ الفاصل بين أجزاء الطلب ويضيفه إلى الترويسة.
+   */
+  const isForm = body instanceof FormData;
   const headers: Record<string, string> = { Accept: 'application/json' };
-  if (body !== undefined) headers['Content-Type'] = 'application/json';
+  if (body !== undefined && !isForm) headers['Content-Type'] = 'application/json';
   if (method !== 'GET') headers['x-csrf-token'] = readCsrfToken();
 
   const response = await fetch(path, {
     method,
     headers,
     credentials: 'same-origin',
-    body: body === undefined ? undefined : JSON.stringify(body),
+    body: body === undefined ? undefined : isForm ? body : JSON.stringify(body),
   });
 
   // انتهاء الجلسة أثناء الاستخدام — نعيد المستخدم إلى صفحة الدخول
@@ -73,6 +78,7 @@ export const api = {
   patch: <T>(path: string, body?: unknown) => request<T>('PATCH', path, body),
   put: <T>(path: string, body?: unknown) => request<T>('PUT', path, body),
   delete: <T>(path: string, body?: unknown) => request<T>('DELETE', path, body),
+  upload: <T>(path: string, form: FormData) => request<T>('POST', path, form),
 };
 
 /** بناء رابط مع معاملات بحث، متجاهلاً الفارغ منها */

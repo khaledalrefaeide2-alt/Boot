@@ -25,6 +25,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'account.created': 'إضافة حساب',
   'account.updated': 'تعديل حساب',
   'account.deleted': 'حذف حساب',
+  'account.imported': 'استيراد حسابات من ملف Excel',
   'extraction.started': 'بدء عملية استخراج',
   'extraction.cancelled': 'إلغاء عملية استخراج',
   'extraction.completed': 'اكتمال عملية استخراج',

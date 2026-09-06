@@ -118,3 +118,26 @@ export function parseQuery<T>(request: Request, schema: ZodType<T>): T {
 }
 
 export { requestMeta };
+
+/**
+ * ترويسات تنزيل ملف باسم عربي.
+ *
+ * `filename*` وحده لا يكفي: متصفحات تتجاهله إن لم يسبقه `filename` لاتيني،
+ * فتحفظ الملف باسم «download» بلا امتداد ولا يفتحه Excel. فنرسل الاسمين
+ * معاً كما في RFC 6266: اللاتيني احتياطاً يحمل الامتداد الصحيح، والعربي
+ * لمن يقرؤه — وهو ما يظهر للمستخدم في الغالب.
+ */
+export function attachmentHeaders(
+  fileName: string,
+  asciiFallback: string,
+  byteLength: number,
+): Record<string, string> {
+  return {
+    'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+    'Content-Disposition':
+      `attachment; filename="${asciiFallback}"; ` +
+      `filename*=UTF-8''${encodeURIComponent(fileName)}`,
+    'Content-Length': String(byteLength),
+    'Cache-Control': 'no-store',
+  };
+}

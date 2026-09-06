@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { z } from 'zod';
-import { errors, jsonError, parseQuery, requirePermission } from '@/lib/api';
+import { attachmentHeaders, errors, jsonError, parseQuery, requirePermission } from '@/lib/api';
 import { PERMISSIONS } from '@/lib/auth/rbac';
 import { postFiltersSchema } from '@/lib/validation/posts';
 import { buildPostsWorkbook } from '@/lib/reports/excel';
@@ -61,12 +61,7 @@ export async function GET(request: NextRequest) {
     const fileName = `تقرير-الرصد-${stamp}.xlsx`;
 
     return new Response(new Uint8Array(buffer), {
-      headers: {
-        'Content-Type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-        'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(fileName)}`,
-        'Content-Length': String(buffer.length),
-        'Cache-Control': 'no-store',
-      },
+      headers: attachmentHeaders(fileName, `monitoring-report-${stamp}.xlsx`, buffer.length),
     });
   } catch (error) {
     return jsonError(error);

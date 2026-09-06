@@ -37,6 +37,7 @@ const CRITICAL_ACTIONS = new Set([
   'user.disabled',
   'user.role_changed',
   'account.deleted',
+  'account.imported',
   'platform.deleted',
   'post.deleted',
   'extraction.failed',

@@ -27,6 +27,8 @@ export interface AccountRow {
   name: string;
   username: string | null;
   url: string;
+  externalId: string | null;
+  notes: string | null;
   type: AccountType;
   ownership: AccountOwnership;
   visibility: AccountVisibility;
@@ -105,6 +107,8 @@ export function AccountFormModal({
             name: editing.name,
             username: editing.username ?? '',
             url: editing.url,
+            externalId: editing.externalId ?? '',
+            notes: editing.notes ?? '',
             type: editing.type,
             ownership: editing.ownership,
             visibility: editing.visibility,

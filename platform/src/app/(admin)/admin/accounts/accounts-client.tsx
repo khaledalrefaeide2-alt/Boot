@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Play, Plus, Search, Trash2, UsersRound } from 'lucide-react';
+import { FileSpreadsheet, Play, Plus, Search, Trash2, UsersRound } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -22,6 +22,7 @@ import {
 } from '@/lib/domain/constants';
 import { formatNumber, formatRelativeTime } from '@/lib/utils';
 import { AccountFormModal, type AccountRow } from './account-form-modal';
+import { AccountsImportModal } from './import-modal';
 
 interface AccountsResponse {
   accounts: AccountRow[];
@@ -43,6 +44,7 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
   const [formOpen, setFormOpen] = useState(false);
   const [editing, setEditing] = useState<AccountRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AccountRow | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
 
   const platformsQuery = useQuery({
     queryKey: ['admin-platforms'],
@@ -101,15 +103,21 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
         title="إدارة الحسابات"
         description="الحسابات والصفحات المرصودة وإعدادات استخراجها"
         action={
-          <Button
-            onClick={() => {
-              setEditing(null);
-              setFormOpen(true);
-            }}
-          >
-            <Plus className="h-4 w-4" aria-hidden />
-            حساب جديد
-          </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <Button variant="secondary" onClick={() => setImportOpen(true)}>
+              <FileSpreadsheet className="h-4 w-4" aria-hidden />
+              استيراد من Excel
+            </Button>
+            <Button
+              onClick={() => {
+                setEditing(null);
+                setFormOpen(true);
+              }}
+            >
+              <Plus className="h-4 w-4" aria-hidden />
+              حساب جديد
+            </Button>
+          </div>
         }
       />
 
@@ -306,6 +314,15 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
         platforms={platformsQuery.data?.platforms ?? []}
         onSaved={() => {
           setFormOpen(false);
+          void invalidate();
+        }}
+      />
+
+      <AccountsImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={() => {
+          setImportOpen(false);
           void invalidate();
         }}
       />

@@ -55,6 +55,10 @@ export async function GET(request: NextRequest) {
           name: true,
           username: true,
           url: true,
+          // الشاشة تبني نموذج التعديل من صف القائمة، فكل حقل قابل للتحرير
+          // يجب أن يعود فيها: الحقل الغائب يصل إلى النموذج فارغاً ويُحفظ فارغاً
+          externalId: true,
+          notes: true,
           type: true,
           ownership: true,
           visibility: true,
