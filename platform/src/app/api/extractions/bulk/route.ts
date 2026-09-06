@@ -15,6 +15,7 @@ import { getAccountScope, scopeAllows } from '@/lib/auth/account-scope';
 import { checkRateLimit, rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { createExtractionRun, ExtractionError } from '@/lib/extraction/service';
 import { audit, AUDIT_ACTIONS } from '@/lib/audit';
+import { getQueueHealth } from '@/lib/queue';
 
 /** سقف الدفعة الواحدة — الحصة الساعية تحدّ قبله عادةً، وهذا يحمي الطلب نفسه */
 const MAX_BATCH = 50;
@@ -145,6 +146,18 @@ export async function POST(request: NextRequest) {
     const failed = outcomes.filter((row) => row.runId === null);
     const notQueued = started.filter((row) => !row.queued).length;
 
+    /*
+     * الإضافة إلى الطابور ليست تشغيلاً: بلا عامل خلفي تبقى المهمة في مكانها.
+     * فيُقال ذلك في اللحظة التي ينظر فيها المستخدم إلى النتيجة، لا بعد
+     * نصف ساعة حين يجد كل شيء «بانتظار التشغيل».
+     */
+    const queueHealth = started.length > 0 ? await getQueueHealth() : null;
+    const noWorker =
+      queueHealth !== null &&
+      queueHealth.redisReady &&
+      queueHealth.workersKnown &&
+      queueHealth.workers === 0;
+
     if (started.length > 0) {
       await audit(actor, {
         action: AUDIT_ACTIONS.EXTRACTION_STARTED,
@@ -166,12 +179,15 @@ export async function POST(request: NextRequest) {
       started: started.length,
       failed: failed.length,
       outcomes,
+      noWorker,
       message:
         notQueued > 0
           ? 'أُنشئت العمليات لكن الطابور غير متاح — تأكد من تشغيل Redis والعامل الخلفي'
           : started.length === 0
             ? 'لم تبدأ أي عملية — راجع أسباب كل حساب'
-            : 'أُضيفت العمليات إلى الطابور وستبدأ تباعاً',
+            : noWorker
+              ? 'أُنشئت العمليات لكنها لن تبدأ: لا يوجد عامل خلفي يعمل. شغّل npm run worker في نافذة أوامر واتركها مفتوحة'
+              : 'أُضيفت العمليات إلى الطابور وستبدأ تباعاً',
     });
   } catch (error) {
     return jsonError(error);

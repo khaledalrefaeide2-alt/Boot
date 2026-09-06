@@ -55,7 +55,15 @@ interface RunsResponse {
 
 interface IntegrationStatus {
   apify: { configured: boolean; ok: boolean; message: string; username?: string };
-  queue: { ready: boolean; message: string };
+  queue: {
+    ready: boolean;
+    redisReady: boolean;
+    workers: number;
+    workersKnown: boolean;
+    waiting: number;
+    active: number;
+    message: string;
+  };
   activeRuns: number;
 }
 
@@ -189,9 +197,31 @@ export function ExtractionsClient({ canRun, canCancel }: { canRun: boolean; canC
                 ' — أضف APIFY_TOKEN إلى ملف البيئة ثم أعد تشغيل الخدمة.'}
             </Alert>
           )}
-          {!integration.queue.ready && (
+          {!integration.queue.redisReady && (
             <Alert tone="warning" title="الطابور غير متاح">
-              {integration.queue.message} — شغّل Redis والعامل الخلفي (npm run worker).
+              {integration.queue.message} — شغّل Redis من Docker ثم أعد المحاولة.
+            </Alert>
+          )}
+          {/*
+            العامل المتوقف حالة مستقلة عن Redis وأشيع منها: Redis يعمل في
+            Docker مع بقية الخدمات، والعامل نافذة يفتحها المستخدم بنفسه
+            وينساها. فتُفرَد برسالتها وبالأمر الذي يعيدها.
+          */}
+          {integration.queue.redisReady &&
+            integration.queue.workersKnown &&
+            integration.queue.workers === 0 && (
+            <Alert tone="danger" title="لا يوجد عامل خلفي يعمل">
+              العمليات تُنشأ وتبقى «بانتظار التشغيل» لأن لا أحد يسحبها من الطابور. افتح نافذة
+              أوامر في مجلد المشروع وشغّل الأمر التالي واتركها مفتوحة:
+              <code className="ltr mt-1.5 block rounded bg-surface-2 px-2 py-1 font-mono text-xs">
+                npm run worker
+              </code>
+              {integration.queue.waiting > 0 && (
+                <span className="mt-1.5 block">
+                  في الطابور الآن{' '}
+                  <span className="num font-semibold">{integration.queue.waiting}</span> مهمة تنتظر.
+                </span>
+              )}
             </Alert>
           )}
         </div>
@@ -199,8 +229,14 @@ export function ExtractionsClient({ canRun, canCancel }: { canRun: boolean; canC
 
       {integration?.apify.ok && integration.queue.ready && (
         <Alert tone="success" className="mb-4">
-          Apify متصل{integration.apify.username ? ` باسم ${integration.apify.username}` : ''} والطابور
-          يعمل.
+          Apify متصل{integration.apify.username ? ` باسم ${integration.apify.username}` : ''}،
+          والعامل الخلفي يسحب المهام
+          {integration.queue.workers > 1 && (
+            <>
+              {' '}(<span className="num">{integration.queue.workers}</span> عمّال)
+            </>
+          )}
+          .
           {integration.activeRuns > 0 && (
             <>
               {' '}

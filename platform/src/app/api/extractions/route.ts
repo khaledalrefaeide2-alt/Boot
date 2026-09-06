@@ -17,6 +17,7 @@ import { paginationSchema } from '@/lib/validation/common';
 import { createExtractionRun, ExtractionError } from '@/lib/extraction/service';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { audit, AUDIT_ACTIONS } from '@/lib/audit';
+import { getQueueHealth } from '@/lib/queue';
 import type { Prisma } from '@/generated/prisma';
 
 const listSchema = paginationSchema.extend({
@@ -157,9 +158,14 @@ export async function POST(request: NextRequest) {
       {
         run,
         queued,
-        message: queued
-          ? 'أُضيفت العملية إلى الطابور وستبدأ خلال لحظات'
-          : 'أُنشئت العملية لكن الطابور غير متاح — تأكد من تشغيل Redis والعامل الخلفي',
+        message: !queued
+          ? 'أُنشئت العملية لكن الطابور غير متاح — تأكد من تشغيل Redis والعامل الخلفي'
+          : await (async () => {
+              const health = await getQueueHealth();
+              return health.workersKnown && health.workers === 0;
+            })()
+            ? 'أُنشئت العملية لكنها لن تبدأ: لا يوجد عامل خلفي يعمل. شغّل npm run worker في نافذة أوامر واتركها مفتوحة'
+            : 'أُضيفت العملية إلى الطابور وستبدأ خلال لحظات',
       },
       { status: 201 },
     );

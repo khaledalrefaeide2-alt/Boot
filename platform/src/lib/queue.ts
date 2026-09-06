@@ -86,3 +86,48 @@ export async function removeExtractionJob(runId: string): Promise<void> {
     // المهمة قد تكون قيد التنفيذ — الإلغاء الفعلي يتم عبر Apify
   }
 }
+
+export interface QueueHealth {
+  redisReady: boolean;
+  /** عدد العمال المتصلين بطابور الاستخراج الآن */
+  workers: number;
+  /**
+   * هل عدد العمال معلوم أصلاً؟
+   *
+   * قياسه يمرّ بأمر CLIENT LIST، وبعض خدمات Redis المُدارة تمنعه. «تعذّر
+   * القياس» ليس «لا يوجد عامل»، والخلط بينهما يرفع إنذاراً كاذباً يدفع
+   * المستخدم لإعادة تشغيل عامل يعمل أصلاً.
+   */
+  workersKnown: boolean;
+  waiting: number;
+  active: number;
+  failed: number;
+}
+
+/**
+ * حال الطابور الفعلية، لا مجرد اتصال Redis.
+ *
+ * اتصال Redis يعني أن المهمة تُضاف، لا أن أحداً يسحبها. وبلا عامل خلفي
+ * تبقى كل عملية «بانتظار التشغيل» إلى أن تنتهي مهلتها، والشاشة تقول
+ * «الطابور يعمل» فيبحث المستخدم عن الخلل في Apify وفي الحسابات وهو في
+ * نافذة لم تُفتح. فيُقاس عدد العمال صراحةً ويُعرض.
+ */
+export async function getQueueHealth(): Promise<QueueHealth> {
+  if (!(await isRedisReady())) {
+    return { redisReady: false, workers: 0, workersKnown: false, waiting: 0, active: 0, failed: 0 };
+  }
+
+  const queue = getExtractionQueue();
+
+  const counts = await queue.getJobCounts().catch(() => null);
+  const workers = await queue.getWorkersCount().catch(() => null);
+
+  return {
+    redisReady: true,
+    workers: workers ?? 0,
+    workersKnown: workers !== null,
+    waiting: counts?.waiting ?? 0,
+    active: counts?.active ?? 0,
+    failed: counts?.failed ?? 0,
+  };
+}
