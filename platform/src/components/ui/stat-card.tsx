@@ -50,8 +50,8 @@ export function StatCard({
         </div>
       )}
       <div className="min-w-0 space-y-0.5">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className={cn('num text-xl font-bold tabular-nums sm:text-2xl', tones[tone])}>{display}</p>
+        <p className="text-xs font-medium text-muted-foreground">{label}</p>
+        <p className={cn('num text-2xl font-bold tabular-nums sm:text-3xl', tones[tone])}>{display}</p>
         {hint && <p className="truncate text-xs text-subtle-foreground">{hint}</p>}
       </div>
     </div>

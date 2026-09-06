@@ -59,7 +59,7 @@ export function RemoteMedia({
           aria-label={`${fallbackLabel} من مصدرها`}
         >
           <ImageOff className="h-5 w-5 opacity-70" aria-hidden />
-          <span className="text-[0.625rem] leading-tight">{fallbackLabel}</span>
+          <span className="text-2xs leading-tight">{fallbackLabel}</span>
         </span>
       ) : (
         // eslint-disable-next-line @next/next/no-img-element

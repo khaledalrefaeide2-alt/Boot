@@ -54,7 +54,7 @@ export function PostThumb({
       )}
 
       {extraCount > 0 && (
-        <span className="pointer-events-none absolute bottom-2 start-2 flex items-center gap-1 rounded bg-black/65 px-1.5 py-0.5 text-[0.6875rem] font-medium text-white backdrop-blur-[2px]">
+        <span className="pointer-events-none absolute bottom-2 start-2 flex items-center gap-1 rounded bg-black/65 px-1.5 py-0.5 text-2xs font-medium text-white backdrop-blur-[2px]">
           <Images className="h-3 w-3" aria-hidden />
           <span className="num">+{extraCount}</span>
           <span className="sr-only">صور إضافية في المنشور</span>

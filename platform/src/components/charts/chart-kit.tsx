@@ -30,8 +30,29 @@ export const SENTIMENT_COLORS: Record<string, string> = {
 export const CHART_GRID = 'var(--chart-grid)';
 export const CHART_AXIS = 'var(--chart-axis)';
 
+/*
+ * أنماط الخطوط، بترتيب السلاسل نفسه.
+ *
+ * ستّ سلاسل لا يمكن جعلها متمايزة باللون وحده لمن لا يميّز الأحمر أو
+ * الأخضر: مجال الألوان الذي يراه ينهار إلى محور واحد تقريباً. اللوحة هنا
+ * مُشتقّة لتبلغ أقصى تمايز ممكن (أدنى فرق 20.4 بعد المحاكاة)، لكن «ممكن»
+ * ليست «مريحة». فيحمل كل خط نمطه أيضاً، ويصير اللون تأكيداً لا شرطاً.
+ */
+export const SERIES_DASH = [
+  undefined,   // متصل
+  '6 3',       // متقطّع
+  '2 3',       // منقّط
+  '10 4',      // شرطات طويلة
+  '6 3 2 3',   // شرطة ونقطة
+  '1 4',       // نقاط متباعدة
+] as const;
+
 export function seriesColor(index: number): string {
   return SERIES_COLORS[index % SERIES_COLORS.length] as string;
+}
+
+export function seriesDash(index: number): string | undefined {
+  return SERIES_DASH[index % SERIES_DASH.length];
 }
 
 /** إطار موحّد لكل رسم: عنوان، وصف، حالة فراغ، ومنطقة الرسم */
@@ -62,7 +83,7 @@ export function ChartFrame({
     >
       <figcaption className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3">
         <div className="space-y-0.5">
-          <h3 className="text-sm font-semibold text-foreground">{title}</h3>
+          <h3 className="text-sm font-semibold text-heading">{title}</h3>
           {description && <p className="text-xs text-muted-foreground">{description}</p>}
         </div>
         {action}
@@ -91,18 +112,37 @@ export function ChartLegend({
   items,
   className,
 }: {
-  items: { label: string; color: string; value?: number }[];
+  items: { label: string; color: string; value?: number; dash?: string }[];
   className?: string;
 }) {
   return (
     <ul className={cn('flex flex-wrap items-center gap-x-4 gap-y-1.5', className)}>
       {items.map((item) => (
         <li key={item.label} className="flex items-center gap-1.5 text-xs text-muted-foreground">
-          <span
-            className="h-2.5 w-2.5 shrink-0 rounded-sm"
-            style={{ backgroundColor: item.color }}
-            aria-hidden
-          />
+          {/*
+            الدليل يعرض الخط بنمطه لا مربّعاً ملوّناً، وإلا وصف شيئاً غير
+            الذي في الرسم: من يميّز السلاسل بالنمط لن يجد في الدليل ما يربط
+            «متقطّع» باسمه.
+          */}
+          {item.dash !== undefined ? (
+            <svg className="h-2.5 w-6 shrink-0" viewBox="0 0 24 10" aria-hidden>
+              <line
+                x1="0"
+                y1="5"
+                x2="24"
+                y2="5"
+                stroke={item.color}
+                strokeWidth="2.5"
+                strokeDasharray={item.dash || undefined}
+              />
+            </svg>
+          ) : (
+            <span
+              className="h-2.5 w-2.5 shrink-0 rounded-sm"
+              style={{ backgroundColor: item.color }}
+              aria-hidden
+            />
+          )}
           <span>{item.label}</span>
           {item.value !== undefined && (
             <span className="num font-medium text-foreground">{formatNumber(item.value)}</span>

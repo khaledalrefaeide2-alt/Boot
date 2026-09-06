@@ -91,7 +91,7 @@ export function HeroPanel() {
                         على شبكة معزولة، وطلب خط من الإنترنت يفقد الهوية عند
                         الانقطاع ويسرّب طلباً من جهاز كل موظف.
                       */}
-                      <span className="num shrink-0 font-mono text-[0.6875rem] text-subtle-foreground">
+                      <span className="num shrink-0 font-mono text-2xs text-subtle-foreground">
                         {metric}
                       </span>
                     </div>

@@ -19,6 +19,7 @@ import {
   axisDateFormatter,
   axisNumberFormatter,
   seriesColor,
+  seriesDash,
   tooltipDateFormatter,
 } from './chart-kit';
 
@@ -67,7 +68,7 @@ export function TimelineChart({
             dataKey="date"
             reversed
             tickFormatter={axisDateFormatter}
-            tick={{ fill: CHART_AXIS, fontSize: 11 }}
+            tick={{ fill: CHART_AXIS, fontSize: 12 }}
             tickLine={false}
             axisLine={{ stroke: CHART_GRID }}
             minTickGap={24}
@@ -75,7 +76,7 @@ export function TimelineChart({
           <YAxis
             orientation="right"
             tickFormatter={axisNumberFormatter}
-            tick={{ fill: CHART_AXIS, fontSize: 11 }}
+            tick={{ fill: CHART_AXIS, fontSize: 12 }}
             tickLine={false}
             axisLine={false}
             width={48}
@@ -125,7 +126,11 @@ export function MultiSeriesTimeline({
       footer={
         series.length > 1 ? (
           <ChartLegend
-            items={series.map((item, index) => ({ label: item.label, color: seriesColor(index) }))}
+            items={series.map((item, index) => ({
+              label: item.label,
+              color: seriesColor(index),
+              dash: seriesDash(index) ?? '',
+            }))}
           />
         ) : undefined
       }
@@ -137,7 +142,7 @@ export function MultiSeriesTimeline({
             dataKey="date"
             reversed
             tickFormatter={axisDateFormatter}
-            tick={{ fill: CHART_AXIS, fontSize: 11 }}
+            tick={{ fill: CHART_AXIS, fontSize: 12 }}
             tickLine={false}
             axisLine={{ stroke: CHART_GRID }}
             minTickGap={24}
@@ -145,7 +150,7 @@ export function MultiSeriesTimeline({
           <YAxis
             orientation="right"
             tickFormatter={axisNumberFormatter}
-            tick={{ fill: CHART_AXIS, fontSize: 11 }}
+            tick={{ fill: CHART_AXIS, fontSize: 12 }}
             tickLine={false}
             axisLine={false}
             width={48}
@@ -161,6 +166,7 @@ export function MultiSeriesTimeline({
               dataKey={item.key}
               name={item.label}
               stroke={seriesColor(index)}
+              strokeDasharray={seriesDash(index)}
               strokeWidth={2}
               dot={false}
               activeDot={{ r: 4, strokeWidth: 2, stroke: 'var(--surface)' }}

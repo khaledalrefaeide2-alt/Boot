@@ -33,14 +33,14 @@ export function SidebarContent({
         </div>
         <div className="min-w-0 leading-tight">
           <p className="truncate text-sm font-semibold text-foreground">{appName}</p>
-          <p className="text-[0.6875rem] text-muted-foreground">نظام داخلي</p>
+          <p className="text-2xs text-muted-foreground">نظام داخلي</p>
         </div>
       </div>
 
       <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4" aria-label="التنقل الرئيسي">
         {sections.map((section) => (
           <div key={section.title} className="space-y-1">
-            <p className="px-2 pb-1 text-[0.6875rem] font-semibold tracking-wide text-subtle-foreground">
+            <p className="px-2 pb-1 text-2xs font-semibold tracking-wide text-subtle-foreground">
               {section.title}
             </p>
             {section.items.map((item) => {

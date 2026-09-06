@@ -37,7 +37,7 @@ export function CardHeader({
       {...props}
     >
       <div className="space-y-0.5">
-        {title && <h2 className="text-sm font-semibold text-foreground sm:text-base">{title}</h2>}
+        {title && <h2 className="text-sm font-semibold text-heading sm:text-base">{title}</h2>}
         {description && <p className="text-xs text-muted-foreground">{description}</p>}
       </div>
       {action && <div className="flex items-center gap-2">{action}</div>}

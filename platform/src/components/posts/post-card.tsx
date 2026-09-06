@@ -119,7 +119,7 @@ export function PostCard({ post, canReview }: { post: PostListItemView; canRevie
             >
               {post.account.name}
             </Link>
-            <p className="text-[0.6875rem] text-subtle-foreground">
+            <p className="text-2xs text-subtle-foreground">
               {formatDateTime(post.publishedAt)}
             </p>
           </div>

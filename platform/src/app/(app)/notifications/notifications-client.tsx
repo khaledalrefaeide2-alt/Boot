@@ -129,7 +129,7 @@ export function NotificationsClient() {
                         {notification.body}
                       </p>
                     )}
-                    <p className="text-[0.6875rem] text-subtle-foreground">
+                    <p className="text-2xs text-subtle-foreground">
                       {formatRelativeTime(notification.createdAt)}
                     </p>
                   </div>

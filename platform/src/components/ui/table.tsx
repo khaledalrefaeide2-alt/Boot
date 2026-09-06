@@ -10,16 +10,44 @@ export function Table({ className, ...props }: React.TableHTMLAttributes<HTMLTab
   return <table className={cn('w-full min-w-max border-collapse text-sm', className)} {...props} />;
 }
 
+/*
+ * الترويسة تُختم بحدّ أقوى من فواصل الصفوف. الفرق ليس زينة: في جدول بأحد
+ * عشر عموداً تحتاج العين خطاً واحداً تعرف منه أين ينتهي اسم العمود ويبدأ
+ * الصف الأول، وحدّ بسماكة الفواصل نفسها لا يعطيها ذلك.
+ */
 export function THead({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead className={cn('bg-surface-2', className)} {...props} />;
+  return <thead className={cn('border-b-2 border-border-strong bg-surface-2', className)} {...props} />;
 }
 
+/*
+ * تخطيط الصفوف بلونين متناوبين.
+ *
+ * الفاصل الأفقي وحده يكفي لجدول من ثلاثة أعمدة. أما جدول الحسابات فأحد
+ * عشر عموداً بعرض شاشة كاملة، والعين تقفز من اسم الحساب في أقصى اليمين
+ * إلى تاريخ آخر استخراج في أقصى اليسار فتفقد السطر في الطريق. الشريط
+ * الملوّن يمسك السطر بصرياً عبر العرض كله.
+ */
 export function TBody({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <tbody className={cn('divide-y divide-border', className)} {...props} />;
+  return (
+    <tbody
+      className={cn('divide-y divide-border [&>tr:nth-child(even)]:bg-surface-2/40', className)}
+      {...props}
+    />
+  );
 }
 
+/*
+ * لون التحويم مشتقّ من اللون الأساسي لا من لون السطح: لو كان درجةً من
+ * الرمادي نفسه لصار صفٌّ محوَّم عليه شبيهاً بصفٍّ مخطّط عادي، فيضيع
+ * التمييز الذي وُضع من أجله.
+ */
 export function TR({ className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
-  return <tr className={cn('transition-colors hover:bg-surface-2/60', className)} {...props} />;
+  return (
+    <tr
+      className={cn('transition-colors hover:bg-primary-soft/70', className)}
+      {...props}
+    />
+  );
 }
 
 /*
@@ -32,7 +60,7 @@ export function TH({ className, scope = 'col', ...props }: React.ThHTMLAttribute
     <th
       scope={scope}
       className={cn(
-        'whitespace-nowrap px-3 py-2.5 text-start text-xs font-semibold text-muted-foreground',
+        'whitespace-nowrap px-3 py-2.5 text-start text-xs font-semibold tracking-[0.01em] text-muted-foreground',
         className,
       )}
       {...props}

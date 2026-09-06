@@ -9,36 +9,38 @@
 :root {
   color-scheme: light;
 
-  --background: #f4f6f8;
+  --background: #f8fafc;
   --surface: #ffffff;
-  --surface-2: #eef1f5;
-  --surface-3: #e4e9ef;
-  --border: #d8dee7;
-  --border-strong: #c2cbd7;
+  --surface-2: #eef2f8;
+  --surface-3: #e2e8f2;
+  --border: #d7e2f0;
+  --border-strong: #b9c9de;
 
-  --foreground: #0f1b2d;
-  --muted-foreground: #5a6779;
-  --subtle-foreground: #667283;
+  --foreground: #0f172a;
+  /* العناوين بأزرق عميق لا بلون النص: تسلسل بلا وزن إضافي ولا حجم إضافي */
+  --heading: #1e3a8a;
+  --muted-foreground: #475569;
+  --subtle-foreground: #5b6b80;
 
-  --primary: #123a63;
-  --primary-hover: #0d2c4c;
+  --primary: #1e40af;
+  --primary-hover: #173285;
   --primary-foreground: #ffffff;
-  --primary-soft: #e6edf5;
-  --primary-soft-foreground: #123a63;
+  --primary-soft: #e7edfb;
+  --primary-soft-foreground: #1b3a9e;
 
-  --accent: #8a6a2f;
-  --accent-soft: #f5efe2;
+  --accent: #b45309;
+  --accent-soft: #fdf2e3;
 
-  --success: #16704a;
-  --success-soft: #e3f2ea;
-  --warning: #92600f;
-  --warning-soft: #fbf0dd;
-  --danger: #a52620;
-  --danger-soft: #fbe9e8;
-  --info: #1a548f;
-  --info-soft: #e6eff8;
+  --success: #166534;
+  --success-soft: #e7f5ec;
+  --warning: #854d0e;
+  --warning-soft: #fdf3e0;
+  --danger: #b91c1c;
+  --danger-soft: #fdeceb;
+  --info: #1d4ed8;
+  --info-soft: #e7edfb;
 
-  --ring: #123a63;
+  --ring: #1e40af;
 
   /*
    * مصفوفة الارتفاع.
@@ -70,58 +72,73 @@
 
   --radius: 0.5rem;
 
-  /* ألوان الرسوم البيانية — ترتيب ثابت لا يُدوَّر، مُتحقَّق منه آلياً:
-     نطاق الإضاءة، أرضية التشبع، تمايز عمى الألوان، وتمايز الرؤية الطبيعية.
-     الثلاثة الأولى تجتاز الفحص لكل الأزواج (للمخططات المبعثرة والمقارنات). */
-  --chart-1: #2a78d6;
-  --chart-2: #eb6834;
-  --chart-3: #1baf7a;
-  --chart-4: #eda100;
-  --chart-5: #e87ba4;
-  --chart-6: #008300;
-  --chart-grid: #e6eaf0;
-  --chart-axis: #5a6779;
+  /*
+   * ألوان الرسوم — ترتيب ثابت لا يُدوَّر، مُشتقّ ببحث آلي لا باختيار ذوقي.
+   * القيد ثلاثي: تباين ≥3.5:1 مع أرضية البطاقة (وهو حدّ العناصر الرسومية
+   * في WCAG مع هامش)، وفرق ΔE ≥20 بين كل زوج في الرؤية الطبيعية، والفرق
+   * نفسه بعد محاكاة عمى الأخضر وعمى الأحمر.
+   *
+   * اللوحة السابقة كانت تسقط في الاثنين: ثلاث سلاسل تحت 3:1 على الأبيض
+   * (أدناها 2.17)، وسلسلتان تتطابقان عملياً عند عمى الأخضر (ΔE = 2.0).
+   *
+   * ومع ذلك يبقى اللون وحده غير كافٍ لستّ سلاسل: أدنى فرق هنا 20.4 وهو
+   * «مُميَّز» لا «مريح». لذلك تحمل الخطوط أنماطاً مختلفة أيضاً (متصل،
+   * متقطّع، منقّط) فلا يتوقف الفهم على تمييز اللون أصلاً.
+   */
+  --chart-1: #1d4ed8;
+  --chart-2: #d2521f;
+  --chart-3: #065f46;
+  --chart-4: #4c1d95;
+  --chart-5: #db2777;
+  --chart-6: #365314;
+  --chart-grid: #e2e8f2;
+  --chart-axis: #475569;
 
   /* ألوان الحالة محجوزة للمشاعر ولا تُستخدم كسلسلة بيانات */
-  --chart-positive: #16704a;
-  --chart-neutral: #7c8899;
-  --chart-negative: #a52620;
-  --chart-mixed: #92600f;
+  --chart-positive: #166534;
+  --chart-neutral: #52606f;
+  --chart-negative: #b91c1c;
+  --chart-mixed: #854d0e;
 }
 
 .dark {
   color-scheme: dark;
 
-  --background: #0a1120;
-  --surface: #111c30;
-  --surface-2: #16233a;
-  --surface-3: #1d2c46;
-  --border: #25324a;
-  --border-strong: #33425e;
+  --background: #020617;
+  --surface: #0e1223;
+  --surface-2: #1a1e2f;
+  --surface-3: #232840;
+  --border: #2b3650;
+  --border-strong: #3d4c66;
 
-  --foreground: #e7edf5;
-  --muted-foreground: #98a6bb;
-  --subtle-foreground: #7b8AA0;
+  /*
+   * النص أبيض مائل للأزرق لا أبيض ناصع: الناصع على أرضية شبه سوداء يُحدث
+   * هالة حول الحرف العربي بنقاطه وتشكيله، فيتعب العين في الجداول الطويلة.
+   */
+  --foreground: #e8eef7;
+  --heading: #bfd6f5;
+  --muted-foreground: #94a3b8;
+  --subtle-foreground: #7f90a8;
 
-  --primary: #6ba3dc;
-  --primary-hover: #86b6e6;
-  --primary-foreground: #06101f;
-  --primary-soft: #17273f;
-  --primary-soft-foreground: #a9caea;
+  --primary: #7cb2f7;
+  --primary-hover: #9cc5fa;
+  --primary-foreground: #020617;
+  --primary-soft: #122240;
+  --primary-soft-foreground: #93c5fd;
 
-  --accent: #d3ac63;
-  --accent-soft: #2a2317;
+  --accent: #e79b3d;
+  --accent-soft: #2a2113;
 
-  --success: #58c295;
-  --success-soft: #14301f;
-  --warning: #dcaa5c;
-  --warning-soft: #302512;
-  --danger: #ef8079;
-  --danger-soft: #341a19;
-  --info: #6fa8e0;
-  --info-soft: #142639;
+  --success: #4ade80;
+  --success-soft: #0f2a1c;
+  --warning: #fbbf24;
+  --warning-soft: #2a2113;
+  --danger: #f87171;
+  --danger-soft: #2c1616;
+  --info: #93c5fd;
+  --info-soft: #122240;
 
-  --ring: #6ba3dc;
+  --ring: #7cb2f7;
 
   /*
    * الظل على أرضية داكنة لا يُشتق من الفاتح بضرب النسب: العين تقرأ الارتفاع
@@ -135,20 +152,20 @@
   --glass-bg: rgb(27 35 54 / 0.72);
   --glass-border: rgb(255 255 255 / 0.1);
 
-  /* نفس الدرجات مُعاد اشتقاقها للأرضية الداكنة، لا انعكاس آلي */
-  --chart-1: #3987e5;
-  --chart-2: #d95926;
-  --chart-3: #199e70;
-  --chart-4: #c98500;
-  --chart-5: #d55181;
-  --chart-6: #008300;
-  --chart-grid: #22314c;
-  --chart-axis: #8496ae;
+  /* بحث مستقل على أرضية البطاقة الداكنة، لا انعكاس للوحة الفاتحة */
+  --chart-1: #93c5fd;
+  --chart-2: #f97316;
+  --chart-3: #5eead4;
+  --chart-4: #8b5cf6;
+  --chart-5: #db2777;
+  --chart-6: #d9f99d;
+  --chart-grid: #232840;
+  --chart-axis: #94a3b8;
 
-  --chart-positive: #58c295;
-  --chart-neutral: #98a6bb;
-  --chart-negative: #ef8079;
-  --chart-mixed: #dcaa5c;
+  --chart-positive: #4ade80;
+  --chart-neutral: #94a3b8;
+  --chart-negative: #f87171;
+  --chart-mixed: #fbbf24;
 }
 
 @theme inline {
@@ -160,6 +177,7 @@
   --color-border-strong: var(--border-strong);
 
   --color-foreground: var(--foreground);
+  --color-heading: var(--heading);
   --color-muted-foreground: var(--muted-foreground);
   --color-subtle-foreground: var(--subtle-foreground);
 
@@ -205,6 +223,37 @@
   --shadow-lg: var(--elev-3);
   --shadow-xl: var(--elev-3);
   --shadow-2xl: var(--elev-4);
+
+  /*
+   * السلّم الطباعي — مضبوط للعربية لا منقولاً عن مقاسات لاتينية.
+   *
+   * الحرف العربي يحمل تفاصيل لا يحملها اللاتيني في المقاس نفسه: نقاط تحت
+   * الباء والياء، وتمييز الحاء عن الجيم عن الخاء، واتصال يغيّر شكل الحرف.
+   * فما يُقرأ بارتياح عند 12px بالإنجليزية يُقرأ بمشقّة بالعربية. لذلك
+   * كل درجة هنا أكبر بمقدار بكسل أو اثنين من نظيرتها في السلّم القياسي.
+   *
+   * وأصغر مقاس في النظام 12px بلا استثناء. كانت الواجهة تحمل عشرة مواضع
+   * بمقاسات حرّة تنزل إلى 10px، وهي في شاشة تشغيل تُقرأ ساعات لا لحظات.
+   *
+   * ارتفاع السطر أوسع للمقاسات الصغيرة لأن التشكيل والنقاط تحتاج مجالاً
+   * رأسياً، وأضيق للعناوين لأن سطورها قليلة وتماسكها أهم.
+   */
+  --text-2xs: 0.75rem;
+  --text-2xs--line-height: 1.5;
+  --text-xs: 0.8125rem;
+  --text-xs--line-height: 1.55;
+  --text-sm: 0.9375rem;
+  --text-sm--line-height: 1.6;
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.65;
+  --text-lg: 1.1875rem;
+  --text-lg--line-height: 1.5;
+  --text-xl: 1.375rem;
+  --text-xl--line-height: 1.4;
+  --text-2xl: 1.75rem;
+  --text-2xl--line-height: 1.3;
+  --text-3xl: 2.125rem;
+  --text-3xl--line-height: 1.2;
 
   --radius-DEFAULT: var(--radius);
 

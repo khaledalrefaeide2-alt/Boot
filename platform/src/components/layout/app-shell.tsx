@@ -90,7 +90,7 @@ export function AppShell({
               <Bell className="h-4.5 w-4.5" aria-hidden />
             </Button>
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 left-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-[0.625rem] font-semibold text-white">
+              <span className="absolute -top-0.5 left-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-2xs font-semibold text-white">
                 <span className="num">{unreadCount > 99 ? '99+' : unreadCount}</span>
               </span>
             )}
@@ -111,7 +111,7 @@ export function AppShell({
               </div>
               <div className="hidden leading-tight sm:block">
                 <p className="max-w-32 truncate text-xs font-medium text-foreground">{user.name}</p>
-                <p className="text-[0.625rem] text-muted-foreground">{ROLE_LABELS[user.role]}</p>
+                <p className="text-2xs text-muted-foreground">{ROLE_LABELS[user.role]}</p>
               </div>
             </button>
 
