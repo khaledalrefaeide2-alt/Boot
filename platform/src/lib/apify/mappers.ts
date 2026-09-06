@@ -508,6 +508,33 @@ export function mapApifyItem(raw: unknown, platformCode: string): MappedPost | n
  * تحويل دفعة كاملة مع عزل الأخطاء.
  * لا يُرمى أي استثناء إلى الأعلى — تُحصى العناصر الفاشلة فقط.
  */
+/**
+ * وصف سبب رفض العنصر بما ينفع من يقرؤه.
+ *
+ * «بيانات غير كافية» صحيحة ولا تُفيد: من يرى «فشل 1» يريد أن يعرف ماذا
+ * أعاد الـ Actor بالضبط. وأكثر ما يُرفض ليس منشوراً أصلاً بل كائن خطأ
+ * يشرح فيه الـ Actor سبب تعثّره — صفحة خاصة، أو رابط لا يُقرأ، أو حساب
+ * محجوب. فيُقرأ ذلك الحقل ويُعرض، وإن غاب عُرضت أسماء الحقول الموجودة
+ * فعلاً ليُقارنها القارئ بما يتوقعه.
+ */
+function describeRejection(item: unknown): string {
+  const record = asRecord(item);
+  if (!record) return 'ليس كائناً — تجاهله المحوّل';
+
+  const actorError = pickString(record, [
+    'error',
+    'errorDescription',
+    'errorMessage',
+    'reason',
+    'statusMessage',
+  ]);
+  if (actorError) return `الـ Actor أعاد خطأً: ${actorError.slice(0, 200)}`;
+
+  const keys = Object.keys(record);
+  if (keys.length === 0) return 'كائن فارغ';
+  return `لا يحمل نصاً ولا رابطاً ولا معرّفاً — حقوله: ${keys.slice(0, 10).join('، ')}`;
+}
+
 export function mapApifyItems(
   items: unknown[],
   platformCode: string,
@@ -522,7 +549,9 @@ export function mapApifyItems(
       if (mapped) posts.push(mapped);
       else {
         failed += 1;
-        if (failures.length < 10) failures.push(`العنصر رقم ${index + 1}: بيانات غير كافية`);
+        if (failures.length < 10) {
+          failures.push(`العنصر رقم ${index + 1}: ${describeRejection(item)}`);
+        }
       }
     } catch (error) {
       failed += 1;

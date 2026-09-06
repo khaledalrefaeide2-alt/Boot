@@ -82,8 +82,13 @@ export default async function ExtractionDetailPage({
         <Badge>{EXTRACTION_TRIGGER_LABELS[run.trigger]}</Badge>
       </div>
 
-      {run.status === 'FAILED' && run.errorMessage && (
-        <Alert tone="danger" title="سبب الفشل" className="mb-4">
+      {/* «لا نتائج» تحمل شرحاً كذلك الآن، فلا يُقصر عرضه على الفاشلة */}
+      {(run.status === 'FAILED' || run.status === 'NO_RESULTS') && run.errorMessage && (
+        <Alert
+          tone={run.status === 'FAILED' ? 'danger' : 'warning'}
+          title={run.status === 'FAILED' ? 'سبب الفشل' : 'لماذا لم يُحفظ شيء'}
+          className="mb-4"
+        >
           {run.errorMessage}
         </Alert>
       )}

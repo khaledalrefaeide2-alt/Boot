@@ -8,6 +8,7 @@ import { mapApifyItems } from '../src/lib/apify/mappers';
 import { importPosts } from '../src/lib/extraction/import';
 import { refreshStatsAfterImport } from '../src/lib/stats';
 import { buildActorInput } from '../src/lib/apify/inputs';
+import { classifyRunOutcome } from '../src/lib/extraction/outcome';
 
 // عينات تحاكي الأشكال الفعلية لمخرجات الـ Actors الثلاثة
 const FACEBOOK_ITEMS = [
@@ -190,7 +191,25 @@ async function main() {
     }
   }
 
-  // 7) النتائج النهائية
+  // 7) تصنيف نتيجة التشغيل — أهم ما يراه المستخدم في جدول العمليات
+  console.log('\n── تصنيف نتيجة التشغيل ──');
+  const outcomeCases: [string, Parameters<typeof classifyRunOutcome>[0], string][] = [
+    ['جلب عناصر ورُفضت كلها', { fetched: 1, saved: 0, updated: 0, failed: 1, firstReason: 'الـ Actor أعاد خطأً: Page is private' }, 'FAILED'],
+    ['حفظ منشورات جديدة', { fetched: 27, saved: 27, updated: 0, failed: 0, firstReason: null }, 'SUCCEEDED'],
+    ['تحديث منشورات قائمة', { fetched: 10, saved: 0, updated: 10, failed: 0, firstReason: null }, 'SUCCEEDED'],
+    ['نجاح جزئي مع رفض بعضها', { fetched: 10, saved: 7, updated: 0, failed: 3, firstReason: 'x' }, 'SUCCEEDED'],
+    ['عناصر سليمة خارج النطاق', { fetched: 12, saved: 0, updated: 0, failed: 0, firstReason: null }, 'NO_RESULTS'],
+  ];
+  let outcomeFailures = 0;
+  for (const [name, input, expected] of outcomeCases) {
+    const { status } = classifyRunOutcome(input);
+    const ok = status === expected;
+    if (!ok) outcomeFailures += 1;
+    console.log(`${ok ? '✅' : '❌'} ${name}: ${status}${ok ? '' : ` (المتوقع ${expected})`}`);
+  }
+  if (outcomeFailures > 0) throw new Error(`${outcomeFailures} حالة تصنيف غير صحيحة`);
+
+  // 8) النتائج النهائية
   const [postCount, statCount, hashtagCount, notificationCount] = await Promise.all([
     prisma.post.count(),
     prisma.dailyAccountStat.count(),

@@ -17,6 +17,7 @@ import { notifyOperators } from '@/lib/notifications';
 import { auditSystem, AUDIT_ACTIONS } from '@/lib/audit';
 import { getOperationalSettings } from '@/lib/settings';
 import { enqueueExtraction, removeExtractionJob } from '@/lib/queue';
+import { classifyRunOutcome } from './outcome';
 import type { ExtractionTrigger } from '@/generated/prisma';
 
 export interface CreateRunOptions {
@@ -291,16 +292,30 @@ export async function executeExtractionRun(runId: string): Promise<void> {
 
     await refreshStatsAfterImport(run.accountId, run.platformId, imported.publishedDates);
 
-    await prisma.account.update({
-      where: { id: run.accountId },
-      data: { lastExtractedAt: new Date(), lastSuccessfulRunAt: new Date() },
+    const totalFailed = imported.failed + mapped.failed;
+    const { status, message: outcomeMessage } = classifyRunOutcome({
+      fetched: items.length,
+      saved: imported.saved,
+      updated: imported.updated,
+      failed: totalFailed,
+      firstReason: mapped.failures[0] ?? imported.failures[0] ?? null,
     });
 
-    await finalizeRun(runId, 'SUCCEEDED', startedAt, {
+    // «آخر استخراج ناجح» لا يُحدَّث إلا بنجاح فعلي، وإلا بدا الحساب مرصوداً وهو لا يُجلب منه شيء
+    await prisma.account.update({
+      where: { id: run.accountId },
+      data: {
+        lastExtractedAt: new Date(),
+        ...(status === 'SUCCEEDED' ? { lastSuccessfulRunAt: new Date() } : {}),
+      },
+    });
+
+    await finalizeRun(runId, status, startedAt, {
       itemsFetched: items.length,
       itemsSaved: imported.saved,
       itemsSkipped: imported.updated,
-      itemsFailed: imported.failed + mapped.failed,
+      itemsFailed: totalFailed,
+      errorMessage: outcomeMessage,
       rawSample: items.slice(0, 3),
       errorDetails:
         imported.failures.length > 0 || mapped.failures.length > 0
@@ -308,18 +323,34 @@ export async function executeExtractionRun(runId: string): Promise<void> {
           : null,
     });
 
-    await raiseAlerts(runId, run.account.name, imported);
+    if (status === 'SUCCEEDED') {
+      await raiseAlerts(runId, run.account.name, imported);
+    } else {
+      await notifyOperators({
+        type: 'EXTRACTION_NO_RESULTS',
+        severity: status === 'FAILED' ? 'ERROR' : 'WARNING',
+        title: `لم يُحفظ شيء: ${run.account.name}`,
+        body: outcomeMessage ?? '',
+        link: `/admin/extractions/${runId}`,
+        entityType: 'extraction_run',
+        entityId: runId,
+      });
+    }
 
     await auditSystem({
       action: AUDIT_ACTIONS.EXTRACTION_COMPLETED,
       entityType: 'extraction_run',
       entityId: runId,
-      summary: `اكتمل استخراج ${run.account.name}: ${imported.saved} جديد و${imported.updated} محدّث`,
+      summary:
+        status === 'SUCCEEDED'
+          ? `اكتمل استخراج ${run.account.name}: ${imported.saved} جديد و${imported.updated} محدّث`
+          : `انتهى استخراج ${run.account.name} دون حفظ شيء (${items.length} عنصراً، ${totalFailed} مرفوضاً)`,
       metadata: {
+        status,
         fetched: items.length,
         saved: imported.saved,
         updated: imported.updated,
-        failed: imported.failed + mapped.failed,
+        failed: totalFailed,
       },
     });
   } catch (error) {
