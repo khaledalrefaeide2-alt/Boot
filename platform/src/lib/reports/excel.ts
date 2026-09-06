@@ -5,6 +5,7 @@ import { buildPostWhere } from '@/lib/queries/posts';
 import { getBreakdowns, getOverviewStats, getTopAccounts } from '@/lib/queries/stats';
 import type { PostFilters } from '@/lib/validation/posts';
 import { POST_TYPE_LABELS, SENTIMENT_LABELS, languageLabel } from '@/lib/domain/constants';
+import type { AccountScope } from '@/lib/auth/account-scope';
 
 /** أقصى عدد صفوف في ملف واحد — يحمي الذاكرة عند التصدير الكبير */
 const MAX_ROWS = 20_000;
@@ -35,13 +36,14 @@ const RANGE_LABELS: Record<string, string> = {
  */
 export async function buildPostsWorkbook(
   filters: PostFilters,
+  scope: AccountScope,
   meta: { organization?: string; appName: string; generatedBy: string },
 ): Promise<{ buffer: Buffer; rowCount: number }> {
   const workbook = new ExcelJS.Workbook();
   workbook.creator = meta.appName;
   workbook.created = new Date();
 
-  const where = buildPostWhere(filters);
+  const where = buildPostWhere(filters, scope);
 
   // ---------- ورقة الملخص ----------
   const summarySheet = workbook.addWorksheet('الملخص');
@@ -52,7 +54,7 @@ export async function buildPostsWorkbook(
   ];
   styleHeader(summarySheet.getRow(1));
 
-  const stats = await getOverviewStats(filters);
+  const stats = await getOverviewStats(filters, scope);
   const rangeLabel =
     filters.range === 'custom'
       ? `من ${filters.from ?? '—'} إلى ${filters.to ?? '—'}`
@@ -169,7 +171,7 @@ export async function buildPostsWorkbook(
   ];
   styleHeader(breakdownSheet.getRow(1));
 
-  const breakdowns = await getBreakdowns(filters);
+  const breakdowns = await getBreakdowns(filters, scope);
   for (const row of breakdowns.byPlatform) {
     breakdownSheet.addRow({
       group: 'حسب المنصة',
@@ -220,7 +222,7 @@ export async function buildPostsWorkbook(
   ];
   styleHeader(accountsSheet.getRow(1));
 
-  const topAccounts = await getTopAccounts(filters, 200);
+  const topAccounts = await getTopAccounts(filters, scope, 200);
   for (const account of topAccounts) {
     accountsSheet.addRow({
       name: account.name,

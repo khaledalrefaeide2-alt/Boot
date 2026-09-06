@@ -146,6 +146,14 @@ enum ReportPeriod {
 
 // ============================ المستخدمون والجلسات ============================
 
+/// نطاق وصول المستخدم إلى بيانات الحسابات المرصودة
+enum AccountAccess {
+  /// يرى بيانات كل الحسابات — الوضع الافتراضي
+  ALL
+  /// يرى بيانات الحسابات المُسندة إليه وحدها
+  ASSIGNED
+}
+
 model User {
   id           String     @id @default(cuid())
   email        String     @unique
@@ -159,6 +167,9 @@ model User {
   avatarUrl   String?
   /// صلاحيات دقيقة إضافية فوق الدور (مفاتيح منطقية)
   permissions Json?
+
+  /// نطاق البيانات: كل الحسابات، أو الحسابات المُسندة وحدها
+  accountAccess AccountAccess @default(ALL)
 
   lastLoginAt      DateTime?
   failedLoginCount Int       @default(0)
@@ -189,6 +200,7 @@ model User {
   reportTemplates ReportTemplate[]
   reviewedPosts   Post[]               @relation("PostReviewedBy")
   createdAccounts Account[]            @relation("AccountCreatedBy")
+  accountAssignments UserAccount[]
   createdKeywords Keyword[]            @relation("KeywordCreatedBy")
   updatedSettings Setting[]            @relation("SettingUpdatedBy")
 
@@ -325,6 +337,7 @@ model Account {
   posts      Post[]
   runs       ExtractionRun[]
   keywords   AccountKeyword[]
+  assignedUsers UserAccount[]
   dailyStats DailyAccountStat[]
 
   @@unique([platformId, url])
@@ -503,6 +516,21 @@ model Keyword {
   @@index([status])
   @@index([normalizedTerm])
   @@map("keywords")
+}
+
+/// إسناد حساب مرصود إلى مستخدم — يُقرأ فقط حين يكون نطاقه ASSIGNED
+model UserAccount {
+  userId    String
+  accountId String
+  createdAt DateTime @default(now())
+
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  account Account @relation(fields: [accountId], references: [id], onDelete: Cascade)
+
+  @@id([userId, accountId])
+  @@index([userId])
+  @@index([accountId])
+  @@map("user_accounts")
 }
 
 model AccountKeyword {

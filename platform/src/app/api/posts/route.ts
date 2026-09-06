@@ -5,18 +5,20 @@ import { PERMISSIONS } from '@/lib/auth/rbac';
 import { listPostsSchema } from '@/lib/validation/posts';
 import { buildPostWhere, POST_LIST_SELECT } from '@/lib/queries/posts';
 import { can } from '@/lib/auth/rbac';
+import { getAccountScope } from '@/lib/auth/account-scope';
 
 /** قائمة المنشورات مع كل الفلاتر والبحث */
 export async function GET(request: NextRequest) {
   try {
     const user = await requirePermission(PERMISSIONS.POSTS_VIEW);
     const query = parseQuery(request, listPostsSchema);
+    const scope = await getAccountScope();
 
     // المنشورات المخفية لا تظهر إلا لمن يملك صلاحية المراجعة
     const includeHidden =
       query.includeHidden === 'true' && can(user, PERMISSIONS.POSTS_REVIEW) ? 'true' : 'false';
 
-    const where = buildPostWhere({ ...query, includeHidden });
+    const where = buildPostWhere({ ...query, includeHidden }, scope);
 
     const [total, posts] = await Promise.all([
       prisma.post.count({ where }),

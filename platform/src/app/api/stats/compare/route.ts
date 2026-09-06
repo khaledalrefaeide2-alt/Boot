@@ -5,6 +5,7 @@ import { errors, jsonError, jsonOk, parseQuery, requirePermission } from '@/lib/
 import { PERMISSIONS } from '@/lib/auth/rbac';
 import { buildPostWhere } from '@/lib/queries/posts';
 import { postFiltersSchema } from '@/lib/validation/posts';
+import { getAccountScope } from '@/lib/auth/account-scope';
 
 const compareSchema = postFiltersSchema.extend({
   accountId: z.union([z.string(), z.array(z.string())]),
@@ -19,11 +20,20 @@ export async function GET(request: NextRequest) {
     await requirePermission(PERMISSIONS.ACCOUNTS_VIEW);
     const query = parseQuery(request, compareSchema);
 
-    const accountIds = (Array.isArray(query.accountId) ? query.accountId : [query.accountId]).filter(
+    const requested = (Array.isArray(query.accountId) ? query.accountId : [query.accountId]).filter(
       Boolean,
     );
-    if (accountIds.length === 0) throw errors.badRequest('اختر حساباً واحداً على الأقل للمقارنة');
-    if (accountIds.length > 6) throw errors.badRequest('الحد الأقصى ستة حسابات في المقارنة الواحدة');
+    if (requested.length === 0) throw errors.badRequest('اختر حساباً واحداً على الأقل للمقارنة');
+    if (requested.length > 6) throw errors.badRequest('الحد الأقصى ستة حسابات في المقارنة الواحدة');
+
+    /*
+     * الحصر يقع على قائمة الحسابات نفسها لا على شرط المنشورات وحده: هذا
+     * المسار يقرأ بيانات الحساب مباشرةً (الاسم وعدد المتابعين)، فلو رُشِّحت
+     * المنشورات وحدها لعادت أسماء حسابات خارج نطاق المستخدم بأرقام صفرية.
+     */
+    const scope = await getAccountScope();
+    const accountIds = scope === null ? requested : requested.filter((id) => scope.includes(id));
+    if (accountIds.length === 0) throw errors.forbidden('لا تملك صلاحية الاطلاع على هذه الحسابات');
 
     const accounts = await prisma.account.findMany({
       where: { id: { in: accountIds } },
@@ -37,7 +47,7 @@ export async function GET(request: NextRequest) {
 
     const results = await Promise.all(
       accounts.map(async (account) => {
-        const where = buildPostWhere({ ...query, accountId: account.id });
+        const where = buildPostWhere({ ...query, accountId: account.id }, scope);
 
         const [totals, posts, sentiments] = await Promise.all([
           prisma.post.aggregate({

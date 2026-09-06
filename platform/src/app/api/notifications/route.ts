@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { prisma } from '@/lib/db';
 import { jsonError, jsonOk, parseQuery, requireAuth } from '@/lib/api';
 import { paginationSchema } from '@/lib/validation/common';
+import { getAccountScope } from '@/lib/auth/account-scope';
+import { notificationAudience } from '@/lib/notifications';
 
 const listSchema = paginationSchema.extend({
   unreadOnly: z.enum(['true', 'false']).default('false'),
@@ -14,8 +16,9 @@ export async function GET(request: NextRequest) {
     const user = await requireAuth();
     const query = parseQuery(request, listSchema);
 
+    const audience = notificationAudience(user.id, user.role, await getAccountScope());
     const where = {
-      OR: [{ userId: user.id }, { role: user.role }],
+      ...audience,
       ...(query.unreadOnly === 'true' ? { isRead: false } : {}),
     };
 
@@ -28,7 +31,7 @@ export async function GET(request: NextRequest) {
         take: query.pageSize,
       }),
       prisma.notification.count({
-        where: { OR: [{ userId: user.id }, { role: user.role }], isRead: false },
+        where: { ...audience, isRead: false },
       }),
     ]);
 

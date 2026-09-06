@@ -1,5 +1,7 @@
 import { jsonError, jsonOk, requireAuth, requireCsrf } from '@/lib/api';
 import { prisma } from '@/lib/db';
+import { getAccountScope } from '@/lib/auth/account-scope';
+import { notificationAudience } from '@/lib/notifications';
 
 /** تعليم كل تنبيهات المستخدم كمقروءة */
 export async function POST() {
@@ -8,7 +10,7 @@ export async function POST() {
     await requireCsrf();
 
     const result = await prisma.notification.updateMany({
-      where: { OR: [{ userId: user.id }, { role: user.role }], isRead: false },
+      where: { ...notificationAudience(user.id, user.role, await getAccountScope()), isRead: false },
       data: { isRead: true, readAt: new Date() },
     });
 

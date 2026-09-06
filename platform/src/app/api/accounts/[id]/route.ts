@@ -10,6 +10,7 @@ import {
   requirePermission,
 } from '@/lib/api';
 import { PERMISSIONS } from '@/lib/auth/rbac';
+import { getAccountScope, scopeAllows } from '@/lib/auth/account-scope';
 import { updateAccountSchema } from '@/lib/validation/sources';
 import { audit, AUDIT_ACTIONS } from '@/lib/audit';
 
@@ -29,6 +30,11 @@ export async function GET(_request: NextRequest, { params }: Params) {
       },
     });
     if (!account) throw errors.notFound('الحساب غير موجود');
+
+    // حساب خارج نطاق المستخدم يُعامل كغير موجود، فلا يفرّق الردّ بين
+    // «ممنوع» و«غير موجود» ولا يؤكّد وجود معرّف جُرّب عشوائياً.
+    const scope = await getAccountScope();
+    if (!scopeAllows(scope, account.id)) throw errors.notFound('الحساب غير موجود');
 
     return jsonOk({ account });
   } catch (error) {
@@ -50,6 +56,10 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       select: { id: true, name: true, platformId: true, url: true },
     });
     if (!existing) throw errors.notFound('الحساب غير موجود');
+    // التعديل يتبع الاطلاع: من لا يرى الحساب لا يعدّله
+    if (!scopeAllows(await getAccountScope(), existing.id)) {
+      throw errors.notFound('الحساب غير موجود');
+    }
 
     // منع تكرار الرابط داخل المنصة نفسها
     if (input.url && input.url !== existing.url) {
@@ -102,9 +112,12 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
     const { id } = await params;
     const account = await prisma.account.findUnique({
       where: { id },
-      select: { name: true, url: true, _count: { select: { posts: true } } },
+      select: { id: true, name: true, url: true, _count: { select: { posts: true } } },
     });
     if (!account) throw errors.notFound('الحساب غير موجود');
+    if (!scopeAllows(await getAccountScope(), account.id)) {
+      throw errors.notFound('الحساب غير موجود');
+    }
 
     // حذف الحساب يحذف منشوراته المرتبطة — عملية لا رجعة فيها
     await prisma.account.delete({ where: { id } });

@@ -4,6 +4,7 @@ import { buildPostWhere } from './posts';
 import { topWords } from '@/lib/analysis/text';
 import type { PostFilters } from '@/lib/validation/posts';
 import { resolveDateRange } from '@/lib/validation/common';
+import type { AccountScope } from '@/lib/auth/account-scope';
 
 /**
  * استعلامات الإحصاءات.
@@ -44,8 +45,8 @@ function startOfDay(offsetDays = 0): Date {
 }
 
 /** بطاقات أعلى لوحة العرض */
-export async function getOverviewStats(filters: PostFilters): Promise<OverviewStats> {
-  const where = buildPostWhere(filters);
+export async function getOverviewStats(filters: PostFilters, scope: AccountScope): Promise<OverviewStats> {
+  const where = buildPostWhere(filters, scope);
 
   const [totals, today, week, month, accountsCount, platformsCount, topPost, byPlatform] =
     await Promise.all([
@@ -57,8 +58,17 @@ export async function getOverviewStats(filters: PostFilters): Promise<OverviewSt
       prisma.post.count({ where: { ...where, publishedAt: { gte: startOfDay() } } }),
       prisma.post.count({ where: { ...where, publishedAt: { gte: startOfDay(7) } } }),
       prisma.post.count({ where: { ...where, publishedAt: { gte: startOfDay(30) } } }),
-      prisma.account.count({ where: { status: 'ACTIVE' } }),
-      prisma.platform.count({ where: { status: 'ACTIVE' } }),
+      // العدّادان محصوران بنطاق المستخدم: من يرى حسابين لا تُعرض له
+      // «١٢ حساباً» في البطاقة، فالرقم نفسه يكشف حجم ما لا يراه.
+      prisma.account.count({
+        where: { status: 'ACTIVE', ...(scope === null ? {} : { id: { in: scope } }) },
+      }),
+      prisma.platform.count({
+        where: {
+          status: 'ACTIVE',
+          ...(scope === null ? {} : { accounts: { some: { id: { in: scope } } } }),
+        },
+      }),
       prisma.post.findFirst({
         where,
         orderBy: { engagementTotal: 'desc' },
@@ -122,11 +132,11 @@ export async function getOverviewStats(filters: PostFilters): Promise<OverviewSt
 }
 
 /** سلسلة زمنية للنشر والتفاعل — تُقرأ من الإحصاءات اليومية */
-export async function getTimeseries(filters: PostFilters): Promise<
+export async function getTimeseries(filters: PostFilters, scope: AccountScope): Promise<
   { date: string; posts: number; engagement: number; likes: number; comments: number; shares: number }[]
 > {
   const { from, to } = resolveDateRange({ range: filters.range, from: filters.from, to: filters.to });
-  const where = buildPostWhere(filters);
+  const where = buildPostWhere(filters, scope);
 
   // نجمّع من جدول المنشورات بفهرس التاريخ لضمان احترام كل الفلاتر
   const posts = await prisma.post.findMany({
@@ -159,8 +169,8 @@ export async function getTimeseries(filters: PostFilters): Promise<
 }
 
 /** التوزيعات: حسب المنصة، النوع، المشاعر، التصنيف، اللغة */
-export async function getBreakdowns(filters: PostFilters) {
-  const where = buildPostWhere(filters);
+export async function getBreakdowns(filters: PostFilters, scope: AccountScope) {
+  const where = buildPostWhere(filters, scope);
 
   const [byPlatform, byType, bySentiment, byTopic, byLanguage, byCountry] = await Promise.all([
     prisma.post.groupBy({
@@ -219,8 +229,8 @@ export async function getBreakdowns(filters: PostFilters) {
 }
 
 /** أكثر الحسابات نشراً وتفاعلاً */
-export async function getTopAccounts(filters: PostFilters, limit = 10) {
-  const where = buildPostWhere(filters);
+export async function getTopAccounts(filters: PostFilters, scope: AccountScope, limit = 10) {
+  const where = buildPostWhere(filters, scope);
 
   const grouped = await prisma.post.groupBy({
     by: ['accountId'],
@@ -266,8 +276,8 @@ export async function getTopAccounts(filters: PostFilters, limit = 10) {
 }
 
 /** أكثر الهاشتاغات استخداماً ضمن الفلاتر الحالية */
-export async function getTopHashtags(filters: PostFilters, limit = 25) {
-  const where = buildPostWhere(filters);
+export async function getTopHashtags(filters: PostFilters, scope: AccountScope, limit = 25) {
+  const where = buildPostWhere(filters, scope);
   const posts = await prisma.post.findMany({
     where: { ...where, hashtags: { isEmpty: false } },
     select: { hashtags: true },
@@ -286,8 +296,8 @@ export async function getTopHashtags(filters: PostFilters, limit = 25) {
 }
 
 /** أكثر الكلمات تكراراً — خريطة حرارية للكلمات */
-export async function getTopWords(filters: PostFilters, limit = 50) {
-  const where = buildPostWhere(filters);
+export async function getTopWords(filters: PostFilters, scope: AccountScope, limit = 50) {
+  const where = buildPostWhere(filters, scope);
   const posts = await prisma.post.findMany({
     where: { ...where, text: { not: null } },
     select: { text: true },
@@ -297,8 +307,8 @@ export async function getTopWords(filters: PostFilters, limit = 50) {
 }
 
 /** أعلى المنشورات تفاعلاً */
-export async function getTopPosts(filters: PostFilters, limit = 10) {
-  const where = buildPostWhere(filters);
+export async function getTopPosts(filters: PostFilters, scope: AccountScope, limit = 10) {
+  const where = buildPostWhere(filters, scope);
   return prisma.post.findMany({
     where,
     orderBy: { engagementTotal: 'desc' },

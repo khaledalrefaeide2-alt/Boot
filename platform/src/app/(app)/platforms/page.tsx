@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Building2 } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
+import { getAccountScope } from '@/lib/auth/account-scope';
 import { can, PERMISSIONS } from '@/lib/auth/rbac';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardBody } from '@/components/ui/card';
@@ -17,22 +18,38 @@ export const metadata: Metadata = { title: 'المنصات' };
 export default async function PlatformsPage() {
   const user = await getSession();
 
+  /*
+   * البطاقات كلها محصورة بنطاق المستخدم: المنصات المعروضة، وعدد الحسابات
+   * والمنشورات داخل كل بطاقة، ومجموع التفاعل. لو حُصرت القائمة وحدها لبقيت
+   * الأرقام تكشف حجم ما لا يراه المستخدم على المنصة نفسها.
+   */
+  const scope = await getAccountScope();
+  const accountFilter = scope === null ? {} : { accountId: { in: scope } };
+
   const platforms = await prisma.platform.findMany({
-    where: { status: 'ACTIVE' },
+    where: {
+      status: 'ACTIVE',
+      ...(scope === null ? {} : { accounts: { some: { id: { in: scope } } } }),
+    },
     orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
     select: {
       id: true,
       name: true,
       code: true,
       status: true,
-      _count: { select: { accounts: true, posts: true } },
+      _count: {
+        select: {
+          accounts: scope === null ? true : { where: { id: { in: scope } } },
+          posts: scope === null ? true : { where: { accountId: { in: scope } } },
+        },
+      },
     },
   });
 
   // مجاميع التفاعل لكل منصة من جدول المنشورات مباشرة
   const engagement = await prisma.post.groupBy({
     by: ['platformId'],
-    where: { isHidden: false },
+    where: { isHidden: false, ...accountFilter },
     _sum: { engagementTotal: true },
   });
   const engagementMap = new Map(

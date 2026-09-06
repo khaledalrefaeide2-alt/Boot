@@ -8,6 +8,7 @@ import { getOperationalSettings } from '@/lib/settings';
 import { prisma } from '@/lib/db';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { audit, AUDIT_ACTIONS } from '@/lib/audit';
+import { getAccountScope } from '@/lib/auth/account-scope';
 
 const exportSchema = postFiltersSchema.extend({
   format: z.enum(['excel']).default('excel'),
@@ -26,9 +27,10 @@ export async function GET(request: NextRequest) {
     if (!limit.allowed) throw errors.tooMany('تجاوزت حد التصدير في الساعة، حاول لاحقاً');
 
     const filters = parseQuery(request, exportSchema);
+    const scope = await getAccountScope();
     const settings = await getOperationalSettings();
 
-    const { buffer, rowCount } = await buildPostsWorkbook(filters, {
+    const { buffer, rowCount } = await buildPostsWorkbook(filters, scope, {
       organization: settings.organization,
       appName: settings.appName,
       generatedBy: actor.name,

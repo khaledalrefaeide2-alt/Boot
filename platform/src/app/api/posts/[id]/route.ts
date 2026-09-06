@@ -13,6 +13,7 @@ import { PERMISSIONS, can } from '@/lib/auth/rbac';
 import { updatePostSchema } from '@/lib/validation/posts';
 import { audit, AUDIT_ACTIONS } from '@/lib/audit';
 import { refreshStatsAfterImport } from '@/lib/stats';
+import { getAccountScope, scopeAllows } from '@/lib/auth/account-scope';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -33,6 +34,13 @@ export async function GET(_request: NextRequest, { params }: Params) {
       },
     });
     if (!post) throw errors.notFound('المنشور غير موجود');
+
+    /*
+     * الحصر يُطبَّق بعد الجلب لا في الشرط: نُعيد «غير موجود» لا «ممنوع»،
+     * فلا يستدل المستخدم من الفرق على وجود منشور لحساب خارج نطاقه.
+     */
+    const scope = await getAccountScope();
+    if (!scopeAllows(scope, post.accountId)) throw errors.notFound('المنشور غير موجود');
     if (post.isHidden && !can(user, PERMISSIONS.POSTS_REVIEW)) {
       throw errors.notFound('المنشور غير موجود');
     }
@@ -60,6 +68,10 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       select: { id: true, accountId: true, platformId: true, publishedAt: true, isHidden: true },
     });
     if (!existing) throw errors.notFound('المنشور غير موجود');
+    // المراجعة تتبع الاطلاع: من لا يرى منشور الحساب لا يعدّله
+    if (!scopeAllows(await getAccountScope(), existing.accountId)) {
+      throw errors.notFound('المنشور غير موجود');
+    }
 
     const post = await prisma.post.update({
       where: { id },
@@ -115,6 +127,9 @@ export async function DELETE(_request: NextRequest, { params }: Params) {
       select: { id: true, accountId: true, platformId: true, publishedAt: true, url: true },
     });
     if (!post) throw errors.notFound('المنشور غير موجود');
+    if (!scopeAllows(await getAccountScope(), post.accountId)) {
+      throw errors.notFound('المنشور غير موجود');
+    }
 
     await prisma.post.delete({ where: { id } });
     await refreshStatsAfterImport(post.accountId, post.platformId, [post.publishedAt]);

@@ -2,6 +2,7 @@ import type { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { errors, jsonError, jsonOk, requirePermission } from '@/lib/api';
 import { PERMISSIONS } from '@/lib/auth/rbac';
+import { getAccountScope, scopeAllows } from '@/lib/auth/account-scope';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -21,6 +22,9 @@ export async function GET(_request: NextRequest, { params }: Params) {
       },
     });
     if (!run) throw errors.notFound('عملية الاستخراج غير موجودة');
+    if (!scopeAllows(await getAccountScope(), run.accountId)) {
+      throw errors.notFound('عملية الاستخراج غير موجودة');
+    }
 
     return jsonOk({ run });
   } catch (error) {

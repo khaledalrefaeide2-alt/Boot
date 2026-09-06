@@ -14,6 +14,7 @@ import { PERMISSIONS } from '@/lib/auth/rbac';
 import { createAccountSchema, listAccountsSchema } from '@/lib/validation/sources';
 import { audit, AUDIT_ACTIONS } from '@/lib/audit';
 import type { Prisma } from '@/generated/prisma';
+import { getAccountScope } from '@/lib/auth/account-scope';
 
 /** قائمة الحسابات المرصودة مع البحث والفلترة */
 export async function GET(request: NextRequest) {
@@ -21,7 +22,11 @@ export async function GET(request: NextRequest) {
     await requirePermission(PERMISSIONS.ACCOUNTS_VIEW);
     const query = parseQuery(request, listAccountsSchema);
 
+    // المستخدم المقيّد لا يرى في القائمة إلا الحسابات المُسندة إليه
+    const scope = await getAccountScope();
+
     const where: Prisma.AccountWhereInput = {
+      ...(scope === null ? {} : { id: { in: scope } }),
       ...(query.platformId ? { platformId: query.platformId } : {}),
       ...(query.status ? { status: query.status } : {}),
       ...(query.ownership ? { ownership: query.ownership } : {}),

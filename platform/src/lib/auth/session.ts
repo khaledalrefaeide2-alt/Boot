@@ -6,7 +6,7 @@ import { prisma } from '@/lib/db';
 import { env, isProduction } from '@/lib/env';
 import { generateToken, hashToken } from './password';
 import { effectivePermissions, type Permission } from './rbac';
-import type { Role, UserStatus } from '@/generated/prisma';
+import type { AccountAccess, Role, UserStatus } from '@/generated/prisma';
 
 export const SESSION_COOKIE = 'mm_session';
 export const CSRF_COOKIE = 'mm_csrf';
@@ -18,6 +18,8 @@ export interface SessionUser {
   name: string;
   role: Role;
   status: UserStatus;
+  /// نطاق البيانات — يُقرأ في كل استعلام فيُحمل مع الجلسة لا باستعلام إضافي
+  accountAccess: AccountAccess;
   jobTitle: string | null;
   avatarUrl: string | null;
   permissions: Permission[];
@@ -113,6 +115,7 @@ export const getSession = cache(async (): Promise<SessionUser | null> => {
           name: true,
           role: true,
           status: true,
+          accountAccess: true,
           jobTitle: true,
           avatarUrl: true,
           permissions: true,
@@ -132,6 +135,7 @@ export const getSession = cache(async (): Promise<SessionUser | null> => {
     name: session.user.name,
     role: session.user.role,
     status: session.user.status,
+    accountAccess: session.user.accountAccess,
     jobTitle: session.user.jobTitle,
     avatarUrl: session.user.avatarUrl,
     permissions: effectivePermissions(session.user),

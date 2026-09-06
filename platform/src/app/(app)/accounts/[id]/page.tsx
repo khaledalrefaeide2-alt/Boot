@@ -22,6 +22,7 @@ import {
   languageLabel,
 } from '@/lib/domain/constants';
 import { formatCompactNumber, formatDateTime, formatNumber, truncate } from '@/lib/utils';
+import { getAccountScope, scopeAllows } from '@/lib/auth/account-scope';
 
 export const metadata: Metadata = { title: 'تفاصيل الحساب' };
 
@@ -49,11 +50,14 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
   });
   if (!account) notFound();
 
+  const scope = await getAccountScope();
+  // الحساب خارج النطاق يُعامل كغير موجود
+  if (!scopeAllows(scope, account.id)) notFound();
   const filters = { accountId: id, range: 'all' as const, includeHidden: 'false' as const };
 
   const [stats, series, recentPosts, recentRuns] = await Promise.all([
-    getOverviewStats(filters),
-    getTimeseries(filters),
+    getOverviewStats(filters, scope),
+    getTimeseries(filters, scope),
     prisma.post.findMany({
       where: { accountId: id, isHidden: false },
       orderBy: { publishedAt: 'desc' },

@@ -2,6 +2,7 @@ import 'server-only';
 import type { Prisma } from '@/generated/prisma';
 import type { PostFilters } from '@/lib/validation/posts';
 import { resolveDateRange } from '@/lib/validation/common';
+import { intersectScope, type AccountScope } from '@/lib/auth/account-scope';
 
 /** تحويل قيمة قد تكون نصاً أو مصفوفة إلى مصفوفة نظيفة */
 function toArray(value: string | string[] | undefined): string[] {
@@ -12,8 +13,15 @@ function toArray(value: string | string[] | undefined): string[] {
 /**
  * بناء شرط Prisma الموحّد من فلاتر المنشورات.
  * يُستخدم في العرض والإحصاءات والتصدير معاً، فلا تختلف النتائج بينها.
+ *
+ * `scope` إلزامي لا اختياري: هو الحاجز الذي يمنع مستخدماً مقيّداً من رؤية
+ * بيانات حساب خارج نطاقه. لو كان اختيارياً لصار كل موضع استدعاء منسيّ
+ * تسريباً صامتاً؛ وبكونه إلزامياً يصير خطأ تصريف يظهر قبل التشغيل.
  */
-export function buildPostWhere(filters: PostFilters): Prisma.PostWhereInput {
+export function buildPostWhere(
+  filters: PostFilters,
+  scope: AccountScope,
+): Prisma.PostWhereInput {
   const { from, to } = resolveDateRange({
     range: filters.range,
     from: filters.from,
@@ -21,14 +29,14 @@ export function buildPostWhere(filters: PostFilters): Prisma.PostWhereInput {
   });
 
   const platformIds = toArray(filters.platformId);
-  const accountIds = toArray(filters.accountId);
+  // الحصر على تقاطع ما طُلب مع ما هو مسموح، فلا يُتجاوز النطاق بمعامل طلب
+  const accountIds = intersectScope(scope, toArray(filters.accountId));
 
   const where: Prisma.PostWhereInput = {
     ...(filters.includeHidden === 'true' ? {} : { isHidden: false }),
     ...(platformIds.length === 1 ? { platformId: platformIds[0] } : {}),
     ...(platformIds.length > 1 ? { platformId: { in: platformIds } } : {}),
-    ...(accountIds.length === 1 ? { accountId: accountIds[0] } : {}),
-    ...(accountIds.length > 1 ? { accountId: { in: accountIds } } : {}),
+    ...(accountIds === null ? {} : { accountId: { in: accountIds } }),
     ...(filters.postType ? { postType: filters.postType } : {}),
     ...(filters.language ? { language: filters.language } : {}),
     ...(filters.topicId ? { topicId: filters.topicId } : {}),

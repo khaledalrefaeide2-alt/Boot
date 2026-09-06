@@ -19,6 +19,7 @@ import {
 } from '@/lib/domain/constants';
 import { formatDateTime, formatNumber } from '@/lib/utils';
 import { MediaGallery } from '@/components/posts/media-gallery';
+import { getAccountScope, scopeAllows } from '@/lib/auth/account-scope';
 
 export const metadata: Metadata = { title: 'تفاصيل المنشور' };
 
@@ -49,6 +50,9 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
   });
 
   if (!post) notFound();
+
+  // المنشور خارج نطاق المستخدم لا يُعرض، ويُعامل كغير موجود
+  if (!scopeAllows(await getAccountScope(), post.accountId)) notFound();
   const canReview = can(user, PERMISSIONS.POSTS_REVIEW);
   if (post.isHidden && !canReview) notFound();
 

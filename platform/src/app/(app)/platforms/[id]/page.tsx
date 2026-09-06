@@ -12,6 +12,7 @@ import { EmptyState } from '@/components/ui/states';
 import { Table, TBody, TD, TH, THead, TR, TableWrapper } from '@/components/ui/table';
 import { getOverviewStats } from '@/lib/queries/stats';
 import { formatCompactNumber, formatNumber, formatRelativeTime } from '@/lib/utils';
+import { getAccountScope } from '@/lib/auth/account-scope';
 
 export const metadata: Metadata = { title: 'تفاصيل المنصة' };
 
@@ -30,8 +31,10 @@ export default async function PlatformDetailPage({
   });
   if (!platform) notFound();
 
+  const scope = await getAccountScope();
+
   const [stats, accounts] = await Promise.all([
-    getOverviewStats({ platformId: id, range: 'all', includeHidden: 'false' }),
+    getOverviewStats({ platformId: id, range: 'all', includeHidden: 'false' }, scope),
     prisma.account.findMany({
       where: { platformId: id },
       orderBy: { name: 'asc' },

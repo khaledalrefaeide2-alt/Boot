@@ -1,6 +1,7 @@
 import type { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
 import { errors, jsonError, jsonOk, requireAuth, requireCsrf } from '@/lib/api';
+import { getAccountScope } from '@/lib/auth/account-scope';
 
 type Params = { params: Promise<{ id: string }> };
 
@@ -17,10 +18,13 @@ export async function PATCH(_request: NextRequest, { params }: Params) {
     });
     if (!notification) throw errors.notFound('التنبيه غير موجود');
 
-    // لا يُعلَّم إلا تنبيه موجّه للمستخدم أو لدوره
-    if (notification.userId !== user.id && notification.role !== user.role) {
-      throw errors.forbidden();
-    }
+    // لا يُعلَّم إلا تنبيه يقع ضمن جمهور المستخدم، وجمهور المقيّد بحسابات
+    // بعينها هو ما وُجّه إليه شخصياً وحده — كما في قائمة التنبيهات تماماً.
+    const scope = await getAccountScope();
+    const isMine =
+      notification.userId === user.id ||
+      (scope === null && notification.role === user.role);
+    if (!isMine) throw errors.notFound('التنبيه غير موجود');
 
     await prisma.notification.update({
       where: { id },

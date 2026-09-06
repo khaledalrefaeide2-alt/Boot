@@ -12,6 +12,7 @@ import {
   requirePermission,
 } from '@/lib/api';
 import { PERMISSIONS } from '@/lib/auth/rbac';
+import { getAccountScope, intersectScope, scopeAllows } from '@/lib/auth/account-scope';
 import { paginationSchema } from '@/lib/validation/common';
 import { createExtractionRun, ExtractionError } from '@/lib/extraction/service';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
@@ -54,8 +55,13 @@ export async function GET(request: NextRequest) {
     await requirePermission(PERMISSIONS.EXTRACTION_VIEW);
     const query = parseQuery(request, listSchema);
 
+    // سجل العمليات يحمل أسماء الحسابات ونتائجها، فيُحصر بنطاق المستخدم
+    const scope = await getAccountScope();
+    const accountIds = intersectScope(scope, query.accountId ? [query.accountId] : []);
+    const scopeWhere = accountIds === null ? {} : { accountId: { in: accountIds } };
+
     const where: Prisma.ExtractionRunWhereInput = {
-      ...(query.accountId ? { accountId: query.accountId } : {}),
+      ...scopeWhere,
       ...(query.platformId ? { platformId: query.platformId } : {}),
       ...(query.status ? { status: query.status } : {}),
       ...(query.trigger ? { trigger: query.trigger } : {}),
@@ -89,7 +95,7 @@ export async function GET(request: NextRequest) {
           requestedBy: { select: { name: true } },
         },
       }),
-      prisma.extractionRun.count({ where: { status: { in: ['PENDING', 'RUNNING'] } } }),
+      prisma.extractionRun.count({ where: { ...scopeWhere, status: { in: ['PENDING', 'RUNNING'] } } }),
     ]);
 
     return jsonOk({ runs, total, page: query.page, pageSize: query.pageSize, activeCount });
@@ -114,6 +120,11 @@ export async function POST(request: NextRequest) {
     }
 
     const input = await parseBody(request, startSchema);
+
+    // التشغيل يتبع الاطلاع: لا يُشغَّل استخراج لحساب خارج نطاق المستخدم
+    if (!scopeAllows(await getAccountScope(), input.accountId)) {
+      throw errors.notFound('الحساب غير موجود');
+    }
 
     const { run, queued, accountName } = await createExtractionRun({
       accountId: input.accountId,
