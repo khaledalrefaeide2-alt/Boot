@@ -12,6 +12,9 @@ next-env.d.ts
 .DS_Store
 exports/
 
+# لقطة Redis إن شُغّل خارج Docker في مجلد المشروع
+dump.rdb
+
 # ملفات يولّدها Next تلقائياً للوكلاء
 AGENTS.md
 CLAUDE.md
