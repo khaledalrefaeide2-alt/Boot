@@ -125,7 +125,7 @@ export function MediaGallery({ urls }: { urls: string[] }) {
             src={urls[openIndex]}
             alt=""
             referrerPolicy="no-referrer"
-            className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain shadow-2xl"
+            className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain shadow-elev-4"
             onClick={(event) => event.stopPropagation()}
           />
 

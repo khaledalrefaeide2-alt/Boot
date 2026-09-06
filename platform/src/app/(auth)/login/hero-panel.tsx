@@ -75,9 +75,9 @@ export function HeroPanel() {
           {CAPABILITIES.map(({ icon: Icon, title, body, metric }) => (
             <li key={title}>
               <Tilt>
-                <article className="glass flex items-start gap-3 rounded-lg p-4 shadow-[var(--elev-2)]">
+                <article className="glass flex items-start gap-3 rounded-lg p-4 shadow-elev-2">
                   <span
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-[var(--elev-1)]"
+                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-elev-1"
                     aria-hidden
                   >
                     <Icon className="h-4.5 w-4.5" />

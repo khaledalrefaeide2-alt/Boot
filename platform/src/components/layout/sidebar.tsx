@@ -97,7 +97,7 @@ export function MobileSidebar({
   return (
     <div className="fixed inset-0 z-50 lg:hidden no-print">
       <div className="fixed inset-0 bg-black/45" onClick={onClose} aria-hidden />
-      <div className="fixed inset-y-0 right-0 w-72 max-w-[85vw] border-l border-border bg-surface shadow-lg">
+      <div className="fixed inset-y-0 right-0 w-72 max-w-[85vw] border-l border-border bg-surface shadow-elev-4">
         <Button
           variant="ghost"
           size="icon-sm"

@@ -58,7 +58,7 @@ export function ChartFrame({
 }) {
   return (
     <figure
-      className={cn('rounded-lg border border-border bg-surface shadow-xs print-avoid-break', className)}
+      className={cn('rounded-lg border border-border bg-surface shadow-elev-1 print-avoid-break', className)}
     >
       <figcaption className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3">
         <div className="space-y-0.5">
@@ -128,7 +128,7 @@ export function ChartTooltip({
   if (!active || !payload || payload.length === 0) return null;
 
   return (
-    <div className="pointer-events-none rounded-md border border-border bg-surface px-3 py-2 shadow-lg">
+    <div className="pointer-events-none rounded-md border border-border bg-surface px-3 py-2 shadow-elev-3">
       {label !== undefined && (
         <p className="mb-1.5 border-b border-border pb-1.5 text-xs font-medium text-foreground">
           {labelFormatter ? labelFormatter(label) : label}

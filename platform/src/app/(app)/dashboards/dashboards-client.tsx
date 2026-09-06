@@ -225,7 +225,7 @@ export function DashboardsClient() {
               options={optionsQuery.data ?? EMPTY_OPTIONS}
               onChange={setFilters}
               onReset={() => setFilters(EMPTY_FILTERS)}
-              className="border-0 shadow-none"
+              className="border-0 shadow-elev-0"
             />
           </div>
 

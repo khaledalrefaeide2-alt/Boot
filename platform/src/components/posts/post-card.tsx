@@ -67,7 +67,7 @@ function EngagementStat({
 /** بطاقة منشور — العرض الافتراضي في شاشة المنشورات */
 export function PostCard({ post, canReview }: { post: PostListItemView; canReview?: boolean }) {
   return (
-    <article className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-xs transition-colors hover:border-border-strong print-avoid-break">
+    <article className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-elev-1 transition-colors hover:border-border-strong print-avoid-break">
       {(post.thumbnailUrl || post.imageUrl) && (
         <PostThumb
           postId={post.id}

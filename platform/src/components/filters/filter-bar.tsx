@@ -98,7 +98,7 @@ export function FilterBar({
   const count = activeFilterCount(filters);
 
   return (
-    <div className={cn('rounded-lg border border-border bg-surface shadow-xs no-print', className)}>
+    <div className={cn('rounded-lg border border-border bg-surface shadow-elev-1 no-print', className)}>
       <div className="flex flex-wrap items-end gap-3 px-4 py-3">
         {showSearch && (
           <form

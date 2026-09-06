@@ -39,7 +39,7 @@ export function StatCard({
   const content = (
     <div
       className={cn(
-        'flex h-full items-start gap-3 rounded-lg border border-border bg-surface p-4 shadow-xs transition-colors print-avoid-break',
+        'flex h-full items-start gap-3 rounded-lg border border-border bg-surface p-4 shadow-elev-1 transition-colors print-avoid-break',
         href && 'hover:border-border-strong hover:bg-surface-2/40',
         className,
       )}
@@ -87,7 +87,7 @@ export function HighlightCard({
   const content = (
     <div
       className={cn(
-        'flex h-full flex-col justify-between gap-2 rounded-lg border border-border bg-surface p-4 shadow-xs print-avoid-break',
+        'flex h-full flex-col justify-between gap-2 rounded-lg border border-border bg-surface p-4 shadow-elev-1 print-avoid-break',
         href && 'transition-colors hover:border-border-strong hover:bg-surface-2/40',
         className,
       )}

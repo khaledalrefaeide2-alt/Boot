@@ -141,7 +141,7 @@ export function OpsRoomClient() {
               ].map((item) => (
                 <div
                   key={item.label}
-                  className="rounded-lg border border-border bg-surface p-4 text-center shadow-xs"
+                  className="rounded-lg border border-border bg-surface p-4 text-center shadow-elev-1"
                 >
                   <p className="text-sm text-muted-foreground">{item.label}</p>
                   <p className={`ops-metric num font-bold ${item.tone}`}>
@@ -189,7 +189,7 @@ export function OpsRoomClient() {
               />
             </div>
 
-            <div className="rounded-lg border border-border bg-surface shadow-xs">
+            <div className="rounded-lg border border-border bg-surface shadow-elev-1">
               <div className="border-b border-border px-4 py-3">
                 <h2 className="font-semibold text-foreground">أعلى المنشورات تفاعلاً</h2>
               </div>

@@ -119,7 +119,7 @@ export function AppShell({
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} aria-hidden />
                 <div
-                  className="absolute left-0 top-full z-20 mt-1.5 w-60 rounded-md border border-border bg-surface p-1.5 shadow-lg"
+                  className="absolute left-0 top-full z-20 mt-1.5 w-60 rounded-md border border-border bg-surface p-1.5 shadow-elev-3"
                   role="menu"
                 >
                   <div className="border-b border-border px-2.5 py-2">

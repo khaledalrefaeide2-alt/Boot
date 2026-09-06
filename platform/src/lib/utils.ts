@@ -1,5 +1,19 @@
 import { clsx, type ClassValue } from 'clsx';
-import { twMerge } from 'tailwind-merge';
+import { extendTailwindMerge } from 'tailwind-merge';
+
+/*
+ * tailwind-merge يعرف مقاسات الظل المعيارية (xs, sm, lg …) ويحلّ التعارض
+ * بينها، لكنه لا يعرف مستويات الارتفاع عندنا. بدونه يبقى الصنفان معاً في
+ * السلسلة حين يمرّر مكوّن ظلاً مخالفاً لظل الأساس، ويصير الفائز ترتيبَ
+ * القواعد في ملف CSS لا نيّة من كتب المكوّن. فنُعرّفها في المجموعة نفسها.
+ */
+const twMerge = extendTailwindMerge({
+  extend: {
+    classGroups: {
+      shadow: [{ shadow: ['elev-0', 'elev-1', 'elev-2', 'elev-3', 'elev-4'] }],
+    },
+  },
+});
 
 export function cn(...inputs: ClassValue[]): string {
   return twMerge(clsx(inputs));
