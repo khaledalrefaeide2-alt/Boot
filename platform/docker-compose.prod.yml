@@ -1,0 +1,173 @@
+# =============================================================================
+# النشر الإنتاجي — خادم واحد على DigitalOcean (Droplet)
+#
+#   الاستعمال:  docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
+#
+# هذا ملف مستقل لا امتداد لـ docker-compose.yml. السبب: ملف الامتداد يدمج
+# ولا يحذف، فمنفذ قاعدة البيانات المنشور في ملف التطوير كان سيبقى منشوراً
+# في الإنتاج مهما كتبنا هنا. ملفان منفصلان يعنيان أن ما لا تراه هنا غير موجود.
+#
+# الفروق الجوهرية عن ملف التطوير:
+#   • لا منفذ منشور إلا 80 و443 على Caddy. القاعدة والطابور والتطبيق تتخاطب
+#     على شبكة Docker الداخلية ولا تُرى من الإنترنت إطلاقاً.
+#   • Caddy يتولى HTTPS وتجديد الشهادة.
+#   • سقف لحجم السجلات، وإلا امتلأ قرص الخادم بعد أشهر بصمت.
+# =============================================================================
+
+x-logging: &logging
+  driver: json-file
+  options:
+    max-size: '10m'
+    max-file: '5'
+
+services:
+  caddy:
+    image: caddy:2-alpine
+    container_name: mm_caddy
+    restart: unless-stopped
+    logging: *logging
+    ports:
+      - '80:80'
+      - '443:443'
+      - '443:443/udp' # HTTP/3
+    environment:
+      APP_DOMAIN: ${APP_DOMAIN:?عرّف APP_DOMAIN في .env.production — نطاق الموقع بلا https://}
+      ACME_EMAIL: ${ACME_EMAIL:?عرّف ACME_EMAIL — بريد تُرسل إليه تنبيهات انتهاء الشهادة}
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # شهادات Caddy ومفاتيحها — فقدان هذا المخزن يعني إعادة طلب الشهادة،
+      # ولـ Let's Encrypt حدّ أسبوعي، فإتلافه المتكرر يوقع الموقع بلا شهادة.
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      # يكفي أن يكون التطبيق قد أقلع، لا أن يصير سليماً.
+      # لو انتظرنا السلامة لظلّ Caddy متوقفاً كلما تعثّر التطبيق، فلا شهادة
+      # تُطلب ولا صفحة خطأ تظهر — يرى الزائر «تعذّر الاتصال» بدل 502 يقول
+      # إن الخادم قائم وخلفه عطل. وطلب الشهادة يجب أن ينجح مرة واحدة على
+      # الأقل، وإلا اصطدمنا بحدّ محاولات Let's Encrypt الأسبوعي.
+      app:
+        condition: service_started
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mm-platform:latest
+    container_name: mm_app
+    restart: unless-stopped
+    logging: *logging
+    command: ['web']
+    # لا ports: التطبيق لا يُرى إلا من Caddy عبر الشبكة الداخلية
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-monitor}:${POSTGRES_PASSWORD:?عرّف POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-monitoring}?schema=public
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: ${SESSION_SECRET:?عرّف SESSION_SECRET — ولّده بـ openssl rand -base64 48}
+      SESSION_TTL_DAYS: ${SESSION_TTL_DAYS:-7}
+      APP_URL: https://${APP_DOMAIN}
+      APP_ALLOWED_ORIGINS: ${APP_ALLOWED_ORIGINS:-}
+      APIFY_TOKEN: ${APIFY_TOKEN:-}
+      APIFY_API_BASE: ${APIFY_API_BASE:-https://api.apify.com/v2}
+      APIFY_MAX_ITEMS_HARD_CAP: ${APIFY_MAX_ITEMS_HARD_CAP:-1000}
+      APIFY_RUN_TIMEOUT_SECONDS: ${APIFY_RUN_TIMEOUT_SECONDS:-900}
+      SEED_OWNER_EMAIL: ${SEED_OWNER_EMAIL:-}
+      SEED_OWNER_NAME: ${SEED_OWNER_NAME:-}
+      SEED_OWNER_PASSWORD: ${SEED_OWNER_PASSWORD:-}
+      NODE_ENV: production
+    healthcheck:
+      # الفحص من داخل الحاوية بأدوات Node — لا curl في الصورة ولا حاجة لإضافته
+      test:
+        [
+          'CMD',
+          'node',
+          '-e',
+          "fetch('http://127.0.0.1:3000/api/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      # الإقلاع يشمل تطبيق المهاجرات، وقد يطول عند أول نشر
+      start_period: 90s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - exports_data:/app/exports
+
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: mm-platform:latest
+    container_name: mm_worker
+    restart: unless-stopped
+    logging: *logging
+    command: ['worker']
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-monitor}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-monitoring}?schema=public
+      REDIS_URL: redis://redis:6379
+      SESSION_SECRET: ${SESSION_SECRET}
+      APP_URL: https://${APP_DOMAIN}
+      APIFY_TOKEN: ${APIFY_TOKEN:-}
+      APIFY_API_BASE: ${APIFY_API_BASE:-https://api.apify.com/v2}
+      APIFY_MAX_ITEMS_HARD_CAP: ${APIFY_MAX_ITEMS_HARD_CAP:-1000}
+      APIFY_RUN_TIMEOUT_SECONDS: ${APIFY_RUN_TIMEOUT_SECONDS:-900}
+      NODE_ENV: production
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      # العامل ينتظر أن يطبّق التطبيق المهاجرات، لا أن يقلع فقط
+      app:
+        condition: service_healthy
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: mm_postgres
+    restart: unless-stopped
+    logging: *logging
+    # لا ports: القاعدة لا تُرى من خارج الخادم. الوصول إليها عند الحاجة يكون
+    # عبر نفق SSH أو docker compose exec، لا بفتح 5432 على الإنترنت.
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-monitor}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?عرّف POSTGRES_PASSWORD}
+      POSTGRES_DB: ${POSTGRES_DB:-monitoring}
+      LANG: ar_SA.utf8
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./backups:/backups
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-monitor} -d ${POSTGRES_DB:-monitoring}']
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    container_name: mm_redis
+    restart: unless-stopped
+    logging: *logging
+    # noeviction إلزامية: الطابور يخزّن بيانات المهام في Redis، وأي سياسة
+    # إخلاء تسمح بحذف مهمة استخراج منتظرة عند امتلاء الذاكرة — فتختفي
+    # العملية بلا خطأ ولا أثر. مع noeviction تُرفض الكتابة ويظهر العطل.
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory ${REDIS_MAXMEMORY:-256mb}
+      --maxmemory-policy noeviction
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+volumes:
+  postgres_data:
+  redis_data:
+  exports_data:
+  caddy_data:
+  caddy_config:

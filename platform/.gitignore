@@ -3,9 +3,14 @@ node_modules/
 out/
 build/
 dist/
+# الأسرار: كل ملفات البيئة مستثناة، وتُستثنى من الاستثناء القوالبُ وحدها.
+# القاعدة عامة عمداً: قائمة بأسماء بعينها (.env، .env.local) تترك
+# .env.production خارج الحماية، وهو أخطرها — يحمل كلمة مرور القاعدة
+# وسرّ الجلسات ورمز Apify للخادم الحيّ.
 .env
-.env.local
-.env*.local
+.env.*
+!.env.example
+!.env.production.example
 src/generated/
 *.tsbuildinfo
 next-env.d.ts

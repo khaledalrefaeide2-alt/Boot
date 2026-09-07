@@ -46,3 +46,9 @@ setup.sh
 # ملاحظة: مجلد scripts يجب أن يبقى داخل الصورة.
 # npm run start يشغّل scripts/next-with-port.mjs، كما أن استعادة كلمة مرور
 # المالك تُنفَّذ داخل الحاوية عبر:  docker compose exec web npm run owner:reset
+
+# وثائق وملفات نشر تُقرأ على الخادم لا داخل الصورة
+DEPLOY.md
+deploy
+docker-compose*.yml
+design-system

@@ -18,14 +18,45 @@ if (!/^\d{2,5}$/.test(port)) {
   process.exit(1);
 }
 
-// تنبيه مبكر إذا لم يطابق عنوان التطبيق المنفذ، لأن ذلك يكسر تسجيل الدخول
+/*
+ * تنبيه مبكر إذا لم يطابق عنوان التطبيق المنفذ، لأن ذلك يكسر تسجيل الدخول.
+ *
+ * لكن الشرط ليس «هل يحتوي العنوان رقم المنفذ؟». خلف وكيل عكسي في الإنتاج
+ * يكون APP_URL هو العنوان العلني (https://example.com بلا منفذ) بينما
+ * التطبيق يستمع داخلياً على 3000 — وهذا هو الوضع الصحيح لا تعارضاً. بحثٌ
+ * نصّي ساذج عن «:3000» كان يطلق تحذيراً كاذباً عند كل إقلاع إنتاجي، ومن
+ * يرى تحذيراً يعرف أنه كاذب يتعلّم تجاهل التحذيرات كلها.
+ *
+ * التعارض الحقيقي حالتان:
+ *   • العنوان يحمل منفذاً صريحاً مخالفاً — خطأ مهما كان المضيف.
+ *   • العنوان محلي بلا منفذ — أي أن المتصفح سيقصد 80 والتطبيق ليس هناك.
+ * وما عدا ذلك فمضيف حقيقي خلف وكيل، ولا شأن لمنفذه العلني بمنفذنا.
+ */
 const appUrl = process.env.APP_URL ?? '';
-if (appUrl && !appUrl.includes(`:${port}`)) {
-  console.warn('');
-  console.warn(`⚠️  تعارض في الإعدادات: APP_PORT=${port} بينما APP_URL=${appUrl}`);
-  console.warn('    يجب أن يحمل APP_URL رقم المنفذ نفسه، وإلا رُفض تسجيل الدخول.');
-  console.warn(`    الصحيح:  APP_URL="http://localhost:${port}"`);
-  console.warn('');
+if (appUrl) {
+  let parsed;
+  try {
+    parsed = new URL(appUrl);
+  } catch {
+    parsed = null;
+  }
+
+  const isLocal = parsed
+    ? ['localhost', '127.0.0.1', '[::1]', '::1'].includes(parsed.hostname)
+    : false;
+  const mismatch = parsed
+    ? parsed.port
+      ? parsed.port !== port
+      : isLocal
+    : false;
+
+  if (mismatch) {
+    console.warn('');
+    console.warn(`⚠️  تعارض في الإعدادات: APP_PORT=${port} بينما APP_URL=${appUrl}`);
+    console.warn('    يجب أن يحمل APP_URL رقم المنفذ نفسه، وإلا رُفض تسجيل الدخول.');
+    console.warn(`    الصحيح:  APP_URL="http://localhost:${port}"`);
+    console.warn('');
+  }
 }
 
 /**
