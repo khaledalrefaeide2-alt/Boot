@@ -16,6 +16,7 @@
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '../src/generated/prisma';
+import { prismaPgOptions } from '../src/lib/db-ssl';
 import { isMediaUrl } from '../src/lib/apify/mappers';
 
 const connectionString = process.env.DATABASE_URL;
@@ -25,7 +26,7 @@ if (!connectionString) {
   process.exit(1);
 }
 
-const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+const prisma = new PrismaClient({ adapter: new PrismaPg(prismaPgOptions(connectionString)) });
 const apply = process.argv.includes('--apply');
 
 async function main(): Promise<void> {

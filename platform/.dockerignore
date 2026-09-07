@@ -52,3 +52,7 @@ DEPLOY.md
 deploy
 docker-compose*.yml
 design-system
+
+# مواصفات النشر ووثائقه — تُقرأ في لوحة المزوّد لا داخل الصورة
+.do
+DEPLOY-APP-PLATFORM.md

@@ -2,6 +2,7 @@ import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '../src/generated/prisma';
+import { prismaPgOptions } from '../src/lib/db-ssl';
 
 /**
  * البذرة الأولية — تُنشئ المالك الأول والمنصات الثلاث والتصنيفات والإعدادات.
@@ -12,7 +13,7 @@ if (!connectionString) {
   throw new Error('DATABASE_URL غير معرّف — انسخ .env.example إلى .env أولاً');
 }
 
-const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+const prisma = new PrismaClient({ adapter: new PrismaPg(prismaPgOptions(connectionString)) });
 
 const PLATFORMS = [
   {

@@ -1,0 +1,181 @@
+# =============================================================================
+# مواصفة تطبيق DigitalOcean App Platform
+#
+#   الاستيراد:  Apps ← Create ← "Import from App Spec" ثم الصق هذا الملف،
+#               أو  doctl apps create --spec platform/.do/app.yaml
+#
+# ملف مرجعي لا نهائي: أسماء أحجام النسخ ومحرّكات القواعد تتغيّر عند المزوّد،
+# والحقول المعلّمة بـ «تحقّق» تُراجع في اللوحة قبل الاستيراد.
+#
+# لا سرّ في هذا الملف. القيم السرّية تُترك فارغة وتُملأ في لوحة التطبيق
+# بنوع SECRET، فتُخزَّن مشفّرة ولا تظهر بعد الحفظ.
+# =============================================================================
+name: media-monitoring
+
+# تحقّق: اختر المنطقة الأقرب لمستخدميك — fra = فرانكفورت
+region: fra
+
+services:
+  - name: web
+    # ★ جذر المشروع ليس جذر المستودع
+    source_dir: platform
+    dockerfile_path: platform/Dockerfile
+    github:
+      repo: khaledalrefaeide2-alt/Boot
+      branch: claude/social-media-monitoring-platform-45iz0q
+      deploy_on_push: true
+
+    # أمر صريح لا الافتراضي: نقطة الدخول في الصورة تطبّق الترحيلات والبذر عند
+    # الإقلاع (وهو المناسب لـ docker compose)، وهنا لكل منهما مكوّن مستقل.
+    run_command: npm run start:prod
+
+    instance_count: 1
+    # تحقّق من الاسم الحالي للحجم في اللوحة
+    instance_size_slug: apps-s-1vcpu-1gb
+
+    http_port: 8080
+    health_check:
+      http_path: /api/health
+      initial_delay_seconds: 40
+      period_seconds: 15
+      timeout_seconds: 5
+      failure_threshold: 5
+
+    envs:
+      # PORT تحقنه المنصة تلقائياً، والمشغّل يقرأه. لا حاجة لضبط APP_PORT.
+      - key: NODE_ENV
+        scope: RUN_AND_BUILD_TIME
+        value: production
+
+      # ★ إلزامي وقت البناء أيضاً لا وقت التشغيل فقط:
+      #   البناء يتحقق من متغيرات البيئة عند جمع بيانات المسارات، ويفشل بدونها.
+      #   (مُختبَر: البناء يفشل بلا DATABASE_URL و SESSION_SECRET.)
+      - key: DATABASE_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ${db.DATABASE_URL}
+      - key: SESSION_SECRET
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+        value: '' # ← املأه في اللوحة:  openssl rand -base64 48
+
+      - key: REDIS_URL
+        scope: RUN_TIME
+        value: ${cache.DATABASE_URL}
+
+      # عنوان التطبيق العلني — بدونه يبقى الافتراضي localhost فيُرفض كل دخول
+      - key: APP_URL
+        scope: RUN_TIME
+        value: ${APP_URL}
+
+      # شهادة سلطة تصديق القاعدة المُدارة — تُنسخ من لوحة القاعدة
+      - key: DATABASE_CA_CERT
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+        value: ''
+
+      - key: APIFY_TOKEN
+        scope: RUN_TIME
+        type: SECRET
+        value: ''
+      - key: SESSION_TTL_DAYS
+        scope: RUN_TIME
+        value: '7'
+
+workers:
+  - name: worker
+    source_dir: platform
+    dockerfile_path: platform/Dockerfile
+    github:
+      repo: khaledalrefaeide2-alt/Boot
+      branch: claude/social-media-monitoring-platform-45iz0q
+      deploy_on_push: true
+
+    run_command: npm run worker:prod
+
+    # ★ نسخة واحدة لا أكثر: الجدولة الدورية مؤقّت داخل العملية لا مهمة طابور،
+    # فكل نسخة إضافية تكرّر جدولة الحسابات المستحقة كل دقيقة.
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb
+
+    envs:
+      - key: NODE_ENV
+        scope: RUN_AND_BUILD_TIME
+        value: production
+      - key: DATABASE_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ${db.DATABASE_URL}
+      - key: SESSION_SECRET
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+        value: ''
+      - key: REDIS_URL
+        scope: RUN_TIME
+        value: ${cache.DATABASE_URL}
+      - key: DATABASE_CA_CERT
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+        value: ''
+      - key: APIFY_TOKEN
+        scope: RUN_TIME
+        type: SECRET
+        value: ''
+      - key: WORKER_CONCURRENCY
+        scope: RUN_TIME
+        value: '2'
+
+jobs:
+  - name: migrate
+    kind: PRE_DEPLOY
+    source_dir: platform
+    dockerfile_path: platform/Dockerfile
+    github:
+      repo: khaledalrefaeide2-alt/Boot
+      branch: claude/social-media-monitoring-platform-45iz0q
+
+    # أول نشر:  npm run deploy:bootstrap   (ترحيل + بذر، ويفشل صراحةً عند الخطأ)
+    # ما بعده:  npm run deploy:migrate     (ترحيل فقط)
+    run_command: npm run deploy:migrate
+
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-0.5gb
+
+    envs:
+      - key: NODE_ENV
+        scope: RUN_AND_BUILD_TIME
+        value: production
+      - key: DATABASE_URL
+        scope: RUN_AND_BUILD_TIME
+        value: ${db.DATABASE_URL}
+      - key: SESSION_SECRET
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+        value: ''
+      - key: DATABASE_CA_CERT
+        scope: RUN_AND_BUILD_TIME
+        type: SECRET
+        value: ''
+      # تُملأ لأول نشر فقط مع deploy:bootstrap، ثم تُفرَّغ
+      - key: SEED_OWNER_EMAIL
+        scope: RUN_TIME
+        value: ''
+      - key: SEED_OWNER_NAME
+        scope: RUN_TIME
+        value: ''
+      - key: SEED_OWNER_PASSWORD
+        scope: RUN_TIME
+        type: SECRET
+        value: ''
+
+databases:
+  # تحقّق من أسماء المحرّكات والأحجام في اللوحة قبل الاستيراد — تتغيّر مع الوقت.
+  - name: db
+    engine: PG
+    version: '16'
+    production: true
+
+  - name: cache
+    # ★ اضبط سياسة الإخلاء على noeviction بعد الإنشاء:
+    #   الطابور يخزّن بيانات المهام هنا، وأي سياسة إخلاء تسمح بحذف مهمة
+    #   استخراج منتظرة عند امتلاء الذاكرة فتختفي العملية بلا خطأ ولا أثر.
+    engine: VALKEY
+    production: true

@@ -13,6 +13,7 @@ import { PrismaPg } from '@prisma/adapter-pg';
 import Redis from 'ioredis';
 import bcrypt from 'bcryptjs';
 import { PrismaClient } from '../src/generated/prisma';
+import { prismaPgOptions } from '../src/lib/db-ssl';
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
@@ -20,7 +21,7 @@ if (!connectionString) {
   process.exit(1);
 }
 
-const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString }) });
+const prisma = new PrismaClient({ adapter: new PrismaPg(prismaPgOptions(connectionString)) });
 
 async function main(): Promise<void> {
   const email = process.env.SEED_OWNER_EMAIL?.trim().toLowerCase();

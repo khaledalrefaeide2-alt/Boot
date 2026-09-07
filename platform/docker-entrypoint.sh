@@ -1,18 +1,29 @@
 #!/bin/sh
 set -e
 
+# =============================================================================
+# نقطة الدخول — تُستعمل مع docker compose حيث لا توجد مرحلة نشر مستقلة.
+#
+# على App Platform لا تمرّ الأوامر من هنا عادةً: يُكتب أمر التشغيل صريحاً في
+# إعداد المكوّن (npm run start:prod / worker:prod / deploy:migrate)، وتلتقطه
+# الحالة الأخيرة أدناه فتنفّذه كما هو. فالملف لا يعترض شيئاً لا يعرفه.
+# =============================================================================
+
 case "$1" in
   web)
     echo "⏳ تطبيق مهاجرات قاعدة البيانات..."
-    npx prisma migrate deploy
+    npm run deploy:migrate
     echo "🌱 تهيئة البيانات الأولية..."
+    # التسامح هنا مقصود ومحصور بمسار compose: القاعدة والتطبيق يقلعان معاً،
+    # وتعثّر البذر مرةً لا يستحق منع الخادم من العمل. أما على App Platform
+    # فالبذر مهمة نشر مستقلة (deploy:bootstrap) تفشل صراحةً عند الخطأ.
     npx tsx prisma/seed.ts || echo "⚠️  تخطّي التهيئة الأولية"
-    echo "🚀 تشغيل تطبيق الويب على المنفذ 3000"
-    exec npm run start
+    echo "🚀 تشغيل تطبيق الويب"
+    exec npm run start:prod
     ;;
   worker)
     echo "⚙️  تشغيل العامل الخلفي"
-    exec npx tsx --conditions=react-server src/worker/index.ts
+    exec npm run worker:prod
     ;;
   *)
     exec "$@"

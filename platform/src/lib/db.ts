@@ -2,6 +2,7 @@ import 'server-only';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@/generated/prisma';
 import { env } from './env';
+import { prismaPgOptions } from './db-ssl';
 
 /**
  * عميل Prisma وحيد عبر التطبيق — يمنع استنزاف اتصالات القاعدة أثناء التطوير
@@ -12,7 +13,7 @@ const globalForPrisma = globalThis as unknown as {
 };
 
 function createPrismaClient(): PrismaClient {
-  const adapter = new PrismaPg({ connectionString: env.DATABASE_URL });
+  const adapter = new PrismaPg(prismaPgOptions(env.DATABASE_URL));
   return new PrismaClient({
     adapter,
     log:
