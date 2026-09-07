@@ -1,5 +1,5 @@
 # =============================================================================
-# النشر الإنتاجي — خادم واحد على DigitalOcean (Droplet)
+# النشر الإنتاجي — خادم افتراضي واحد (Hostinger VPS أو DigitalOcean أو غيرهما)
 #
 #   الاستعمال:  docker compose -f docker-compose.prod.yml --env-file .env.production up -d --build
 #
