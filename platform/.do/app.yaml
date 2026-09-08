@@ -9,6 +9,12 @@
 #
 # لا سرّ في هذا الملف. القيم السرّية تُترك فارغة وتُملأ في لوحة التطبيق
 # بنوع SECRET، فتُخزَّن مشفّرة ولا تظهر بعد الحفظ.
+#
+# ★ الملف غير قابل للتنفيذ كما هو. قبل استيراده يلزم:
+#     ١) إنشاء عنقود PostgreSQL باسم  media-monitoring-db
+#     ٢) إنشاء عنقود Valkey باسم      media-monitoring-cache
+#     ٣) تعبئة القيم السرّية الفارغة في اللوحة بعد الاستيراد
+#   الاستيراد قبل (١) و(٢) يفشل، والنشر قبل (٣) يقلع بإعدادات ناقصة.
 # =============================================================================
 name: media-monitoring
 
@@ -30,8 +36,8 @@ services:
     run_command: npm run start:prod
 
     instance_count: 1
-    # تحقّق من الاسم الحالي للحجم في اللوحة
-    instance_size_slug: apps-s-1vcpu-1gb
+    # الحجم الثابت 1 GiB — أرخص من apps-s-1vcpu-1gb بالسعر المرن لنفس الذاكرة
+    instance_size_slug: apps-s-1vcpu-1gb-fixed
 
     http_port: 8080
     health_check:
@@ -47,14 +53,15 @@ services:
         scope: RUN_AND_BUILD_TIME
         value: production
 
-      # ★ إلزامي وقت البناء أيضاً لا وقت التشغيل فقط:
-      #   البناء يتحقق من متغيرات البيئة عند جمع بيانات المسارات، ويفشل بدونها.
-      #   (مُختبَر: البناء يفشل بلا DATABASE_URL و SESSION_SECRET.)
+      # RUN_TIME لا BUILD:
+      #   البناء يحتاج قيمتَي DATABASE_URL و SESSION_SECRET ليجتاز التحقق في
+      #   src/lib/env.ts، لكنه لا يتصل بشيء — و Dockerfile يوفّرهما بقيم وهمية
+      #   داخل أمر RUN نفسه. فأسرار الإنتاج لا تدخل مرحلة البناء إطلاقاً.
       - key: DATABASE_URL
-        scope: RUN_AND_BUILD_TIME
+        scope: RUN_TIME
         value: ${db.DATABASE_URL}
       - key: SESSION_SECRET
-        scope: RUN_AND_BUILD_TIME
+        scope: RUN_TIME
         type: SECRET
         value: '' # ← املأه في اللوحة:  openssl rand -base64 48
 
@@ -69,7 +76,7 @@ services:
 
       # شهادة سلطة تصديق القاعدة المُدارة — تُنسخ من لوحة القاعدة
       - key: DATABASE_CA_CERT
-        scope: RUN_AND_BUILD_TIME
+        scope: RUN_TIME
         type: SECRET
         value: ''
 
@@ -95,24 +102,24 @@ workers:
     # ★ نسخة واحدة لا أكثر: الجدولة الدورية مؤقّت داخل العملية لا مهمة طابور،
     # فكل نسخة إضافية تكرّر جدولة الحسابات المستحقة كل دقيقة.
     instance_count: 1
-    instance_size_slug: apps-s-1vcpu-1gb
+    instance_size_slug: apps-s-1vcpu-1gb-fixed
 
     envs:
       - key: NODE_ENV
         scope: RUN_AND_BUILD_TIME
         value: production
       - key: DATABASE_URL
-        scope: RUN_AND_BUILD_TIME
+        scope: RUN_TIME
         value: ${db.DATABASE_URL}
       - key: SESSION_SECRET
-        scope: RUN_AND_BUILD_TIME
+        scope: RUN_TIME
         type: SECRET
         value: ''
       - key: REDIS_URL
         scope: RUN_TIME
         value: ${cache.DATABASE_URL}
       - key: DATABASE_CA_CERT
-        scope: RUN_AND_BUILD_TIME
+        scope: RUN_TIME
         type: SECRET
         value: ''
       - key: APIFY_TOKEN
@@ -132,26 +139,29 @@ jobs:
       repo: khaledalrefaeide2-alt/Boot
       branch: claude/social-media-monitoring-platform-45iz0q
 
-    # أول نشر:  npm run deploy:bootstrap   (ترحيل + بذر، ويفشل صراحةً عند الخطأ)
-    # ما بعده:  npm run deploy:migrate     (ترحيل فقط)
-    run_command: npm run deploy:migrate
+    # ★ أول نشر: bootstrap — يطبّق الترحيلات ثم يبذر البيانات الأولية،
+    #   ويتوقف عند أول فشل ولا يبتلعه.
+    # ★ بعد نجاح التهيئة الأولى غيّره إلى:  npm run deploy:migrate
+    #   (البذر idempotent فلا يُفسد شيئاً بتكراره، لكن إبقاءه يُطيل كل نشر
+    #    بلا فائدة ويُبقي أسرار المالك مطلوبة في بيئة المهمة.)
+    run_command: npm run deploy:bootstrap
 
     instance_count: 1
-    instance_size_slug: apps-s-1vcpu-0.5gb
+    instance_size_slug: apps-s-1vcpu-1gb-fixed
 
     envs:
       - key: NODE_ENV
         scope: RUN_AND_BUILD_TIME
         value: production
       - key: DATABASE_URL
-        scope: RUN_AND_BUILD_TIME
+        scope: RUN_TIME
         value: ${db.DATABASE_URL}
       - key: SESSION_SECRET
-        scope: RUN_AND_BUILD_TIME
+        scope: RUN_TIME
         type: SECRET
         value: ''
       - key: DATABASE_CA_CERT
-        scope: RUN_AND_BUILD_TIME
+        scope: RUN_TIME
         type: SECRET
         value: ''
       # تُملأ لأول نشر فقط مع deploy:bootstrap، ثم تُفرَّغ
@@ -167,15 +177,25 @@ jobs:
         value: ''
 
 databases:
-  # تحقّق من أسماء المحرّكات والأحجام في اللوحة قبل الاستيراد — تتغيّر مع الوقت.
+  # ★★ الموردان أدناه يجب أن يكونا **موجودين مسبقاً** في حسابك قبل استيراد
+  # هذه المواصفة. الحقل production: true يعني «اربط عنقوداً قائماً» لا
+  # «أنشئ واحداً»، و cluster_name هو اسمه الفعلي في لوحة Databases.
+  # الاستيراد قبل إنشائهما يفشل بخطأ «cluster not found».
+  #
+  # name هو الاسم الداخلي في التطبيق ومنه تُشتقّ متغيرات الربط
+  # (${db.DATABASE_URL} و ${cache.DATABASE_URL})، فلا يُغيَّر.
+
   - name: db
     engine: PG
     version: '16'
     production: true
+    cluster_name: media-monitoring-db
 
   - name: cache
-    # ★ اضبط سياسة الإخلاء على noeviction بعد الإنشاء:
+    # ★ بعد الإنشاء اضبط سياسة الإخلاء على noeviction:
     #   الطابور يخزّن بيانات المهام هنا، وأي سياسة إخلاء تسمح بحذف مهمة
     #   استخراج منتظرة عند امتلاء الذاكرة فتختفي العملية بلا خطأ ولا أثر.
+    #   واستمرارية الطابور عبر إعادة التشغيل مسألة مستقلة تحتاج تحققاً.
     engine: VALKEY
     production: true
+    cluster_name: media-monitoring-cache

@@ -13,7 +13,7 @@ GitHub  →  App Platform يبني Dockerfile مرة واحدة
                 │
                 ├── web      →  npm run start:prod      (Web Service)
                 ├── worker   →  npm run worker:prod     (Worker، نسخة واحدة)
-                └── migrate  →  npm run deploy:migrate  (Pre-Deploy Job)
+                └── migrate  →  deploy:bootstrap ثم deploy:migrate  (Pre-Deploy Job)
                           │
                           ├── Managed PostgreSQL
                           └── Managed Caching (Valkey)
@@ -37,6 +37,7 @@ GitHub  →  App Platform يبني Dockerfile مرة واحدة
 | HTTP Port | **8080** |
 | عنوان الاستماع | `0.0.0.0` — يُمرَّر صراحةً بـ `-H` |
 | Health Check Path | **`/api/health`** |
+| Instance Size | `apps-s-1vcpu-1gb-fixed` |
 | Instance Count | 1 |
 | Output Directory | غير مطلوب |
 
@@ -50,6 +51,7 @@ GitHub  →  App Platform يبني Dockerfile مرة واحدة
 | Run Command | **`npm run worker:prod`** |
 | HTTP Port | غير مطلوب |
 | Health Check | غير مطلوب |
+| Instance Size | `apps-s-1vcpu-1gb-fixed` |
 | Instance Count | **1 — ولا تزده** |
 
 > **لماذا نسخة واحدة:** الجدولة الدورية مؤقّت `setInterval` داخل العملية لا
@@ -63,8 +65,9 @@ GitHub  →  App Platform يبني Dockerfile مرة واحدة
 | Resource Type | `Job` بنوع **`PRE_DEPLOY`** |
 | Source Directory | **`platform`** |
 | Dockerfile Path | `platform/Dockerfile` |
-| Run Command (أول نشر) | **`npm run deploy:bootstrap`** |
-| Run Command (بعده) | **`npm run deploy:migrate`** |
+| Run Command (أول نشر) | **`npm run deploy:bootstrap`** ← وهو المضبوط في `app.yaml` |
+| Run Command (بعده) | **`npm run deploy:migrate`** ← غيّره بعد نجاح التهيئة |
+| Instance Size | `apps-s-1vcpu-1gb-fixed` (يُحاسب بالثواني) |
 
 `deploy:bootstrap` يطبّق الترحيلات **ثم** يبذر البيانات الأولية، ويتوقف عند أول
 فشل ولا يبتلعه (مُختبَر: فشل الترحيل يعطي رمز خروج 1 ولا يصل إلى البذر).
@@ -78,21 +81,30 @@ GitHub  →  App Platform يبني Dockerfile مرة واحدة
 
 | المتغيّر | web | worker | migrate | النطاق | النوع | من أين |
 |---|:--:|:--:|:--:|---|---|---|
-| `DATABASE_URL` | ✅ | ✅ | ✅ | **BUILD + RUN** | مربوط | `${db.DATABASE_URL}` |
-| `SESSION_SECRET` | ✅ | ✅ | ✅ | **BUILD + RUN** | SECRET | `openssl rand -base64 48` |
-| `DATABASE_CA_CERT` | ✅ | ✅ | ✅ | **BUILD + RUN** | SECRET | لوحة القاعدة ← Download CA certificate |
+| `DATABASE_URL` | ✅ | ✅ | ✅ | **RUN_TIME** | مربوط | `${db.DATABASE_URL}` |
+| `SESSION_SECRET` | ✅ | ✅ | ✅ | **RUN_TIME** | SECRET | `openssl rand -base64 48` |
+| `DATABASE_CA_CERT` | ✅ | ✅ | ✅ | **RUN_TIME** | SECRET | لوحة القاعدة ← Download CA certificate |
 | `REDIS_URL` | ✅ | ✅ | — | RUN | مربوط | `${cache.DATABASE_URL}` |
 | `APP_URL` | ✅ | — | — | RUN | عام | رابط التطبيق بعد النشر |
 | `APIFY_TOKEN` | ✅ | ✅ | — | RUN | SECRET | console.apify.com |
-| `NODE_ENV` | ✅ | ✅ | ✅ | BUILD + RUN | عام | `production` |
+| `NODE_ENV` | ✅ | ✅ | ✅ | BUILD + RUN | عام | `production` — قيمة عامة لا سرّ |
 | `SESSION_TTL_DAYS` | ✅ | — | — | RUN | عام | اختياري (7) |
 | `WORKER_CONCURRENCY` | — | ✅ | — | RUN | عام | اختياري (2) |
 | `SEED_OWNER_*` | — | — | ✅ | RUN | مختلط | أول نشر فقط |
 
-> **`DATABASE_URL` و `SESSION_SECRET` مطلوبان وقت البناء لا التشغيل فقط.**
-> هذا مُختبَر: البناء بدونهما يفشل بـ
-> `Failed to collect configuration for /api/accounts/[id]`. اضبط نطاقهما على
-> `RUN_AND_BUILD_TIME` وإلا فشل أول نشر.
+> **لماذا `RUN_TIME` ولا شيء من الأسرار وقت البناء.**
+>
+> البناء **يحتاج** وجود `DATABASE_URL` و `SESSION_SECRET` ليجتاز التحقق في
+> `src/lib/env.ts` — مُختبَر: `next build` بدونهما يفشل بـ
+> `Failed to collect configuration for /api/accounts/[id]`. لكنه **لا يتصل
+> بشيء**: مُختبَر أيضاً أن قيماً وهمية لا تشير إلى خادم قائم تكفي.
+>
+> ولأن البناء هنا يجري داخل **Dockerfile**، فهو يوفّر تلك القيم الوهمية
+> بنفسه على سطر `RUN` — لا في `ENV` حتى لا تبقى في بيانات الصورة. فلا حاجة
+> إطلاقاً لتمرير أسرار الإنتاج إلى مرحلة البناء، ويبقى نطاقها `RUN_TIME`.
+>
+> (لو بُني المشروع بـ buildpack بدل Dockerfile لاختلف الأمر ولزم
+> `RUN_AND_BUILD_TIME` — وهذا ليس إعدادنا.)
 
 ---
 
@@ -143,6 +155,33 @@ Docker على معرّف الحاوية، فيستمع الخادم على عن�
 في `src/lib/db-ssl.ts` تبني الرابط الصحيح، وتُعيده كما هو حين لا تكون هناك
 شهادة — فيبقى التشغيل المحلي بلا تغيير.
 
+### فخّ في مسار `pg`: معاملات الرابط تُبطل كائن `ssl`
+
+رابط DigitalOcean يأتي بـ `?sslmode=require`. وتمريره إلى `pg` **مع** كائن
+`ssl` لا يجمع بينهما — بل يُبطل الرابطُ الكائنَ. مُختبَر على `pg 8.16.3`
+بإنشاء `Client` وقراءة `connectionParameters.ssl` قبل الاتصال:
+
+| الرابط | ما يراه `pg` |
+|---|---|
+| بلا معاملات TLS | `{ ca, rejectUnauthorized: true }` ✓ |
+| `sslmode=require` | `{}` — **الشهادة تضيع** فيفشل التحقق |
+| `sslmode=no-verify` | `{ rejectUnauthorized: false }` — **التحقق يُعطَّل** رغم طلبنا له |
+| `sslrootcert=<ملف مفقود>` | استثناء `ENOENT` عند إنشاء العميل |
+
+لذلك تُنزع `sslmode` و`sslcert` و`sslkey` و`sslrootcert` من **نسخة** من
+الرابط قبل تمريره، ويبقى مصدر إعداد TLS واحداً هو الكائن الذي نبنيه.
+المعاملات غير التلقائية (`schema=public` مثلاً) تبقى كما هي، والرابط لا
+يُمسّ إطلاقاً حين لا تكون هناك شهادة.
+
+للتحقق في أي وقت:
+
+```bash
+npm run verify:db-ssl
+```
+
+عشرون فحصاً بلا أي اتصال بقاعدة — تشمل الحالات الأربع أعلاه، وبقاء التشغيل
+المحلي كما كان، واستقلال مسار ترحيلات Prisma.
+
 ---
 
 ## الطابور — Managed Caching
@@ -168,17 +207,26 @@ Docker على معرّف الحاوية، فيستمع الخادم على عن�
 
 ## الخطوات
 
-**١)** أنشئ **Managed PostgreSQL** و**Managed Caching** في المنطقة التي ستضع
-فيها التطبيق. اضبط سياسة الإخلاء على `noeviction`.
+**١)** أنشئ الموردين **أولاً** — المواصفة تربط عنقودَين قائمَين ولا تنشئهما،
+والاستيراد قبل وجودهما يفشل:
+
+| المورد | الاسم المطلوب |
+|---|---|
+| Managed PostgreSQL 16 | **`media-monitoring-db`** |
+| Managed Caching (Valkey) | **`media-monitoring-cache`** |
+
+في المنطقة التي ستضع فيها التطبيق. ثم اضبط سياسة الإخلاء على `noeviction`.
 
 **٢)** أنشئ التطبيق من المستودع، واختر الفرع، واضبط **Source Directory =
-`platform`**. أو استورد [`.do/app.yaml`](.do/app.yaml) مباشرة.
+`platform`**. أو استورد [`.do/app.yaml`](.do/app.yaml) بعد إنشاء الموردين.
 
 **٣)** اضبط المكوّنات الثلاثة بالجداول أعلاه، واربط القاعدة والطابور.
 
-**٤)** اضبط متغيرات البيئة — انتبه إلى نطاق `BUILD + RUN` للثلاثة المعلّمة.
+**٤)** اضبط متغيرات البيئة — كلها `RUN_TIME` عدا `NODE_ENV`. لا سرّ يدخل
+مرحلة البناء لأن `Dockerfile` يوفّر قيمه الوهمية بنفسه.
 
-**٥)** اجعل أمر `migrate` هو `npm run deploy:bootstrap` **لأول نشر فقط**.
+**٥)** أمر `migrate` مضبوط على `npm run deploy:bootstrap` — وهو الصحيح لأول
+نشر. **غيّره إلى `npm run deploy:migrate` بعد نجاح التهيئة الأولى.**
 
 **٦)** انشر. ثم:
 
@@ -189,7 +237,7 @@ GET https://<تطبيقك>.ondigitalocean.app/api/health   →   200  {"ok":true
 **٧)** بعد أول نشر:
 - سجّل الدخول وغيّر كلمة المرور من **الملف الشخصي**
 - فرّغ `SEED_OWNER_PASSWORD`
-- أعد أمر `migrate` إلى `npm run deploy:migrate`
+- **غيّر أمر `migrate` إلى `npm run deploy:migrate`**
 - افحص **لوحة الإدارة ← الإعدادات**: Apify متصل، والطابور «متصل والعامل يسحب المهام»
 
 **٨)** النطاق الخاص لاحقاً: أضفه في **Settings ← Domains**، ثم **حدّث `APP_URL`**
@@ -205,5 +253,6 @@ GET https://<تطبيقك>.ondigitalocean.app/api/health   →   200  {"ok":true
 | بناء صورة Docker فعلياً | **لم يُختبَر** — سحب الصور من Docker Hub محجوب في بيئة التطوير. اختُبر بدلاً منه تسلسل مراحل Dockerfile على نسخة نظيفة من المستودع، وقد نجح |
 | الاتصال بقاعدة DigitalOcean مُدارة | **لم يُختبَر** — لم تُنشأ أي موارد. اختُبر بناء إعداد TLS ومعاملات الرابط فقط |
 | النشر على App Platform | **لم يُنفَّذ** |
-| اسم محرّك Valkey وأحجام النسخ في `app.yaml` | **غير مؤكد** — تُراجع في اللوحة |
+| اسم محرّك Valkey وحقل `cluster_name` في `app.yaml` | **غير مؤكد** — يُتحقق عند الاستيراد |
+| **المواصفة ليست جاهزة للتنفيذ كما هي** | تحتاج إنشاء العنقودين بالاسمين أعلاه، وتعبئة `SESSION_SECRET` و`DATABASE_CA_CERT` و`APIFY_TOKEN` و`SEED_OWNER_*` في اللوحة |
 | استمرارية الطابور عبر إعادة التشغيل | **غير مؤكد** — تحتاج تحققاً في لوحة المزوّد |

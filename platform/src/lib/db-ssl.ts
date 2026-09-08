@@ -18,7 +18,8 @@ import path from 'node:path';
  * ولمسارَي الاتصال في هذا المشروع صيغتان مختلفتان لا واحدة:
  *
  *   • التطبيق والعامل والبذر → مكتبة `pg` عبر `PrismaPg`، وتقبل خيارات
- *     Node القياسية: `{ ca, rejectUnauthorized: true }`.
+ *     Node القياسية: `{ ca, rejectUnauthorized: true }` — بشرط أن يكون
+ *     الرابط خالياً من معاملات TLS، وإلا أبطلَتها. انظر `PG_SSL_URL_PARAMS`.
  *
  *   • ترحيلات Prisma (`prisma migrate deploy`) → محرّك Rust مستقل لا يقرأ
  *     شيئاً من شيفرتنا، ويأخذ إعداده من معاملات رابط الاتصال وحدها.
@@ -74,15 +75,60 @@ export function pgSslOptions(): { ca: string; rejectUnauthorized: true } | undef
 }
 
 /**
+ * معاملات TLS التي تقرأها `pg` من رابط الاتصال نفسه.
+ *
+ * وجودها في الرابط **يُبطل** كائن `ssl` الممرَّر بجانبه — مُختبَر على
+ * pg 8.16.3 بإنشاء `Client` وقراءة `connectionParameters.ssl` قبل الاتصال:
+ *
+ *   • رابط بلا هذه المعاملات + كائن ssl  →  الكائن كما هو، والشهادة محفوظة
+ *   • رابط فيه `sslmode=require`         →  ssl يصير `{}` — الشهادة تضيع،
+ *     فيتحقق الاتصال من مخزن شهادات النظام الذي لا يعرف سلطة المزوّد، ويفشل
+ *   • رابط فيه `sslmode=no-verify`       →  ssl يصير `{ rejectUnauthorized: false }`
+ *     أي أن الرابط يعطّل التحقق رغم أننا طلبناه صراحةً
+ *   • رابط فيه `sslrootcert` لملف مفقود  →  استثناء ENOENT عند إنشاء العميل
+ *
+ * ورابط DigitalOcean يأتي بـ `?sslmode=require` افتراضياً، فالحالة الثانية
+ * ليست فرضية. لذلك تُنزع هذه المعاملات من نسخة من الرابط قبل تمريره، ويبقى
+ * مصدر إعداد TLS واحداً: الكائن الذي نبنيه هنا.
+ */
+const PG_SSL_URL_PARAMS = ['sslmode', 'sslcert', 'sslkey', 'sslrootcert'] as const;
+
+/**
+ * نسخة من الرابط بلا معاملات TLS.
+ *
+ * يُعاد الرابط الأصلي كما هو إن لم يكن فيه شيء منها: تمريره عبر `URL`
+ * وإعادة بنائه قد يُعيد ترتيب المعاملات أو يغيّر ترميزها بلا داعٍ.
+ */
+function withoutPgSslParams(connectionString: string): string {
+  let url: URL;
+  try {
+    url = new URL(connectionString);
+  } catch {
+    // رابط لا يُحلَّل يُترك كما هو — الخطأ يظهر لاحقاً برسالة pg الواضحة
+    return connectionString;
+  }
+
+  const stripped = PG_SSL_URL_PARAMS.filter((param) => url.searchParams.has(param));
+  if (stripped.length === 0) return connectionString;
+
+  for (const param of stripped) url.searchParams.delete(param);
+  return url.toString();
+}
+
+/**
  * خيارات `PrismaPg` جاهزة — تُستعمل في التطبيق والعامل والبذر والسكربتات
  * الإدارية، فيبقى إعداد الاتصال واحداً لا أربعة تتفرّق مع الوقت.
+ *
+ * بلا شهادة لا يُمسّ الرابط إطلاقاً: التشغيل المحلي على قاعدة بلا تشفير،
+ * أو على قاعدة شهادتها معروفة لمخزن النظام، يبقى كما كان تماماً.
  */
 export function prismaPgOptions(connectionString: string): {
   connectionString: string;
   ssl?: { ca: string; rejectUnauthorized: true };
 } {
   const ssl = pgSslOptions();
-  return ssl ? { connectionString, ssl } : { connectionString };
+  if (!ssl) return { connectionString };
+  return { connectionString: withoutPgSslParams(connectionString), ssl };
 }
 
 /**
