@@ -1,0 +1,132 @@
+# =============================================================================
+# مواصفة Render (Blueprint)
+#
+# موضعها جذر المستودع لا مجلد platform — Render يبحث عن render.yaml في الجذر
+# وحده. وهذا هو سبب فشل أول نشر: جذر المستودع لا يحمل package.json، فبحث عنه
+# npm في /opt/render/project/src ولم يجده. الحلّ سطر rootDir أدناه.
+#
+# الاستعمال:  Render Dashboard ← New ← Blueprint ← اختر المستودع والفرع
+#
+# ملف مرجعي: أسماء الخطط وبعض الحقول تتغيّر عند المزوّد، والمعلَّم بـ «تحقّق»
+# يُراجع في اللوحة. ولا سرّ فيه: كل قيمة سرّية عليها sync: false فتُطلب منك
+# في اللوحة عند الإنشاء ولا تُخزَّن هنا.
+#
+# ★ قبل الاستعمال اقرأ DEPLOY-RENDER.md — فيه قيود خطة Render التي تمسّ هذه
+#   المنصة تحديداً، أهمّها أن العامل الخلفي لا يعمل على خطة مجانية.
+# =============================================================================
+
+services:
+  # --- تطبيق الويب ---------------------------------------------------------
+  - type: web
+    name: media-monitoring-web
+    runtime: docker
+    plan: starter # تحقّق من الخطة المناسبة لك
+
+    # ★★ السطر الذي كان ينقص: مجلد المشروع داخل المستودع
+    rootDir: platform
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+
+    # يتجاوز CMD في الصورة. نقطة الدخول تمرّر ما لا تعرفه كما هو.
+    dockerCommand: npm run start:prod
+
+    healthCheckPath: /api/health
+    autoDeploy: true
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+
+      # PORT يحقنه Render تلقائياً، والمشغّل يقرأه بعد APP_PORT.
+      # لا تضبط APP_PORT هنا وإلا غلب ما يحقنه Render.
+
+      - key: DATABASE_URL
+        fromDatabase:
+          name: media-monitoring-db
+          property: connectionString
+
+      - key: REDIS_URL
+        fromService:
+          name: media-monitoring-cache
+          type: keyvalue
+          property: connectionString
+
+      # يُولَّد مرة واحدة ويبقى ثابتاً. تغييره يُخرج كل المستخدمين من جلساتهم.
+      - key: SESSION_SECRET
+        generateValue: true
+
+      # ★ املأه في اللوحة برابط الخدمة بعد أول نشر:
+      #   https://media-monitoring-web.onrender.com
+      #   بدونه يبقى الافتراضي localhost فيُرفض كل تسجيل دخول.
+      - key: APP_URL
+        sync: false
+
+      - key: APIFY_TOKEN
+        sync: false
+
+      # شهادة سلطة تصديق القاعدة — تُترك فارغة إن كانت قاعدة Render الداخلية
+      # لا تحتاجها. انظر DEPLOY-RENDER.md.
+      - key: DATABASE_CA_CERT
+        sync: false
+
+      - key: SESSION_TTL_DAYS
+        value: '7'
+
+  # --- العامل الخلفي -------------------------------------------------------
+  # ★ يتطلب خطة مدفوعة عند Render — لا توجد خطة مجانية لـ Background Worker.
+  #   وبدونه يفتح الموقع ويعرض البيانات، لكن كل ضغطة «استخراج» لا تُنفَّذ.
+  - type: worker
+    name: media-monitoring-worker
+    runtime: docker
+    plan: starter
+
+    rootDir: platform
+    dockerfilePath: ./Dockerfile
+    dockerContext: .
+    dockerCommand: npm run worker:prod
+
+    autoDeploy: true
+
+    # ★ نسخة واحدة لا أكثر: الجدولة الدورية مؤقّت داخل العملية لا مهمة طابور،
+    # فكل نسخة إضافية تكرّر جدولة الحسابات المستحقة كل دقيقة.
+    numInstances: 1
+
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DATABASE_URL
+        fromDatabase:
+          name: media-monitoring-db
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          name: media-monitoring-cache
+          type: keyvalue
+          property: connectionString
+      # يجب أن يطابق قيمة خدمة الويب — انسخها من لوحة الويب بعد أول نشر
+      - key: SESSION_SECRET
+        sync: false
+      - key: APIFY_TOKEN
+        sync: false
+      - key: DATABASE_CA_CERT
+        sync: false
+      - key: WORKER_CONCURRENCY
+        value: '2'
+
+  # --- الطابور -------------------------------------------------------------
+  - type: keyvalue
+    name: media-monitoring-cache
+    plan: starter # تحقّق: الخطة المجانية بلا استمرارية للبيانات
+
+    # ★ noeviction إلزامية لا اختيارية:
+    #   الطابور يخزّن بيانات المهام هنا، وأي سياسة إخلاء تسمح بحذف مهمة
+    #   استخراج منتظرة عند امتلاء الذاكرة، فتختفي العملية بلا خطأ ولا أثر.
+    maxmemoryPolicy: noeviction
+
+    ipAllowList: [] # لا وصول من خارج شبكة Render
+
+databases:
+  - name: media-monitoring-db
+    databaseName: monitoring
+    user: monitor
+    plan: basic-256mb # تحقّق: الخطة المجانية تنتهي صلاحيتها بعد 30 يوماً

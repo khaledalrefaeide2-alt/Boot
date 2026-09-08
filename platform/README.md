@@ -6,10 +6,10 @@
 الواجهة عربية بالكامل، الاتجاه RTL، التصميم رسمي حكومي هادئ، مع وضع فاتح وداكن،
 وتخطيط متجاوب يعمل على الجوال وعلى شاشة كبيرة في غرفة العمليات.
 
-> **للنشر:** [`DEPLOY.md`](DEPLOY.md) لخادم افتراضي واحد (Hostinger VPS أو
-> DigitalOcean Droplet أو غيرهما)، و[`DEPLOY-APP-PLATFORM.md`](DEPLOY-APP-PLATFORM.md)
-> لـ DigitalOcean App Platform بثلاثة مكوّنات وخدمات مُدارة.
-> هذا الملف يشرح التشغيل على جهازك للتطوير.
+> **للنشر:** [`DEPLOY-RENDER.md`](DEPLOY-RENDER.md) لـ Render،
+> و[`DEPLOY-APP-PLATFORM.md`](DEPLOY-APP-PLATFORM.md) لـ DigitalOcean App
+> Platform، و[`DEPLOY.md`](DEPLOY.md) لخادم افتراضي واحد (Hostinger VPS أو
+> DigitalOcean Droplet). هذا الملف يشرح التشغيل على جهازك للتطوير.
 
 ---
 
