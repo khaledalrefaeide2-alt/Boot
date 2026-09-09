@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/db';
-import { redis } from '@/lib/redis';
+import { getRedis } from '@/lib/redis';
 
 /**
  * فحص صحّة للخادم — يستعمله Docker والوكيل العكسي ومراقبة الاستضافة.
@@ -28,7 +28,7 @@ function withTimeout<T>(work: Promise<T>): Promise<T> {
 export async function GET() {
   const checks = await Promise.allSettled([
     withTimeout(prisma.$queryRaw`SELECT 1`),
-    withTimeout(redis.ping()),
+    withTimeout(getRedis().ping()),
   ]);
 
   const healthy = checks.every((check) => check.status === 'fulfilled');

@@ -25,6 +25,7 @@
     "verify:pipeline": "tsx --conditions=react-server scripts/verify-pipeline.ts",
     "verify:scope": "tsx --conditions=react-server scripts/verify-scope.ts",
     "verify:db-ssl": "tsx scripts/verify-db-ssl.ts",
+    "verify:build-safety": "tsx --conditions=react-server scripts/verify-build-safety.ts",
     "owner:reset": "tsx --conditions=react-server scripts/reset-owner-password.ts",
     "media:repair": "tsx --conditions=react-server scripts/repair-media-urls.ts"
   },

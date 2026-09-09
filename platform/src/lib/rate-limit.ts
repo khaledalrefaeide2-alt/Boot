@@ -1,5 +1,5 @@
 import 'server-only';
-import { redis } from '@/lib/redis';
+import { getRedis } from '@/lib/redis';
 
 export interface RateLimitResult {
   allowed: boolean;
@@ -45,6 +45,7 @@ export async function checkRateLimit(
   key: string,
   limit: number,
 ): Promise<RateLimitResult> {
+  const redis = getRedis();
   const redisKey = `rl:${key}`;
   try {
     const raw = await redis.get(redisKey);
@@ -61,6 +62,7 @@ export async function checkRateLimit(
 
 /** تسجيل محاولة فاشلة — هذه وحدها ما يزيد العدّاد */
 export async function recordFailedAttempt(key: string, windowSeconds: number): Promise<void> {
+  const redis = getRedis();
   const redisKey = `rl:${key}`;
   try {
     const count = await redis.incr(redisKey);
@@ -79,6 +81,7 @@ export async function rateLimit(
   limit: number,
   windowSeconds: number,
 ): Promise<RateLimitResult> {
+  const redis = getRedis();
   const redisKey = `rl:${key}`;
   try {
     const count = await redis.incr(redisKey);
@@ -99,7 +102,7 @@ export async function rateLimit(
 export async function resetRateLimit(key: string): Promise<void> {
   memoryBuckets.delete(key);
   try {
-    await redis.del(`rl:${key}`);
+    await getRedis().del(`rl:${key}`);
   } catch {
     // الذاكرة نُظّفت أعلاه
   }
