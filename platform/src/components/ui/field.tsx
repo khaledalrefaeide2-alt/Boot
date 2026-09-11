@@ -4,7 +4,7 @@ import { forwardRef, type InputHTMLAttributes, type SelectHTMLAttributes, type T
 import { cn } from '@/lib/utils';
 
 const controlBase =
-  'w-full rounded-md border border-border bg-surface px-3 text-sm text-foreground transition-colors placeholder:text-subtle-foreground focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-70';
+  'w-full rounded-md border border-border-input bg-surface px-3 text-sm text-foreground transition-colors placeholder:text-subtle-foreground focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-70';
 
 export interface FieldWrapperProps {
   label?: string;

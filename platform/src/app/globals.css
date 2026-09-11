@@ -15,6 +15,16 @@
   --surface-3: #e2e8f2;
   --border: #d7e2f0;
   --border-strong: #b9c9de;
+  /*
+   * حدّ عناصر الإدخال — رمز مستقل عن الحدّ الزخرفي.
+   *
+   * WCAG 1.4.11 يفرض 3:1 على ما يُعرّف مكوّناً تفاعلياً أو يحدّه. والحدّ
+   * الزخرفي (حافة بطاقة، فاصل) خارج ذلك فيبقى شعرةً خفيفة كما تقتضي
+   * الهوية، أما إطار حقل الإدخال فهو ما يقول «هنا تكتب» — وهو الفرق بين
+   * نموذج يُرى ونموذج يُخمَّن. الرمزان منفصلان حتى لا يجرّ تجميلُ أحدهما
+   * الآخرَ تحت الحدّ.
+   */
+  --border-input: #7c8797;
 
   --foreground: #0f172a;
   /* العناوين بأزرق عميق لا بلون النص: تسلسل بلا وزن إضافي ولا حجم إضافي */
@@ -67,7 +77,7 @@
   /* الزجاج — يُستعمل على شاشة الدخول وحدها، وشرحه أسفل الملف */
   --glass-bg: rgb(255 255 255 / 0.72);
   --glass-border: rgb(15 27 45 / 0.1);
-  --glass-blur: 15px;
+  --glass-blur: 16px;
   --tilt-max: 6deg;
 
   --radius: 0.5rem;
@@ -104,30 +114,53 @@
 .dark {
   color-scheme: dark;
 
-  --background: #020617;
-  --surface: #0e1223;
-  --surface-2: #1a1e2f;
-  --surface-3: #232840;
-  --border: #2b3650;
-  --border-strong: #3d4c66;
+  /*
+   * أرضية «الفراغ العميق» — شبه سوداء محايدة لا زرقاء.
+   *
+   * اللوحة السابقة كانت نيليّة (#020617) فكانت تقرأ «تطبيق إداري». هذه
+   * محايدة تماماً، وحيادها هو ما يجعل اللون الواحد المضيء يبدو مضيئاً:
+   * على أرضية ملوّنة يتنافس اللونان، وعلى أرضية رمادية يبقى واحد.
+   */
+  --background: #070708;
+  --surface: #121216;
+  --surface-2: #17171d;
+  --surface-3: #1f1f26;
 
   /*
-   * النص أبيض مائل للأزرق لا أبيض ناصع: الناصع على أرضية شبه سوداء يُحدث
-   * هالة حول الحرف العربي بنقاطه وتشكيله، فيتعب العين في الجداول الطويلة.
+   * الحدود شعرة بيضاء لا لون مستقل: قيمتها المكافئة لـ rgba(255,255,255,.08)
+   * فوق سطح #121216. تُكتب معتمة لا شفافة لأن الحدود تُرسم فوق أسطح مختلفة
+   * العتامة، والشفافة تختلف سماكتها المرئية من سطح لآخر فينكسر الانتظام.
    */
-  --foreground: #e8eef7;
-  --heading: #bfd6f5;
-  --muted-foreground: #94a3b8;
-  --subtle-foreground: #7f90a8;
+  --border: #24242b;
+  --border-strong: #33333c;
+  --border-input: #65656c;
 
-  --primary: #7cb2f7;
-  --primary-hover: #9cc5fa;
-  --primary-foreground: #020617;
-  --primary-soft: #122240;
-  --primary-soft-foreground: #93c5fd;
+  /*
+   * النص أبيض عالي التباين كما تطلب المواصفة (#F5F5F7) لا أبيض مزرقّ.
+   * ومع ذلك ليس ناصعاً تماماً: الناصع على شبه الأسود يُحدث هالة حول الحرف
+   * العربي بنقاطه وتشكيله فيتعب العين في الجداول الطويلة. الفارق درجتان
+   * تكفيان لإزالة الهالة ولا تُنقصان التباين إدراكياً.
+   */
+  --foreground: #f5f5f7;
+  --heading: #ffffff;
+  --muted-foreground: #8e8e96;
+  --subtle-foreground: #83838a;
 
-  --accent: #e79b3d;
-  --accent-soft: #2a2113;
+  /*
+   * السماوي المضيء هو لون التفاعل كله: الأزرار، الرابط، المؤشر النشط،
+   * حلقة التركيز. و«الاقتصاد» المطلوب في المواصفة لا يتحقق بتقليل مواضعه
+   * بل بأن يكون كل ما عداه رمادياً — لون واحد على حقل محايد يبقى حدثاً
+   * مهما تكرر، ولونان يُلغيان بعضهما من أول ظهور.
+   */
+  --primary: #00e5ff;
+  --primary-hover: #5df0ff;
+  --primary-foreground: #04161a;
+  --primary-soft: #0a2229;
+  --primary-soft-foreground: #7ee8fa;
+
+  /* الأزرق الكهربائي — تدرّجات الهالة والتوكيد الثانوي، لا نصّ على أرضية */
+  --accent: #2563eb;
+  --accent-soft: #101a33;
 
   --success: #4ade80;
   --success-soft: #0f2a1c;
@@ -138,7 +171,7 @@
   --info: #93c5fd;
   --info-soft: #122240;
 
-  --ring: #7cb2f7;
+  --ring: #00e5ff;
 
   /*
    * الظل على أرضية داكنة لا يُشتق من الفاتح بضرب النسب: العين تقرأ الارتفاع
@@ -149,8 +182,18 @@
   --elev-3: 0 10px 34px rgb(0 0 0 / 0.55);
   --elev-4: 0 24px 60px rgb(0 0 0 / 0.62);
 
-  --glass-bg: rgb(27 35 54 / 0.72);
-  --glass-border: rgb(255 255 255 / 0.1);
+  /* الزجاج على مواصفتك: rgba(18,18,22,.65) وحدّ أبيض 8% وطمس 16px */
+  --glass-bg: rgb(18 18 22 / 0.65);
+  --glass-border: rgb(255 255 255 / 0.08);
+  --glass-blur: 16px;
+
+  /*
+   * الهالة — وهي ما يفصل «بطاقة داكنة» عن «بطاقة مضيئة». حلقة بلون التفاعل
+   * بشفافية منخفضة ثم انتشار واسع بلا إزاحة، فيبدو الضوء صادراً من الحافة
+   * لا ساقطاً عليها. تُستعمل على التحويم والحالة النشطة وحدهما.
+   */
+  --glow-primary: 0 0 0 1px rgb(0 229 255 / 0.28), 0 0 32px -10px rgb(0 229 255 / 0.5);
+  --glow-soft: 0 0 40px -16px rgb(0 229 255 / 0.35);
 
   /* بحث مستقل على أرضية البطاقة الداكنة، لا انعكاس للوحة الفاتحة */
   --chart-1: #93c5fd;
@@ -175,6 +218,7 @@
   --color-surface-3: var(--surface-3);
   --color-border: var(--border);
   --color-border-strong: var(--border-strong);
+  --color-border-input: var(--border-input);
 
   --color-foreground: var(--foreground);
   --color-heading: var(--heading);
@@ -259,6 +303,45 @@
 
   --font-sans:
     'Cairo', 'Noto Kufi Arabic', 'Segoe UI', 'Tahoma', 'Dubai', 'Geeza Pro', system-ui, sans-serif;
+
+  --font-mono:
+    'JetBrains Mono', ui-monospace, 'SFMono-Regular', 'Cascadia Mono', 'Consolas', monospace;
+
+  /*
+   * سلّم العرض — للأسطح الاستعراضية وحدها (صفحة الدخول، ترويسة النظرة
+   * العامة). سائل بـ clamp() فلا نقاط توقف تقفز عندها الأحجام، ومداه محسوب
+   * لا مُقدَّر: الحدّ الأدنى يبقى مقروءاً على 375px، والأعلى يقف عند حجم
+   * لا يتجاوز فيه السطر الواحد ثلاث كلمات عربية على شاشة عريضة.
+   *
+   * ارتفاع السطر ينقص كلما كبر المقاس: العنوان الضخم بارتفاع 1.5 يتفكّك إلى
+   * أسطر منفصلة لا كتلة واحدة.
+   */
+  --text-display-3: clamp(1.75rem, 1.35rem + 1.7vw, 2.5rem);
+  --text-display-3--line-height: 1.25;
+  --text-display-2: clamp(2.25rem, 1.55rem + 3vw, 3.75rem);
+  --text-display-2--line-height: 1.15;
+  --text-display-1: clamp(2.75rem, 1.6rem + 4.9vw, 5.25rem);
+  --text-display-1--line-height: 1.05;
+
+  /*
+   * التتبّع — سالب للعناوين وموجب للعناوين الفرعية.
+   *
+   * القيمة −0.035em في المواصفة مقيسة على حرف لاتيني. والحرف العربي متصل:
+   * تضييق التتبّع يقارب النقاط من بعضها ويلصق الكاف بالميم. فالعناوين هنا
+   * على −0.02em وهو أقصى ما يحتمله الخط العربي قبل أن تبدأ الحروف تتداخل،
+   * و−0.035em محفوظة للعناوين اللاتينية وحدها (.tracking-display-latin).
+   */
+  --tracking-display: -0.02em;
+  --tracking-display-latin: -0.035em;
+  --tracking-body: -0.005em;
+  --tracking-overline: 0.15em;
+
+  /*
+   * مسافة المقطع — 80px إلى 140px كما في المواصفة، سائلة بينهما.
+   * تُستعمل على الأسطح الاستعراضية لا داخل لوحات التشغيل، فالكثافة هناك
+   * مقصودة والفراغ السخيّ يعني تمريراً أطول لعمل يومي.
+   */
+  --space-section: clamp(5rem, 3.2rem + 7.5vw, 8.75rem);
 }
 
 /*
@@ -298,6 +381,27 @@
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
+/*
+ * JetBrains Mono — نطاق latin وحده، وزن متغيّر 400–700، مستضاف محلياً مثل
+ * Cairo ولنفس السبب. رخصته SIL OFL 1.1 أيضاً (نصّها في public/fonts/OFL.txt
+ * ويسري على الخطّين).
+ *
+ * دوره محصور ولا يمسّ النص العربي إطلاقاً: العناوين الفرعية المتباعدة
+ * (`MEDIA MONITORING`)، وأرقام التسلسل (`01`)، والمعرّفات اللاتينية. وهذه
+ * كلها لاتينية أصلاً، فنطاق latin يكفيها ولا داعي لتحميل ما لا يُعرض.
+ *
+ * ولا يُستعمل لأرقام الإحصاءات داخل الجداول: هناك `tabular-nums` من Cairo
+ * تحاذي رأسياً وتنسجم مع محيطها العربي، وخطّ مختلف في خلية واحدة يقطع السطر.
+ */
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+  src: url('/fonts/jetbrains-mono-latin.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
 @layer base {
   * {
     border-color: var(--border);
@@ -328,6 +432,7 @@
     background-color: var(--background);
     color: var(--foreground);
     font-family: var(--font-sans);
+    letter-spacing: var(--tracking-body);
     font-feature-settings: 'kern';
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -385,6 +490,86 @@
 }
 
 @layer utilities {
+  /*
+   * العنوان الفرعي المتباعد — «overline».
+   *
+   * مونوسبيس وأحرف كبيرة وتتبّع واسع. دوره تسمية المقطع قبل عنوانه، وهو
+   * أرخص وسيلة لبناء تسلسل: يفصل بين «ماذا» و«عن ماذا» بلا إضافة حجم ولا
+   * وزن ولا لون جديد. ومقاسه 12px لا أقل — وهو أصغر مقاس في النظام كله.
+   */
+  .overline {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    font-weight: 500;
+    letter-spacing: var(--tracking-overline);
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+    line-height: 1.4;
+  }
+
+  /* العنوان المعماري — وزن ثقيل وتتبّع سالب وسطر متماسك */
+  .display {
+    font-weight: 800;
+    letter-spacing: var(--tracking-display);
+    color: var(--heading);
+    text-wrap: balance;
+  }
+  .display-latin {
+    letter-spacing: var(--tracking-display-latin);
+  }
+
+  /* لوح زجاجي مرتفع — الزجاج وحده سطح، ومعه الظل يصير لوحاً */
+  .glass-panel {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(var(--glass-blur));
+    -webkit-backdrop-filter: blur(var(--glass-blur));
+    box-shadow: var(--elev-2);
+  }
+
+  /*
+   * البطاقة التفاعلية.
+   *
+   * ثلاثة تغييرات متزامنة على التحويم: إضاءة الحدّ، وتكبير 1.5%، وهالة.
+   * والتكبير محسوب لا مُقدَّر — 1.015 هو أكبر قيمة لا يُرى عندها اهتزاز
+   * النص داخل البطاقة عند إعادة الرسم. وما فوقها يُجبر المتصفح على إعادة
+   * تنقيط الحروف فتظهر «قفزة» في الخط العربي المتصل.
+   *
+   * التحويل على translate3d ليُرفع إلى طبقة GPU مستقلة، وwill-change يُعلن
+   * ذلك مسبقاً فلا تُنشأ الطبقة عند أول تحويم (وهو ما يسبّب التلعثم الأول).
+   */
+  .card-interactive {
+    transform: translate3d(0, 0, 0);
+    transition:
+      transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
+      border-color 0.3s ease-out,
+      box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
+    will-change: transform;
+  }
+  .card-interactive:hover {
+    transform: translate3d(0, -2px, 0) scale(1.015);
+    border-color: var(--border-strong);
+    box-shadow: var(--elev-3), var(--glow-soft, none);
+  }
+  .card-interactive:focus-within {
+    border-color: var(--primary);
+  }
+
+  /* تكبير الوسائط داخل بطاقة تفاعلية */
+  .media-zoom {
+    transform: translate3d(0, 0, 0);
+    transition: transform 0.6s ease-out;
+    will-change: transform;
+  }
+  .card-interactive:hover .media-zoom {
+    transform: translate3d(0, 0, 0) scale(1.05);
+  }
+
+  /* هالة اللون الواحد — للحالة النشطة ولزرّ الدعوة الأساسي */
+  .glow {
+    box-shadow: var(--glow-primary, var(--elev-2));
+  }
+
   .card-surface {
     background-color: var(--surface);
     border: 1px solid var(--border);
