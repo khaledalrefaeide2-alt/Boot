@@ -14,6 +14,7 @@ import {
   UsersRound,
 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
+import { Reveal } from '@/components/motion/reveal';
 import { StatCard, HighlightCard } from '@/components/ui/stat-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
@@ -103,6 +104,7 @@ export function OverviewClient() {
   return (
     <>
       <PageHeader
+        overline="لوحة التشغيل"
         title="النظرة العامة"
         description="ملخص نشاط المنصات المرصودة خلال الفترة المحددة"
         action={
@@ -142,8 +144,17 @@ export function OverviewClient() {
         </Card>
       ) : stats ? (
         <>
-          {/* البطاقات الست الرئيسية أعلى اللوحة */}
-          <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          {/*
+            شبكة Bento — أعمدة اثنا عشر بمساحات غير متساوية.
+            المساحة تتبع الأهمية لا الترتيب: إجمالي المنشورات أوسع بطاقة
+            لأنه الرقم الذي يُفتح النظام من أجله، وعدد المنصات أضيقها لأنه
+            ثابت لا يتغيّر. شبكة متساوية تقول إن الستة سواء، وهي ليست كذلك.
+
+            وعند دون lg تعود عمودين متساويين: الترتيب الهرمي يُقرأ عرضاً،
+            وعلى شاشة ضيّقة لا عرض أصلاً فيصير تفاوت المساحات ضجيجاً.
+          */}
+          <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-12">
+            <Reveal index={0} className="h-full lg:col-span-5">
             <StatCard
               label="إجمالي المنشورات"
               value={stats.totalPosts}
@@ -151,6 +162,8 @@ export function OverviewClient() {
               icon={Newspaper}
               href="/posts"
             />
+            </Reveal>
+            <Reveal index={1} className="h-full lg:col-span-4">
             <StatCard
               label="عدد الحسابات"
               value={stats.accountsCount}
@@ -158,6 +171,8 @@ export function OverviewClient() {
               icon={UsersRound}
               href="/accounts"
             />
+            </Reveal>
+            <Reveal index={2} className="h-full lg:col-span-3">
             <StatCard
               label="عدد المنصات"
               value={stats.platformsCount}
@@ -165,6 +180,8 @@ export function OverviewClient() {
               icon={Building2}
               href="/platforms"
             />
+            </Reveal>
+            <Reveal index={3} className="h-full lg:col-span-3">
             <StatCard
               label="إجمالي التفاعل"
               value={stats.totalEngagement}
@@ -173,6 +190,8 @@ export function OverviewClient() {
               compact
               tone="primary"
             />
+            </Reveal>
+            <Reveal index={4} className="h-full lg:col-span-5">
             <HighlightCard
               label="أكثر منشور تفاعلاً"
               title={
@@ -187,6 +206,8 @@ export function OverviewClient() {
               valueLabel="تفاعل"
               href={stats.topPost ? `/posts/${stats.topPost.id}` : undefined}
             />
+            </Reveal>
+            <Reveal index={5} className="h-full lg:col-span-4">
             <HighlightCard
               label="أكثر منصة نشاطاً"
               title={stats.topPlatform?.name ?? 'لا يوجد بعد'}
@@ -195,6 +216,7 @@ export function OverviewClient() {
               valueLabel="منشور"
               href={stats.topPlatform ? `/platforms/${stats.topPlatform.id}` : undefined}
             />
+            </Reveal>
           </div>
 
           {/* مجاميع التفاعل التفصيلية */}

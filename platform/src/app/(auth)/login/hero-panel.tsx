@@ -1,104 +1,123 @@
-import { Activity, Layers, ShieldCheck } from 'lucide-react';
-import { Tilt } from '@/components/ui/tilt';
+import { AmbientCanvas } from './ambient-canvas';
 
 /**
- * لوحة التعريف بجانب نموذج الدخول.
+ * اللوحة التعريفية بجانب نموذج الدخول.
  *
  * شاشة الدخول هي السطح الوحيد في المنصة الذي يحتمل أجواءً بصرية: لا جداول
  * فيها تُمسح ولا أرقام تُقارن، ووظيفتها أن تقول ما هذا النظام قبل أن يدخله
  * الموظف. أما شاشات التشغيل فكثافتها هي وظيفتها، والعمق فيها يزاحم البيانات.
  *
- * التسلسل البصري ثلاث طبقات صريحة:
- *   الطبقة 0 — تدرّج خلفي ثابت، لا يتحرك ولا يُقرأ، يصنع مصدر الضوء.
- *   الطبقة 1 — بطاقات القدرات، ترتفع عن السطح وتميل مع المؤشر.
- *   الطبقة 2 — العنوان والنصّ، فوق الجميع وبأعلى تباين.
+ * ★ ولا رقم حقيقي هنا إطلاقاً.
  *
- * تُخفى عن الشاشات الصغيرة كلياً (`hidden lg:flex`): على الجوال يجب أن يقع
- * حقل البريد في أول شاشة بلا تمرير، وأي مقدّمة قبله تؤخّر الغرض.
+ * المواصفة تطلب شريط مؤشرات ودليلاً اجتماعياً. وهذه الصفحة **عامة**: يفتحها
+ * كل من يعرف العنوان قبل أن يسجّل دخوله. فعرض «١٤٨٧ منشوراً» أو «١٦١ ألف
+ * إعجاب» عليها يسلّم حجم العملية ونشاطها لمن لم يُصرَّح له بشيء. الأرقام
+ * الحقيقية محلّها لوحة النظرة العامة بعد الدخول، وما هنا وصفُ قدرات لا
+ * قياسُ نشاط.
+ *
+ * والتسلسل البصري أربع طبقات صريحة:
+ *   0 — حقل النقاط المنجرف (canvas ثنائي، لا يُقرأ ولا يُنقر)
+ *   1 — هالة لونية ثابتة تصنع مصدر الضوء
+ *   2 — العنوان والنصّ
+ *   3 — قائمة القدرات القابلة للفتح
+ *
+ * تُخفى عن الشاشات الصغيرة كلياً: على الجوال يجب أن يقع حقل البريد في أول
+ * شاشة بلا تمرير، وأي مقدّمة قبله تؤخّر الغرض.
  */
 
 const CAPABILITIES = [
   {
-    icon: Activity,
+    no: '01',
     title: 'رصد مستمر',
-    body: 'استخراج مجدول من المنصات مع تتبّع حالة كل عملية',
-    metric: '٣ منصات',
+    body: 'استخراج مجدول من فيسبوك وإكس وإنستغرام، مع تتبّع حالة كل عملية ومهلتها وسقف عناصرها.',
   },
   {
-    icon: Layers,
-    title: 'تحليل موحّد',
-    body: 'تصنيف وتحليل مشاعر ولوحات مقارنة بين الحسابات',
-    metric: 'لوحات حيّة',
+    no: '02',
+    title: 'استيراد وتطبيع',
+    body: 'قراءة المنشورات وتوحيد حقولها على نموذج واحد، وبناء إحصاءات يومية لكل حساب.',
   },
   {
-    icon: ShieldCheck,
-    title: 'صلاحيات دقيقة',
-    body: 'لكل مستخدم نطاق بيانات محدّد وسجل تدقيق كامل',
-    metric: 'مُدقَّق',
+    no: '03',
+    title: 'تصنيف وتحليل',
+    body: 'مواضيع وكلمات مفتاحية ووسوم، وتحليل مشاعر، ومراجعة بشرية لما يحتاج قراراً.',
+  },
+  {
+    no: '04',
+    title: 'مقارنة ولوحات',
+    body: 'لوحات محفوظة ومقارنات بين الحسابات والمنصات عبر الزمن بفلاتر قابلة للحفظ.',
+  },
+  {
+    no: '05',
+    title: 'تقارير وتصدير',
+    body: 'قوالب تقارير جاهزة، وتصدير إلى Excel، وطباعة منسّقة إلى PDF.',
+  },
+  {
+    no: '06',
+    title: 'صلاحيات وتدقيق',
+    body: 'نطاق بيانات محدّد لكل مستخدم، وسجل تدقيق كامل لكل عملية تغيير.',
   },
 ] as const;
 
 export function HeroPanel() {
   return (
     <section
-      className="relative hidden overflow-hidden rounded-xl border border-border p-8 lg:flex lg:flex-col lg:justify-center"
+      className="relative hidden overflow-hidden rounded-2xl border border-border bg-surface p-8 lg:flex lg:flex-col lg:justify-center xl:p-10"
       aria-labelledby="hero-title"
     >
+      <AmbientCanvas />
+
       {/*
-        الطبقة 0: مصدر الضوء. عنصر مستقل خلف المحتوى بدل تدرّج على الحاوية
-        نفسها، فلا يرث شفافيةً ولا يتداخل مع طمس الزجاج فوقه.
+        مصدر الضوء — عنصر مستقل خلف المحتوى لا تدرّج على الحاوية نفسها،
+        فلا يرث شفافيةً ولا يتداخل مع طمس الزجاج فوقه.
       */}
       <div
-        className="pointer-events-none absolute inset-0 bg-gradient-to-bl from-primary-soft via-surface to-surface-2"
+        className="pointer-events-none absolute -top-32 start-[-8rem] h-96 w-96 rounded-full bg-primary/12 blur-3xl"
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute -top-24 start-[-6rem] h-72 w-72 rounded-full bg-primary/10 blur-3xl"
+        className="pointer-events-none absolute bottom-[-10rem] end-[-6rem] h-80 w-80 rounded-full bg-accent/10 blur-3xl"
         aria-hidden
       />
 
       <div className="relative">
-        <p className="num mb-3 text-xs font-medium tracking-widest text-subtle-foreground">
-          MEDIA MONITORING
-        </p>
-        <h1 id="hero-title" className="text-3xl font-bold leading-tight text-foreground">
+        <p className="overline overline-latin mb-4">Media Monitoring</p>
+
+        <h1
+          id="hero-title"
+          className="display text-[length:var(--text-display-2)] leading-[var(--text-display-2--line-height)]"
+        >
           منصة رصد وتحليل
           <br />
           المنصات الإعلامية
         </h1>
-        <p className="mt-3 max-w-sm text-sm leading-relaxed text-muted-foreground">
+
+        <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
           نظام داخلي يجمع منشورات الحسابات المرصودة، ويحلّلها، ويعرضها في لوحات ومقارنات
           وتقارير قابلة للتصدير.
         </p>
 
-        <ul className="mt-8 space-y-3">
-          {CAPABILITIES.map(({ icon: Icon, title, body, metric }) => (
-            <li key={title}>
-              <Tilt>
-                <article className="glass flex items-start gap-3 rounded-lg p-4 shadow-elev-2">
+        {/*
+          الأكورديون بعنصر details الأصلي لا بحالة في React.
+          يعمل بلا JavaScript، ويستجيب للوحة المفاتيح ولقارئ الشاشة بلا
+          سطر واحد من aria، ولا يُدخل الصفحة في دورة ترطيب من أجل فتح فقرة.
+        */}
+        <ul className="mt-9 divide-y divide-border border-y border-border">
+          {CAPABILITIES.map(({ no, title, body }) => (
+            <li key={no}>
+              <details className="group">
+                <summary className="flex cursor-pointer list-none items-center gap-3 py-3 outline-none transition-colors hover:text-heading focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+                  <span className="overline overline-latin w-6 shrink-0 text-primary">{no}</span>
+                  <span className="flex-1 text-sm font-semibold text-foreground">{title}</span>
+                  {/* علامة الفتح بـ CSS لا بأيقونة: خط واحد يدور 90 درجة */}
                   <span
-                    className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground shadow-elev-1"
+                    className="h-2 w-2 shrink-0 rotate-45 border-b border-e border-subtle-foreground transition-transform duration-300 group-open:-rotate-[135deg]"
                     aria-hidden
-                  >
-                    <Icon className="h-4.5 w-4.5" />
-                  </span>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-baseline justify-between gap-2">
-                      <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-                      {/*
-                        الخط الأحادي للبيانات الدقيقة كما يوصي نظام التصميم،
-                        لكن بمكدس محلي لا بخط من مصدر خارجي: المنصة قد تعمل
-                        على شبكة معزولة، وطلب خط من الإنترنت يفقد الهوية عند
-                        الانقطاع ويسرّب طلباً من جهاز كل موظف.
-                      */}
-                      <span className="num shrink-0 font-mono text-2xs text-subtle-foreground">
-                        {metric}
-                      </span>
-                    </div>
-                    <p className="mt-0.5 text-xs leading-relaxed text-muted-foreground">{body}</p>
-                  </div>
-                </article>
-              </Tilt>
+                  />
+                </summary>
+                <p className="pb-4 pe-5 ps-9 text-xs leading-relaxed text-muted-foreground">
+                  {body}
+                </p>
+              </details>
             </li>
           ))}
         </ul>
