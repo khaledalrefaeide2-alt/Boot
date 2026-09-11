@@ -82,13 +82,20 @@ export function HeroPanel() {
       <div className="relative">
         <p className="overline overline-latin mb-4">Media Monitoring</p>
 
+        {/*
+          الدرجة الثالثة من سلّم العرض لا الثانية، وبلا <br/>.
+          قيس على 1440px: الدرجة الثانية داخل عمود بعرض 490px تكسر العنوان
+          أربعة أسطر متفاوتة الأطراف، ويصطدم آخرها بحافة اللوح. والكسر
+          اليدوي بـ <br/> يعاند text-wrap: balance بدل أن يعاونه — فالمتصفح
+          يوزّع ما بقي بعد الكسر لا العنوان كله.
+          فالمقاس نزل درجة، والتوازن تُرك للمتصفح، وحُدّ أقصى العرض بالمحارف
+          لا بالبكسل فيتبع حجم الخط أياً كان.
+        */}
         <h1
           id="hero-title"
-          className="display text-[length:var(--text-display-2)] leading-[var(--text-display-2--line-height)]"
+          className="display max-w-[18ch] text-[length:var(--text-display-3)] leading-[var(--text-display-3--line-height)]"
         >
-          منصة رصد وتحليل
-          <br />
-          المنصات الإعلامية
+          منصة رصد وتحليل المنصات الإعلامية
         </h1>
 
         <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
