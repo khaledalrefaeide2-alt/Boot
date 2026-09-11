@@ -50,7 +50,7 @@ export function StatCard({
         </div>
       )}
       <div className="min-w-0 space-y-0.5">
-        <p className="overline">{label}</p>
+        <p className="eyebrow">{label}</p>
         {/*
           الرقم هو البطل: وزن ثقيل وتتبّع سالب يجمع الأرقام في كتلة واحدة
           تُقرأ دفعةً. والتتبّع السالب آمن هنا بلا تحفّظ — الأرقام لاتينية

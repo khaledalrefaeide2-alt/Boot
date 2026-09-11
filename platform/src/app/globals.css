@@ -75,6 +75,10 @@
   --elev-4: 0 24px 56px rgb(15 27 45 / 0.2);
 
   /* الزجاج — يُستعمل على شاشة الدخول وحدها، وشرحه أسفل الملف */
+  /* شدّة الخلفية الحيّة — أخفت في الفاتح: الهالة الملوّنة على أرضية
+   * فاتحة تُرى أوضح بكثير منها على شبه الأسود عند العتامة نفسها. */
+  --aurora-opacity: 0.055;
+
   --glass-bg: rgb(255 255 255 / 0.72);
   --glass-border: rgb(15 27 45 / 0.1);
   --glass-blur: 16px;
@@ -183,6 +187,8 @@
   --elev-4: 0 24px 60px rgb(0 0 0 / 0.62);
 
   /* الزجاج على مواصفتك: rgba(18,18,22,.65) وحدّ أبيض 8% وطمس 16px */
+  --aurora-opacity: 0.13;
+
   --glass-bg: rgb(18 18 22 / 0.65);
   --glass-border: rgb(255 255 255 / 0.08);
   --glass-blur: 16px;
@@ -497,8 +503,13 @@
 
 @layer utilities {
   /*
-   * العنوان الفرعي — «overline». يسمّي المقطع قبل عنوانه، فيفصل بين «ماذا»
+   * العنوان الفرعي — «eyebrow». يسمّي المقطع قبل عنوانه، فيفصل بين «ماذا»
    * و«عن ماذا» بلا إضافة حجم ولا وزن ولا لون جديد. ومقاسه 12px لا أقل.
+   *
+   * ★ الاسم ليس اعتباطاً: كان .overline فاصطدم بأداة مدمجة في Tailwind
+   *   تحمل الاسم نفسه وتضع text-decoration-line: overline. والصنف المخصّص
+   *   لا يلغيها — تُطبَّق القاعدتان معاً فيظهر خط فوق كل عنوان فرعي في
+   *   الواجهة. لا خطأ في البناء ولا تحذير؛ كشفته لقطة شاشة.
    *
    * ★ بلا تتبّع ولا مونوسبيس — وهذا ليس إغفالاً.
    *
@@ -507,10 +518,10 @@
    * فتظهر الكلمة مقطّعة بخيوط بينها. والمونوسبيس اللاتيني لا يحمل حرفاً
    * عربياً أصلاً فيسقط إلى خط احتياطي في منتصف الواجهة.
    *
-   * فالتتبّع والمونوسبيس انتقلا إلى .overline-latin، ولا يُستعملان إلا على
+   * فالتتبّع والمونوسبيس انتقلا إلى .eyebrow-latin، ولا يُستعملان إلا على
    * نصّ لاتيني مؤكَّد: رقم تسلسل، أو اسم المنصة بالإنجليزية، أو معرّف.
    */
-  .overline {
+  .eyebrow {
     font-size: var(--text-2xs);
     font-weight: 600;
     color: var(--muted-foreground);
@@ -518,7 +529,7 @@
   }
 
   /* النسخة اللاتينية وحدها — لا تُوضع على نصّ عربي إطلاقاً */
-  .overline-latin {
+  .eyebrow-latin {
     font-family: var(--font-mono);
     letter-spacing: var(--tracking-overline);
     text-transform: uppercase;
@@ -607,6 +618,107 @@
   .enter-stagger {
     animation: enter-stagger 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
     animation-delay: var(--stagger, 0ms);
+  }
+
+  /* =========================== الخلفية الحيّة ===========================
+   *
+   * ثلاث هالات لونية ضخمة تنجرف ببطء خلف الواجهة كلها.
+   *
+   * القيود هنا ليست تحفّظاً بل شرط بقائها: هذه خلفية شاشة تشغيل تُقرأ فيها
+   * جداول بأحد عشر عموداً ساعاتٍ يومياً، لا صفحة هبوط تُزار دقيقة.
+   *
+   * ١) الشدّة من متغيّر واحد: --aurora-opacity. رفعها أو خفضها أو تصفيرها
+   *    لا يحتاج لمس أي قاعدة أدناه.
+   *
+   * ٢) المدد طويلة جداً (٤٠–٧٠ ثانية) وغير متناسبة عمداً: لو تساوت أو
+   *    تقاربت لعادت الهالات الثلاث إلى وضعها الأول معاً كل دورة، فيُقرأ
+   *    التكرار نبضاً منتظماً — وهو ما يجذب العين. وبأعداد أولية متباعدة لا
+   *    يتكرر المشهد عملياً.
+   *
+   * ٣) الحركة على translate3d و scale وحدهما — كلاهما يُركَّب على GPU بلا
+   *    إعادة تخطيط ولا إعادة طلاء. تحريك left/top أو width يُعيد حساب
+   *    الصفحة ستين مرة في الثانية خلف جدول مفتوح.
+   *
+   * ٤) طبقة ثابتة (fixed) لا تتمرر مع المحتوى: تمريرها يعني إعادة تركيب
+   *    طبقة مطموسة بحجم الشاشة مع كل حركة عجلة.
+   *
+   * ٥) لا تُطبع، ولا تستقبل نقراً، ولا يراها قارئ الشاشة.
+   */
+  .aurora-layer {
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    overflow: hidden;
+    pointer-events: none;
+    contain: strict;
+  }
+
+  .aurora-blob {
+    position: absolute;
+    border-radius: 9999px;
+    filter: blur(90px);
+    opacity: var(--aurora-opacity, 0.1);
+    will-change: transform;
+    transform: translate3d(0, 0, 0);
+  }
+
+  @keyframes aurora-a {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1);
+    }
+    50% {
+      transform: translate3d(6vw, 8vh, 0) scale(1.18);
+    }
+  }
+  @keyframes aurora-b {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(1.1);
+    }
+    50% {
+      transform: translate3d(-9vw, -6vh, 0) scale(0.92);
+    }
+  }
+  @keyframes aurora-c {
+    0%,
+    100% {
+      transform: translate3d(0, 0, 0) scale(0.95);
+    }
+    50% {
+      transform: translate3d(5vw, -10vh, 0) scale(1.22);
+    }
+  }
+
+  .aurora-a {
+    animation: aurora-a 43s ease-in-out infinite;
+  }
+  .aurora-b {
+    animation: aurora-b 59s ease-in-out infinite;
+  }
+  .aurora-c {
+    animation: aurora-c 71s ease-in-out infinite;
+  }
+
+  /*
+   * مع تقليل الحركة: تتوقف تماماً ولا تبطؤ.
+   *
+   * القاعدة العامة أعلى الملف تضبط المدة على 0.01ms، وهي تكفي لإيقاف أغلب
+   * الحركات — لكنها هنا تُجمّد الهالة عند إطارها الأخير لا الأول، فتظهر
+   * مزاحة عن موضعها المصمَّم. الإلغاء الصريح يُبقيها حيث وُضعت.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    .aurora-a,
+    .aurora-b,
+    .aurora-c {
+      animation: none !important;
+    }
+  }
+
+  @media print {
+    .aurora-layer {
+      display: none !important;
+    }
   }
 
   /*

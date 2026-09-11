@@ -4,13 +4,13 @@ export function PageHeader({
   title,
   description,
   /** عنوان فرعي صغير فوق العنوان — يسمّي المقطع الذي تنتمي إليه الصفحة */
-  overline,
+  eyebrow,
   action,
   className,
 }: {
   title: string;
   description?: string;
-  overline?: string;
+  eyebrow?: string;
   action?: React.ReactNode;
   className?: string;
 }) {
@@ -22,7 +22,7 @@ export function PageHeader({
       )}
     >
       <div className="space-y-1">
-        {overline && <p className="overline">{overline}</p>}
+        {eyebrow && <p className="eyebrow">{eyebrow}</p>}
         {/*
           العنوان بوزن ثقيل وتتبّع سالب خفيف. والسالب هنا 0.015em لا 0.035em
           التي في المواصفة: تلك مقيسة على حرف لاتيني منفصل، والحرف العربي متصل

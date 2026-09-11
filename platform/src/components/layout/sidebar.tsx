@@ -42,14 +42,14 @@ export function SidebarContent({
         </div>
         <div className="min-w-0 leading-tight">
           <p className="truncate text-sm font-bold tracking-[-0.01em] text-foreground">{appName}</p>
-          <p className="overline overline-latin mt-0.5">Media Monitoring</p>
+          <p className="eyebrow eyebrow-latin mt-0.5">Media Monitoring</p>
         </div>
       </div>
 
       <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5" aria-label="التنقل الرئيسي">
         {sections.map((section) => (
           <div key={section.title} className="space-y-1">
-            <p className="overline px-2.5 pb-1.5">{section.title}</p>
+            <p className="eyebrow px-2.5 pb-1.5">{section.title}</p>
             {section.items.map((item) => {
               const active = isActive(pathname, item.href, item.exact);
               const Icon = navIcon(item.icon);
@@ -86,7 +86,7 @@ export function SidebarContent({
 
 export function Sidebar({ sections, appName }: { sections: NavSection[]; appName: string }) {
   return (
-    <aside className="hidden w-60 shrink-0 border-l border-border bg-surface lg:block no-print">
+    <aside className="relative z-10 hidden w-60 shrink-0 border-l border-border bg-surface lg:block no-print">
       <div className="sticky top-0 h-dvh">
         <SidebarContent sections={sections} appName={appName} />
       </div>

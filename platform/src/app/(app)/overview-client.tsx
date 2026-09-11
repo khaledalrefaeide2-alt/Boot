@@ -104,7 +104,7 @@ export function OverviewClient() {
   return (
     <>
       <PageHeader
-        overline="لوحة التشغيل"
+        eyebrow="لوحة التشغيل"
         title="النظرة العامة"
         description="ملخص نشاط المنصات المرصودة خلال الفترة المحددة"
         action={

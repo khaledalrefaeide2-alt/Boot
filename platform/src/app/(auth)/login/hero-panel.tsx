@@ -80,7 +80,7 @@ export function HeroPanel() {
       />
 
       <div className="relative">
-        <p className="overline overline-latin mb-4">Media Monitoring</p>
+        <p className="eyebrow eyebrow-latin mb-4">Media Monitoring</p>
 
         {/*
           الدرجة الثالثة من سلّم العرض لا الثانية، وبلا <br/>.
@@ -113,7 +113,7 @@ export function HeroPanel() {
             <li key={no}>
               <details className="group">
                 <summary className="flex cursor-pointer list-none items-center gap-3 py-3 outline-none transition-colors hover:text-heading focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
-                  <span className="overline overline-latin w-6 shrink-0 text-primary">{no}</span>
+                  <span className="eyebrow eyebrow-latin w-6 shrink-0 text-primary">{no}</span>
                   <span className="flex-1 text-sm font-semibold text-foreground">{title}</span>
                   {/* علامة الفتح بـ CSS لا بأيقونة: خط واحد يدور 90 درجة */}
                   <span

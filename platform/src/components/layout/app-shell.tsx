@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Bell, LogOut, Menu, Shield, User as UserIcon } from 'lucide-react';
 import { Sidebar, MobileSidebar } from './sidebar';
+import { AmbientBackground } from './ambient-background';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -53,7 +54,14 @@ export function AppShell({
   }
 
   return (
-    <div className="flex min-h-dvh bg-background">
+    <div className="relative flex min-h-dvh bg-background">
+      {/*
+        الخلفية أولاً في ترتيب المستند وفي طبقة مستقلة تحت الجميع. والشريط
+        الجانبي وعمود المحتوى يرتفعان فوقها بـ z-10 صراحةً: بدونها يقرّر
+        ترتيب المستند وحده أيّهما فوق، فتغطّي الهالةُ المحتوى في المتصفحات
+        التي تُنشئ سياق تكديس جديداً عند التحويل.
+      */}
+      <AmbientBackground />
       <Sidebar sections={sections} appName={appName} />
       <MobileSidebar
         sections={sections}
@@ -62,7 +70,7 @@ export function AppShell({
         onClose={() => setMobileOpen(false)}
       />
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="relative z-10 flex min-w-0 flex-1 flex-col">
         {/*
           الشريط العلوي زجاجي لا معتم: المحتوى يمرّ تحته فيبقى الإحساس بأن
           الصفحة طبقة واحدة تتحرك خلف لوح ثابت، لا شريطٌ يقصّ ما تحته. ولذلك
