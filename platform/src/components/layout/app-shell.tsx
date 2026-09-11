@@ -1,9 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, LogOut, Menu, Shield, User as UserIcon } from 'lucide-react';
+import { Bell, LogOut, PanelRightClose, PanelRightOpen, Shield, User as UserIcon } from 'lucide-react';
 import { Sidebar, MobileSidebar } from './sidebar';
 import { AmbientBackground } from './ambient-background';
 import { ThemeToggle } from '@/components/theme-toggle';
@@ -14,6 +14,9 @@ import { ROLE_LABELS } from '@/lib/auth/rbac';
 import type { NavSection } from '@/lib/domain/navigation';
 import type { Role } from '@/generated/prisma';
 import { cn } from '@/lib/utils';
+
+/** مفتاح تفضيل طيّ الشريط الجانبي في تخزين المتصفح */
+const SIDEBAR_KEY = 'mm:sidebar';
 
 export interface ShellUser {
   name: string;
@@ -43,6 +46,52 @@ export function AppShell({
   const [menuOpen, setMenuOpen] = useState(false);
   const [loggingOut, setLoggingOut] = useState(false);
 
+  /*
+   * طيّ الشريط الجانبي على الشاشات الكبيرة.
+   *
+   * يبدأ مفروداً دائماً ثم يُقرأ الاختيار المحفوظ بعد التركيب. والسبب أن
+   * الخادم لا يرى localStorage: لو بدأ من القيمة المحفوظة لاختلف ما صيّره
+   * الخادم عمّا يرسمه العميل في أول إطار، وهو تعارض ترطيب يُسقط الصفحة في
+   * React 19 لا يُصلحه بهدوء.
+   *
+   * والاختيار يُحفظ لأنه تفضيل عمل لا حالة لحظية: من يطوي الشريط ليقرأ
+   * جدولاً بأحد عشر عموداً يريده مطوياً في الصفحة التالية أيضاً، لا أن
+   * يطويه من جديد مع كل تنقّل.
+   */
+  const [desktopOpen, setDesktopOpen] = useState(true);
+
+  useEffect(() => {
+    try {
+      if (window.localStorage.getItem(SIDEBAR_KEY) === 'closed') setDesktopOpen(false);
+    } catch {
+      // التخزين قد يكون محجوباً (نافذة خاصة، سياسة نطاق) — يبقى الافتراضي
+    }
+  }, []);
+
+  /*
+   * زرّ واحد لسلوكين: درج منبثق على الضيّقة، وطيّ في التدفّق على الواسعة.
+   *
+   * والتفريق بقياس العرض وقت النقر لا بحالة محفوظة: عرض النافذة يتغيّر بلا
+   * إعادة تركيب (تدوير الجهاز، تقسيم الشاشة)، فحالة محسوبة مرة واحدة تصير
+   * كاذبة بلا أن يعلم أحد.
+   */
+  const toggleNav = useCallback(() => {
+    const wide = window.matchMedia('(min-width: 1024px)').matches;
+    if (!wide) {
+      setMobileOpen(true);
+      return;
+    }
+    setDesktopOpen((open) => {
+      const next = !open;
+      try {
+        window.localStorage.setItem(SIDEBAR_KEY, next ? 'open' : 'closed');
+      } catch {
+        // التخزين محجوب — الطيّ يعمل لهذه الجلسة ولا يُحفظ
+      }
+      return next;
+    });
+  }, []);
+
   async function onLogout() {
     setLoggingOut(true);
     try {
@@ -62,7 +111,7 @@ export function AppShell({
         التي تُنشئ سياق تكديس جديداً عند التحويل.
       */}
       <AmbientBackground />
-      <Sidebar sections={sections} appName={appName} />
+      <Sidebar sections={sections} appName={appName} open={desktopOpen} />
       <MobileSidebar
         sections={sections}
         appName={appName}
@@ -80,11 +129,17 @@ export function AppShell({
           <Button
             variant="ghost"
             size="icon"
-            className="lg:hidden"
-            onClick={() => setMobileOpen(true)}
-            aria-label="فتح القائمة"
+            onClick={toggleNav}
+            aria-label={desktopOpen ? 'طيّ قائمة التنقّل' : 'إظهار قائمة التنقّل'}
+            aria-expanded={desktopOpen}
+            aria-controls="main-nav"
+            title={desktopOpen ? 'طيّ القائمة' : 'إظهار القائمة'}
           >
-            <Menu className="h-5 w-5" aria-hidden />
+            {desktopOpen ? (
+              <PanelRightClose className="h-5 w-5" aria-hidden />
+            ) : (
+              <PanelRightOpen className="h-5 w-5" aria-hidden />
+            )}
           </Button>
 
           {canAccessAdmin && (

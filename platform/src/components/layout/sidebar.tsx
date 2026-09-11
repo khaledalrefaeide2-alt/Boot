@@ -46,7 +46,11 @@ export function SidebarContent({
         </div>
       </div>
 
-      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5" aria-label="التنقل الرئيسي">
+      <nav
+        id="main-nav"
+        className="flex-1 space-y-6 overflow-y-auto px-3 py-5"
+        aria-label="التنقل الرئيسي"
+      >
         {sections.map((section) => (
           <div key={section.title} className="space-y-1">
             <p className="eyebrow px-2.5 pb-1.5">{section.title}</p>
@@ -84,10 +88,40 @@ export function SidebarContent({
   );
 }
 
-export function Sidebar({ sections, appName }: { sections: NavSection[]; appName: string }) {
+export function Sidebar({
+  sections,
+  appName,
+  open,
+}: {
+  sections: NavSection[];
+  appName: string;
+  /** مطوي أم مفرود — على الشاشات الكبيرة وحدها */
+  open: boolean;
+}) {
   return (
-    <aside className="relative z-10 hidden w-60 shrink-0 border-l border-border bg-surface lg:block no-print">
-      <div className="sticky top-0 h-dvh">
+    /*
+     * الشريط يبقى في تدفّق الصفحة ويطوى بالعرض لا بالإزاحة: الطيّ بالإزاحة
+     * (translate) يُبقي مكانه محجوزاً فلا يكسب المحتوى شيئاً، وكسب العرض هو
+     * الغرض كله — جدول الحسابات أحد عشر عموداً، و240 بكسل إضافية تعني عمودين
+     * بلا تمرير أفقي.
+     *
+     * والانتقال على العرض وحده لا على كل شيء: هو الخاصية الوحيدة المتغيّرة،
+     * وتعميم transition-all يُحرّك الألوان والحدود معها بلا داعٍ.
+     *
+     * inert حين يُطوى — وهي ليست تفصيلاً: العنصر المطوي عرضه صفر ومقصوص،
+     * لكن روابطه تبقى في ترتيب الجدولة. فمن يتنقّل بلوحة المفاتيح يمرّ على
+     * ثلاثة عشر رابطاً لا يراها أحد قبل أن يصل إلى المحتوى.
+     */
+    <aside
+      inert={!open || undefined}
+      aria-hidden={!open || undefined}
+      className={cn(
+        'relative z-10 hidden shrink-0 overflow-hidden bg-surface transition-[width] duration-300 ease-[cubic-bezier(0.16,1,0.3,1)] lg:block no-print',
+        open ? 'w-60 border-l border-border' : 'w-0 border-l-0',
+      )}
+    >
+      {/* عرض ثابت داخلي: بدونه ينضغط المحتوى مع العرض فيتشوّه أثناء الطيّ */}
+      <div className="sticky top-0 h-dvh w-60">
         <SidebarContent sections={sections} appName={appName} />
       </div>
     </aside>
