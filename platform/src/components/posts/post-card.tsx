@@ -67,7 +67,13 @@ function EngagementStat({
 /** بطاقة منشور — العرض الافتراضي في شاشة المنشورات */
 export function PostCard({ post, canReview }: { post: PostListItemView; canReview?: boolean }) {
   return (
-    <article className="flex flex-col overflow-hidden rounded-lg border border-border bg-surface shadow-elev-1 transition-colors hover:border-border-strong print-avoid-break">
+    /*
+      @container يجعل البطاقة نفسها مرجع القياس لا النافذة.
+      وهذا هو الصحيح هنا: عرض البطاقة يتغيّر بعدد الأعمدة وبطيّ الشريط
+      الجانبي معاً، فالنافذة وحدها لا تعرف كم بقي لها فعلاً. البطاقة بعرض
+      220 بكسل تتصرّف تصرّفاً واحداً سواء أكانت النافذة 1280 أم 2560.
+    */
+    <article className="@container card-interactive flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-elev-1 print-avoid-break">
       {(post.thumbnailUrl || post.imageUrl) && (
         <PostThumb
           postId={post.id}
@@ -77,17 +83,27 @@ export function PostCard({ post, canReview }: { post: PostListItemView; canRevie
         />
       )}
 
-      <div className="flex flex-1 flex-col gap-2.5 p-3.5">
+      <div className="flex flex-1 flex-col gap-2 p-3">
+        {/*
+          شارتان دائماً (المنصة والمشاعر)، والنوع والموضوع يظهران على
+          الأعرض وحدها.
+
+          البطاقة عند خمسة أعمدة نحو 220 بكسل، وأربع شارات فيها تلتفّ إلى
+          ثلاثة سطور فتزيح النص وتأكل ارتفاع البطاقة كله. والمخفيّان ليسا
+          ضائعين: كلاهما ظاهر في عرض الجدول وفي صفحة المنشور.
+        */}
         <div className="flex flex-wrap items-center gap-1.5">
           <Badge tone="primary" size="sm">
             {post.platform.name}
           </Badge>
-          <Badge size="sm">{POST_TYPE_LABELS[post.postType as keyof typeof POST_TYPE_LABELS] ?? post.postType}</Badge>
           <Badge tone={sentimentTone(post.sentiment)} size="sm">
             {SENTIMENT_LABELS[post.sentiment as keyof typeof SENTIMENT_LABELS] ?? post.sentiment}
           </Badge>
+          <Badge size="sm" className="hidden @[15rem]:inline-flex">
+            {POST_TYPE_LABELS[post.postType as keyof typeof POST_TYPE_LABELS] ?? post.postType}
+          </Badge>
           {post.topic && (
-            <Badge tone="info" size="sm">
+            <Badge tone="info" size="sm" className="hidden @[17rem]:inline-flex">
               {post.topic.name}
             </Badge>
           )}
@@ -100,18 +116,18 @@ export function PostCard({ post, canReview }: { post: PostListItemView; canRevie
         </div>
 
         <Link href={`/posts/${post.id}`} className="flex-1">
-          <p className="line-clamp-4 text-sm leading-relaxed text-foreground">
-            {post.text ? truncate(post.text, 260) : <span className="text-subtle-foreground">منشور بلا نص</span>}
+          <p className="line-clamp-3 text-xs leading-relaxed text-foreground @[15rem]:line-clamp-4 @[15rem]:text-sm">
+            {post.text ? truncate(post.text, 180) : <span className="text-subtle-foreground">منشور بلا نص</span>}
           </p>
         </Link>
 
         {post.hashtags.length > 0 && (
           <p className="line-clamp-1 text-xs text-primary">
-            {post.hashtags.slice(0, 5).map((tag) => `#${tag}`).join(' ')}
+            {post.hashtags.slice(0, 3).map((tag) => `#${tag}`).join(' ')}
           </p>
         )}
 
-        <div className="flex items-center justify-between gap-2 border-t border-border pt-2.5">
+        <div className="flex items-center justify-between gap-2 border-t border-border pt-2">
           <div className="min-w-0">
             <Link
               href={`/accounts/${post.account.id}`}

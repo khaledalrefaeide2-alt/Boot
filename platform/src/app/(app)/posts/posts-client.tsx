@@ -165,7 +165,15 @@ export function PostsClient({
         </Card>
       ) : view === 'cards' ? (
         <>
-          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+          {/*
+            خمس بطاقات في السطر على الشاشات العريضة جداً، وتتدرّج نزولاً:
+            2xl خمس · xl أربع · lg ثلاث · sm اثنتان · الجوال واحدة.
+
+            والتدرّج ليس ترفاً: خمسة أعمدة على شاشة 1280 تعطي البطاقة نحو
+            190 بكسل، وهو عرض لا يسع سطراً عربياً واحداً مفهوماً. فالعدد
+            يتبع العرض المتاح لا رغبةً في عدد بعينه.
+          */}
+          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
             {query.data.posts.map((post) => (
               <PostCard key={post.id} post={post} canReview={canReview} />
             ))}
