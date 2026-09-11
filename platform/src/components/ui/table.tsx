@@ -16,7 +16,9 @@ export function Table({ className, ...props }: React.TableHTMLAttributes<HTMLTab
  * الصف الأول، وحدّ بسماكة الفواصل نفسها لا يعطيها ذلك.
  */
 export function THead({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
-  return <thead className={cn('border-b-2 border-border-strong bg-surface-2', className)} {...props} />;
+  return (
+    <thead className={cn('border-b-2 border-border-strong bg-surface-2/60', className)} {...props} />
+  );
 }
 
 /*
@@ -60,7 +62,9 @@ export function TH({ className, scope = 'col', ...props }: React.ThHTMLAttribute
     <th
       scope={scope}
       className={cn(
-        'whitespace-nowrap px-3 py-2.5 text-start text-xs font-semibold tracking-[0.01em] text-muted-foreground',
+        // بلا تتبّع موجب: أسماء الأعمدة عربية، والعربية متصلة فالتباعد يقطع
+        // وصلات الحروف. الوزن واللون يكفيان لتمييز الترويسة عن الصف.
+        'whitespace-nowrap px-3 py-3 text-start text-xs font-semibold text-muted-foreground',
         className,
       )}
       {...props}

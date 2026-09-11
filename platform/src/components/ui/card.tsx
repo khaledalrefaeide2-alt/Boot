@@ -8,10 +8,27 @@ import { cn } from '@/lib/utils';
  * فيتمدد الجدول خارج الشاشة ويظهر تمرير أفقي في الصفحة كلها بدل أن ينحصر
  * التمرير داخل الجدول وحده.
  */
-export function Card({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
+export function Card({
+  className,
+  interactive,
+  ...props
+}: React.HTMLAttributes<HTMLDivElement> & {
+  /**
+   * بطاقة تُنقر أو تحمل رابطاً — تُضيء حدّها وترتفع قليلاً عند التحويم.
+   *
+   * صريحة لا مستنتجة: التحويم وعدٌ بأن شيئاً سيحدث عند النقر، ووضعه على
+   * بطاقة عرض ساكنة يجعل المستخدم ينقرها ولا يحدث شيء — وهو أسوأ من بطاقة
+   * لا تتحرك أصلاً.
+   */
+  interactive?: boolean;
+}) {
   return (
     <div
-      className={cn('min-w-0 rounded-lg border border-border bg-surface shadow-elev-1', className)}
+      className={cn(
+        'min-w-0 rounded-xl border border-border bg-surface shadow-elev-1',
+        interactive && 'card-interactive',
+        className,
+      )}
       {...props}
     />
   );
@@ -37,7 +54,11 @@ export function CardHeader({
       {...props}
     >
       <div className="space-y-0.5">
-        {title && <h2 className="text-sm font-semibold text-heading sm:text-base">{title}</h2>}
+        {title && (
+          <h2 className="text-sm font-semibold tracking-[-0.01em] text-heading sm:text-base">
+            {title}
+          </h2>
+        )}
         {description && <p className="text-xs text-muted-foreground">{description}</p>}
       </div>
       {action && <div className="flex items-center gap-2">{action}</div>}

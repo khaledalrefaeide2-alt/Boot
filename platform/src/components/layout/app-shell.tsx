@@ -63,7 +63,12 @@ export function AppShell({
       />
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 flex h-14 items-center gap-2 border-b border-border bg-surface/95 px-3 backdrop-blur sm:px-4 no-print">
+        {/*
+          الشريط العلوي زجاجي لا معتم: المحتوى يمرّ تحته فيبقى الإحساس بأن
+          الصفحة طبقة واحدة تتحرك خلف لوح ثابت، لا شريطٌ يقصّ ما تحته. ولذلك
+          رُفع ارتفاعه إلى 4rem — الزجاج يحتاج مساحة ليُقرأ زجاجاً.
+        */}
+        <header className="glass sticky top-0 z-30 flex h-16 items-center gap-2 border-0 border-b border-border px-3 sm:px-4 no-print">
           <Button
             variant="ghost"
             size="icon"
@@ -90,7 +95,7 @@ export function AppShell({
               <Bell className="h-4.5 w-4.5" aria-hidden />
             </Button>
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 left-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-2xs font-semibold text-white">
+              <span className="absolute -top-0.5 left-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-2xs font-semibold text-white shadow-[0_0_12px_-2px_var(--danger)]">
                 <span className="num">{unreadCount > 99 ? '99+' : unreadCount}</span>
               </span>
             )}
@@ -102,7 +107,7 @@ export function AppShell({
             <button
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
-              className="flex items-center gap-2 rounded-md border border-border bg-surface px-2 py-1.5 text-start transition-colors hover:bg-surface-2"
+              className="flex items-center gap-2 rounded-lg border border-border bg-surface/60 px-2 py-1.5 text-start transition-colors hover:border-border-strong hover:bg-surface-2"
               aria-expanded={menuOpen}
               aria-haspopup="menu"
             >
@@ -119,7 +124,7 @@ export function AppShell({
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} aria-hidden />
                 <div
-                  className="absolute left-0 top-full z-20 mt-1.5 w-60 rounded-md border border-border bg-surface p-1.5 shadow-elev-3"
+                  className="glass-panel enter-stagger absolute left-0 top-full z-20 mt-2 w-60 rounded-xl p-1.5 shadow-elev-3"
                   role="menu"
                 >
                   <div className="border-b border-border px-2.5 py-2">
@@ -163,7 +168,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 px-3 py-4 sm:px-5 sm:py-6">{children}</main>
+        <main className="min-w-0 flex-1 px-3 py-5 sm:px-6 sm:py-7">{children}</main>
       </div>
     </div>
   );

@@ -39,8 +39,8 @@ export function StatCard({
   const content = (
     <div
       className={cn(
-        'flex h-full items-start gap-3 rounded-lg border border-border bg-surface p-4 shadow-elev-1 transition-colors print-avoid-break',
-        href && 'hover:border-border-strong hover:bg-surface-2/40',
+        'flex h-full items-start gap-3 rounded-xl border border-border bg-surface p-4 shadow-elev-1 print-avoid-break',
+        href && 'card-interactive hover:bg-surface-2/40',
         className,
       )}
     >
@@ -50,8 +50,20 @@ export function StatCard({
         </div>
       )}
       <div className="min-w-0 space-y-0.5">
-        <p className="text-xs font-medium text-muted-foreground">{label}</p>
-        <p className={cn('num text-2xl font-bold tabular-nums sm:text-3xl', tones[tone])}>{display}</p>
+        <p className="overline">{label}</p>
+        {/*
+          الرقم هو البطل: وزن ثقيل وتتبّع سالب يجمع الأرقام في كتلة واحدة
+          تُقرأ دفعةً. والتتبّع السالب آمن هنا بلا تحفّظ — الأرقام لاتينية
+          منفصلة لا حروفاً عربية متصلة.
+        */}
+        <p
+          className={cn(
+            'num text-2xl font-extrabold tracking-[-0.03em] tabular-nums sm:text-3xl',
+            tones[tone],
+          )}
+        >
+          {display}
+        </p>
         {hint && <p className="truncate text-xs text-subtle-foreground">{hint}</p>}
       </div>
     </div>
@@ -88,7 +100,7 @@ export function HighlightCard({
     <div
       className={cn(
         'flex h-full flex-col justify-between gap-2 rounded-lg border border-border bg-surface p-4 shadow-elev-1 print-avoid-break',
-        href && 'transition-colors hover:border-border-strong hover:bg-surface-2/40',
+        href && 'card-interactive hover:bg-surface-2/40',
         className,
       )}
     >

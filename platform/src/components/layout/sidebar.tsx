@@ -7,6 +7,7 @@ import { cn } from '@/lib/utils';
 import type { NavSection } from '@/lib/domain/navigation';
 import { navIcon } from '@/lib/domain/nav-icons';
 import { Button } from '@/components/ui/button';
+import { STAGGER_MS } from '@/lib/motion';
 
 function isActive(pathname: string, href: string, exact?: boolean): boolean {
   if (exact) return pathname === href;
@@ -18,48 +19,60 @@ export function SidebarContent({
   sections,
   appName,
   onNavigate,
+  stagger = false,
 }: {
   sections: NavSection[];
   appName: string;
   onNavigate?: () => void;
+  /** دخول متتابع — للدرج المنبثق وحده، لا للشريط الثابت */
+  stagger?: boolean;
 }) {
   const pathname = usePathname();
+  let order = 0;
 
   return (
     <div className="flex h-full flex-col">
-      <div className="flex items-center gap-2.5 border-b border-border px-4 py-4">
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary text-primary-foreground">
+      <div className="flex items-center gap-3 border-b border-border px-4 py-4">
+        {/*
+          العلامة تحمل الهالة وحدها في كامل الشريط. الهالة تُقرأ «هنا المركز»،
+          وتكرارها على كل أيقونة يُلغي معناها ويحوّل الشريط إلى لوحة إعلانات.
+        */}
+        <div className="glow flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <ShieldCheck className="h-5 w-5" aria-hidden />
         </div>
         <div className="min-w-0 leading-tight">
-          <p className="truncate text-sm font-semibold text-foreground">{appName}</p>
-          <p className="text-2xs text-muted-foreground">نظام داخلي</p>
+          <p className="truncate text-sm font-bold tracking-[-0.01em] text-foreground">{appName}</p>
+          <p className="overline overline-latin mt-0.5">Media Monitoring</p>
         </div>
       </div>
 
-      <nav className="flex-1 space-y-5 overflow-y-auto px-3 py-4" aria-label="التنقل الرئيسي">
+      <nav className="flex-1 space-y-6 overflow-y-auto px-3 py-5" aria-label="التنقل الرئيسي">
         {sections.map((section) => (
           <div key={section.title} className="space-y-1">
-            <p className="px-2 pb-1 text-2xs font-semibold tracking-wide text-subtle-foreground">
-              {section.title}
-            </p>
+            <p className="overline px-2.5 pb-1.5">{section.title}</p>
             {section.items.map((item) => {
               const active = isActive(pathname, item.href, item.exact);
               const Icon = navIcon(item.icon);
+              const delay = stagger ? `${order++ * (STAGGER_MS / 2)}ms` : undefined;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={onNavigate}
                   aria-current={active ? 'page' : undefined}
+                  style={delay ? ({ '--stagger': delay } as React.CSSProperties) : undefined}
                   className={cn(
-                    'flex items-center gap-2.5 rounded-md px-2.5 py-2 text-sm transition-colors',
+                    'relative flex items-center gap-2.5 rounded-lg py-2 pe-2.5 ps-3.5 text-sm transition-[background-color,color] duration-200',
+                    stagger && 'enter-stagger',
                     active
-                      ? 'bg-primary-soft font-medium text-primary-soft-foreground'
+                      ? 'nav-indicator bg-primary-soft/70 font-semibold text-primary-soft-foreground'
                       : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground',
                   )}
                 >
-                  <Icon className="h-4 w-4 shrink-0" aria-hidden />
+                  <Icon
+                    className={cn('h-4 w-4 shrink-0', active && 'text-primary')}
+                    aria-hidden
+                  />
                   <span className="truncate">{item.label}</span>
                 </Link>
               );
@@ -96,8 +109,16 @@ export function MobileSidebar({
 
   return (
     <div className="fixed inset-0 z-50 lg:hidden no-print">
-      <div className="fixed inset-0 bg-black/45" onClick={onClose} aria-hidden />
-      <div className="fixed inset-y-0 right-0 w-72 max-w-[85vw] border-l border-border bg-surface shadow-elev-4">
+      {/*
+        الحجاب معتم ومطموس معاً: العتمة وحدها تُبقي النص خلفه مقروءاً فيتنافس
+        مع الدرج على الانتباه، والطمس وحده لا يكفي لخفض السطوع على شاشة فاتحة.
+      */}
+      <div
+        className="fixed inset-0 bg-black/60 backdrop-blur-sm"
+        onClick={onClose}
+        aria-hidden
+      />
+      <div className="glass-panel fixed inset-y-0 right-0 w-72 max-w-[85vw] border-0 border-l border-border shadow-elev-4">
         <Button
           variant="ghost"
           size="icon-sm"
@@ -107,7 +128,7 @@ export function MobileSidebar({
         >
           <X className="h-4 w-4" aria-hidden />
         </Button>
-        <SidebarContent sections={sections} appName={appName} onNavigate={onClose} />
+        <SidebarContent sections={sections} appName={appName} onNavigate={onClose} stagger />
       </div>
     </div>
   );

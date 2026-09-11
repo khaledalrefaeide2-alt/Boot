@@ -491,20 +491,32 @@
 
 @layer utilities {
   /*
-   * العنوان الفرعي المتباعد — «overline».
+   * العنوان الفرعي — «overline». يسمّي المقطع قبل عنوانه، فيفصل بين «ماذا»
+   * و«عن ماذا» بلا إضافة حجم ولا وزن ولا لون جديد. ومقاسه 12px لا أقل.
    *
-   * مونوسبيس وأحرف كبيرة وتتبّع واسع. دوره تسمية المقطع قبل عنوانه، وهو
-   * أرخص وسيلة لبناء تسلسل: يفصل بين «ماذا» و«عن ماذا» بلا إضافة حجم ولا
-   * وزن ولا لون جديد. ومقاسه 12px لا أقل — وهو أصغر مقاس في النظام كله.
+   * ★ بلا تتبّع ولا مونوسبيس — وهذا ليس إغفالاً.
+   *
+   * المواصفة تطلب letter-spacing: 0.15em، وهي قاتلة على العربية: الخط
+   * العربي متصل، والتباعد يُبقي وصلات الحروف مرسومة ثم يباعد الأجسام عنها،
+   * فتظهر الكلمة مقطّعة بخيوط بينها. والمونوسبيس اللاتيني لا يحمل حرفاً
+   * عربياً أصلاً فيسقط إلى خط احتياطي في منتصف الواجهة.
+   *
+   * فالتتبّع والمونوسبيس انتقلا إلى .overline-latin، ولا يُستعملان إلا على
+   * نصّ لاتيني مؤكَّد: رقم تسلسل، أو اسم المنصة بالإنجليزية، أو معرّف.
    */
   .overline {
-    font-family: var(--font-mono);
     font-size: var(--text-2xs);
-    font-weight: 500;
-    letter-spacing: var(--tracking-overline);
-    text-transform: uppercase;
+    font-weight: 600;
     color: var(--muted-foreground);
     line-height: 1.4;
+  }
+
+  /* النسخة اللاتينية وحدها — لا تُوضع على نصّ عربي إطلاقاً */
+  .overline-latin {
+    font-family: var(--font-mono);
+    letter-spacing: var(--tracking-overline);
+    text-transform: uppercase;
+    font-weight: 500;
   }
 
   /* العنوان المعماري — وزن ثقيل وتتبّع سالب وسطر متماسك */
@@ -568,6 +580,48 @@
   /* هالة اللون الواحد — للحالة النشطة ولزرّ الدعوة الأساسي */
   .glow {
     box-shadow: var(--glow-primary, var(--elev-2));
+  }
+
+  /*
+   * دخول متتابع لعناصر الدرج والقوائم المنبثقة.
+   *
+   * التأخير يُمرَّر من المكوّن بمتغيّر --stagger لا بصنف لكل رقم: عدد
+   * العناصر يأتي من البيانات ولا يُعرف وقت كتابة الأنماط.
+   */
+  @keyframes enter-stagger {
+    from {
+      opacity: 0;
+      transform: translate3d(0, 8px, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+  .enter-stagger {
+    animation: enter-stagger 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation-delay: var(--stagger, 0ms);
+  }
+
+  /*
+   * المؤشّر المضيء للعنصر النشط في التنقّل.
+   *
+   * عمود صغير على حافة البداية المنطقية (inset-inline-start) لا على اليسار:
+   * الواجهة عربية والشريط الجانبي على اليمين، فاليسار الفيزيائي هو الحافة
+   * الداخلية لا حافة البداية. الخاصية المنطقية تصيب الجهة الصحيحة في
+   * الاتجاهين بلا استثناء في الشيفرة.
+   */
+  .nav-indicator::before {
+    content: '';
+    position: absolute;
+    inset-inline-start: 0;
+    top: 50%;
+    height: 1.15rem;
+    width: 3px;
+    border-radius: 999px;
+    background: var(--primary);
+    box-shadow: var(--glow-soft, none);
+    transform: translate3d(0, -50%, 0);
   }
 
   .card-surface {
