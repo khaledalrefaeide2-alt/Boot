@@ -105,6 +105,13 @@ const SETTINGS = [
     description: 'يُمرَّر إلى النظام كسقف فوترة إلزامي',
   },
   {
+    key: 'extraction.hourlyLimit',
+    value: 0,
+    category: 'extraction',
+    label: 'سقف عمليات الاستخراج في الساعة للمستخدم',
+    description: 'صفر يعني بلا سقف — التشغيل متاح حسب الحاجة. ارفع القيمة فوق الصفر لفرض حدّ.',
+  },
+  {
     key: 'extraction.defaultWindowDays',
     value: 30,
     category: 'extraction',

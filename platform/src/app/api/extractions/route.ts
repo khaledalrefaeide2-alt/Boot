@@ -17,6 +17,7 @@ import { paginationSchema } from '@/lib/validation/common';
 import { createExtractionRun, ExtractionError } from '@/lib/extraction/service';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { audit, AUDIT_ACTIONS } from '@/lib/audit';
+import { getExtractionHourlyLimit } from '@/lib/settings';
 import { getQueueHealth } from '@/lib/queue';
 import type { Prisma } from '@/generated/prisma';
 
@@ -115,13 +116,23 @@ export async function POST(request: NextRequest) {
     const actor = await requirePermission(PERMISSIONS.EXTRACTION_RUN);
     await requireCsrf();
 
-    const limit = await rateLimit(
-      `extraction:${actor.id}`,
-      RATE_LIMITS.EXTRACTION_RUN.limit,
-      RATE_LIMITS.EXTRACTION_RUN.window,
-    );
-    if (!limit.allowed) {
-      throw errors.tooMany('تجاوزت حد عمليات الاستخراج في الساعة، حاول لاحقاً');
+    /*
+     * السقف يُقرأ من الإعدادات، و0 تعني «بلا سقف» فلا يُستهلك عدّاد أصلاً.
+     * المنصة داخلية ومستخدموها معروفون، والحاجز على الإنفاق هو سقف
+     * المنشورات في كل تشغيل لا عدد العمليات.
+     */
+    const hourlyLimit = await getExtractionHourlyLimit();
+    if (hourlyLimit > 0) {
+      const limit = await rateLimit(
+        `extraction:${actor.id}`,
+        hourlyLimit,
+        RATE_LIMITS.EXTRACTION_RUN.window,
+      );
+      if (!limit.allowed) {
+        throw errors.tooMany(
+          `تجاوزت سقف عمليات الاستخراج في الساعة (${hourlyLimit})؛ يمكن رفعه من الإعدادات`,
+        );
+      }
     }
 
     const input = await parseBody(request, startSchema);

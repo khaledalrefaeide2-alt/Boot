@@ -16,9 +16,17 @@ import { checkRateLimit, rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { createExtractionRun, ExtractionError } from '@/lib/extraction/service';
 import { audit, AUDIT_ACTIONS } from '@/lib/audit';
 import { getQueueHealth } from '@/lib/queue';
+import { getExtractionHourlyLimit } from '@/lib/settings';
 
-/** سقف الدفعة الواحدة — الحصة الساعية تحدّ قبله عادةً، وهذا يحمي الطلب نفسه */
-const MAX_BATCH = 50;
+/*
+ * سقف الدفعة الواحدة.
+ *
+ * ليس سقفاً على الاستخراج — ذاك إعداد يُضبط من الشاشة — بل حدٌّ على حجم
+ * الطلب الواحد: الدفعة تُنشأ متسلسلةً داخل طلب HTTP واحد، فمئاتٌ منها في
+ * طلب واحد تعني طلباً يطول حتى ينقطع عند الوسيط، ويبقى المستخدم لا يعرف
+ * أيّ الحسابات بدأت. ومن يرصد أكثر من ذلك يقسّمها دفعتين.
+ */
+const MAX_BATCH = 200;
 
 const DATE = z
   .string()
@@ -83,13 +91,16 @@ export async function POST(request: NextRequest) {
      * الحصة تُفحص قبل البدء لا أثناءه: لو بدأنا ثم نفدت في المنتصف لخرجت
      * دفعة نصفها منفَّذ ونصفها لا، والمستخدم لا يعرف أين توقفت.
      */
-    const quota = await checkRateLimit(`extraction:${actor.id}`, RATE_LIMITS.EXTRACTION_RUN.limit);
-    if (quota.remaining < allowed.length) {
-      throw errors.tooMany(
-        quota.remaining === 0
-          ? 'استنفدت حصة عمليات الاستخراج في هذه الساعة، حاول لاحقاً'
-          : `الحصة المتبقية في هذه الساعة ${quota.remaining} عملية، وقد اخترت ${allowed.length}`,
-      );
+    const hourlyLimit = await getExtractionHourlyLimit();
+    if (hourlyLimit > 0) {
+      const quota = await checkRateLimit(`extraction:${actor.id}`, hourlyLimit);
+      if (quota.remaining < allowed.length) {
+        throw errors.tooMany(
+          quota.remaining === 0
+            ? `استنفدت سقف عمليات الاستخراج في هذه الساعة (${hourlyLimit})؛ يمكن رفعه من الإعدادات`
+            : `المتبقي من سقف هذه الساعة ${quota.remaining} عملية وقد اخترت ${allowed.length}؛ يمكن رفع السقف من الإعدادات`,
+        );
+      }
     }
 
     const accounts = await prisma.account.findMany({
@@ -126,12 +137,15 @@ export async function POST(request: NextRequest) {
           resultsType: code === 'instagram' ? (input.resultsType ?? null) : null,
         });
 
-        // الحصة تُستهلك بما نُفِّذ فعلاً، فالفشل لا يُحسب على المستخدم
-        await rateLimit(
-          `extraction:${actor.id}`,
-          RATE_LIMITS.EXTRACTION_RUN.limit,
-          RATE_LIMITS.EXTRACTION_RUN.window,
-        );
+        // الحصة تُستهلك بما نُفِّذ فعلاً، فالفشل لا يُحسب على المستخدم.
+        // وبلا سقف لا عدّاد يُزاد أصلاً.
+        if (hourlyLimit > 0) {
+          await rateLimit(
+            `extraction:${actor.id}`,
+            hourlyLimit,
+            RATE_LIMITS.EXTRACTION_RUN.window,
+          );
+        }
 
         outcomes.push({ ...base, runId: run.id, queued, reason: null });
       } catch (error) {

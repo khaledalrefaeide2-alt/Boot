@@ -117,6 +117,11 @@ export const RATE_LIMITS = {
   LOGIN_PER_IP: { limit: 50, window: 15 * 60 },
   LOGIN_PER_EMAIL: { limit: 10, window: 15 * 60 },
   PASSWORD_RESET: { limit: 5, window: 60 * 60 },
+  /*
+   * السقف هنا احتياطيّ فقط: الرقم الفعليّ يُقرأ من الإعداد
+   * extraction.hourlyLimit (و0 = بلا سقف). والمستعمَل من هذا المدخل هو
+   * النافذة: طول الساعة التي يُحسب العدّ ضمنها.
+   */
   EXTRACTION_RUN: { limit: 30, window: 60 * 60 },
   EXPORT: { limit: 20, window: 60 * 60 },
   MUTATION: { limit: 240, window: 60 },

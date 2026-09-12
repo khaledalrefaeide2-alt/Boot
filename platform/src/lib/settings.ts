@@ -9,6 +9,7 @@ const DEFAULTS: Record<string, unknown> = {
   'data.retentionDays': 365,
   'extraction.defaultMaxItems': 100,
   'extraction.defaultWindowDays': 30,
+  'extraction.hourlyLimit': 0,
   'alerts.highEngagementThreshold': 1000,
   'alerts.negativeSentimentRatio': 0.4,
 };
@@ -49,4 +50,23 @@ export async function getOperationalSettings() {
     organization: String(settings['app.organization'] ?? ''),
     appName: String(settings['app.name'] ?? 'منصة رصد وتحليل المنصات الإعلامية'),
   };
+}
+
+/**
+ * سقف عمليات الاستخراج في الساعة للمستخدم الواحد — و0 تعني بلا سقف.
+ *
+ * كان رقماً ثابتاً في الشيفرة، فكان تغييره يستلزم نشراً جديداً. وهو قرار
+ * تشغيلي لا هندسي: من يرصد أربعين حساباً يحتاج أربعين عملية في الجلسة
+ * الواحدة، ومن يرصد خمسة لا يحتاج ذلك. فصار إعداداً يُضبط من شاشة
+ * الإعدادات ويسري فوراً.
+ *
+ * والافتراضي «بلا سقف» لأن هذه منصة داخلية يُدير مستخدميها المسؤول نفسه:
+ * الحاجز الفعلي على الإنفاق هو سقف المنشورات في كل تشغيل — وهو إلزامي
+ * ويُمرَّر إلى المزوّد — لا عدد العمليات.
+ */
+export async function getExtractionHourlyLimit(): Promise<number> {
+  const raw = await getSetting<unknown>('extraction.hourlyLimit', 0);
+  const value = Number(raw);
+  if (!Number.isFinite(value) || value <= 0) return 0;
+  return Math.floor(value);
 }
