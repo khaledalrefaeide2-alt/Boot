@@ -61,7 +61,7 @@ const CAPABILITIES = [
 export function HeroPanel() {
   return (
     <section
-      className="ink-band relative hidden overflow-hidden rounded-lg p-10 lg:flex lg:flex-col lg:justify-center xl:p-14"
+      className="relative hidden overflow-hidden rounded-2xl border border-border bg-surface p-8 lg:flex lg:flex-col lg:justify-center xl:p-10"
       aria-labelledby="hero-title"
     >
       <AmbientCanvas />
@@ -75,12 +75,12 @@ export function HeroPanel() {
         aria-hidden
       />
       <div
-        className="pointer-events-none absolute bottom-[-10rem] end-[-6rem] h-80 w-80 rounded-full bg-primary/8 blur-3xl"
+        className="pointer-events-none absolute bottom-[-10rem] end-[-6rem] h-80 w-80 rounded-full bg-accent/10 blur-3xl"
         aria-hidden
       />
 
       <div className="relative">
-        <p className="eyebrow eyebrow-accent eyebrow-latin mb-5">Media Monitoring</p>
+        <p className="eyebrow eyebrow-latin mb-4">Media Monitoring</p>
 
         {/*
           الدرجة الثالثة من سلّم العرض لا الثانية، وبلا <br/>.
@@ -98,7 +98,7 @@ export function HeroPanel() {
           منصة رصد وتحليل المنصات الإعلامية
         </h1>
 
-        <p className="mt-5 max-w-md text-sm leading-relaxed text-muted-foreground">
+        <p className="mt-4 max-w-md text-sm leading-relaxed text-muted-foreground">
           نظام داخلي يجمع منشورات الحسابات المرصودة، ويحلّلها، ويعرضها في لوحات ومقارنات
           وتقارير قابلة للتصدير.
         </p>
@@ -108,12 +108,12 @@ export function HeroPanel() {
           يعمل بلا JavaScript، ويستجيب للوحة المفاتيح ولقارئ الشاشة بلا
           سطر واحد من aria، ولا يُدخل الصفحة في دورة ترطيب من أجل فتح فقرة.
         */}
-        <ul className="mt-10 divide-y divide-border border-y border-border">
+        <ul className="mt-9 divide-y divide-border border-y border-border">
           {CAPABILITIES.map(({ no, title, body }) => (
             <li key={no}>
               <details className="group">
-                <summary className="flex cursor-pointer list-none items-center gap-4 py-3.5 outline-none transition-colors hover:text-primary focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
-                  <span className="eyebrow eyebrow-accent eyebrow-latin w-6 shrink-0">{no}</span>
+                <summary className="flex cursor-pointer list-none items-center gap-3 py-3 outline-none transition-colors hover:text-heading focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
+                  <span className="eyebrow eyebrow-latin w-6 shrink-0 text-primary">{no}</span>
                   <span className="flex-1 text-sm font-semibold text-foreground">{title}</span>
                   {/* علامة الفتح بـ CSS لا بأيقونة: خط واحد يدور 90 درجة */}
                   <span
@@ -121,7 +121,7 @@ export function HeroPanel() {
                     aria-hidden
                   />
                 </summary>
-                <p className="pb-4 pe-5 ps-10 text-xs leading-relaxed text-muted-foreground">
+                <p className="pb-4 pe-5 ps-9 text-xs leading-relaxed text-muted-foreground">
                   {body}
                 </p>
               </details>

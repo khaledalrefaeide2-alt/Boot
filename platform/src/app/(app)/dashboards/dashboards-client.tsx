@@ -170,7 +170,8 @@ export function DashboardsClient() {
                   </Link>
                   <Button
                     size="sm"
-                    variant="danger-ghost"
+                    variant="ghost"
+                    className="text-danger"
                     onClick={() => setDeleteTarget(dashboard)}
                     aria-label="حذف اللوحة"
                   >

@@ -321,7 +321,7 @@ export function UsersClient({
                           {canApprove && user.status === 'PENDING' && (
                             <Button
                               size="sm"
-                              variant="ghost"
+                              variant="soft"
                               onClick={() =>
                                 statusMutation.mutate({ id: user.id, status: 'ACTIVE' })
                               }
@@ -337,7 +337,7 @@ export function UsersClient({
                             <>
                               <Button
                                 size="sm"
-                                variant="ghost"
+                                variant="secondary"
                                 onClick={() => {
                                   setEditing(user);
                                   setFormOpen(true);
@@ -369,7 +369,8 @@ export function UsersClient({
                               {user.status !== 'DISABLED' && user.id !== currentUserId && (
                                 <Button
                                   size="sm"
-                                  variant="danger-ghost"
+                                  variant="ghost"
+                                  className="text-danger"
                                   title="تعطيل الحساب"
                                   onClick={() => setDisableTarget(user)}
                                 >

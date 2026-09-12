@@ -408,7 +408,7 @@ export function AccountsAdminClient({
                           {canRunExtraction && (
                             <Button
                               size="sm"
-                              variant="ghost"
+                              variant="soft"
                               onClick={() => setRunTargets([toTarget(account)])}
                               title="تشغيل استخراج يدوي"
                             >
@@ -418,7 +418,7 @@ export function AccountsAdminClient({
                           )}
                           <Button
                             size="sm"
-                            variant="ghost"
+                            variant="secondary"
                             onClick={() => {
                               setEditing(account);
                               setFormOpen(true);
@@ -428,7 +428,8 @@ export function AccountsAdminClient({
                           </Button>
                           <Button
                             size="sm"
-                            variant="danger-ghost"
+                            variant="ghost"
+                            className="text-danger"
                             onClick={() => setDeleteTarget(account)}
                             aria-label="حذف الحساب"
                           >

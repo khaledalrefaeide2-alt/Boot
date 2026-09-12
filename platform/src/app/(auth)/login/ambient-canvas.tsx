@@ -73,7 +73,7 @@ export function AmbientCanvas() {
       const value = getComputedStyle(document.documentElement)
         .getPropertyValue('--primary')
         .trim();
-      return value || '#e3a184';
+      return value || '#00e5ff';
     }
 
     function draw() {

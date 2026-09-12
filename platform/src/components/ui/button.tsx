@@ -6,68 +6,42 @@ import { forwardRef, type ButtonHTMLAttributes } from 'react';
 import { cn } from '@/lib/utils';
 
 /*
- * الأزرار — على لغة النموذج المرجعي.
+ * الأزرار.
  *
- * أربعة قرارات تشرح الشكل:
+ * تغيّران عن السابق:
  *
- * ١) مسطّحة بلا ظلّ. الظلّ في هذا النظام يقول «هذا السطح يرتفع عن ذاك»،
- *    وهي جملة تخصّ البطاقات والنوافذ لا الأزرار. زرٌّ بظلّ داخل بطاقة
- *    بظلّ يجعل الارتفاعين يتنافسان فلا يبقى لأيّهما معنى. والنموذج
- *    المرجعي كلّه مسطّح، وهذا سبب هدوئه.
+ * ١) الانتقال يشمل box-shadow و transform لا الألوان وحدها، فيحمل الزرّ
+ *    الأساسي هالته عند التحويم بدل أن تقفز دفعةً واحدة.
  *
- * ٢) حشوة أفقية واسعة ونصّ صغير. هذه هي النسبة التي تجعل الزرّ يبدو
- *    مقصوداً لا منفوخاً: الفراغ حول الكلمة هو ما يعطيها الوزن، لا حجم
- *    الحرف. ولذلك كبرت الحشوة وبقي النصّ عند حدّه.
- *
- * ٣) بلا تباعد أحرف. النموذج المرجعي يباعد حروف عناوين أزراره، وهي حيلة
- *    لاتينية بحتة: العربية خطٌّ متّصل، وأيّ تباعد موجب يفكّ وصل الحروف
- *    فتقرأ «ت ص د ي ر» بدل «تصدير». فالوزن هنا يأتي من الحشوة والثخانة.
- *
- * ٤) active:scale-[.98] — ارتداد ضغط بمقدار 2%. أقلّ منه لا يُحسّ، وأكثر
+ * ٢) active:scale-[.98] — ارتداد ضغط بمقدار 2%. أقلّ منه لا يُحسّ، وأكثر
  *    منه يُحرّك النص داخل الزر فيبدو مطاطياً لا مضغوطاً. وهو التغذية
  *    الراجعة الوحيدة المتاحة للمس، حيث لا تحويم أصلاً.
  */
 const buttonVariants = cva(
-  'inline-flex items-center justify-center gap-2 rounded-sm font-semibold transition-[background-color,color,border-color,opacity] duration-200 active:scale-[.98] disabled:pointer-events-none disabled:opacity-45 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring whitespace-nowrap',
+  'inline-flex items-center justify-center gap-2 rounded-lg font-medium transition-[background-color,color,box-shadow,transform,border-color] duration-200 active:scale-[.98] disabled:pointer-events-none disabled:opacity-50 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring whitespace-nowrap',
   {
     variants: {
       variant: {
         /*
-          نصّ الزرّ الأساسي رمزٌ لا لونٌ مكتوب: الطين في السمة الداكنة
-          فاتح فيحمل حبراً داكناً، وفي الفاتحة داكن فيحمل أبيض. ولو كُتب
-          «أبيض» هنا لسقط أحدهما إلى 2:1 بلا أن يظهر في أيّ فحص تصريف.
+          الهالة تُكتب بقيمة صريحة لا بصنف `hover:glow`: الأصناف المعرَّفة
+          داخل @layer utilities في Tailwind v4 أصناف ساكنة لا تولّد صيغاً
+          للحالات، فـ hover:glow لا يُنتج قاعدةً أصلاً ويسقط بصمت.
         */
-        primary: 'bg-primary text-primary-foreground hover:bg-primary-hover',
-        /*
-          الثانوي إطارٌ على الفراغ لا سطحٌ مملوء — وهو ما يجعل الأساسي
-          يبدو أساسياً. وعند التحويم يتلوّن الإطار والنصّ معاً بلون
-          التفاعل، فيُقرأ التحويم بلا أن يتغيّر وزن الزرّ في الصفّ.
-        */
+        primary:
+          'bg-primary text-primary-foreground hover:bg-primary-hover shadow-elev-1 hover:shadow-[var(--glow-primary,var(--elev-2))]',
         secondary:
-          'border border-border-strong bg-transparent text-foreground hover:border-primary hover:text-primary',
+          'bg-surface text-foreground border border-border hover:border-border-strong hover:bg-surface-2 shadow-elev-1',
         soft: 'bg-primary-soft text-primary-soft-foreground hover:brightness-110',
         ghost: 'text-muted-foreground hover:bg-surface-2 hover:text-foreground',
-        danger: 'bg-danger text-danger-foreground hover:brightness-110',
+        danger: 'bg-danger text-white hover:brightness-110 shadow-elev-1',
         'danger-soft': 'bg-danger-soft text-danger hover:brightness-110',
-        /*
-          خطرٌ هادئ لصفوف الجداول.
-          كان كلّ زرّ حذف في الشاشات يُكتب `ghost` ثمّ يُصبغ بـ
-          `className="text-danger"` — تسع مرّات، كلٌّ منها نسخة يدوية
-          تنكسر وحدها. صار للنغمة اسم، فتتبع النظام لا التذكّر.
-        */
-        'danger-ghost': 'text-danger hover:bg-danger-soft',
         link: 'text-primary underline-offset-4 hover:underline',
       },
       size: {
-        sm: 'h-8 px-3.5 text-xs',
-        md: 'h-10 px-5 text-sm',
-        /*
-          الكبير عند 48 بكسل لا 44: حدّ اللمس المريح 44، وهذا يتجاوزه
-          بهامش، وهو مقاس الزرّ الوحيد في الشاشة العامّة حيث لا شيء
-          يزاحمه على الانتباه.
-        */
-        lg: 'h-12 px-8 text-sm',
-        icon: 'h-10 w-10',
+        sm: 'h-8 px-3 text-xs',
+        md: 'h-9 px-4 text-sm',
+        lg: 'h-11 px-6 text-base',
+        icon: 'h-9 w-9',
         'icon-sm': 'h-8 w-8',
       },
     },

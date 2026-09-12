@@ -176,7 +176,7 @@ export function ReviewClient() {
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             size="sm"
-                            variant="ghost"
+                            variant="secondary"
                             onClick={() =>
                               updateMutation.mutate({
                                 id: post.id,
@@ -194,7 +194,8 @@ export function ReviewClient() {
                           </Button>
                           <Button
                             size="sm"
-                            variant="danger-ghost"
+                            variant="ghost"
+                            className="text-danger"
                             onClick={() => setDeleteTarget(post)}
                             aria-label="حذف نهائي"
                           >
