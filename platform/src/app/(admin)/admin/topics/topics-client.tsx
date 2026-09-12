@@ -198,7 +198,7 @@ export function TopicsClient() {
                         <div className="flex items-center justify-end gap-1">
                           <Button
                             size="sm"
-                            variant="secondary"
+                            variant="ghost"
                             onClick={() => {
                               setEditing(topic);
                               setFormOpen(true);
@@ -208,8 +208,7 @@ export function TopicsClient() {
                           </Button>
                           <Button
                             size="sm"
-                            variant="ghost"
-                            className="text-danger"
+                            variant="danger-ghost"
                             onClick={() => setDeleteTarget(topic)}
                             aria-label="حذف"
                           >

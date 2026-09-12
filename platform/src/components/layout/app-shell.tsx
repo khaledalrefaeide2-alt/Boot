@@ -144,7 +144,14 @@ export function AppShell({
 
           {canAccessAdmin && (
             <Link href={isAdminArea ? '/' : '/admin'}>
-              <Button variant={isAdminArea ? 'soft' : 'secondary'} size="sm">
+              {/*
+                زرّ تنقّل لا زرّ إجراء، فنغمته واحدة في الاتجاهين.
+                كان يلبس النغمة المصبوغة داخل الإدارة، فيظهر في أعلى كلّ
+                شاشة إدارية مصبوغاً فوق زرّ الإجراء الحقيقي أسفله — لونان
+                متنافسان على انتباه واحد. والعين تتبع اللون، فكانت تتبع
+                «العودة» لا «حساب جديد».
+              */}
+              <Button variant="secondary" size="sm">
                 <Shield className="h-3.5 w-3.5" aria-hidden />
                 {isAdminArea ? 'العودة إلى لوحة العرض' : 'لوحة الإدارة'}
               </Button>
@@ -231,7 +238,7 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 px-3 py-5 sm:px-6 sm:py-7">{children}</main>
+        <main className="min-w-0 flex-1 px-4 py-6 sm:px-8 sm:py-10 xl:px-10">{children}</main>
       </div>
     </div>
   );

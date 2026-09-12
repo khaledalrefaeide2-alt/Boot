@@ -191,7 +191,7 @@ export function TemplatesClient({ canManage }: { canManage: boolean }) {
                             format: 'excel',
                           })}
                         >
-                          <Button size="sm" variant="soft">
+                          <Button size="sm" variant="ghost">
                             <Download className="h-3.5 w-3.5" aria-hidden />
                             تصدير
                           </Button>
@@ -199,8 +199,7 @@ export function TemplatesClient({ canManage }: { canManage: boolean }) {
                         {canManage && (
                           <Button
                             size="sm"
-                            variant="ghost"
-                            className="text-danger"
+                            variant="danger-ghost"
                             onClick={() => setDeleteTarget(template)}
                             aria-label="حذف القالب"
                           >

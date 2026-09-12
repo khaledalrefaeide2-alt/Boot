@@ -195,7 +195,7 @@ export function PlatformsAdminClient() {
                       <div className="flex items-center justify-end gap-1">
                         <Button
                           size="sm"
-                          variant="secondary"
+                          variant="ghost"
                           onClick={() => {
                             setEditing(platform);
                             setFormOpen(true);
@@ -205,8 +205,7 @@ export function PlatformsAdminClient() {
                         </Button>
                         <Button
                           size="sm"
-                          variant="ghost"
-                          className="text-danger"
+                          variant="danger-ghost"
                           onClick={() => setDeleteTarget(platform)}
                           aria-label="حذف المنصة"
                         >

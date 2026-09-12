@@ -348,15 +348,14 @@ export function ExtractionsClient({ canRun, canCancel }: { canRun: boolean; canC
                       <TD>
                         <div className="flex items-center justify-end gap-1">
                           <Link href={`/admin/extractions/${run.id}`}>
-                            <Button size="sm" variant="secondary">
+                            <Button size="sm" variant="ghost">
                               تفاصيل
                             </Button>
                           </Link>
                           {canCancel && ['PENDING', 'RUNNING'].includes(run.status) && (
                             <Button
                               size="sm"
-                              variant="ghost"
-                              className="text-danger"
+                              variant="danger-ghost"
                               onClick={() => setCancelTarget(run)}
                               aria-label="إلغاء العملية"
                             >
