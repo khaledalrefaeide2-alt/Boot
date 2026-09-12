@@ -30,6 +30,7 @@ export const AUDIT_ACTIONS = {
   ACCOUNT_UPDATED: 'account.updated',
   ACCOUNT_DELETED: 'account.deleted',
   ACCOUNTS_IMPORTED: 'account.imported',
+  ACCOUNTS_GROUPED: 'account.grouped',
 
   EXTRACTION_STARTED: 'extraction.started',
   EXTRACTION_CANCELLED: 'extraction.cancelled',

@@ -7,5 +7,10 @@ export const metadata: Metadata = { title: 'إدارة الحسابات' };
 
 export default async function AdminAccountsPage() {
   const user = await getSession();
-  return <AccountsAdminClient canRunExtraction={can(user, PERMISSIONS.EXTRACTION_RUN)} />;
+  return (
+    <AccountsAdminClient
+      canRunExtraction={can(user, PERMISSIONS.EXTRACTION_RUN)}
+      canManageAccounts={can(user, PERMISSIONS.ACCOUNTS_MANAGE)}
+    />
+  );
 }

@@ -80,6 +80,34 @@ export const listAccountsSchema = paginationSchema.extend({
   order: z.enum(['asc', 'desc']).default('desc'),
 });
 
+/** سقف الدفعة الواحدة في الإسناد الجماعي */
+export const MAX_GROUP_ASSIGN_BATCH = 500;
+
+/*
+ * الإسناد الجماعي لمجموعة.
+ *
+ * `groupId` يقبل null صراحةً لأن «إزالة المجموعة» عمليةٌ مقصودة لا حقلٌ
+ * منسيّ: لو جعلناه اختيارياً وحده لاستحال التفريق بين «انزع المجموعة»
+ * و«لا تلمس المجموعة»، وكلاهما يصل إلى الخادم كحقل غائب.
+ *
+ * والسقف ليس تجميلاً: الطلب يفتح تعديلاً واحداً على كل المعرّفات، ومصفوفة
+ * بلا حدّ تعني استعلاماً يكبر بقدر ما يرسله العميل.
+ */
+export const bulkAssignGroupSchema = z.object({
+  accountIds: z
+    .array(z.string().trim().min(1).max(64))
+    .min(1, 'اختر حساباً واحداً على الأقل')
+    .max(MAX_GROUP_ASSIGN_BATCH, `لا يمكن إسناد أكثر من ${MAX_GROUP_ASSIGN_BATCH} حساباً في دفعة واحدة`),
+  groupId: z
+    .string()
+    .trim()
+    .max(64)
+    .nullable()
+    // القائمة المنسدلة ترسل '' عند اختيار «بلا مجموعة»، وهي null في القاعدة
+    .transform((value) => value || null),
+});
+
 export type CreateAccountInput = z.infer<typeof createAccountSchema>;
 export type UpdateAccountInput = z.infer<typeof updateAccountSchema>;
 export type CreatePlatformInput = z.infer<typeof createPlatformSchema>;
+export type BulkAssignGroupInput = z.infer<typeof bulkAssignGroupSchema>;

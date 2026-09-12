@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FileSpreadsheet, Play, Plus, Search, Trash2, UsersRound, X } from 'lucide-react';
+import { FileSpreadsheet, FolderInput, Play, Plus, Search, Trash2, UsersRound, X } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -24,6 +24,7 @@ import { arabicPlural, formatNumber, formatRelativeTime } from '@/lib/utils';
 import { AccountFormModal, type AccountRow } from './account-form-modal';
 import { AccountsImportModal } from './import-modal';
 import { BulkRunModal, type RunTarget } from './bulk-run-modal';
+import { AssignGroupModal } from './assign-group-modal';
 
 interface AccountsResponse {
   accounts: AccountRow[];
@@ -32,7 +33,13 @@ interface AccountsResponse {
   pageSize: number;
 }
 
-export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: boolean }) {
+export function AccountsAdminClient({
+  canRunExtraction,
+  canManageAccounts,
+}: {
+  canRunExtraction: boolean;
+  canManageAccounts: boolean;
+}) {
   const toast = useToast();
   const queryClient = useQueryClient();
 
@@ -49,6 +56,7 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
   const [importOpen, setImportOpen] = useState(false);
   const [selected, setSelected] = useState<Map<string, RunTarget>>(new Map());
   const [runTargets, setRunTargets] = useState<RunTarget[]>([]);
+  const [assignOpen, setAssignOpen] = useState(false);
 
   /*
    * المجموعات تُجلب من نقطة خيارات الفلاتر المشتركة لا من نقطة خاصة:
@@ -115,6 +123,15 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
 
   const data = query.data;
   const pageAccounts = data?.accounts ?? [];
+
+  /*
+   * عمود التحديد يظهر لمن يملك أيّ فعل جماعي، لا لمن يملك التشغيل وحده.
+   *
+   * كان مربوطاً بصلاحية التشغيل فقط، فلمّا صار الإسناد الجماعي فعلاً ثانياً
+   * وجب فصل الاثنين: مدير الحسابات الذي لا يشغّل استخراجاً يحتاج التحديد،
+   * ومن يشغّل ولا يدير لا يرى زرّ الإسناد. والزرّان مستقلّان في الشريط.
+   */
+  const canSelect = canRunExtraction || canManageAccounts;
   const someOnPageSelected = pageAccounts.some((account) => selected.has(account.id));
   const allOnPageSelected =
     pageAccounts.length > 0 && pageAccounts.every((account) => selected.has(account.id));
@@ -238,7 +255,7 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
           </Button>
         </form>
 
-        {canRunExtraction && selected.size > 0 && (
+        {canSelect && selected.size > 0 && (
           <div className="flex flex-wrap items-center gap-3 border-b border-border bg-primary-soft px-4 py-2.5">
             <p className="flex-1 text-sm font-medium text-primary-soft-foreground">
               حُدِّد <span className="num font-bold">{selected.size}</span>{' '}
@@ -253,10 +270,18 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
               <X className="h-3.5 w-3.5" aria-hidden />
               إلغاء التحديد
             </Button>
-            <Button size="sm" onClick={() => setRunTargets(Array.from(selected.values()))}>
-              <Play className="h-3.5 w-3.5" aria-hidden />
-              استخراج جماعي
-            </Button>
+            {canManageAccounts && (
+              <Button size="sm" variant="secondary" onClick={() => setAssignOpen(true)}>
+                <FolderInput className="h-3.5 w-3.5" aria-hidden />
+                إسناد إلى مجموعة
+              </Button>
+            )}
+            {canRunExtraction && (
+              <Button size="sm" onClick={() => setRunTargets(Array.from(selected.values()))}>
+                <Play className="h-3.5 w-3.5" aria-hidden />
+                استخراج جماعي
+              </Button>
+            )}
           </div>
         )}
 
@@ -294,7 +319,7 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
               <Table>
                 <THead>
                   <TR>
-                    {canRunExtraction && (
+                    {canSelect && (
                       <TH className="w-10">
                         <input
                           type="checkbox"
@@ -324,7 +349,7 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
                 <TBody>
                   {data.accounts.map((account) => (
                     <TR key={account.id}>
-                      {canRunExtraction && (
+                      {canSelect && (
                         <TD>
                           <input
                             type="checkbox"
@@ -443,6 +468,19 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
         targets={runTargets}
         onClose={() => setRunTargets([])}
         onStarted={() => {
+          setSelected(new Map());
+          void invalidate();
+        }}
+      />
+
+      <AssignGroupModal
+        open={assignOpen}
+        targets={Array.from(selected.values(), (target) => ({ id: target.id, name: target.name }))}
+        groups={groups}
+        onClose={() => setAssignOpen(false)}
+        onAssigned={() => {
+          // التحديد يُصفَّر بعد النقل: الحسابات قد تخرج من تصفية المجموعة
+          // الحالية، فيبقى الشريط يعدّ صفوفاً لم تعد ظاهرة في الجدول.
           setSelected(new Map());
           void invalidate();
         }}
