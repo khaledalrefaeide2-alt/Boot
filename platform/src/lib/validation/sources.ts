@@ -42,6 +42,14 @@ export const createAccountSchema = z.object({
   username: optionalString(120),
   url: urlSchema,
   externalId: optionalString(120),
+  /*
+   * المجموعة اختيارية ونصّها الفارغ يصير null صراحةً.
+   *
+   * قائمة اختيار خالية تُرسل '' لا undefined، و'' كمعرّف أجنبي يفشل على
+   * قيد المفتاح الأجنبي برسالة قاعدة بيانات لا يفهمها المستخدم. فالتحويل
+   * هنا لا في المكوّن: كل مسار يصل إلى هذا المخطط يُحمى، لا النموذج وحده.
+   */
+  groupId: optionalString(64).transform((v) => v || null),
   type: accountTypeSchema.default('PAGE'),
   ownership: accountOwnershipSchema.default('EXTERNAL'),
   visibility: accountVisibilitySchema.default('PUBLIC'),
@@ -63,6 +71,7 @@ export const updateAccountSchema = createAccountSchema.partial();
 export const listAccountsSchema = paginationSchema.extend({
   q: z.string().trim().max(160).optional(),
   platformId: z.string().trim().max(64).optional(),
+  groupId: z.string().trim().max(64).optional(),
   status: entityStatusSchema.optional(),
   ownership: accountOwnershipSchema.optional(),
   type: accountTypeSchema.optional(),

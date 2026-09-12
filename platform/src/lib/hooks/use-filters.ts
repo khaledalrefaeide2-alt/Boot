@@ -18,4 +18,9 @@ export function useFilterOptions() {
   });
 }
 
-export const EMPTY_OPTIONS: FilterOptions = { platforms: [], accounts: [], topics: [] };
+export const EMPTY_OPTIONS: FilterOptions = {
+  platforms: [],
+  accounts: [],
+  groups: [],
+  topics: [],
+};

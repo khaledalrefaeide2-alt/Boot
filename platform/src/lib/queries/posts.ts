@@ -44,6 +44,17 @@ export function buildPostWhere(
     ...(filters.country ? { country: { contains: filters.country, mode: 'insensitive' } } : {}),
     ...(filters.hashtag ? { hashtags: { has: filters.hashtag.replace(/^#/, '') } } : {}),
     ...(filters.keywordId ? { keywordLinks: { some: { keywordId: filters.keywordId } } } : {}),
+    /*
+     * فلتر المجموعة يمرّ عبر الحساب لا عبر المنشور.
+     *
+     * المنشور لا يحمل مجموعة — المجموعة صفة الحساب الذي نشره. وربطها
+     * بالحساب لا بنسخ القيمة إلى المنشور مقصود: نقل حساب من «وزارات» إلى
+     * «محافظات» يجب أن ينقل تاريخه كله معه، ولو كانت القيمة منسوخة في كل
+     * منشور لبقيت آلاف المنشورات على التصنيف القديم بلا من يصحّحها.
+     *
+     * والتكلفة مقبولة: accounts.groupId مفهرس، والانضمام على مفتاح أجنبي.
+     */
+    ...(filters.groupId ? { account: { groupId: filters.groupId } } : {}),
   };
 
   if (from || to) {

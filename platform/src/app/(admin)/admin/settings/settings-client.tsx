@@ -108,7 +108,7 @@ export function SettingsClient() {
                 aria-hidden
               />
               <div>
-                <p className="text-sm font-medium">رمز Apify</p>
+                <p className="text-sm font-medium">رمز النظام</p>
                 <p className="text-xs text-muted-foreground">
                   {status?.apify.message ?? 'جارٍ الفحص…'}
                 </p>
@@ -138,7 +138,7 @@ export function SettingsClient() {
           </div>
 
           <Alert tone="info">
-            رمز Apify لا يُخزَّن في قاعدة البيانات ولا يصل إلى المتصفح إطلاقاً — يُقرأ من متغير
+            رمز النظام لا يُخزَّن في قاعدة البيانات ولا يصل إلى المتصفح إطلاقاً — يُقرأ من متغير
             البيئة APIFY_TOKEN في الخادم فقط. لتغييره عدّل ملف البيئة وأعد تشغيل الخدمة.
           </Alert>
         </CardBody>

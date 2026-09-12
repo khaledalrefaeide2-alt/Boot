@@ -126,10 +126,16 @@ export default async function ExtractionDetailPage({
               )}
             </DetailRow>
             <DetailRow label="المنصة">{run.platform?.name ?? '—'}</DetailRow>
-            <DetailRow label="Apify Actor">
-              <span className="ltr text-xs">{run.actorId}</span>
+            {/*
+              المشغّل يُعرَّف بالمنصة التي شُغِّل عليها لا بمعرّفه الخام:
+              المعرّف نصٌّ خارجيّ يحمل اسم المزوّد ولا يضيف للمراجع شيئاً
+              يستطيع التصرّف به، والمراجعة هنا عن «ماذا استُخرج» لا عن
+              «بأيّ أداة». وقيمة المعرّف تبقى في إعدادات المنصة لمن يضبطها.
+            */}
+            <DetailRow label="مشغّل النظام">
+              <span className="text-xs">{run.platform?.name ?? '—'}</span>
             </DetailRow>
-            <DetailRow label="معرّف التشغيل على Apify">
+            <DetailRow label="معرّف التشغيل في النظام">
               <span className="ltr text-xs">{run.apifyRunId ?? '—'}</span>
             </DetailRow>
             <DetailRow label="سقف الفوترة">
@@ -192,7 +198,7 @@ export default async function ExtractionDetailPage({
         <Card className="mt-4">
           <CardHeader
             title="عينة من البيانات الخام"
-            description="أول ثلاثة عناصر كما وصلت من Apify — للتشخيص وضبط محوّل الحقول"
+            description="أول ثلاثة عناصر كما وصلت من النظام — للتشخيص وضبط محوّل الحقول"
           />
           <CardBody>
             <pre className="ltr max-h-96 overflow-auto rounded-md border border-border bg-surface-2 p-3 text-xs leading-relaxed">

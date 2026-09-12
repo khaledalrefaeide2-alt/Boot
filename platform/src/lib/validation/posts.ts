@@ -6,6 +6,8 @@ export const postFiltersSchema = z.object({
   q: z.string().trim().max(200).optional(),
   platformId: z.union([z.string(), z.array(z.string())]).optional(),
   accountId: z.union([z.string(), z.array(z.string())]).optional(),
+  /** مجموعة الحسابات — تُطبَّق عبر الحساب لا عبر المنشور */
+  groupId: z.string().trim().max(64).optional(),
   keywordId: z.string().trim().max(64).optional(),
   hashtag: z.string().trim().max(100).optional(),
   postType: z.enum(['TEXT', 'IMAGE', 'VIDEO', 'REEL', 'LINK', 'ALBUM', 'STORY', 'OTHER']).optional(),

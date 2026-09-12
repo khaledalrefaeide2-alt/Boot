@@ -29,6 +29,7 @@ export interface AccountRow {
   url: string;
   externalId: string | null;
   notes: string | null;
+  groupId: string | null;
   type: AccountType;
   ownership: AccountOwnership;
   visibility: AccountVisibility;
@@ -43,6 +44,7 @@ export interface AccountRow {
   actorIdOverride: string | null;
   lastExtractedAt: string | null;
   platform: { id: string; name: string; code: string; defaultActorId: string | null };
+  group: { id: string; name: string; code: string } | null;
   _count: { posts: number; runs: number };
 }
 
@@ -63,6 +65,7 @@ const EMPTY = {
   username: '',
   url: '',
   externalId: '',
+  groupId: '',
   type: 'PAGE' as AccountType,
   ownership: 'EXTERNAL' as AccountOwnership,
   visibility: 'PUBLIC' as AccountVisibility,
@@ -82,12 +85,14 @@ export function AccountFormModal({
   onClose,
   editing,
   platforms,
+  groups,
   onSaved,
 }: {
   open: boolean;
   onClose: () => void;
   editing: AccountRow | null;
   platforms: { id: string; name: string; defaultActorId: string | null }[];
+  groups: { id: string; name: string }[];
   onSaved: () => void;
 }) {
   const toast = useToast();
@@ -109,6 +114,7 @@ export function AccountFormModal({
             url: editing.url,
             externalId: editing.externalId ?? '',
             notes: editing.notes ?? '',
+            groupId: editing.groupId ?? '',
             type: editing.type,
             ownership: editing.ownership,
             visibility: editing.visibility,
@@ -256,6 +262,25 @@ export function AccountFormModal({
                 </option>
               ))}
             </Select>
+            {/*
+              المجموعة بعد الملكية وقبل الظهور: الثلاثة تصنيفات تنظيمية
+              تُقرأ معاً، وفصل المجموعة عنها ووضعها مع إعدادات الاستخراج
+              يجعل الموظف يبحث عنها في المكان الخطأ.
+            */}
+            <Select
+              label="المجموعة"
+              value={form.groupId}
+              onChange={(event) => update('groupId', event.target.value)}
+              hint="تصنيف تنظيمي يعلو المنصة — يُستعمل في التصفية والمقارنة"
+            >
+              <option value="">بلا مجموعة</option>
+              {groups.map((group) => (
+                <option key={group.id} value={group.id}>
+                  {group.name}
+                </option>
+              ))}
+            </Select>
+
             <Select
               label="الظهور"
               value={form.visibility}
@@ -336,19 +361,19 @@ export function AccountFormModal({
               value={form.maxItemsPerRun}
               onChange={(event) => update('maxItemsPerRun', Number(event.target.value))}
               error={fieldErrors.maxItemsPerRun}
-              hint="سقف فوترة إلزامي على Apify"
+              hint="سقف فوترة إلزامي في النظام"
             />
           </div>
 
           <Input
-            label="تجاوز Apify Actor"
+            label="تجاوز مشغّل النظام"
             value={form.actorIdOverride}
             onChange={(event) => update('actorIdOverride', event.target.value)}
             error={fieldErrors.actorIdOverride}
             hint={
               selectedPlatform?.defaultActorId
-                ? `اتركه فارغاً لاستخدام الافتراضي: ${selectedPlatform.defaultActorId}`
-                : 'لم يُحدَّد Actor افتراضي لهذه المنصة — حدّده هنا أو من إدارة المنصات'
+                ? 'اتركه فارغاً لاستخدام مشغّل المنصة الافتراضي'
+                : 'لم يُضبَط مشغّل افتراضي لهذه المنصة — اضبطه هنا أو من إدارة المنصات'
             }
             dir="ltr"
             className="ltr"

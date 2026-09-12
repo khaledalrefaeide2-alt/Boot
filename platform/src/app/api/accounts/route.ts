@@ -28,6 +28,7 @@ export async function GET(request: NextRequest) {
     const where: Prisma.AccountWhereInput = {
       ...(scope === null ? {} : { id: { in: scope } }),
       ...(query.platformId ? { platformId: query.platformId } : {}),
+      ...(query.groupId ? { groupId: query.groupId } : {}),
       ...(query.status ? { status: query.status } : {}),
       ...(query.ownership ? { ownership: query.ownership } : {}),
       ...(query.type ? { type: query.type } : {}),
@@ -59,6 +60,10 @@ export async function GET(request: NextRequest) {
           // يجب أن يعود فيها: الحقل الغائب يصل إلى النموذج فارغاً ويُحفظ فارغاً
           externalId: true,
           notes: true,
+          // المعرّف الخام إلى جانب الكائن المرتبط: الكائن للعرض، والمعرّف
+          // لنموذج التعديل. وبدونه تصل المجموعة إلى النموذج فارغةً وتُحفظ
+          // فارغةً عند أول تعديل لأي حقل آخر — وهو ما يحذّر منه التعليق أعلاه.
+          groupId: true,
           type: true,
           ownership: true,
           visibility: true,
@@ -75,6 +80,7 @@ export async function GET(request: NextRequest) {
           lastSuccessfulRunAt: true,
           createdAt: true,
           platform: { select: { id: true, name: true, code: true, color: true, defaultActorId: true } },
+          group: { select: { id: true, name: true, code: true } },
           _count: { select: { posts: true, runs: true } },
         },
       }),
@@ -113,6 +119,7 @@ export async function POST(request: NextRequest) {
         username: input.username,
         url: input.url,
         externalId: input.externalId,
+        groupId: input.groupId ?? null,
         type: input.type,
         ownership: input.ownership,
         visibility: input.visibility,

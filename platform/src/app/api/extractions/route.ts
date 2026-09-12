@@ -79,7 +79,11 @@ export async function GET(request: NextRequest) {
           id: true,
           status: true,
           trigger: true,
-          actorId: true,
+          /*
+             معرّف المشغّل لا يُرسَل في القائمة: الشاشة لا تعرضه، وإرساله
+             يضع نصّاً خارجياً يحمل اسم المزوّد في حمولة كل صفحة بلا فائدة.
+             من يحتاجه هو التدقيق والسجلّ، وكلاهما في الخادم.
+          */
           apifyRunId: true,
           maxItems: true,
           itemsFetched: true,

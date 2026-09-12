@@ -13,7 +13,7 @@ export async function GET() {
     await requirePermission(PERMISSIONS.EXTRACTION_VIEW);
 
     const [apify, queue, activeRuns] = await Promise.all([
-      isApifyConfigured() ? verifyApifyToken() : Promise.resolve({ ok: false, message: 'رمز Apify غير معرّف في متغيرات البيئة' }),
+      isApifyConfigured() ? verifyApifyToken() : Promise.resolve({ ok: false, message: 'رمز النظام غير معرّف في متغيرات البيئة' }),
       getQueueHealth(),
       prisma.extractionRun.count({ where: { status: { in: ['PENDING', 'RUNNING'] } } }),
     ]);

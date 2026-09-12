@@ -217,7 +217,7 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
         <Card className="mt-4">
           <CardHeader
             title="البيانات الخام"
-            description="كما وصلت من Apify — تظهر لأصحاب صلاحية المراجعة فقط"
+            description="كما وصلت من النظام — تظهر لأصحاب صلاحية المراجعة فقط"
           />
           <CardBody>
             <pre className="ltr max-h-96 overflow-auto rounded-md border border-border bg-surface-2 p-3 text-xs leading-relaxed">

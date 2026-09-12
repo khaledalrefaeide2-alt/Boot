@@ -91,7 +91,7 @@ export default async function AdminHomePage() {
 
       <div className="mb-4 space-y-2">
         {!apifyConfigured && (
-          <Alert tone="danger" title="رمز Apify غير معرّف">
+          <Alert tone="danger" title="رمز النظام غير معرّف">
             لن تعمل عمليات الاستخراج. أضف APIFY_TOKEN إلى ملف البيئة ثم أعد تشغيل الخدمة.
           </Alert>
         )}

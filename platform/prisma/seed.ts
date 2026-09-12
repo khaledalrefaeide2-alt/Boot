@@ -54,6 +54,27 @@ const TOPICS = [
   { code: 'complaints', name: 'شكاوى وملاحظات', color: '#DC2626', sortOrder: 6 },
 ];
 
+/*
+ * مجموعات الحسابات — تصنيف تنظيمي يعلو المنصة ولا يتبعها.
+ *
+ * «النخبة» ثلاث مجموعات لا واحدة، لأن التمييز المطلوب بين نخبة كل منصة
+ * على حدة: مقارنة نخبة فيسبوك بنخبة إكس سؤالٌ قائم، ودمجهما في مجموعة
+ * واحدة يُلغيه. وباقي المجموعات عابرة للمنصات بطبيعتها — وزارة لها حساب
+ * على كل منصة، وتُقاس مجتمعةً.
+ *
+ * والرمز ثابت لا يتغيّر بإعادة التسمية: الفلاتر المحفوظة والروابط تُبنى
+ * عليه، فتغيير الاسم العربي من الإدارة لا يكسر رابطاً محفوظاً.
+ */
+const ACCOUNT_GROUPS = [
+  { code: 'owned', name: 'المنصات المملوكة', sortOrder: 1 },
+  { code: 'elite-facebook', name: 'النخبة فيسبوك', sortOrder: 2 },
+  { code: 'elite-twitter', name: 'النخبة تويتر', sortOrder: 3 },
+  { code: 'elite-instagram', name: 'النخبة إنستغرام', sortOrder: 4 },
+  { code: 'partners', name: 'المنصات المتعاونة', sortOrder: 5 },
+  { code: 'ministries', name: 'وزارات', sortOrder: 6 },
+  { code: 'governorates', name: 'محافظات', sortOrder: 7 },
+];
+
 const SETTINGS = [
   {
     key: 'app.name',
@@ -81,7 +102,7 @@ const SETTINGS = [
     value: 100,
     category: 'extraction',
     label: 'العدد الافتراضي للمنشورات في كل تشغيل',
-    description: 'يُمرَّر إلى Apify كسقف فوترة إلزامي',
+    description: 'يُمرَّر إلى النظام كسقف فوترة إلزامي',
   },
   {
     key: 'extraction.defaultWindowDays',
@@ -166,6 +187,19 @@ async function seedTopics(): Promise<void> {
   console.log(`✅ التصنيفات جاهزة (${TOPICS.length})`);
 }
 
+async function seedAccountGroups(): Promise<void> {
+  for (const group of ACCOUNT_GROUPS) {
+    await prisma.accountGroup.upsert({
+      where: { code: group.code },
+      // الاسم والترتيب يُحدَّثان، والحالة لا: من عطّل مجموعة من الإدارة
+      // لا يريدها تعود مفعّلة مع كل نشر.
+      update: { name: group.name, sortOrder: group.sortOrder },
+      create: group,
+    });
+  }
+  console.log(`✅ مجموعات الحسابات جاهزة (${ACCOUNT_GROUPS.length})`);
+}
+
 async function seedSettings(): Promise<void> {
   for (const setting of SETTINGS) {
     await prisma.setting.upsert({
@@ -181,6 +215,7 @@ async function main(): Promise<void> {
   console.log('-- SEEDING / بدء تهيئة البيانات الأولية --\n');
   await seedPlatforms();
   await seedTopics();
+  await seedAccountGroups();
   await seedSettings();
   await seedOwner();
   console.log('\n>> Seeding complete.');

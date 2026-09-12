@@ -28,7 +28,6 @@ interface RunRow {
   id: string;
   status: ExtractionStatus;
   trigger: ExtractionTrigger;
-  actorId: string;
   apifyRunId: string | null;
   maxItems: number | null;
   itemsFetched: number;
@@ -171,7 +170,7 @@ export function ExtractionsClient({ canRun, canCancel }: { canRun: boolean; canC
     <>
       <PageHeader
         title="عمليات الاستخراج"
-        description="سجل عمليات جلب المنشورات من Apify وحالة كل عملية"
+        description="سجل عمليات جلب المنشورات من النظام وحالة كل عملية"
         action={
           <>
             <Button variant="secondary" onClick={() => query.refetch()} aria-label="تحديث">
@@ -191,7 +190,7 @@ export function ExtractionsClient({ canRun, canCancel }: { canRun: boolean; canC
       {integration && (!integration.apify.ok || !integration.queue.ready) && (
         <div className="mb-4 space-y-2">
           {!integration.apify.ok && (
-            <Alert tone="danger" title="تكامل Apify غير جاهز">
+            <Alert tone="danger" title="تكامل النظام غير جاهز">
               {integration.apify.message}
               {!integration.apify.configured &&
                 ' — أضف APIFY_TOKEN إلى ملف البيئة ثم أعد تشغيل الخدمة.'}
@@ -229,7 +228,7 @@ export function ExtractionsClient({ canRun, canCancel }: { canRun: boolean; canC
 
       {integration?.apify.ok && integration.queue.ready && (
         <Alert tone="success" className="mb-4">
-          Apify متصل{integration.apify.username ? ` باسم ${integration.apify.username}` : ''}،
+          النظام متصل{integration.apify.username ? ` باسم ${integration.apify.username}` : ''}،
           والعامل الخلفي يسحب المهام
           {integration.queue.workers > 1 && (
             <>
@@ -457,7 +456,7 @@ export function ExtractionsClient({ canRun, canCancel }: { canRun: boolean; canC
             max={1000}
             value={maxItems}
             onChange={(event) => setMaxItems(event.target.value)}
-            hint="سقف الفوترة على Apify — لن تُحاسَب على أكثر من هذا العدد"
+            hint="سقف الفوترة في النظام — لن تُحاسَب على أكثر من هذا العدد"
             error={maxItems !== '' && !maxItemsValid ? 'العدد بين 1 و1000' : undefined}
           />
 
@@ -499,7 +498,7 @@ export function ExtractionsClient({ canRun, canCancel }: { canRun: boolean; canC
         onClose={() => setCancelTarget(null)}
         onConfirm={() => cancelTarget && cancelMutation.mutate(cancelTarget)}
         title="إلغاء عملية الاستخراج"
-        message={`سيتم إيقاف العملية الجارية للحساب «${cancelTarget?.account?.name ?? ''}» وإيقاف التشغيل على Apify أيضاً.`}
+        message={`سيتم إيقاف العملية الجارية للحساب «${cancelTarget?.account?.name ?? ''}» وإيقاف التشغيل في النظام أيضاً.`}
         confirmLabel="إلغاء العملية"
         loading={cancelMutation.isPending}
       />

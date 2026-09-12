@@ -171,10 +171,10 @@ model User {
   /// نطاق البيانات: كل الحسابات، أو الحسابات المُسندة وحدها
   accountAccess AccountAccess @default(ALL)
 
-  lastLoginAt      DateTime?
-  failedLoginCount Int       @default(0)
-  lockedUntil      DateTime?
-  mustChangePassword Boolean @default(false)
+  lastLoginAt        DateTime?
+  failedLoginCount   Int       @default(0)
+  lockedUntil        DateTime?
+  mustChangePassword Boolean   @default(false)
 
   approvedAt   DateTime?
   approvedById String?
@@ -184,25 +184,25 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  approvedBy   User?  @relation("UserApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
+  approvedBy    User?  @relation("UserApprovedBy", fields: [approvedById], references: [id], onDelete: SetNull)
   approvedUsers User[] @relation("UserApprovedBy")
-  createdBy    User?  @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  createdUsers User[] @relation("UserCreatedBy")
+  createdBy     User?  @relation("UserCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  createdUsers  User[] @relation("UserCreatedBy")
 
-  sessions        Session[]
-  oauthAccounts   OAuthAccount[]
-  resetTokens     PasswordResetToken[]
-  auditLogs       AuditLog[]
-  notifications   Notification[]
-  savedDashboards SavedDashboard[]
-  extractionRuns  ExtractionRun[]
-  reportRuns      ReportRun[]
-  reportTemplates ReportTemplate[]
-  reviewedPosts   Post[]               @relation("PostReviewedBy")
-  createdAccounts Account[]            @relation("AccountCreatedBy")
+  sessions           Session[]
+  oauthAccounts      OAuthAccount[]
+  resetTokens        PasswordResetToken[]
+  auditLogs          AuditLog[]
+  notifications      Notification[]
+  savedDashboards    SavedDashboard[]
+  extractionRuns     ExtractionRun[]
+  reportRuns         ReportRun[]
+  reportTemplates    ReportTemplate[]
+  reviewedPosts      Post[]               @relation("PostReviewedBy")
+  createdAccounts    Account[]            @relation("AccountCreatedBy")
   accountAssignments UserAccount[]
-  createdKeywords Keyword[]            @relation("KeywordCreatedBy")
-  updatedSettings Setting[]            @relation("SettingUpdatedBy")
+  createdKeywords    Keyword[]            @relation("KeywordCreatedBy")
+  updatedSettings    Setting[]            @relation("SettingUpdatedBy")
 
   @@index([status])
   @@index([role])
@@ -212,16 +212,16 @@ model User {
 
 /// جلسات مخزّنة في القاعدة — الرمز يُحفظ مجزأً (hash) ويُرسل في كوكي HTTP-only
 model Session {
-  id          String    @id @default(cuid())
-  userId      String
-  tokenHash   String    @unique
-  csrfSecret  String
-  expiresAt   DateTime
-  lastSeenAt  DateTime  @default(now())
-  ipAddress   String?
-  userAgent   String?
-  revokedAt   DateTime?
-  createdAt   DateTime  @default(now())
+  id         String    @id @default(cuid())
+  userId     String
+  tokenHash  String    @unique
+  csrfSecret String
+  expiresAt  DateTime
+  lastSeenAt DateTime  @default(now())
+  ipAddress  String?
+  userAgent  String?
+  revokedAt  DateTime?
+  createdAt  DateTime  @default(now())
 
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
@@ -263,10 +263,10 @@ model PasswordResetToken {
 // ============================ المنصات والحسابات ============================
 
 model Platform {
-  id   String @id @default(cuid())
+  id        String       @id @default(cuid())
   /// رمز فريد: facebook | x | instagram
-  code String @unique
-  name String
+  code      String       @unique
+  name      String
   /// اسم أيقونة أو رمز تعبيري للعرض
   icon      String?
   color     String?
@@ -291,7 +291,7 @@ model Platform {
 }
 
 model Account {
-  id         String @id @default(cuid())
+  id         String  @id @default(cuid())
   platformId String
   name       String
   /// اسم المستخدم أو المعرّف القصير
@@ -304,17 +304,20 @@ model Account {
   ownership  AccountOwnership  @default(EXTERNAL)
   visibility AccountVisibility @default(PUBLIC)
 
+  /// مجموعة التصنيف — اختيارية، فالحسابات القائمة لا تُجبر على مجموعة
+  groupId String?
+
   language String?
   country  String?
   status   EntityStatus @default(ACTIVE)
   isActive Boolean      @default(true)
 
   /// مدة الاستخراج بالأيام (نافذة زمنية للمنشورات)
-  extractionWindowDays Int @default(30)
+  extractionWindowDays      Int @default(30)
   /// تكرار الاستخراج بالدقائق (0 = يدوي فقط)
   extractionIntervalMinutes Int @default(0)
   /// أقصى عدد منشورات لكل تشغيل — سقف الفوترة على Apify
-  maxItemsPerRun Int @default(100)
+  maxItemsPerRun            Int @default(100)
 
   /// تجاوز الـ Actor الافتراضي للمنصة عند الحاجة
   actorIdOverride    String?
@@ -324,28 +327,60 @@ model Account {
   avatarUrl      String?
   notes          String?
 
-  lastExtractedAt   DateTime?
+  lastExtractedAt     DateTime?
   lastSuccessfulRunAt DateTime?
-  nextRunAt         DateTime?
+  nextRunAt           DateTime?
 
   createdById String?
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  platform   Platform          @relation(fields: [platformId], references: [id], onDelete: Restrict)
-  createdBy  User?             @relation("AccountCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
-  posts      Post[]
-  runs       ExtractionRun[]
-  keywords   AccountKeyword[]
+  platform      Platform           @relation(fields: [platformId], references: [id], onDelete: Restrict)
+  group         AccountGroup?      @relation(fields: [groupId], references: [id], onDelete: SetNull)
+  createdBy     User?              @relation("AccountCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+  posts         Post[]
+  runs          ExtractionRun[]
+  keywords      AccountKeyword[]
   assignedUsers UserAccount[]
-  dailyStats DailyAccountStat[]
+  dailyStats    DailyAccountStat[]
 
   @@unique([platformId, url])
   @@index([platformId, isActive])
   @@index([status])
   @@index([nextRunAt])
+  @@index([groupId])
   @@index([name(ops: raw("gin_trgm_ops"))], type: Gin)
   @@map("accounts")
+}
+
+/// ============================ مجموعات الحسابات ============================
+///
+/// تصنيف تنظيمي للحسابات المرصودة يعلو المنصة ولا يتبعها: «النخبة» مجموعة
+/// واحدة لها حسابات على فيسبوك وإكس وإنستغرام معاً، و«وزارات» مجموعة تضم
+/// حسابات من منصات مختلفة أيضاً. فالمجموعة بُعدٌ مستقل عن المنصة لا فرعٌ
+/// منها، ولذلك جدول لا حقل نصّي ولا تعداد:
+///
+///   • جدول — فالأسماء تُضاف وتُعاد تسميتها من الإدارة بلا ترحيل جديد.
+///   • مرجع لا نصّ — فإعادة تسمية مجموعة لا تترك حسابات معلّقة على الاسم القديم.
+///   • SetNull عند الحذف — حذف مجموعة لا يحذف حساباتها، وهي بيانات رصد
+///     لا تُفقد بحذف تصنيف.
+model AccountGroup {
+  id          String       @id @default(cuid())
+  /// معرّف ثابت لا يتغيّر بإعادة التسمية — تُبنى عليه الروابط والفلاتر
+  code        String       @unique
+  name        String
+  description String?
+  /// ترتيب الظهور في القوائم والفلاتر — الأصغر أولاً
+  sortOrder   Int          @default(0)
+  status      EntityStatus @default(ACTIVE)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  accounts Account[]
+
+  @@index([status, sortOrder])
+  @@map("account_groups")
 }
 
 // ============================ عمليات الاستخراج ============================
@@ -355,8 +390,8 @@ model ExtractionRun {
   accountId  String?
   platformId String?
 
-  actorId       String
-  apifyRunId    String?
+  actorId        String
+  apifyRunId     String?
   apifyDatasetId String?
 
   status  ExtractionStatus  @default(PENDING)
@@ -365,13 +400,13 @@ model ExtractionRun {
   requestedById String?
 
   /// سقف الفوترة الممرَّر إلى Apify
-  maxItems Int?
+  maxItems   Int?
   /// بداية النافذة الزمنية المطلوبة — يحددها المشغّل يدوياً في التشغيل اليدوي
   windowFrom DateTime?
   /// نهاية النافذة الزمنية المطلوبة
   windowTo   DateTime?
   /// المدخلات المرسلة إلى الـ Actor (بدون أي أسرار)
-  input    Json?
+  input      Json?
 
   itemsFetched Int @default(0)
   itemsSaved   Int @default(0)
@@ -424,18 +459,18 @@ model Post {
   country     String?
   location    String?
 
-  authorName String?
-  imageUrl   String?
-  videoUrl   String?
+  authorName   String?
+  imageUrl     String?
+  videoUrl     String?
   thumbnailUrl String?
   /// روابط وسائط إضافية — روابط فقط، لا ملفات
-  mediaUrls  Json?
+  mediaUrls    Json?
 
-  likes    Int @default(0)
-  comments Int @default(0)
-  shares   Int @default(0)
-  views    Int @default(0)
-  saves    Int @default(0)
+  likes           Int @default(0)
+  comments        Int @default(0)
+  shares          Int @default(0)
+  views           Int @default(0)
+  saves           Int @default(0)
   /// مجموع التفاعل المخزَّن مسبقاً لتسريع الفرز والتجميع
   engagementTotal Int @default(0)
 
@@ -725,8 +760,8 @@ model ReportRun {
   status     ReportStatus @default(PENDING)
   filters    Json
 
-  rowCount   Int?
-  fileName   String?
+  rowCount     Int?
+  fileName     String?
   errorMessage String?
 
   requestedById String?
@@ -770,8 +805,8 @@ model Notification {
 }
 
 model AuditLog {
-  id     String  @id @default(cuid())
-  userId String?
+  id         String  @id @default(cuid())
+  userId     String?
   /// نسخة ثابتة من بريد المنفّذ حتى لو حُذف المستخدم
   actorEmail String?
   actorRole  Role?
@@ -796,9 +831,9 @@ model AuditLog {
 }
 
 model Setting {
-  key         String   @id
+  key         String  @id
   value       Json
-  category    String   @default("general")
+  category    String  @default("general")
   label       String?
   description String?
 

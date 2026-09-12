@@ -156,7 +156,7 @@ export function PlatformsAdminClient() {
                   <TH>المنصة</TH>
                   <TH>الرمز</TH>
                   <TH>الحالة</TH>
-                  <TH>Apify Actor</TH>
+                  <TH>مشغّل النظام</TH>
                   <TH>الحسابات</TH>
                   <TH>المنشورات</TH>
                   <TH>أُضيفت</TH>
@@ -173,8 +173,20 @@ export function PlatformsAdminClient() {
                         {ENTITY_STATUS_LABELS[platform.status]}
                       </Badge>
                     </TD>
-                    <TD className="ltr max-w-56 truncate text-xs text-muted-foreground">
-                      {platform.defaultActorId ?? '— غير محدد —'}
+                    {/*
+                      نعرض هنا حالة الضبط لا قيمته: المعرّف نصٌّ خارجيّ يحمل
+                      اسم المزوّد، وعرضه في جدول تصفّح يُظهر للمستخدم اسماً
+                      لا يعنيه ولا يستطيع فعل شيء به. من يحتاج القيمة نفسها
+                      هو من يحرّرها، وهي حاضرة كاملةً في نموذج التعديل.
+                    */}
+                    <TD className="text-xs">
+                      {platform.defaultActorId ? (
+                        <Badge tone="neutral" size="sm">
+                          مضبوط
+                        </Badge>
+                      ) : (
+                        <span className="text-subtle-foreground">— غير محدد —</span>
+                      )}
                     </TD>
                     <TD className="num">{formatNumber(platform._count.accounts)}</TD>
                     <TD className="num">{formatNumber(platform._count.posts)}</TD>
@@ -256,11 +268,11 @@ export function PlatformsAdminClient() {
           )}
 
           <Input
-            label="Apify Actor الافتراضي"
+            label="مشغّل النظام الافتراضي"
             value={form.defaultActorId}
             onChange={(event) => setForm({ ...form, defaultActorId: event.target.value })}
             error={fieldErrors.defaultActorId}
-            hint="مثال: apify~facebook-posts-scraper — يمكن تجاوزه لكل حساب"
+            hint="بصيغة اسم-المزوّد~اسم-المشغّل كما يظهر في لوحة المزوّد — يمكن تجاوزه لكل حساب"
             dir="ltr"
             className="ltr"
             placeholder="username~actor-name"

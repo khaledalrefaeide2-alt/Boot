@@ -40,6 +40,7 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
   const [search, setSearch] = useState('');
   const [searchInput, setSearchInput] = useState('');
   const [platformFilter, setPlatformFilter] = useState('');
+  const [groupFilter, setGroupFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 
   const [formOpen, setFormOpen] = useState(false);
@@ -48,6 +49,18 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
   const [importOpen, setImportOpen] = useState(false);
   const [selected, setSelected] = useState<Map<string, RunTarget>>(new Map());
   const [runTargets, setRunTargets] = useState<RunTarget[]>([]);
+
+  /*
+   * المجموعات تُجلب من نقطة خيارات الفلاتر المشتركة لا من نقطة خاصة:
+   * نفس القائمة تُستعمل في شاشات الرصد، ومصدر واحد يعني أن إضافة مجموعة
+   * تظهر في الاثنين معاً بلا تكرار منطق.
+   */
+  const groupsQuery = useQuery({
+    queryKey: ['filter-options'],
+    queryFn: () => api.get<{ groups: { id: string; name: string }[] }>('/api/filters/options'),
+    staleTime: 5 * 60 * 1000,
+  });
+  const groups = groupsQuery.data?.groups ?? [];
 
   const platformsQuery = useQuery({
     queryKey: ['admin-platforms'],
@@ -58,7 +71,7 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
   });
 
   const query = useQuery({
-    queryKey: ['admin-accounts', page, search, platformFilter, statusFilter],
+    queryKey: ['admin-accounts', page, search, platformFilter, groupFilter, statusFilter],
     queryFn: () =>
       api.get<AccountsResponse>(
         buildQuery('/api/accounts', {
@@ -66,6 +79,7 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
           pageSize: 25,
           q: search,
           platformId: platformFilter,
+          groupId: groupFilter,
           status: statusFilter,
         }),
       ),
@@ -187,6 +201,22 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
             ))}
           </Select>
           <Select
+            wrapperClassName="w-44"
+            label="المجموعة"
+            value={groupFilter}
+            onChange={(event) => {
+              setGroupFilter(event.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">كل المجموعات</option>
+            {groups.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name}
+              </option>
+            ))}
+          </Select>
+          <Select
             wrapperClassName="w-36"
             label="الحالة"
             value={statusFilter}
@@ -281,6 +311,7 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
                     )}
                     <TH>الحساب</TH>
                     <TH>المنصة</TH>
+                    <TH>المجموعة</TH>
                     <TH>النوع</TH>
                     <TH>الملكية</TH>
                     <TH>الحالة</TH>
@@ -318,6 +349,15 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
                         </Link>
                       </TD>
                       <TD className="text-xs">{account.platform.name}</TD>
+                      <TD className="text-xs">
+                        {account.group ? (
+                          <Badge tone="info" size="sm">
+                            {account.group.name}
+                          </Badge>
+                        ) : (
+                          <span className="text-subtle-foreground">—</span>
+                        )}
+                      </TD>
                       <TD className="text-xs text-muted-foreground">
                         {ACCOUNT_TYPE_LABELS[account.type]}
                       </TD>
@@ -392,6 +432,7 @@ export function AccountsAdminClient({ canRunExtraction }: { canRunExtraction: bo
         onClose={() => setFormOpen(false)}
         editing={editing}
         platforms={platformsQuery.data?.platforms ?? []}
+        groups={groups}
         onSaved={() => {
           setFormOpen(false);
           void invalidate();

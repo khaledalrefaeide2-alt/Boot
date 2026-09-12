@@ -15,6 +15,8 @@ import {
 
 export interface PostFilterState {
   q: string;
+  /** مجموعة الحسابات — بُعد مستقل عن المنصة */
+  groupId: string;
   platformId: string;
   accountId: string;
   postType: string;
@@ -30,6 +32,7 @@ export interface PostFilterState {
 
 export const EMPTY_FILTERS: PostFilterState = {
   q: '',
+  groupId: '',
   platformId: '',
   accountId: '',
   postType: '',
@@ -45,7 +48,8 @@ export const EMPTY_FILTERS: PostFilterState = {
 
 export interface FilterOptions {
   platforms: { id: string; name: string }[];
-  accounts: { id: string; name: string; platformId: string }[];
+  accounts: { id: string; name: string; platformId: string; groupId: string | null }[];
+  groups: { id: string; name: string }[];
   topics: { id: string; name: string }[];
 }
 
@@ -53,6 +57,7 @@ export interface FilterOptions {
 export function activeFilterCount(filters: PostFilterState): number {
   let count = 0;
   if (filters.q) count += 1;
+  if (filters.groupId) count += 1;
   if (filters.platformId) count += 1;
   if (filters.accountId) count += 1;
   if (filters.postType) count += 1;
@@ -91,9 +96,18 @@ export function FilterBar({
     onChange({ ...filters, [key]: value });
   }
 
-  const accounts = filters.platformId
-    ? options.accounts.filter((account) => account.platformId === filters.platformId)
-    : options.accounts;
+  /*
+   * قائمة الحسابات تضيق بالمجموعة والمنصة معاً.
+   *
+   * البُعدان مستقلان: «وزارات» فيها حسابات على المنصات الثلاث، وفيسبوك فيه
+   * حسابات من كل المجموعات. فاختيار أحدهما يضيّق القائمة، واختيارهما معاً
+   * يضيّقها أكثر — ولا يُلغي أحدهما الآخر.
+   */
+  const accounts = options.accounts.filter(
+    (account) =>
+      (!filters.platformId || account.platformId === filters.platformId) &&
+      (!filters.groupId || account.groupId === filters.groupId),
+  );
 
   const count = activeFilterCount(filters);
 
@@ -133,6 +147,26 @@ export function FilterBar({
             </option>
           ))}
           <option value="all">كل الفترات</option>
+        </Select>
+
+        {/*
+          المجموعة قبل المنصة في الترتيب: الموظف يبدأ من «أيّ مجموعة أرصد»
+          ثم يضيّق، لا العكس. وتصفير الحساب عند تغييرها ضروري — الحساب
+          المختار قد لا ينتمي إلى المجموعة الجديدة فيبقى فلتراً خفيّاً
+          يُرجع صفر نتائج بلا سبب ظاهر.
+        */}
+        <Select
+          wrapperClassName="w-44"
+          label="المجموعة"
+          value={filters.groupId}
+          onChange={(event) => onChange({ ...filters, groupId: event.target.value, accountId: '' })}
+        >
+          <option value="">كل المجموعات</option>
+          {options.groups.map((group) => (
+            <option key={group.id} value={group.id}>
+              {group.name}
+            </option>
+          ))}
         </Select>
 
         <Select
@@ -280,6 +314,7 @@ export function FilterBar({
 export function filtersToParams(filters: PostFilterState): Record<string, string> {
   const params: Record<string, string> = { range: filters.range };
   if (filters.q) params.q = filters.q;
+  if (filters.groupId) params.groupId = filters.groupId;
   if (filters.platformId) params.platformId = filters.platformId;
   if (filters.accountId) params.accountId = filters.accountId;
   if (filters.postType) params.postType = filters.postType;

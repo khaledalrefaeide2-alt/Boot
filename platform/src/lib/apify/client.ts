@@ -49,7 +49,7 @@ function requireToken(): string {
   const token = env.APIFY_TOKEN.trim();
   if (!token) {
     throw new ApifyError(
-      'رمز Apify غير معرّف. أضف APIFY_TOKEN إلى ملف البيئة ثم أعد تشغيل الخدمة.',
+      'رمز النظام غير معرّف. أضف APIFY_TOKEN إلى ملف البيئة ثم أعد تشغيل الخدمة.',
     );
   }
   return token;
@@ -91,10 +91,10 @@ async function apifyFetch<T>(path: string, options: FetchOptions = {}): Promise<
       clearTimeout(timer);
 
       if (response.status === 401 || response.status === 403) {
-        throw new ApifyError('رمز Apify غير صالح أو لا يملك صلاحية هذه العملية', response.status);
+        throw new ApifyError('رمز النظام غير صالح أو لا يملك صلاحية هذه العملية', response.status);
       }
       if (response.status === 404) {
-        throw new ApifyError('المورد المطلوب غير موجود في Apify — تحقق من معرّف الـ Actor', 404);
+        throw new ApifyError('المورد المطلوب غير موجود في النظام — تحقق من معرّف المشغّل', 404);
       }
       if (response.status === 429) {
         // تجاوز حد الطلبات — ننتظر تصاعدياً ثم نعيد المحاولة
@@ -102,19 +102,19 @@ async function apifyFetch<T>(path: string, options: FetchOptions = {}): Promise<
           await sleep(2000 * (attempt + 1));
           continue;
         }
-        throw new ApifyError('تجاوز حد الطلبات على Apify، حاول لاحقاً', 429);
+        throw new ApifyError('تجاوز حد الطلبات في النظام، حاول لاحقاً', 429);
       }
       if (response.status >= 500) {
         if (attempt < retries) {
           await sleep(1500 * (attempt + 1));
           continue;
         }
-        throw new ApifyError('خطأ في خوادم Apify', response.status);
+        throw new ApifyError('خطأ في خوادم النظام', response.status);
       }
       if (!response.ok) {
         const text = await response.text().catch(() => '');
         throw new ApifyError(
-          `فشل الطلب إلى Apify (${response.status})`,
+          `فشل الطلب إلى النظام (${response.status})`,
           response.status,
           text.slice(0, 500),
         );
@@ -135,15 +135,15 @@ async function apifyFetch<T>(path: string, options: FetchOptions = {}): Promise<
         await sleep(1500 * (attempt + 1));
         continue;
       }
-      if (isAbort) throw new ApifyError('انتهت مهلة الاتصال بـ Apify');
+      if (isAbort) throw new ApifyError('انتهت مهلة الاتصال بالنظام');
       throw new ApifyError(
-        `تعذّر الاتصال بـ Apify: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`,
+        `تعذّر الاتصال بالنظام: ${error instanceof Error ? error.message : 'خطأ غير معروف'}`,
       );
     }
   }
 
   throw new ApifyError(
-    `تعذّر الاتصال بـ Apify: ${lastError instanceof Error ? lastError.message : 'خطأ غير معروف'}`,
+    `تعذّر الاتصال بالنظام: ${lastError instanceof Error ? lastError.message : 'خطأ غير معروف'}`,
   );
 }
 
@@ -230,11 +230,11 @@ export async function fetchAllDatasetItems(
 /** التحقق من صحة الرمز — يُستخدم في صفحة الإعدادات دون كشف قيمته */
 export async function verifyApifyToken(): Promise<{ ok: boolean; username?: string; message: string }> {
   if (!isApifyConfigured()) {
-    return { ok: false, message: 'رمز Apify غير معرّف في متغيرات البيئة' };
+    return { ok: false, message: 'رمز النظام غير معرّف في متغيرات البيئة' };
   }
   try {
     const user = await apifyFetch<{ username?: string }>('/users/me', { timeoutMs: 15_000, retries: 1 });
-    return { ok: true, username: user.username, message: 'الاتصال بـ Apify سليم' };
+    return { ok: true, username: user.username, message: 'الاتصال بالنظام سليم' };
   } catch (error) {
     return {
       ok: false,

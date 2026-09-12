@@ -85,7 +85,7 @@ export async function createExtractionRun(options: CreateRunOptions) {
 
   if (!actorId) {
     throw new ExtractionError(
-      `لم يُحدَّد Apify Actor للمنصة «${account.platform.name}». اضبطه من إدارة المنصات.`,
+      `لم يُحدَّد مشغّل النظام للمنصة «${account.platform.name}». اضبطه من إدارة المنصات.`,
     );
   }
 
@@ -236,7 +236,7 @@ export async function executeExtractionRun(runId: string): Promise<void> {
     if (finalRun === null) return;
 
     if (finalRun.status === 'ABORTED') {
-      await finalizeRun(runId, 'CANCELLED', startedAt, { errorMessage: 'أُوقف التشغيل من Apify' });
+      await finalizeRun(runId, 'CANCELLED', startedAt, { errorMessage: 'أُوقف التشغيل من النظام' });
       return;
     }
 
@@ -244,8 +244,8 @@ export async function executeExtractionRun(runId: string): Promise<void> {
       await failRun(
         runId,
         finalRun.status === 'TIMED-OUT'
-          ? 'انتهت المهلة المحددة للتشغيل على Apify'
-          : 'فشل تشغيل الـ Actor على Apify',
+          ? 'انتهت المهلة المحددة للتشغيل في النظام'
+          : 'فشل تشغيل المشغّل في النظام',
         startedAt,
       );
       return;
