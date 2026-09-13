@@ -37,6 +37,7 @@ export const PERMISSIONS = {
   REPORTS_TEMPLATES: 'reports.templates',
 
   DASHBOARDS_SAVE: 'dashboards.save',
+  ASSISTANT_USE: 'assistant.use',
   AUDIT_VIEW: 'audit.view',
   SETTINGS_MANAGE: 'settings.manage',
 } as const;
@@ -53,6 +54,7 @@ const VIEWER_PERMISSIONS: Permission[] = [
   P.REPORTS_VIEW,
   P.REPORTS_EXPORT,
   P.DASHBOARDS_SAVE,
+  P.ASSISTANT_USE,
 ];
 
 /** صلاحيات المشرف — التشغيل والبيانات، بلا إدارة مستخدمين ولا إعدادات حساسة */

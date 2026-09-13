@@ -124,5 +124,7 @@ export const RATE_LIMITS = {
    */
   EXTRACTION_RUN: { limit: 30, window: 60 * 60 },
   EXPORT: { limit: 20, window: 60 * 60 },
+  /* المساعد يستهلك رصيداً خارجياً بكل سؤال، فالحدّ عليه أضيق من حدّ التعديل */
+  ASSISTANT: { limit: 40, window: 60 * 60 },
   MUTATION: { limit: 240, window: 60 },
 } as const;

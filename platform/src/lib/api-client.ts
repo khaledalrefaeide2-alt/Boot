@@ -1,7 +1,7 @@
 'use client';
 
 /** قراءة رمز الحماية من الكوكي — نمط الإرسال المزدوج ضد CSRF */
-function readCsrfToken(): string {
+export function readCsrfToken(): string {
   if (typeof document === 'undefined') return '';
   const match = document.cookie.match(/(?:^|;\s*)mm_csrf=([^;]*)/);
   return match?.[1] ? decodeURIComponent(match[1]) : '';
