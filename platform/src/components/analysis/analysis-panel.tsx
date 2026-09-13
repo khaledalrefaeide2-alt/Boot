@@ -1,12 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import { AlertTriangle, Bot, RefreshCw, ShieldAlert } from 'lucide-react';
+import { AlertTriangle, Bot, GraduationCap, RefreshCw, ShieldAlert } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
 import { api, ApiClientError } from '@/lib/api-client';
+import { CorrectionModal } from './correction-modal';
 
 export interface PostAnalysisView {
   stance: string;
@@ -57,14 +58,17 @@ export function AnalysisPanel({
   postId,
   analysis,
   canAnalyze,
+  canCorrect,
 }: {
   postId: string;
   analysis: PostAnalysisView | null;
   canAnalyze: boolean;
+  canCorrect: boolean;
 }) {
   const toast = useToast();
   const [current, setCurrent] = useState(analysis);
   const [busy, setBusy] = useState(false);
+  const [correcting, setCorrecting] = useState(false);
 
   async function run() {
     setBusy(true);
@@ -93,12 +97,20 @@ export function AnalysisPanel({
       <CardHeader
         title="التحليل الآلي"
         action={
-          canAnalyze && (
-            <Button size="sm" variant="secondary" onClick={run} loading={busy}>
-              <RefreshCw className="h-3.5 w-3.5" aria-hidden />
-              {current ? 'إعادة التحليل' : 'حلّل الآن'}
-            </Button>
-          )
+          <div className="flex items-center gap-2">
+            {canCorrect && current && (
+              <Button size="sm" variant="secondary" onClick={() => setCorrecting(true)}>
+                <GraduationCap className="h-3.5 w-3.5" aria-hidden />
+                صحّح وعلّم
+              </Button>
+            )}
+            {canAnalyze && (
+              <Button size="sm" variant="secondary" onClick={run} loading={busy}>
+                <RefreshCw className="h-3.5 w-3.5" aria-hidden />
+                {current ? 'إعادة التحليل' : 'حلّل الآن'}
+              </Button>
+            )}
+          </div>
         }
       />
       <CardBody className="space-y-4">
@@ -173,6 +185,25 @@ export function AnalysisPanel({
           </>
         )}
       </CardBody>
+
+      <CorrectionModal
+        postId={postId}
+        open={correcting}
+        current={
+          current
+            ? {
+                stance: current.stance,
+                sentiment: current.sentiment,
+                riskFlags: current.riskFlags,
+              }
+            : null
+        }
+        onClose={() => setCorrecting(false)}
+        onSaved={() => {
+          // الصفحة تُعاد قراءتها من الخادم، فيظهر التصحيح موسوماً يدوياً
+          window.location.reload();
+        }}
+      />
     </Card>
   );
 }

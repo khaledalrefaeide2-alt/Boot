@@ -132,10 +132,21 @@ export function requiresReview(result: PostAnalysisResult): boolean {
   return result.confidence < REVIEW_CONFIDENCE_THRESHOLD || result.riskFlags.length > 0;
 }
 
-/** تحليل نصّ منشور واحد */
-export async function analyzePostText(text: string): Promise<PostAnalysisResult> {
+/**
+ * تحليل نصّ منشور واحد.
+ *
+ * `learning` كتلةٌ اختيارية تحمل توجيهات الإدارة وأمثلة من تصحيحات
+ * المراجعين. وتُضاف بعد الدليل لا قبله: القواعد الأساسية تُقرأ أوّلاً
+ * فتكون المرجع، والأمثلة تُقرأ بعدها فتكون استرشاداً — وهذا ترتيبٌ
+ * مقصود لا مصادفة.
+ */
+export async function analyzePostText(
+  text: string,
+  learning?: string,
+): Promise<PostAnalysisResult> {
   const config = getAssistantConfig();
   const trimmed = text.trim().slice(0, 4000);
+  const systemPrompt = learning ? `${ANALYSIS_RUBRIC}\n\n---\n\n${learning}` : ANALYSIS_RUBRIC;
 
   try {
     const completion = await client().chat.completions.create({
@@ -143,7 +154,7 @@ export async function analyzePostText(text: string): Promise<PostAnalysisResult>
       // حرارة صفر: التصنيف قرارٌ يجب أن يتكرّر على النصّ نفسه لا أن يتنوّع
       temperature: 0,
       messages: [
-        { role: 'system', content: ANALYSIS_RUBRIC },
+        { role: 'system', content: systemPrompt },
         { role: 'user', content: `حلّل هذا المنشور:\n\n---\n${trimmed}\n---` },
       ],
       response_format: {

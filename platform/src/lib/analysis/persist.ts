@@ -1,6 +1,7 @@
 import 'server-only';
 import { prisma } from '@/lib/db';
 import { analyzePostText, requiresReview, type PostAnalysisResult } from './ai-analyzer';
+import { activeGuidance, buildLearningBlock, findSimilarCorrections } from './learning';
 import { getAssistantConfig } from '@/lib/assistant/config';
 
 /*
@@ -15,7 +16,19 @@ import { getAssistantConfig } from '@/lib/assistant/config';
  */
 export async function analyzeAndSave(postId: string, text: string) {
   const config = getAssistantConfig();
-  const result: PostAnalysisResult = await analyzePostText(text);
+
+  /*
+   * التوجيهات والأمثلة تُجلب متوازيةً: لا يعتمد أحدهما على الآخر، وكلاهما
+   * يسبق التحليل. والفشل في أيّهما لا يوقف التحليل — يعمل بالدليل وحده،
+   * لأن تحليلاً بلا أمثلة أنفع من لا تحليل.
+   */
+  const [guidance, examples] = await Promise.all([
+    activeGuidance().catch(() => []),
+    findSimilarCorrections(text).catch(() => []),
+  ]);
+
+  const learning = buildLearningBlock(guidance, examples);
+  const result: PostAnalysisResult = await analyzePostText(text, learning || undefined);
   const needsReview = requiresReview(result);
 
   await prisma.$transaction([

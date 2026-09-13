@@ -71,6 +71,7 @@ export const ADMIN_NAV: NavSection[] = [
       { href: '/admin/keywords', label: 'الكلمات المفتاحية', icon: 'Tags', permission: PERMISSIONS.TAXONOMY_MANAGE },
       { href: '/admin/hashtags', label: 'الهاشتاغات', icon: 'Hash', permission: PERMISSIONS.TAXONOMY_MANAGE },
       { href: '/admin/topics', label: 'التصنيفات', icon: 'Shapes', permission: PERMISSIONS.TAXONOMY_MANAGE },
+      { href: '/admin/analysis', label: 'توجيهات التحليل', icon: 'GraduationCap', permission: PERMISSIONS.TAXONOMY_MANAGE },
     ],
   },
   {

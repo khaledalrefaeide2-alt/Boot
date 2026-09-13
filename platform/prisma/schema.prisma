@@ -206,6 +206,9 @@ model User {
 
   assistantConversations AssistantConversation[]
 
+  analysisCorrections AnalysisCorrection[]
+  analysisGuidance    AnalysisGuidance[]
+
   @@index([status])
   @@index([role])
   @@index([createdAt])
@@ -512,6 +515,8 @@ model Post {
   embeddings PostEmbedding[]
 
   analysis PostAnalysis?
+
+  corrections AnalysisCorrection[]
 
   @@unique([accountId, dedupeKey])
   @@index([publishedAt(sort: Desc)])
@@ -1001,4 +1006,82 @@ model PostAnalysis {
   @@index([riskSeverity])
   @@index([needsReview])
   @@map("post_analyses")
+}
+
+// ═══════════════ تعلّم التحليل من المراجعين ═══════════════
+
+/// نطاق التوجيه — يُحقن في القسم المناسب من الدليل لا في أوّله
+enum GuidanceScope {
+  STANCE
+  SENTIMENT
+  RISK
+  GENERAL
+}
+
+/// تصحيح مراجع بشريّ على تحليل آلي.
+///
+/// هذا هو وقود التعلّم. ولا يُدرَّب به نموذج: يُسترجَع أقربُه إلى المنشور
+/// الجديد دلالياً ويُعرض على النموذج مثالاً. والفرق عمليّ لا نظري —
+/// التدريب يحتاج آلاف الأمثلة وساعات وصندوقاً أسود، وهذا يعمل من أول
+/// تصحيح، ويُعرف فيه بالضبط أيّ مثال أثّر في أيّ حكم، ويُلغى أثره بحذفه.
+model AnalysisCorrection {
+  id     String @id @default(cuid())
+  postId String
+
+  /**
+   * مقتطف النصّ يُنسخ ولا يُقرأ من المنشور عند الحاجة.
+   * المنشور قد يُحذف أو يُعدّل، والمثال التعليمي يجب أن يبقى كما كان
+   * لحظة تصحيحه — وإلا صار المثال يعلّم شيئاً والتصحيح يقول غيره.
+   */
+  excerpt String
+
+  /// ما قاله النموذج — يُحفظ ليُقاس الانحراف لا للعرض وحده
+  aiStance    PostStance?
+  aiSentiment Sentiment?
+  aiRiskFlags RiskFlag[]  @default([])
+
+  /// ما صحّحه المراجع
+  stance    PostStance?
+  sentiment Sentiment?
+  riskFlags RiskFlag[]  @default([])
+
+  /// تعليل المراجع — أنفع حقل في الجدول: المثال يقول «ماذا»، وهذا «لماذا»
+  note String?
+
+  embedding Float[]
+  model     String
+  dims      Int
+
+  correctedById String
+  createdAt     DateTime @default(now())
+
+  post        Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  correctedBy User @relation(fields: [correctedById], references: [id], onDelete: Cascade)
+
+  @@index([postId])
+  @@index([createdAt])
+  @@map("analysis_corrections")
+}
+
+/// توجيه عام يكتبه المدير ويدخل كلّ تحليل بعده.
+///
+/// التصحيح يعلّم بالمثال، وهذا يعلّم بالقاعدة. والاثنان لازمان: «هذا
+/// المنشور ليس تحريضاً» مثالٌ لا يُعمَّم وحده، و«اعتبر المطالبة بالخدمات
+/// نقداً لا معارضة» قاعدةٌ تسري على ما لم يقع بعد.
+model AnalysisGuidance {
+  id          String        @id @default(cuid())
+  scope       GuidanceScope @default(GENERAL)
+  instruction String
+
+  isActive  Boolean @default(true)
+  sortOrder Int     @default(0)
+
+  createdById String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User @relation(fields: [createdById], references: [id], onDelete: Cascade)
+
+  @@index([isActive, sortOrder])
+  @@map("analysis_guidance")
 }

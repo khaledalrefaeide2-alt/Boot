@@ -29,6 +29,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'account.grouped': 'إسناد حسابات إلى مجموعة',
   'assistant.asked': 'سؤال إلى المساعد الذكي',
   'post.analyzed': 'تحليل منشور بالذكاء الاصطناعي',
+  'analysis.corrected': 'تصحيح تحليل آلي',
+  'analysis.guidance_changed': 'تعديل توجيهات التحليل',
   'extraction.started': 'بدء عملية استخراج',
   'extraction.cancelled': 'إلغاء عملية استخراج',
   'extraction.completed': 'اكتمال عملية استخراج',

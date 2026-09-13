@@ -159,6 +159,7 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
         <AnalysisPanel
           postId={post.id}
           canAnalyze={canAnalyze}
+          canCorrect={canReview}
           analysis={
             post.analysis
               ? {
