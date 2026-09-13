@@ -17,7 +17,16 @@
 
 ## 2. أين يوضع المفتاح
 
-في ملف `.env` على **الخادم** وحده:
+**على الخادم** (نشر docker compose) الملف اسمه `.env.production` — وهو ما
+يقرؤه `deploy/dc.sh` عبر `--env-file`. وفي التطوير المحلي اسمه `.env`.
+وخلطُهما شائع: مفتاحٌ في `.env` على خادم إنتاج لا يُقرأ إطلاقاً.
+
+```bash
+# على الخادم
+nano .env.production
+```
+
+في كليهما تُضاف الأسطر نفسها:
 
 ```env
 OPENAI_API_KEY=sk-...
@@ -73,8 +82,18 @@ npm run dev
 
 ```bash
 cd ~/Boot/platform && git pull
-./deploy/dc.sh up -d --build
+nano .env.production            # أضف OPENAI_API_KEY
+./deploy/dc.sh up -d --force-recreate app worker
 ./deploy/dc.sh exec app npm run reindex:embeddings
+```
+
+> `--force-recreate` ضروري عند تغيير متغيّرات البيئة: الحاوية القائمة
+> تحتفظ ببيئتها لحظة إنشائها، ولا يكفي إعادة تشغيلها.
+
+وللتأكّد أن المفتاح وصل فعلاً (يطبع «موجود» ولا يُظهر شيئاً منه):
+
+```bash
+./deploy/dc.sh exec app sh -c 'test -n "$OPENAI_API_KEY" && echo موجود || echo "غير موجود"'
 ```
 
 ثم افتح **الرصد ← المساعد الذكي**.
