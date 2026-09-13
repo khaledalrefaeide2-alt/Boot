@@ -72,6 +72,13 @@ services:
       SEED_OWNER_EMAIL: ${SEED_OWNER_EMAIL:-}
       SEED_OWNER_NAME: ${SEED_OWNER_NAME:-}
       SEED_OWNER_PASSWORD: ${SEED_OWNER_PASSWORD:-}
+      # ── المساعد الذكي (OpenAI) ──
+      # يُمرَّر صراحةً كبقيّة الأسرار: ملف .env يُقرأ للاستبدال النصّي
+      # وحده، ولا يصل إلى داخل الحاوية إلا ما يُذكر هنا. وغياب هذا السطر
+      # كان يجعل المفتاح موجوداً في .env وغائباً عن التطبيق تماماً.
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
+      OPENAI_EMBED_MODEL: ${OPENAI_EMBED_MODEL:-text-embedding-3-small}
       NODE_ENV: production
     healthcheck:
       # الفحص من داخل الحاوية بأدوات Node — لا curl في الصورة ولا حاجة لإضافته
@@ -113,6 +120,13 @@ services:
       APIFY_API_BASE: ${APIFY_API_BASE:-https://api.apify.com/v2}
       APIFY_MAX_ITEMS_HARD_CAP: ${APIFY_MAX_ITEMS_HARD_CAP:-1000}
       APIFY_RUN_TIMEOUT_SECONDS: ${APIFY_RUN_TIMEOUT_SECONDS:-900}
+      # ── المساعد الذكي (OpenAI) ──
+      # يُمرَّر صراحةً كبقيّة الأسرار: ملف .env يُقرأ للاستبدال النصّي
+      # وحده، ولا يصل إلى داخل الحاوية إلا ما يُذكر هنا. وغياب هذا السطر
+      # كان يجعل المفتاح موجوداً في .env وغائباً عن التطبيق تماماً.
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
+      OPENAI_EMBED_MODEL: ${OPENAI_EMBED_MODEL:-text-embedding-3-small}
       NODE_ENV: production
     depends_on:
       postgres:
