@@ -7,6 +7,7 @@ import { getSession } from '@/lib/auth/session';
 import { can, PERMISSIONS } from '@/lib/auth/rbac';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
+import { AnalysisPanel } from '@/components/analysis/analysis-panel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { StatCard } from '@/components/ui/stat-card';
@@ -46,6 +47,7 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
       keywordLinks: { include: { keyword: { select: { id: true, term: true } } } },
       extractionRun: { select: { id: true, createdAt: true } },
       reviewedBy: { select: { name: true } },
+      analysis: true,
     },
   });
 
@@ -54,6 +56,7 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
   // المنشور خارج نطاق المستخدم لا يُعرض، ويُعامل كغير موجود
   if (!scopeAllows(await getAccountScope(), post.accountId)) notFound();
   const canReview = can(user, PERMISSIONS.POSTS_REVIEW);
+  const canAnalyze = can(user, PERMISSIONS.POSTS_CLASSIFY);
   if (post.isHidden && !canReview) notFound();
 
   const mediaUrls = Array.isArray(post.mediaUrls) ? (post.mediaUrls as string[]) : [];
@@ -148,6 +151,31 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
             )}
           </CardBody>
         </Card>
+
+        {/*
+          لوحة التحليل قبل بيانات المنشور مباشرةً: من يفتح منشوراً مرفوعاً
+          من الرصد يريد أوّلاً «لماذا رُفع»، ثمّ تفاصيله.
+        */}
+        <AnalysisPanel
+          postId={post.id}
+          canAnalyze={canAnalyze}
+          analysis={
+            post.analysis
+              ? {
+                  stance: post.analysis.stance,
+                  sentiment: post.analysis.sentiment,
+                  confidence: post.analysis.confidence,
+                  rationale: post.analysis.rationale,
+                  themes: post.analysis.themes,
+                  riskFlags: post.analysis.riskFlags,
+                  riskSeverity: post.analysis.riskSeverity,
+                  needsReview: post.analysis.needsReview,
+                  model: post.analysis.model,
+                  createdAt: post.analysis.createdAt.toISOString(),
+                }
+              : null
+          }
+        />
 
         <Card>
           <CardHeader title="بيانات المنشور" />

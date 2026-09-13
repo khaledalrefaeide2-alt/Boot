@@ -33,6 +33,7 @@ export const AUDIT_ACTIONS = {
   ACCOUNTS_GROUPED: 'account.grouped',
 
   ASSISTANT_ASKED: 'assistant.asked',
+  POST_ANALYZED: 'post.analyzed',
 
   EXTRACTION_STARTED: 'extraction.started',
   EXTRACTION_CANCELLED: 'extraction.cancelled',

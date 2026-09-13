@@ -28,6 +28,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'account.imported': 'استيراد حسابات من ملف Excel',
   'account.grouped': 'إسناد حسابات إلى مجموعة',
   'assistant.asked': 'سؤال إلى المساعد الذكي',
+  'post.analyzed': 'تحليل منشور بالذكاء الاصطناعي',
   'extraction.started': 'بدء عملية استخراج',
   'extraction.cancelled': 'إلغاء عملية استخراج',
   'extraction.completed': 'اكتمال عملية استخراج',

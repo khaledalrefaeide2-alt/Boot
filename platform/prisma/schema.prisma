@@ -511,6 +511,8 @@ model Post {
 
   embeddings PostEmbedding[]
 
+  analysis PostAnalysis?
+
   @@unique([accountId, dedupeKey])
   @@index([publishedAt(sort: Desc)])
   @@index([accountId, publishedAt(sort: Desc)])
@@ -921,4 +923,82 @@ model PostEmbedding {
   @@unique([postId, chunkIndex])
   @@index([model])
   @@map("post_embeddings")
+}
+
+// ═══════════════════ التحليل بالذكاء الاصطناعي ═══════════════════
+
+/// موقف المنشور من سياسات الدولة — بُعدٌ مستقل عن المشاعر.
+///
+/// الفصل بينهما مقصود: منشورٌ غاضب النبرة قد يكون مؤيّداً (غضبٌ على
+/// معرقلي مشروع)، ومنشورٌ هادئ قد يكون معارضاً. وخلطُهما في حقل واحد
+/// يُنتج رقماً لا يقرأ أيّاً منهما.
+enum PostStance {
+  SUPPORTIVE
+  OPPOSED
+  NEUTRAL
+  MIXED
+  UNCLEAR
+}
+
+/// إشارات محتوى ضارّ.
+///
+/// وهي وصفٌ لما في النصّ لا حكمٌ قانوني عليه. الفرق جوهري: «فيه لفظ
+/// طائفي» ملاحظةٌ يراجعها إنسان، و«هذا جريمة» حكمٌ لا يصحّ أن يصدر عن
+/// نموذج احتمالي عن شخص مُسمّى. فما يُرفع هنا يذهب إلى طابور المراجعة
+/// ليقرّر فيه مختصّ.
+enum RiskFlag {
+  INCITEMENT_VIOLENCE
+  SECTARIAN_REGIONAL
+  HATE_SPEECH
+  THREAT
+  PLATFORM_POLICY
+}
+
+enum RiskSeverity {
+  NONE
+  LOW
+  MEDIUM
+  HIGH
+}
+
+/// نتيجة تحليل منشور واحد بالذكاء الاصطناعي.
+///
+/// تُحفظ في جدول مستقل لا في أعمدة على Post: التحليل يُعاد عند تغيير
+/// النموذج أو الدليل، والاحتفاظ به منفصلاً يُبقي بيانات المنشور الأصلية
+/// سليمة ويسمح بمعرفة «متى حُلِّل وبأيّ نموذج» بلا تلويث الصفّ الأصلي.
+model PostAnalysis {
+  id     String @id @default(cuid())
+  postId String @unique
+
+  stance     PostStance
+  sentiment  Sentiment
+  /// ثقة النموذج بنفسه من 0 إلى 1 — تُعرض ولا تُخفى
+  confidence Float
+
+  /// تعليل مختصر بالعربية يشرح سبب التصنيف، فيُراجَع الحكم لا يُقبل وحده
+  rationale String
+
+  /// الموضوعات المكتشفة في النصّ
+  themes String[] @default([])
+
+  riskFlags    RiskFlag[]   @default([])
+  riskSeverity RiskSeverity @default(NONE)
+
+  /**
+   * هل يحتاج مراجعة بشرية؟
+   * يُرفع تلقائياً عند ثقة منخفضة أو إشارة خطر. والقاعدة التي لا تُكسر:
+   * لا يُتَّخذ إجراء على منشور بناءً على هذا التحليل وحده.
+   */
+  needsReview Boolean @default(false)
+
+  model     String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  post Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([stance])
+  @@index([riskSeverity])
+  @@index([needsReview])
+  @@map("post_analyses")
 }
