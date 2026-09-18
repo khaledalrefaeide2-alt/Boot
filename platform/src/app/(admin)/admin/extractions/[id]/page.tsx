@@ -126,12 +126,30 @@ export default async function ExtractionDetailPage({
         تنبيه الهدر: حين يسقط خارج النافذة أكثرُ ممّا حُفظ، فالمشغّل يدفع
         ثمن عناصر يرميها. والعلاج ليس في الشيفرة بل في ضبط التشغيل، فيُقال.
       */}
+      {/*
+        التنبيه يفرّق بين حالتين تتشابهان في الأرقام وتختلفان في العلاج:
+        مشغّلٌ احترم المدى فجاء ما نُشر فيه فقط، ومشغّلٌ تجاهله فأعاد آخر N
+        عنصراً. ومدى ما جُلب هو ما يفصل بينهما.
+      */}
       {run.itemsOutOfWindow > run.itemsSaved && run.itemsOutOfWindow > 20 && (
         <Alert tone="warning" title="أغلب ما جُلب سقط خارج النافذة الزمنية" className="mb-4">
           جُلب {formatNumber(run.itemsFetched)} عنصراً وسقط منها{' '}
-          {formatNumber(run.itemsOutOfWindow)} خارج المدى المطلوب. المزوّد يُحاسِب على ما
-          يجلبه لا على ما يُحفظ، فهذه عناصر مدفوعة تُرمى. وسّع النطاق الزمني للتشغيل، أو
-          اخفض «أقصى عدد للمنشورات» ليقارب ما ينشره الحساب فعلاً في المدة المطلوبة.
+          {formatNumber(run.itemsOutOfWindow)} خارج المدى المطلوب.
+          {run.fetchedFrom && run.fetchedTo && (
+            <>
+              {' '}
+              وما جُلب يغطّي من {formatDate(run.fetchedFrom)} إلى {formatDate(run.fetchedTo)}،
+              بينما المطلوب{' '}
+              {run.windowFrom && run.windowTo
+                ? `من ${formatDate(run.windowFrom)} إلى ${formatDate(run.windowTo)}`
+                : 'مدى أضيق'}
+              .
+            </>
+          )}{' '}
+          فالمشغّل يتجاوز المدى المطلوب ويُعيد أحدث ما لديه. والأخطر من الهدر أن سقف
+          العناصر يُنفَق على ما هو خارج المدى، فقد ينفد قبل بلوغ أوّل النطاق فتغيب
+          منشورات داخله. شغّل العملية من جديد بعد هذا التحديث — النطاق صار يُمرَّر إلى
+          محرّك بحث إكس نفسه فيُطبَّق قبل أن تصل النتائج.
         </Alert>
       )}
 
@@ -165,6 +183,19 @@ export default async function ExtractionDetailPage({
               <span className="num">{run.maxItems ? formatNumber(run.maxItems) : '—'}</span>
             </DetailRow>
             {/* النافذة المطلوبة تُعرض ليعرف المراجع ما الذي غطّته العملية بالضبط */}
+            {/*
+              المدى الفعلي بجانب المطلوب لا بعيداً عنه: المقارنة بينهما هي
+              المعلومة، وكلٌّ منهما وحده رقمٌ لا يقول شيئاً.
+            */}
+            <DetailRow label="مدى ما جُلب فعلاً">
+              {run.fetchedFrom && run.fetchedTo ? (
+                <span className="num">
+                  {formatDate(run.fetchedFrom)} — {formatDate(run.fetchedTo)}
+                </span>
+              ) : (
+                <span className="text-subtle-foreground">—</span>
+              )}
+            </DetailRow>
             <DetailRow label="النطاق الزمني المطلوب">
               {run.windowFrom && run.windowTo ? (
                 <span className="num">

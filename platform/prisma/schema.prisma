@@ -422,9 +422,20 @@ model ExtractionRun {
    * تحويل؟ وثلاثة احتمالات بعلاج مختلف لا يفرّق بينها رقمان.
    */
   itemsOutOfWindow Int @default(0)
-  itemsSaved       Int @default(0)
-  itemsSkipped     Int @default(0)
-  itemsFailed      Int @default(0)
+
+  /**
+   * أقدم وأحدث تاريخ في ما أعاده المزوّد — قبل أي فلترة.
+   * هذان الحقلان يفصلان في سؤال لا يُجاب بغيرهما: هل احترم المشغّل النطاق
+   * المطلوب؟ فإن كان المطلوب أسبوعاً وجاء ما يغطّي شهرين، فالمشغّل يتجاهل
+   * حدود التاريخ ويُعيد آخر N عنصراً — وهذا يعني أن سقف العناصر قد ينفد
+   * قبل بلوغ أوّل النطاق، فتضيع منشورات داخل المدى بلا أن يظهر لها أثر.
+   * وبدونهما يبقى «798 خارج النافذة» رقماً لا يُعرف أهو سلوك سليم أم فقد.
+   */
+  fetchedFrom  DateTime?
+  fetchedTo    DateTime?
+  itemsSaved   Int       @default(0)
+  itemsSkipped Int       @default(0)
+  itemsFailed  Int       @default(0)
 
   errorMessage String?
   errorDetails Json?

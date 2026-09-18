@@ -31,7 +31,8 @@
     "verify:contrast": "tsx scripts/verify-contrast.ts",
     "reindex:embeddings": "tsx --conditions=react-server scripts/reindex-embeddings.ts",
     "analyze:posts": "tsx --conditions=react-server scripts/analyze-posts.ts",
-    "verify:learning": "tsx --conditions=react-server scripts/verify-learning-guard.ts"
+    "verify:learning": "tsx --conditions=react-server scripts/verify-learning-guard.ts",
+    "verify:window": "tsx --conditions=react-server scripts/verify-extraction-window.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

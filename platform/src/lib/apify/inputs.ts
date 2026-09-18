@@ -62,19 +62,63 @@ function facebookInput(ctx: BuildInputContext): Record<string, unknown> {
   return input;
 }
 
-/** إكس — apidojo/tweet-scraper */
+/**
+ * اليوم التالي بصيغة YYYY-MM-DD.
+ *
+ * يلزم لأن `until:` في بحث إكس حصريّ لا شامل: `until:2026-09-10` يُرجع ما
+ * نُشر حتى نهاية التاسع فقط. فطلبُ المستخدم «حتى العاشر» يعني `until:` اليوم
+ * الحادي عشر — ونسيانُ هذا يُسقط اليوم الأخير كاملاً من كل تشغيل، بصمت.
+ */
+function nextDay(date: string): string {
+  const next = new Date(`${date}T00:00:00.000Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return next.toISOString().slice(0, 10);
+}
+
+/**
+ * إكس — apidojo/tweet-scraper
+ *
+ * النطاق الزمني يُمرَّر عبر معاملات بحث إكس نفسها (`from:` و`since:`
+ * و`until:`) لا عبر حقلَي `start`/`end` وحدهما.
+ *
+ * والسبب أثرٌ مقيس لا تفضيل: حين يُمرَّر النطاق بالحقلين وحدهما مع
+ * `twitterHandles`، يعود المشغّل بآخر N تغريدة من الحساب بصرف النظر عن
+ * المدى — فيصل 839 عنصراً ويقع 798 منها خارج النطاق. والأخطر من الهدر أن
+ * السقف يُستهلك على عناصر خارج المدى، فإن كان النطاق المطلوب قديماً نفد
+ * السقف قبل بلوغه ولم يصل منه شيء أصلاً.
+ *
+ * أما `since:`/`until:` فتُطبَّق في محرّك بحث إكس نفسه قبل أن تصل النتائج
+ * إلى المشغّل، فيصير كلّ ما يُجلب داخل المدى ويُنفَق السقف عليه وحده.
+ *
+ * والحقلان يبقيان مُمرَّرين أيضاً: مشغّلٌ يحترمهما يزداد دقّة، ومن يتجاهلهما
+ * يحكمه البحث. ولا ضرر من حاجزين على الشرط نفسه.
+ */
 function xInput(ctx: BuildInputContext): Record<string, unknown> {
   const handle = ctx.username ?? usernameFromUrl(ctx.url);
+  const from = ctx.fromDate ?? daysAgoDate(ctx.windowDays);
+
   const base: Record<string, unknown> = {
     maxItems: ctx.maxItems,
     sort: ctx.sort ?? 'Latest',
-    start: ctx.fromDate ?? daysAgoDate(ctx.windowDays),
+    start: from,
     includeSearchTerms: false,
   };
   if (ctx.toDate) base.end = ctx.toDate;
-  // نفضّل المعرّف على الرابط لأنه أدق في هذا الـ Actor
-  if (handle) base.twitterHandles = [handle];
-  else base.startUrls = [ctx.url];
+
+  if (handle) {
+    const terms = [`from:${handle}`, `since:${from}`];
+    if (ctx.toDate) terms.push(`until:${nextDay(ctx.toDate)}`);
+    base.searchTerms = [terms.join(' ')];
+    /*
+     * لا يُمرَّر `twitterHandles` مع `searchTerms`.
+     *
+     * إرسالهما معاً يجعل المشغّل يجمع مصدرين: نتائج البحث المحدودة بالمدى،
+     * وسجلّ الحساب غير المحدود — فيعود الهدر من الباب الذي أُغلق.
+     */
+  } else {
+    base.startUrls = [ctx.url];
+  }
+
   return base;
 }
 

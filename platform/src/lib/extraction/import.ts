@@ -12,6 +12,9 @@ export interface ImportResult {
   failed: number;
   failures: string[];
   publishedDates: (Date | null)[];
+  /** مدى تواريخ ما جُلب كلّه — قبل الفلترة */
+  fetchedFrom: Date | null;
+  fetchedTo: Date | null;
   /** أعلى منشور تفاعلاً في هذه الدفعة — لتنبيه التفاعل المرتفع */
   topPost: { id: string; engagement: number; text: string | null } | null;
   sentimentCounts: { positive: number; negative: number; neutral: number; unknown: number };
@@ -70,6 +73,8 @@ export async function importPosts(
     failed: 0,
     failures: [],
     publishedDates: [],
+    fetchedFrom: null,
+    fetchedTo: null,
     topPost: null,
     sentimentCounts: { positive: 0, negative: 0, neutral: 0, unknown: 0 },
     matchedAlertKeywords: [],
@@ -83,6 +88,22 @@ export async function importPosts(
 
   for (const post of posts) {
     try {
+      /*
+       * مدى ما جُلب يُقاس على كلّ العناصر قبل الفلترة.
+       *
+       * وهو ما يفرّق بين «المشغّل احترم النطاق وهذا كلّ ما نُشر فيه» وبين
+       * «المشغّل تجاهل النطاق فأعاد آخر N عنصراً» — وهما حالتان بعلاج
+       * مختلف تماماً، ولا يفرّق بينهما عدّاد السقوط وحده.
+       */
+      if (post.publishedAt) {
+        if (!result.fetchedFrom || post.publishedAt < result.fetchedFrom) {
+          result.fetchedFrom = post.publishedAt;
+        }
+        if (!result.fetchedTo || post.publishedAt > result.fetchedTo) {
+          result.fetchedTo = post.publishedAt;
+        }
+      }
+
       /*
        * الالتزام بالنافذة التي حددها المشغّل يُفرض هنا أيضاً لا في الـ Actor
        * وحده: بعض الـ Actors تتجاهل حد النهاية أو تُرجع منشورات مثبّتة خارج

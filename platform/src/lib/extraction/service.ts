@@ -315,6 +315,8 @@ export async function executeExtractionRun(runId: string): Promise<void> {
       itemsSaved: imported.saved,
       itemsSkipped: imported.updated,
       itemsOutOfWindow: imported.skipped,
+      fetchedFrom: imported.fetchedFrom,
+      fetchedTo: imported.fetchedTo,
       itemsFailed: totalFailed,
       errorMessage: outcomeMessage,
       rawSample: items.slice(0, 3),
@@ -395,6 +397,8 @@ interface FinalizeData {
   itemsSaved?: number;
   itemsSkipped?: number;
   itemsOutOfWindow?: number;
+  fetchedFrom?: Date | null;
+  fetchedTo?: Date | null;
   itemsFailed?: number;
   errorMessage?: string | null;
   errorDetails?: unknown;
@@ -418,6 +422,8 @@ async function finalizeRun(
       itemsSaved: data.itemsSaved ?? 0,
       itemsSkipped: data.itemsSkipped ?? 0,
       itemsOutOfWindow: data.itemsOutOfWindow ?? 0,
+      fetchedFrom: data.fetchedFrom ?? null,
+      fetchedTo: data.fetchedTo ?? null,
       itemsFailed: data.itemsFailed ?? 0,
       errorMessage: data.errorMessage ?? null,
       errorDetails: (data.errorDetails ?? undefined) as never,
