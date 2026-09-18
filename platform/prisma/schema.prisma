@@ -414,9 +414,17 @@ model ExtractionRun {
   input      Json?
 
   itemsFetched Int @default(0)
-  itemsSaved   Int @default(0)
-  itemsSkipped Int @default(0)
-  itemsFailed  Int @default(0)
+
+  /**
+   * ما جُلب ثمّ سقط خارج النافذة الزمنية المطلوبة.
+   * كان يُحسب في طبقة الاستيراد ثمّ يُهمَل، فيرى المشغّل «جُلب 855 · حُفظ 43»
+   * بلا ما يفسّر الفارق: أهي منشورات مخزّنة سابقاً؟ أم خارج المدى؟ أم فشل
+   * تحويل؟ وثلاثة احتمالات بعلاج مختلف لا يفرّق بينها رقمان.
+   */
+  itemsOutOfWindow Int @default(0)
+  itemsSaved       Int @default(0)
+  itemsSkipped     Int @default(0)
+  itemsFailed      Int @default(0)
 
   errorMessage String?
   errorDetails Json?

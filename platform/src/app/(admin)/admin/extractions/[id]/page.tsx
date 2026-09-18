@@ -100,10 +100,20 @@ export default async function ExtractionDetailPage({
         </Alert>
       )}
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+      {/*
+        البطاقات تُجمِّع ما جُلب: مجلوب = جديد + محدَّث + خارج النافذة +
+        متجاهَل. وبلا بطاقة «خارج النافذة» كان الفارق يبقى بلا تفسير —
+        «جُلب 855 · حُفظ 43» ولا شيء يقول أين ذهبت الثمانمئة.
+      */}
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
         <StatCard label="العناصر المجلوبة" value={run.itemsFetched} />
         <StatCard label="منشورات جديدة" value={run.itemsSaved} tone="success" />
         <StatCard label="منشورات محدّثة" value={run.itemsSkipped} />
+        <StatCard
+          label="خارج النافذة الزمنية"
+          value={run.itemsOutOfWindow}
+          tone={run.itemsOutOfWindow > run.itemsSaved ? 'warning' : 'default'}
+        />
         <StatCard
           label="عناصر متجاهَلة"
           value={run.itemsFailed}
@@ -111,6 +121,19 @@ export default async function ExtractionDetailPage({
         />
         <StatCard label="المدة" value={formatDuration(run.durationMs)} />
       </div>
+
+      {/*
+        تنبيه الهدر: حين يسقط خارج النافذة أكثرُ ممّا حُفظ، فالمشغّل يدفع
+        ثمن عناصر يرميها. والعلاج ليس في الشيفرة بل في ضبط التشغيل، فيُقال.
+      */}
+      {run.itemsOutOfWindow > run.itemsSaved && run.itemsOutOfWindow > 20 && (
+        <Alert tone="warning" title="أغلب ما جُلب سقط خارج النافذة الزمنية" className="mb-4">
+          جُلب {formatNumber(run.itemsFetched)} عنصراً وسقط منها{' '}
+          {formatNumber(run.itemsOutOfWindow)} خارج المدى المطلوب. المزوّد يُحاسِب على ما
+          يجلبه لا على ما يُحفظ، فهذه عناصر مدفوعة تُرمى. وسّع النطاق الزمني للتشغيل، أو
+          اخفض «أقصى عدد للمنشورات» ليقارب ما ينشره الحساب فعلاً في المدة المطلوبة.
+        </Alert>
+      )}
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Card>
