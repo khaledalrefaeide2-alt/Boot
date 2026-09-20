@@ -11,6 +11,11 @@
 > Platform، و[`DEPLOY.md`](DEPLOY.md) لخادم افتراضي واحد (Hostinger VPS أو
 > DigitalOcean Droplet). هذا الملف يشرح التشغيل على جهازك للتطوير.
 
+> **قيد التطوير — منصة «سلام»:** تُبنى فوق هذا النظام واجهة عامة للتحقق من
+> الأخبار. وثائقها في [`docs/`](docs/): [`requirements.md`](docs/requirements.md)
+> المتطلبات، و[`decisions.md`](docs/decisions.md) القرارات المعمارية،
+> و[`migration.md`](docs/migration.md) خطة ترحيل النماذج.
+
 ---
 
 ## المتطلبات
