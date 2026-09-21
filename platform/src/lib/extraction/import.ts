@@ -9,6 +9,8 @@ export interface ImportResult {
   saved: number;
   updated: number;
   skipped: number;
+  /** ردود استُبعدت — تُعدّ لتُعرض لا لتُخفى */
+  replies: number;
   failed: number;
   failures: string[];
   publishedDates: (Date | null)[];
@@ -64,12 +66,17 @@ export async function importPosts(
     /** حدود النافذة الزمنية المطلوبة — ما خرج عنها لا يُخزَّن */
     windowFrom?: Date | null;
     windowTo?: Date | null;
+    /** استبعاد الردود — الحاجز الثاني بعد معامل البحث */
+    excludeReplies?: boolean;
+    /** معرّف الحساب المرصود — به يُميَّز الردّ على الغير من السلسلة الذاتية */
+    accountUsername?: string | null;
   },
 ): Promise<ImportResult> {
   const result: ImportResult = {
     saved: 0,
     updated: 0,
     skipped: 0,
+    replies: 0,
     failed: 0,
     failures: [],
     publishedDates: [],
@@ -101,6 +108,24 @@ export async function importPosts(
         }
         if (!result.fetchedTo || post.publishedAt > result.fetchedTo) {
           result.fetchedTo = post.publishedAt;
+        }
+      }
+
+      /*
+       * استبعاد الردود.
+       *
+       * والشرط أدقّ من «ردّ أم لا»: الردّ على الغير محادثةٌ لا تُحلَّل،
+       * أما ردّ الحساب على نفسه فمتابعةُ سلسلةٍ يكتبها — وهي من كلامه
+       * المنشور لا من محادثاته. فتُستبعد الأولى وتبقى الثانية.
+       */
+      if (context.excludeReplies && post.isReply) {
+        const self =
+          context.accountUsername &&
+          post.replyToUsername &&
+          post.replyToUsername.toLowerCase() === context.accountUsername.toLowerCase();
+        if (!self) {
+          result.replies += 1;
+          continue;
         }
       }
 

@@ -112,6 +112,14 @@ const SETTINGS = [
     description: 'صفر يعني بلا سقف — التشغيل متاح حسب الحاجة. ارفع القيمة فوق الصفر لفرض حدّ.',
   },
   {
+    key: 'extraction.excludeReplies',
+    value: true,
+    category: 'extraction',
+    label: 'استبعاد الردود من استخراج إكس',
+    description:
+      'الردود محادثات لا مواقف تُحلَّل، واستبعادها من المصدر يوفّر حصة المزوّد. تنبيه: إكس يعدّ متابعة السلسلة ردّاً، فتسقط تتمّات السلاسل معها.',
+  },
+  {
     key: 'extraction.defaultWindowDays',
     value: 30,
     category: 'extraction',

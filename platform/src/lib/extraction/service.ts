@@ -15,7 +15,7 @@ import { importPosts } from './import';
 import { refreshStatsAfterImport } from '@/lib/stats';
 import { notifyOperators } from '@/lib/notifications';
 import { auditSystem, AUDIT_ACTIONS } from '@/lib/audit';
-import { getOperationalSettings } from '@/lib/settings';
+import { getExcludeReplies, getOperationalSettings } from '@/lib/settings';
 import { enqueueExtraction, removeExtractionJob } from '@/lib/queue';
 import { classifyRunOutcome } from './outcome';
 import type { ExtractionTrigger } from '@/generated/prisma';
@@ -128,8 +128,11 @@ export async function createExtractionRun(options: CreateRunOptions) {
       ? Math.max(1, Math.ceil((Date.now() - windowFrom.getTime()) / 86_400_000))
       : (options.windowDays ?? account.extractionWindowDays ?? settings.defaultWindowDays);
 
+  const excludeReplies = await getExcludeReplies();
+
   const input = buildActorInput({
     platformCode: account.platform.code,
+    excludeReplies,
     url: account.url,
     username: account.username,
     maxItems,
@@ -201,7 +204,15 @@ export async function executeExtractionRun(runId: string): Promise<void> {
       attempt: true,
       accountId: true,
       platformId: true,
-      account: { select: { id: true, name: true, platform: { select: { id: true, code: true, name: true } } } },
+      account: {
+        select: {
+          id: true,
+          name: true,
+          // يلزم لتمييز الردّ على الغير من متابعة سلسلة ذاتية
+          username: true,
+          platform: { select: { id: true, code: true, name: true } },
+        },
+      },
     },
   });
 
@@ -272,12 +283,22 @@ export async function executeExtractionRun(runId: string): Promise<void> {
       return;
     }
 
+    /*
+     * الحاجز الثاني على الردود.
+     *
+     * المصدر يستبعدها بمعامل البحث، وهذا يمسك ما يفلت: الحسابات التي
+     * لا يُشتقّ لها معرّف تمرّ بمسار الرابط لا البحث، فلا يصلها المعامل
+     * أصلاً. وحاجزان على شرط واحد أرخص من صفٍّ خاطئ في قاعدة تُبنى
+     * عليها تقارير.
+     */
     const imported = await importPosts(mapped.posts, {
       accountId: run.accountId,
       platformId: run.platformId,
       extractionRunId: runId,
       windowFrom: run.windowFrom,
       windowTo: run.windowTo,
+      excludeReplies: await getExcludeReplies(),
+      accountUsername: run.account?.username ?? null,
     });
 
     // تحديث عدد المتابعين إن أرجعه الـ Actor
@@ -315,6 +336,7 @@ export async function executeExtractionRun(runId: string): Promise<void> {
       itemsSaved: imported.saved,
       itemsSkipped: imported.updated,
       itemsOutOfWindow: imported.skipped,
+      itemsReplies: imported.replies,
       fetchedFrom: imported.fetchedFrom,
       fetchedTo: imported.fetchedTo,
       itemsFailed: totalFailed,
@@ -397,6 +419,7 @@ interface FinalizeData {
   itemsSaved?: number;
   itemsSkipped?: number;
   itemsOutOfWindow?: number;
+  itemsReplies?: number;
   fetchedFrom?: Date | null;
   fetchedTo?: Date | null;
   itemsFailed?: number;
@@ -422,6 +445,7 @@ async function finalizeRun(
       itemsSaved: data.itemsSaved ?? 0,
       itemsSkipped: data.itemsSkipped ?? 0,
       itemsOutOfWindow: data.itemsOutOfWindow ?? 0,
+      itemsReplies: data.itemsReplies ?? 0,
       fetchedFrom: data.fetchedFrom ?? null,
       fetchedTo: data.fetchedTo ?? null,
       itemsFailed: data.itemsFailed ?? 0,

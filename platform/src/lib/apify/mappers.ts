@@ -35,6 +35,16 @@ export interface MappedPost {
   hashtags: string[];
   /** عدد المتابعين إن أرجعه الـ Actor — يُحدَّث على مستوى الحساب */
   followersCount: number | null;
+  /*
+   * هل العنصر ردّ على منشور آخر؟
+   *
+   * لا يكفي وجود منشن في أوّل النصّ للحكم: منشور يبدأ بـ«@فلان شكراً» قد
+   * يكون تغريدةً أصلية تخاطب شخصاً. فالحكم يُبنى على حقول المزوّد الصريحة،
+   * والنصّ آخر ما يُلجأ إليه.
+   */
+  isReply: boolean;
+  /** من رُدَّ عليه — يُميّز الردّ على الغير من متابعة سلسلة ذاتية */
+  replyToUsername: string | null;
 }
 
 // ============================ أدوات قراءة آمنة ============================
@@ -50,6 +60,17 @@ function pickString(source: Record<string, unknown>, keys: string[]): string | n
   for (const key of keys) {
     const value = readPath(source, key);
     if (typeof value === 'string' && value.trim()) return value.trim();
+  }
+  return null;
+}
+
+/** قراءة أول قيمة منطقية موجودة — يقبل النصّ 'true' كما يرسله بعض المزوّدين */
+function pickBoolean(source: Record<string, unknown>, keys: string[]): boolean | null {
+  for (const key of keys) {
+    const value = readPath(source, key);
+    if (typeof value === 'boolean') return value;
+    if (value === 'true') return true;
+    if (value === 'false') return false;
   }
   return null;
 }
@@ -335,6 +356,46 @@ export function mapApifyItem(raw: unknown, platformCode: string): MappedPost | n
   // عنصر بلا نص وبلا رابط وبلا معرّف لا يصلح منشوراً
   if (!text && !url && !externalId) return null;
 
+  /*
+   * كشف الردّ.
+   *
+   * تُقرأ حقول المزوّد الصريحة أوّلاً بأسمائها المختلفة — لكلّ مشغّل
+   * تسميته. وإن غابت كلّها، يُستدلّ بأن معرّف المحادثة يخالف معرّف
+   * المنشور: في إكس، أوّلُ تغريدة في سلسلة يتطابق فيها المعرّفان، وكلّ
+   * ما بعدها ردّ.
+   */
+  const replyToUsername = pickString(source, [
+    'inReplyToUsername',
+    'in_reply_to_username',
+    'inReplyToScreenName',
+    'in_reply_to_screen_name',
+    'replyToUser',
+  ]);
+
+  const explicitReply = pickBoolean(source, [
+    'isReply',
+    'is_reply',
+    'isReplyTweet',
+    'isConversationReply',
+  ]);
+
+  const replyToId = pickString(source, [
+    'inReplyToId',
+    'in_reply_to_status_id',
+    'inReplyToStatusId',
+    'replyToId',
+  ]);
+
+  const conversationId = pickString(source, ['conversationId', 'conversation_id']);
+  const ownId = pickString(source, ['id', 'postId', 'legacyId']);
+  const threadContinuation = Boolean(
+    conversationId && ownId && conversationId !== ownId,
+  );
+
+  const isReply = Boolean(
+    explicitReply ?? (replyToUsername || replyToId || threadContinuation),
+  );
+
   // كل رابط وسائط يمرّ بالتحقق: الحقل الذي يبدو حقل وسائط قد يحمل رابط صفحة
   const videoUrl = keepMedia(
     pickString(source, ['videoUrl', 'video_url', 'videoUrls.0', 'media.video_url', 'videoPlayUrl']),
@@ -501,6 +562,8 @@ export function mapApifyItem(raw: unknown, platformCode: string): MappedPost | n
     saves,
     hashtags,
     followersCount,
+    isReply,
+    replyToUsername,
   };
 }
 

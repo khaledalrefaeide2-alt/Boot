@@ -5,6 +5,7 @@
  * معقولة، والمنشورات الناقصة لا أثر لها — لا أحد يفتقد ما لم يره قطّ.
  */
 import { buildActorInput } from '../src/lib/apify/inputs';
+import { mapApifyItem } from '../src/lib/apify/mappers';
 
 const checks: { name: string; ok: boolean; detail?: string }[] = [];
 function check(name: string, ok: boolean, detail?: string) {
@@ -79,6 +80,49 @@ const noHandle = buildActorInput({
 check(
   'رابط بلا معرّف → startUrls',
   noHandle.startUrls !== undefined && noHandle.searchTerms === undefined,
+);
+
+// ── استبعاد الردود
+check('الردود مستبعَدة افتراضياً', terms.includes('-filter:replies'), terms);
+
+const withReplies = buildActorInput({
+  platformCode: 'x',
+  url: 'https://x.com/example',
+  username: 'example',
+  maxItems: 100,
+  windowDays: 7,
+  fromDate: '2026-09-01',
+  excludeReplies: false,
+}) as Record<string, unknown>;
+const withRepliesTerms = (withReplies.searchTerms as string[] | undefined)?.[0] ?? '';
+check(
+  'تعطيل الإعداد يُبقي الردود',
+  !withRepliesTerms.includes('-filter:replies'),
+  withRepliesTerms,
+);
+
+// ── كشف الردّ في المحوّل
+const reply = mapApifyItem(
+  { id: '2', conversationId: '1', inReplyToUsername: 'someone', text: '@someone شكراً', url: 'https://x.com/a/status/2' },
+  'x',
+);
+check('المحوّل يكشف الردّ', reply?.isReply === true);
+check('ويعرف من رُدَّ عليه', reply?.replyToUsername === 'someone');
+
+const original = mapApifyItem(
+  { id: '1', conversationId: '1', text: 'بيان رسمي', url: 'https://x.com/a/status/1' },
+  'x',
+);
+check('التغريدة الأصلية ليست ردّاً', original?.isReply === false);
+
+const selfThread = mapApifyItem(
+  { id: '3', conversationId: '1', inReplyToUsername: 'example', text: 'تتمّة', url: 'https://x.com/a/status/3' },
+  'x',
+);
+check(
+  'متابعة السلسلة تُكشف ردّاً ويُعرف صاحبها',
+  selfThread?.isReply === true && selfThread?.replyToUsername === 'example',
+  'الاستيراد يقارنها بمعرّف الحساب فيُبقيها',
 );
 
 console.log('\n>> فحص النطاق الزمني في مدخلات المشغّل\n');

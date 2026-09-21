@@ -10,6 +10,7 @@ const DEFAULTS: Record<string, unknown> = {
   'extraction.defaultMaxItems': 100,
   'extraction.defaultWindowDays': 30,
   'extraction.hourlyLimit': 0,
+  'extraction.excludeReplies': true,
   'alerts.highEngagementThreshold': 1000,
   'alerts.negativeSentimentRatio': 0.4,
 };
@@ -69,4 +70,18 @@ export async function getExtractionHourlyLimit(): Promise<number> {
   const value = Number(raw);
   if (!Number.isFinite(value) || value <= 0) return 0;
   return Math.floor(value);
+}
+
+/**
+ * هل تُستبعد الردود من استخراج إكس؟
+ *
+ * افتراضه صحيح: الحساب المرصود يردّ على متابعيه عشرات المرات يومياً،
+ * وتلك محادثات لا مواقف تُحلَّل. ومن يحتاج سلاسل التغريدات كاملة يُعطّله
+ * — فإكس يعدّ متابعة السلسلة ردّاً، فتسقط معها.
+ */
+export async function getExcludeReplies(): Promise<boolean> {
+  const raw = await getSetting<unknown>('extraction.excludeReplies', true);
+  if (typeof raw === 'boolean') return raw;
+  if (raw === 'false' || raw === 0) return false;
+  return true;
 }

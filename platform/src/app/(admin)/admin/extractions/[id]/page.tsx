@@ -105,7 +105,7 @@ export default async function ExtractionDetailPage({
         متجاهَل. وبلا بطاقة «خارج النافذة» كان الفارق يبقى بلا تفسير —
         «جُلب 855 · حُفظ 43» ولا شيء يقول أين ذهبت الثمانمئة.
       */}
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
+      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
         <StatCard label="العناصر المجلوبة" value={run.itemsFetched} />
         <StatCard label="منشورات جديدة" value={run.itemsSaved} tone="success" />
         <StatCard label="منشورات محدّثة" value={run.itemsSkipped} />
@@ -114,6 +114,7 @@ export default async function ExtractionDetailPage({
           value={run.itemsOutOfWindow}
           tone={run.itemsOutOfWindow > run.itemsSaved ? 'warning' : 'default'}
         />
+        <StatCard label="ردود مستبعَدة" value={run.itemsReplies} />
         <StatCard
           label="عناصر متجاهَلة"
           value={run.itemsFailed}

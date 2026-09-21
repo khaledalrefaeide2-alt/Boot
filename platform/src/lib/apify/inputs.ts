@@ -27,6 +27,8 @@ export interface BuildInputContext {
   resultsType?: 'posts' | 'reels' | null;
   /** مدخلات إضافية من إعدادات المنصة أو الحساب تُدمج فوق الافتراضي */
   overrides?: Record<string, unknown> | null;
+  /** استبعاد الردود — افتراضه صحيح، ويُعطَّل من الإعدادات */
+  excludeReplies?: boolean;
 }
 
 /** تاريخ بصيغة YYYY-MM-DD قبل عدد أيام محدد */
@@ -108,6 +110,21 @@ function xInput(ctx: BuildInputContext): Record<string, unknown> {
   if (handle) {
     const terms = [`from:${handle}`, `since:${from}`];
     if (ctx.toDate) terms.push(`until:${nextDay(ctx.toDate)}`);
+
+    /*
+     * استبعاد الردود من المصدر لا بعد الجلب.
+     *
+     * الحساب المرصود يردّ على متابعيه عشرات المرات يومياً، وتلك محادثات
+     * لا مواقف — «كسل كسل 😂» ليست تغريدة تُحلَّل ولا تُقاس. واستبعادها
+     * في محرّك البحث يعني أنها لا تُجلب ولا تُحاسَب عليها أصلاً، بخلاف
+     * تصفيتها عندنا بعد أن تُدفع.
+     *
+     * والثمن أن متابعات السلسلة الذاتية تسقط معها — إكس يعدّها ردوداً —
+     * فتبقى التغريدة الأولى من كل سلسلة وتغيب تتمّاتها. ولذلك يُترك
+     * الأمر للإعداد: من يحتاج السلاسل كاملة يُعطّله.
+     */
+    if (ctx.excludeReplies !== false) terms.push('-filter:replies');
+
     base.searchTerms = [terms.join(' ')];
     /*
      * لا يُمرَّر `twitterHandles` مع `searchTerms`.
