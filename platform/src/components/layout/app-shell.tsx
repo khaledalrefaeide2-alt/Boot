@@ -144,7 +144,7 @@ export function AppShell({
 
           {canAccessAdmin && (
             <Link href={isAdminArea ? '/' : '/admin'}>
-              <Button variant={isAdminArea ? 'soft' : 'secondary'} size="sm">
+              <Button variant={isAdminArea ? 'tonal' : 'secondary'} size="sm">
                 <Shield className="h-3.5 w-3.5" aria-hidden />
                 {isAdminArea ? 'العودة إلى لوحة العرض' : 'لوحة الإدارة'}
               </Button>

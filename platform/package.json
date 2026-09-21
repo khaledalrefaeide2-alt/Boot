@@ -34,6 +34,7 @@
     "verify:learning": "tsx --conditions=react-server scripts/verify-learning-guard.ts",
     "verify:window": "tsx --conditions=react-server scripts/verify-extraction-window.ts",
     "verify:chunks": "tsx scripts/verify-backfill-chunks.ts",
+    "verify:buttons": "tsx scripts/verify-buttons.ts",
     "cleanup:replies": "tsx --conditions=react-server scripts/delete-stored-replies.ts"
   },
   "dependencies": {

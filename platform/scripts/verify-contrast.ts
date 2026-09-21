@@ -91,11 +91,32 @@ const TEXT_ON: Array<[string, string[]]> = [
   ['--warning', ['--background', '--surface', '--warning-soft']],
   ['--danger', ['--background', '--surface', '--danger-soft']],
   ['--info', ['--background', '--surface', '--info-soft']],
+
+  /*
+   * نظام الأزرار.
+   *
+   * كل سطر هنا حالةٌ يراها المستخدم فعلاً — لا تركيبة نظرية: الزرّ
+   * الأساسي وتحويمه وضغطه، ونصّ الثانوي على أسطحه الثلاثة، والمتدرّج على
+   * درجاته، والشبح على ما يقف عليه. وبدونها يبقى السلّم لوحةً جميلة لا
+   * يعرف أحد أيّ درجتين منها تلتقيان في زرّ حقيقي.
+   */
+  ['--olive-700', ['--surface', '--background', '--surface-2', '--olive-50', '--olive-100']],
+  ['--olive-800', ['--surface', '--background', '--olive-50', '--olive-100']],
+  ['--olive-900', ['--olive-100', '--olive-200', '--olive-300']],
+  ['--danger-foreground', ['--danger', '--danger-hover', '--danger-active']],
+  ['--disabled-text', ['--disabled-bg', '--surface', '--background']],
 ];
 
 const GRAPHIC_ON: Array<[string, string[]]> = [
   ['--border-input', ['--surface', '--background']],
   ['--ring', ['--background', '--surface']],
+  /*
+   * حدّ الزرّ الثانوي وحلقة التركيز — كلاهما يقع تحت 1.4.11.
+   * الحدّ هو ما يجعل زرّاً أبيض على بطاقة بيضاء مرئياً، والحلقة هي ما
+   * يقول لمن يتنقّل بلوحة المفاتيح «أنت هنا».
+   */
+  ['--olive-400', ['--surface', '--background', '--surface-2']],
+  ['--olive-500', ['--surface', '--background', '--olive-50']],
   ['--chart-1', ['--surface']],
   ['--chart-2', ['--surface']],
   ['--chart-3', ['--surface']],
@@ -129,8 +150,23 @@ let worst = { label: '', value: Infinity };
 function run(theme: 'light' | 'dark', tokens: Record<string, string>): void {
   console.log(`\n  ── ${theme === 'light' ? 'السمة الفاتحة' : 'السمة الداكنة'} ──────────────────────────────`);
 
-  const resolve = (name: string, over?: RGB): RGB | null => {
+  /*
+   * `var(--x)` تُتبَّع حتى قيمةٍ صريحة.
+   *
+   * بدون هذا يصمت الفحص بدل أن يفشل: الرمز الذي لا يُفهم يُتخطّى، فيمرّ
+   * `--primary: var(--olive-700)` بلا قياس ويبدو الملف «سليماً» لأنه لم
+   * يقِس شيئاً. والسكوت أخطر من الرسوب هنا.
+   */
+  const literal = (name: string, depth = 0): string | null => {
+    if (depth > 8) return null;
     const raw = tokens[name];
+    if (!raw) return null;
+    const ref = raw.match(/^var\(\s*(--[\w-]+)\s*\)$/);
+    return ref?.[1] ? literal(ref[1], depth + 1) : raw;
+  };
+
+  const resolve = (name: string, over?: RGB): RGB | null => {
+    const raw = literal(name);
     if (!raw) return null;
     const c = parseColor(raw);
     if (!c) return null;

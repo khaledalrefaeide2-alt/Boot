@@ -169,7 +169,7 @@ export function DashboardsClient() {
                     </Button>
                   </Link>
                   <Button
-                    size="sm"
+                    size="icon-sm"
                     variant="ghost"
                     className="text-danger"
                     onClick={() => setDeleteTarget(dashboard)}

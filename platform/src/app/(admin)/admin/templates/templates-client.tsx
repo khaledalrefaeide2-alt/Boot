@@ -191,14 +191,14 @@ export function TemplatesClient({ canManage }: { canManage: boolean }) {
                             format: 'excel',
                           })}
                         >
-                          <Button size="sm" variant="soft">
+                          <Button size="sm" variant="tonal">
                             <Download className="h-3.5 w-3.5" aria-hidden />
                             تصدير
                           </Button>
                         </a>
                         {canManage && (
                           <Button
-                            size="sm"
+                            size="icon-sm"
                             variant="ghost"
                             className="text-danger"
                             onClick={() => setDeleteTarget(template)}

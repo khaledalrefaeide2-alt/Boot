@@ -369,7 +369,7 @@ export function ExtractionsClient({ canRun, canCancel }: { canRun: boolean; canC
                           </Link>
                           {canCancel && ['PENDING', 'RUNNING'].includes(run.status) && (
                             <Button
-                              size="sm"
+                              size="icon-sm"
                               variant="ghost"
                               className="text-danger"
                               onClick={() => setCancelTarget(run)}

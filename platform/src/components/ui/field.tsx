@@ -78,7 +78,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
         id={inputId}
         required={required}
         aria-invalid={error ? true : undefined}
-        className={cn(controlBase, 'h-9', error && 'border-danger', className)}
+        className={cn(controlBase, 'h-10', error && 'border-danger', className)}
         {...props}
       />
     </FieldWrapper>
@@ -148,7 +148,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
         id={selectId}
         required={required}
         aria-invalid={error ? true : undefined}
-        className={cn(controlBase, 'h-9 cursor-pointer', error && 'border-danger', className)}
+        className={cn(controlBase, 'h-10 cursor-pointer', error && 'border-danger', className)}
         {...props}
       >
         {children}

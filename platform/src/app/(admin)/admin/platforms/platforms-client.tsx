@@ -204,7 +204,7 @@ export function PlatformsAdminClient() {
                           تعديل
                         </Button>
                         <Button
-                          size="sm"
+                          size="icon-sm"
                           variant="ghost"
                           className="text-danger"
                           onClick={() => setDeleteTarget(platform)}

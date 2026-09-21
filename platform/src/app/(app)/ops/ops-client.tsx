@@ -108,7 +108,7 @@ export function OpsRoomClient() {
             <span className="inline-block h-2 w-2 animate-pulse rounded-full bg-success" aria-hidden />
             مباشر
           </Badge>
-          <Button variant="secondary" onClick={() => overview.refetch()} aria-label="تحديث الآن">
+          <Button size="icon" variant="secondary" onClick={() => overview.refetch()} aria-label="تحديث الآن">
             <RefreshCw className="h-4 w-4" aria-hidden />
           </Button>
           <Button variant="secondary" onClick={toggleFullscreen}>

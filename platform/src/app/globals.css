@@ -27,16 +27,49 @@
   --border-input: #7c8797;
 
   --foreground: #0f172a;
-  /* العناوين بأزرق عميق لا بلون النص: تسلسل بلا وزن إضافي ولا حجم إضافي */
-  --heading: #1e3a8a;
+  /* العناوين بزيتونيّ عميق لا بلون النص: تسلسل بلا وزن إضافي ولا حجم إضافي */
+  --heading: #2f3a12;
   --muted-foreground: #475569;
   --subtle-foreground: #5b6b80;
 
-  --primary: #1e40af;
-  --primary-hover: #173285;
+  /*
+   * السلّم الزيتوني — لون الهوية.
+   *
+   * القيم ليست اختياراً ذوقياً بل ناتج قياس: كل درجة تُستعمل في نظام
+   * الأزرار مقيسةٌ على الأسطح الثلاثة التي يقف عليها الزرّ (البطاقة،
+   * أرضية الصفحة، شريط الأدوات) بحدّ WCAG المناسب لدورها — 4.5:1 للنصّ
+   * و3:1 لما يحدّ مكوّناً تفاعلياً.
+   *
+   * وفيه درجة 400 لم تَرِد في المواصفة: حدّ الزرّ الثانوي. المواصفة تطلب
+   * olive-300 حدّاً، وهي عند 1.93:1 على الأبيض — والحدّ هو كلّ ما يجعل
+   * زرّاً أبيض على بطاقة بيضاء مرئياً أصلاً، فيقع تحت 1.4.11 لا خارجه.
+   * فبقيت 300 على قيمتها للتظليل، وأُفردت 400 لما يحدّ.
+   */
+  --olive-50: #f7f8f0;
+  --olive-100: #eaeeda;
+  --olive-200: #d5dcb7;
+  --olive-300: #b6c08c;
+  --olive-400: #878e68;
+  --olive-500: #75832f;
+  --olive-600: #5c6724;
+  --olive-700: #46501b;
+  --olive-800: #374015;
+  --olive-900: #28300f;
+
+  --primary: var(--olive-700);
+  --primary-hover: var(--olive-800);
   --primary-foreground: #ffffff;
-  --primary-soft: #e7edfb;
-  --primary-soft-foreground: #1b3a9e;
+  --primary-soft: var(--olive-100);
+  --primary-soft-foreground: var(--olive-900);
+
+  /*
+   * حالة المعطَّل.
+   *
+   * رمادٌ محايد لا زيتونيٌّ باهت: الزيتوني الباهت يبقى لوناً، واللون يقول
+   * «هذا الزرّ حيّ». وحيادُ الرمادي هو ما يُخرجه من نظام الألوان كله.
+   */
+  --disabled-bg: #e4e7ec;
+  --disabled-text: #5f646e;
 
   --accent: #b45309;
   --accent-soft: #fdf2e3;
@@ -46,11 +79,15 @@
   --warning: #854d0e;
   --warning-soft: #fdf3e0;
   --danger: #b91c1c;
+  --danger-hover: #991b1b;
+  --danger-active: #7a1a14;
+  /* نصّ الزرّ الخطِر رمزٌ مستقل: أبيض على الأحمر الداكن، وداكن على الفاتح */
+  --danger-foreground: #ffffff;
   --danger-soft: #fdeceb;
   --info: #1d4ed8;
   --info-soft: #e7edfb;
 
-  --ring: #1e40af;
+  --ring: var(--olive-500);
 
   /*
    * مصفوفة الارتفاع.
@@ -156,11 +193,34 @@
    * بل بأن يكون كل ما عداه رمادياً — لون واحد على حقل محايد يبقى حدثاً
    * مهما تكرر، ولونان يُلغيان بعضهما من أول ظهور.
    */
-  --primary: #00e5ff;
-  --primary-hover: #5df0ff;
-  --primary-foreground: #04161a;
-  --primary-soft: #0a2229;
-  --primary-soft-foreground: #7ee8fa;
+  /*
+   * السلّم مقلوب في الداكن لا معكوس القيم حسابياً.
+   *
+   * 50 أخفت تظليل على شبه الأسود، و900 أفتح نصّ — فتبقى كل قاعدة في نظام
+   * الأزرار مكتوبةً مرة واحدة («الأساسي = خلفية 700») وتعمل في السمتين.
+   * ولو تُركت أرقام الفاتح كما هي لصار الزرّ الأساسي زيتونياً داكناً على
+   * أرضية شبه سوداء — أي غير مرئي.
+   */
+  --olive-50: #15180e;
+  --olive-100: #1d2112;
+  --olive-200: #272c18;
+  --olive-300: #3a4220;
+  --olive-400: #6f7b3d;
+  --olive-500: #98a750;
+  --olive-600: #b4c569;
+  --olive-700: #c8d87f;
+  --olive-800: #d7e49a;
+  --olive-900: #e7f0c3;
+
+  --primary: var(--olive-700);
+  --primary-hover: var(--olive-800);
+  /* النصّ على الزيتوني المضيء داكن لا أبيض — والأبيض عليه 1.6:1 */
+  --primary-foreground: #11150a;
+  --primary-soft: var(--olive-100);
+  --primary-soft-foreground: var(--olive-900);
+
+  --disabled-bg: #232329;
+  --disabled-text: #8c8c96;
 
   /* الأزرق الكهربائي — تدرّجات الهالة والتوكيد الثانوي، لا نصّ على أرضية */
   --accent: #2563eb;
@@ -171,11 +231,19 @@
   --warning: #fbbf24;
   --warning-soft: #2a2113;
   --danger: #f87171;
+  --danger-hover: #fca5a5;
+  --danger-active: #fecaca;
+  /*
+   * على الأحمر الفاتح يكون النصّ داكناً.
+   * الأبيض عليه 2.9:1 — وهو ما كان عليه الزرّ الخطِر في السمة الداكنة قبل
+   * هذا النظام: `bg-danger text-white` في السمتين معاً.
+   */
+  --danger-foreground: #2a0b0b;
   --danger-soft: #2c1616;
   --info: #93c5fd;
   --info-soft: #122240;
 
-  --ring: #00e5ff;
+  --ring: var(--olive-500);
 
   /*
    * الظل على أرضية داكنة لا يُشتق من الفاتح بضرب النسب: العين تقرأ الارتفاع
@@ -198,8 +266,8 @@
    * بشفافية منخفضة ثم انتشار واسع بلا إزاحة، فيبدو الضوء صادراً من الحافة
    * لا ساقطاً عليها. تُستعمل على التحويم والحالة النشطة وحدهما.
    */
-  --glow-primary: 0 0 0 1px rgb(0 229 255 / 0.28), 0 0 32px -10px rgb(0 229 255 / 0.5);
-  --glow-soft: 0 0 40px -16px rgb(0 229 255 / 0.35);
+  --glow-primary: 0 0 0 1px rgb(200 216 127 / 0.28), 0 0 32px -10px rgb(200 216 127 / 0.5);
+  --glow-soft: 0 0 40px -16px rgb(200 216 127 / 0.35);
 
   /* بحث مستقل على أرضية البطاقة الداكنة، لا انعكاس للوحة الفاتحة */
   --chart-1: #93c5fd;
@@ -237,6 +305,21 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-subtle-foreground: var(--subtle-foreground);
 
+  /* السلّم الزيتوني متاحٌ بأصنافه: bg-olive-700 و text-olive-800 وغيرها */
+  --color-olive-50: var(--olive-50);
+  --color-olive-100: var(--olive-100);
+  --color-olive-200: var(--olive-200);
+  --color-olive-300: var(--olive-300);
+  --color-olive-400: var(--olive-400);
+  --color-olive-500: var(--olive-500);
+  --color-olive-600: var(--olive-600);
+  --color-olive-700: var(--olive-700);
+  --color-olive-800: var(--olive-800);
+  --color-olive-900: var(--olive-900);
+
+  --color-disabled-bg: var(--disabled-bg);
+  --color-disabled-text: var(--disabled-text);
+
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
   --color-primary-foreground: var(--primary-foreground);
@@ -251,6 +334,9 @@
   --color-warning: var(--warning);
   --color-warning-soft: var(--warning-soft);
   --color-danger: var(--danger);
+  --color-danger-hover: var(--danger-hover);
+  --color-danger-active: var(--danger-active);
+  --color-danger-foreground: var(--danger-foreground);
   --color-danger-soft: var(--danger-soft);
   --color-info: var(--info);
   --color-info-soft: var(--info-soft);

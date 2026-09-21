@@ -7,6 +7,7 @@ import { FileSpreadsheet, FolderInput, Play, Plus, Search, Trash2, UsersRound, X
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { RowActions } from '@/components/ui/row-actions';
 import { Input, Select } from '@/components/ui/field';
 import { Badge } from '@/components/ui/badge';
 import { Table, TBody, TD, TH, THead, TR, TableWrapper } from '@/components/ui/table';
@@ -404,38 +405,34 @@ export function AccountsAdminClient({
                         {account.lastExtractedAt ? formatRelativeTime(account.lastExtractedAt) : '—'}
                       </TD>
                       <TD>
-                        <div className="flex items-center justify-end gap-1">
-                          {canRunExtraction && (
-                            <Button
-                              size="sm"
-                              variant="soft"
-                              onClick={() => setRunTargets([toTarget(account)])}
-                              title="تشغيل استخراج يدوي"
-                            >
-                              <Play className="h-3.5 w-3.5" aria-hidden />
-                              استخراج
-                            </Button>
-                          )}
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => {
-                              setEditing(account);
-                              setFormOpen(true);
-                            }}
-                          >
-                            تعديل
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            className="text-danger"
-                            onClick={() => setDeleteTarget(account)}
-                            aria-label="حذف الحساب"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" aria-hidden />
-                          </Button>
-                        </div>
+                        <RowActions
+                          actions={[
+                            {
+                              key: 'run',
+                              label: 'استخراج',
+                              icon: <Play aria-hidden />,
+                              variant: 'tonal',
+                              hidden: !canRunExtraction,
+                              onSelect: () => setRunTargets([toTarget(account)]),
+                            },
+                            {
+                              key: 'edit',
+                              label: 'تعديل',
+                              variant: 'secondary',
+                              onSelect: () => {
+                                setEditing(account);
+                                setFormOpen(true);
+                              },
+                            },
+                            {
+                              key: 'delete',
+                              label: 'حذف الحساب',
+                              icon: <Trash2 aria-hidden />,
+                              tone: 'danger',
+                              onSelect: () => setDeleteTarget(account),
+                            },
+                          ]}
+                        />
                       </TD>
                     </TR>
                   ))}

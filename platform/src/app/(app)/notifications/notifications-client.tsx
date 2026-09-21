@@ -73,7 +73,7 @@ export function NotificationsClient() {
         action={
           <>
             <Button
-              variant={unreadOnly ? 'soft' : 'secondary'}
+              variant={unreadOnly ? 'tonal' : 'secondary'}
               onClick={() => {
                 setUnreadOnly((value) => !value);
                 setPage(1);

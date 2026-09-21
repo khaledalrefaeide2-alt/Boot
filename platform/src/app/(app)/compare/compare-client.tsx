@@ -7,6 +7,7 @@ import { GitCompare, X } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Segmented } from '@/components/ui/button-group';
 import { Select } from '@/components/ui/field';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState, ErrorState, SkeletonRows } from '@/components/ui/states';
@@ -177,21 +178,22 @@ export function CompareClient() {
                 }))}
               />
 
-              <div className="flex flex-wrap gap-2 no-print">
-                <Button
-                  variant={metric === 'posts' ? 'soft' : 'secondary'}
+              {/*
+                اختيارُ مقياسٍ لا إجراءان: زرّان متجاوران أحدهما «نشط»
+                يقولان للعين إنّ كلاً منهما يفعل شيئاً، والمجزّأة تقول إنّ
+                أحدهما مختارٌ الآن والآخر بديلُه.
+              */}
+              <div className="no-print">
+                <Segmented
                   size="sm"
-                  onClick={() => setMetric('posts')}
-                >
-                  عدد المنشورات
-                </Button>
-                <Button
-                  variant={metric === 'engagement' ? 'soft' : 'secondary'}
-                  size="sm"
-                  onClick={() => setMetric('engagement')}
-                >
-                  التفاعل
-                </Button>
+                  label="مقياس الرسم"
+                  value={metric}
+                  onChange={setMetric}
+                  options={[
+                    { value: 'posts', label: 'عدد المنشورات' },
+                    { value: 'engagement', label: 'التفاعل' },
+                  ]}
+                />
               </div>
 
               <div className="grid gap-4 lg:grid-cols-2">

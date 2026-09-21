@@ -6,6 +6,7 @@ import { CheckCircle2, KeyRound, Plus, Search, ShieldOff, Target, UserPlus } fro
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { RowActions } from '@/components/ui/row-actions';
 import { Input, Select } from '@/components/ui/field';
 import { Badge } from '@/components/ui/badge';
 import { Table, TBody, TD, TH, THead, TR, TableWrapper } from '@/components/ui/table';
@@ -317,80 +318,66 @@ export function UsersClient({
                         {formatDateTime(user.createdAt)}
                       </TD>
                       <TD>
-                        <div className="flex items-center justify-end gap-1">
-                          {canApprove && user.status === 'PENDING' && (
-                            <Button
-                              size="sm"
-                              variant="soft"
-                              onClick={() =>
-                                statusMutation.mutate({ id: user.id, status: 'ACTIVE' })
-                              }
-                              loading={
-                                statusMutation.isPending && statusMutation.variables?.id === user.id
-                              }
-                            >
-                              <CheckCircle2 className="h-3.5 w-3.5" aria-hidden />
-                              موافقة
-                            </Button>
-                          )}
-                          {canUpdate && (
-                            <>
-                              <Button
-                                size="sm"
-                                variant="secondary"
-                                onClick={() => {
-                                  setEditing(user);
-                                  setFormOpen(true);
-                                }}
-                              >
-                                تعديل
-                              </Button>
-                              {canScope && user.id !== currentUserId && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  title="تحديد الحسابات التي يصل إليها"
-                                  onClick={() => setScopeTarget(user)}
-                                >
-                                  <Target className="h-3.5 w-3.5" aria-hidden />
-                                </Button>
-                              )}
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                title="توليد رابط استعادة كلمة المرور"
-                                onClick={() => resetMutation.mutate(user)}
-                                loading={
-                                  resetMutation.isPending && resetMutation.variables?.id === user.id
-                                }
-                              >
-                                <KeyRound className="h-3.5 w-3.5" aria-hidden />
-                              </Button>
-                              {user.status !== 'DISABLED' && user.id !== currentUserId && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  className="text-danger"
-                                  title="تعطيل الحساب"
-                                  onClick={() => setDisableTarget(user)}
-                                >
-                                  <ShieldOff className="h-3.5 w-3.5" aria-hidden />
-                                </Button>
-                              )}
-                              {user.status === 'DISABLED' && (
-                                <Button
-                                  size="sm"
-                                  variant="ghost"
-                                  onClick={() =>
-                                    statusMutation.mutate({ id: user.id, status: 'ACTIVE' })
-                                  }
-                                >
-                                  تفعيل
-                                </Button>
-                              )}
-                            </>
-                          )}
-                        </div>
+                        <RowActions
+                          actions={[
+                            {
+                              key: 'approve',
+                              label: 'موافقة',
+                              icon: <CheckCircle2 aria-hidden />,
+                              variant: 'tonal',
+                              hidden: !canApprove || user.status !== 'PENDING',
+                              loading:
+                                statusMutation.isPending &&
+                                statusMutation.variables?.id === user.id,
+                              onSelect: () =>
+                                statusMutation.mutate({ id: user.id, status: 'ACTIVE' }),
+                            },
+                            {
+                              key: 'edit',
+                              label: 'تعديل',
+                              variant: 'secondary',
+                              hidden: !canUpdate,
+                              onSelect: () => {
+                                setEditing(user);
+                                setFormOpen(true);
+                              },
+                            },
+                            {
+                              key: 'enable',
+                              label: 'تفعيل الحساب',
+                              hidden: !canUpdate || user.status !== 'DISABLED',
+                              onSelect: () =>
+                                statusMutation.mutate({ id: user.id, status: 'ACTIVE' }),
+                            },
+                            {
+                              key: 'scope',
+                              label: 'تحديد الحسابات التي يصل إليها',
+                              icon: <Target aria-hidden />,
+                              hidden: !canUpdate || !canScope || user.id === currentUserId,
+                              onSelect: () => setScopeTarget(user),
+                            },
+                            {
+                              key: 'reset',
+                              label: 'توليد رابط استعادة كلمة المرور',
+                              icon: <KeyRound aria-hidden />,
+                              hidden: !canUpdate,
+                              loading:
+                                resetMutation.isPending && resetMutation.variables?.id === user.id,
+                              onSelect: () => resetMutation.mutate(user),
+                            },
+                            {
+                              key: 'disable',
+                              label: 'تعطيل الحساب',
+                              icon: <ShieldOff aria-hidden />,
+                              tone: 'danger',
+                              hidden:
+                                !canUpdate ||
+                                user.status === 'DISABLED' ||
+                                user.id === currentUserId,
+                              onSelect: () => setDisableTarget(user),
+                            },
+                          ]}
+                        />
                       </TD>
                     </TR>
                   ))}

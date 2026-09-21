@@ -77,7 +77,16 @@ export function Modal({
         </div>
         <div className="max-h-[70vh] overflow-y-auto px-5 py-4">{children}</div>
         {footer && (
-          <div className="flex flex-wrap items-center justify-end gap-2 border-t border-border bg-surface-2/50 px-5 py-3">
+          /*
+            الترتيب في RTL: الإجراء الرئيسي أولاً من جهة البداية ثم الثانوي
+            بجانبه.
+
+            و`flex-row-reverse` مع `justify-end` هو ما يحقّقه دون لمس ترتيب
+            الأزرار في كل نافذة: التذييلات كلها تكتب «إلغاء» ثم الإجراء،
+            فيبقى ترتيب التنقّل بلوحة المفاتيح على «إلغاء» أولاً — وهو
+            الأسلم في حوار تأكيد — ويصير الترتيب البصري على المواصفة.
+          */
+          <div className="flex flex-row-reverse flex-wrap items-center justify-end gap-2 border-t border-border bg-surface-2/50 px-5 py-4">
             {footer}
           </div>
         )}

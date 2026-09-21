@@ -7,6 +7,7 @@ import { Download, LayoutGrid, List, Newspaper } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Segmented } from '@/components/ui/button-group';
 import { Select } from '@/components/ui/field';
 import { EmptyState, ErrorState, SkeletonRows } from '@/components/ui/states';
 import { Pagination } from '@/components/ui/pagination';
@@ -75,26 +76,33 @@ export function PostsClient({
         }
         action={
           <>
-            <div className="flex items-center gap-0.5 rounded-md border border-border bg-surface-2 p-0.5">
-              <Button
-                variant={view === 'cards' ? 'secondary' : 'ghost'}
-                size="icon-sm"
-                onClick={() => setView('cards')}
-                aria-label="عرض البطاقات"
-                aria-pressed={view === 'cards'}
-              >
-                <LayoutGrid className="h-4 w-4" aria-hidden />
-              </Button>
-              <Button
-                variant={view === 'table' ? 'secondary' : 'ghost'}
-                size="icon-sm"
-                onClick={() => setView('table')}
-                aria-label="عرض الجدول"
-                aria-pressed={view === 'table'}
-              >
-                <List className="h-4 w-4" aria-hidden />
-              </Button>
-            </div>
+            {/* اختيار شكل العرض حالةٌ واحدة من اثنتين لا زرّان مستقلّان */}
+            <Segmented
+              size="sm"
+              label="شكل العرض"
+              value={view}
+              onChange={setView}
+              options={[
+                {
+                  value: 'cards',
+                  label: (
+                    <>
+                      <LayoutGrid className="h-4 w-4" aria-hidden />
+                      <span className="sr-only">عرض البطاقات</span>
+                    </>
+                  ),
+                },
+                {
+                  value: 'table',
+                  label: (
+                    <>
+                      <List className="h-4 w-4" aria-hidden />
+                      <span className="sr-only">عرض الجدول</span>
+                    </>
+                  ),
+                },
+              ]}
+            />
             {canExport && (
               <a href={exportHref}>
                 <Button variant="secondary">
