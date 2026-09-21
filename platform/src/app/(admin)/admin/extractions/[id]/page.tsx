@@ -45,6 +45,7 @@ export default async function ExtractionDetailPage({
       account: { select: { id: true, name: true, url: true } },
       platform: { select: { id: true, name: true } },
       requestedBy: { select: { name: true, email: true } },
+      backfill: { select: { id: true, totalChunks: true, fromDate: true, toDate: true } },
       _count: { select: { posts: true } },
     },
   });
@@ -206,6 +207,22 @@ export default async function ExtractionDetailPage({
                 <span className="text-subtle-foreground">حسب إعدادات الحساب (تشغيل مجدول)</span>
               )}
             </DetailRow>
+            {/*
+              المقطع يُعرض حين يوجد: النطاق الضيّق في تشغيلة من سلسلة ليس
+              اختياراً ضيّقاً بل جزءاً من مدىً أوسع، وقراءته منفرداً تُوهم
+              أن أحداً طلب شهراً واحداً من سبع سنوات.
+            */}
+            {run.backfill && run.backfillSeq !== null && (
+              <DetailRow label="ضمن استخراج تاريخي">
+                <span className="num">
+                  المقطع {run.backfillSeq} من {run.backfill.totalChunks}
+                </span>
+                <span className="mr-2 text-xs text-muted-foreground">
+                  (المدى الكامل {formatDate(run.backfill.fromDate)} —{' '}
+                  {formatDate(run.backfill.toDate)})
+                </span>
+              </DetailRow>
+            )}
             <DetailRow label="طلبها">{run.requestedBy?.name ?? 'النظام (مجدولة)'}</DetailRow>
             <DetailRow label="وقت البدء">{formatDateTime(run.startedAt)}</DetailRow>
             <DetailRow label="وقت الانتهاء">{formatDateTime(run.finishedAt)}</DetailRow>

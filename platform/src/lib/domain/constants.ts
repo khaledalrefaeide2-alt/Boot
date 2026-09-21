@@ -145,12 +145,23 @@ export const REPORT_STATUS_LABELS: Record<ReportStatus, string> = {
   FAILED: 'فاشل',
 };
 
-/** النطاقات الزمنية الجاهزة في الفلاتر */
+/*
+ * النطاقات الزمنية الجاهزة في الفلاتر.
+ *
+ * ما بعد التسعين يوماً أُضيف حين صار الأرشيف يمتدّ سنوات: بلا هذه الخيارات
+ * كان كلُّ ما هو أقدم من ثلاثة أشهر لا يُرى إلا بنطاق مخصّص يُكتب بالتاريخ،
+ * أو بـ«كل الفترات» دفعةً واحدة. وبينهما مسافةٌ هي أكثر ما يُسأل عنه:
+ * «كيف كانت السنة الماضية».
+ */
 export const DATE_RANGES = [
   { value: 'today', label: 'اليوم', days: 1 },
   { value: '7d', label: 'آخر 7 أيام', days: 7 },
   { value: '30d', label: 'آخر 30 يوماً', days: 30 },
   { value: '90d', label: 'آخر 90 يوماً', days: 90 },
+  { value: '180d', label: 'آخر 6 أشهر', days: 180 },
+  { value: '1y', label: 'آخر سنة', days: 365 },
+  { value: '2y', label: 'آخر سنتين', days: 730 },
+  { value: '5y', label: 'آخر 5 سنوات', days: 1825 },
   { value: 'custom', label: 'مخصص', days: 0 },
 ] as const;
 

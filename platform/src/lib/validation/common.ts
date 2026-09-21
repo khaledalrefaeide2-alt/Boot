@@ -57,9 +57,34 @@ export const paginationSchema = z.object({
 /** ترتيب النتائج */
 export const sortOrderSchema = z.enum(['asc', 'desc']).default('desc');
 
+/*
+ * قيم النطاق الزمني ومددها في موضع واحد.
+ *
+ * كانت المدد مكتوبة داخل resolveDateRange والقيم مكتوبة في مخططين ولائحة
+ * خيارات ثالثة، فإضافة «آخر سنة» تعني تعديل أربعة مواضع يسقط أحدها بصمت:
+ * المخطط يقبل القيمة، والدالة لا تعرف مدّتها، فتُرجع NaN يوماً ويصير
+ * الفلتر بلا أثر.
+ */
+export const RANGE_DAYS = {
+  today: 1,
+  '7d': 7,
+  '30d': 30,
+  '90d': 90,
+  '180d': 180,
+  '1y': 365,
+  '2y': 730,
+  '5y': 1825,
+} as const;
+
+export const RANGE_VALUES = [
+  ...(Object.keys(RANGE_DAYS) as (keyof typeof RANGE_DAYS)[]),
+  'custom',
+  'all',
+] as const;
+
 /** نطاق زمني: قيمة جاهزة أو تواريخ مخصصة */
 export const dateRangeSchema = z.object({
-  range: z.enum(['today', '7d', '30d', '90d', 'custom', 'all']).default('30d'),
+  range: z.enum(RANGE_VALUES).default('30d'),
   from: z.string().datetime().optional().or(z.string().date().optional()),
   to: z.string().datetime().optional().or(z.string().date().optional()),
 });
@@ -82,7 +107,7 @@ export function resolveDateRange(input: DateRangeInput): { from: Date | null; to
     };
   }
 
-  const days = { today: 1, '7d': 7, '30d': 30, '90d': 90 }[input.range];
+  const days = RANGE_DAYS[input.range];
   const from = new Date(now);
   if (input.range === 'today') {
     from.setHours(0, 0, 0, 0);

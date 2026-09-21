@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { paginationSchema } from './common';
+import { paginationSchema, RANGE_VALUES } from './common';
 
 /** فلاتر المنشورات — مشتركة بين العرض والتصدير والإحصاءات */
 export const postFiltersSchema = z.object({
@@ -15,7 +15,7 @@ export const postFiltersSchema = z.object({
   topicId: z.string().trim().max(64).optional(),
   sentiment: z.enum(['POSITIVE', 'NEUTRAL', 'NEGATIVE', 'MIXED', 'UNKNOWN']).optional(),
   country: z.string().trim().max(80).optional(),
-  range: z.enum(['today', '7d', '30d', '90d', 'custom', 'all']).default('30d'),
+  range: z.enum(RANGE_VALUES).default('30d'),
   from: z.string().trim().max(40).optional(),
   to: z.string().trim().max(40).optional(),
   includeHidden: z.enum(['true', 'false']).default('false'),

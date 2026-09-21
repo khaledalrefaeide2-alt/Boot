@@ -150,6 +150,14 @@ function instagramInput(ctx: BuildInputContext): Record<string, unknown> {
     addParentData: false,
   };
   if (ctx.fromDate) input.onlyPostsNewerThan = ctx.fromDate;
+  /*
+   * الحدّ الأعلى يلزم للاستخراج التاريخي.
+   *
+   * بحدٍّ أدنى وحده يُرجع المشغّل الأحدث فالأحدث مهما كانت النافذة، فكلّ
+   * نافذة قديمة تُعيد منشورات هذا الشهر ثمّ تُسقطها «خارج النافذة» —
+   * تُدفع الحصة ولا يُحفظ شيء، نافذةً بعد نافذة.
+   */
+  if (ctx.toDate) input.onlyPostsOlderThan = ctx.toDate;
   return input;
 }
 

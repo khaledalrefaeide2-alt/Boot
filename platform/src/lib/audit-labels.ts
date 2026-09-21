@@ -33,6 +33,8 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'analysis.guidance_changed': 'تعديل توجيهات التحليل',
   'extraction.started': 'بدء عملية استخراج',
   'extraction.cancelled': 'إلغاء عملية استخراج',
+  'backfill.started': 'بدء استخراج تاريخي',
+  'backfill.cancelled': 'إلغاء استخراج تاريخي',
   'extraction.completed': 'اكتمال عملية استخراج',
   'extraction.failed': 'فشل عملية استخراج',
   'post.updated': 'تعديل منشور',

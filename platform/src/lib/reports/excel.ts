@@ -6,6 +6,7 @@ import { getBreakdowns, getOverviewStats, getTopAccounts } from '@/lib/queries/s
 import type { PostFilters } from '@/lib/validation/posts';
 import { POST_TYPE_LABELS, SENTIMENT_LABELS, languageLabel } from '@/lib/domain/constants';
 import type { AccountScope } from '@/lib/auth/account-scope';
+import { DATE_RANGES } from '@/lib/domain/constants';
 
 /** أقصى عدد صفوف في ملف واحد — يحمي الذاكرة عند التصدير الكبير */
 const MAX_ROWS = 20_000;
@@ -21,13 +22,13 @@ function applyRtl(sheet: ExcelJS.Worksheet): void {
   sheet.views = [{ rightToLeft: true, state: 'frozen', ySplit: 1 }];
 }
 
+/*
+ * تسميات النطاق تُشتقّ من لائحة الفلاتر نفسها لا تُكتب ثانيةً: نسخةٌ ثانية
+ * تعني نطاقاً يظهر في الشاشة بعنوانه ويخرج في التقرير برمزه الخام.
+ */
 const RANGE_LABELS: Record<string, string> = {
-  today: 'اليوم',
-  '7d': 'آخر 7 أيام',
-  '30d': 'آخر 30 يوماً',
-  '90d': 'آخر 90 يوماً',
+  ...Object.fromEntries(DATE_RANGES.map((range) => [range.value, range.label])),
   all: 'كل الفترات',
-  custom: 'مخصص',
 };
 
 /**

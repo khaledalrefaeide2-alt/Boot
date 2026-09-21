@@ -96,6 +96,14 @@ export async function GET(request: NextRequest) {
           finishedAt: true,
           durationMs: true,
           createdAt: true,
+          /*
+             رقم المقطع يُميّز تشغيلةً من سلسلة تاريخية عن تشغيلة مفردة.
+             وبدونه يقرأ المراجع ثمانين صفاً متشابهاً على حساب واحد فيظنّها
+             تكراراً أو خطأ في الجدولة، وهي مدىً واحد مقسَّماً.
+          */
+          backfillId: true,
+          backfillSeq: true,
+          backfill: { select: { totalChunks: true } },
           account: { select: { id: true, name: true } },
           platform: { select: { id: true, name: true, code: true } },
           requestedBy: { select: { name: true } },

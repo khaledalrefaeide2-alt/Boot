@@ -131,6 +131,53 @@ export async function getOverviewStats(filters: PostFilters, scope: AccountScope
   };
 }
 
+/*
+ * سقف الصفوف المقروءة للسلسلة الزمنية.
+ *
+ * التجميع يجري في الذاكرة لأن الفلاتر تمرّ عبر Prisma، فالسقف ضرورة لا
+ * خيار. وخمسون ألفاً كانت تكفي ثلاثة أشهر وتقصر عن سنوات، فرُفع إلى ما
+ * يغطي أرشيفاً ممتداً — والصفّ المقروء خمسة أرقام وتاريخ لا أكثر.
+ */
+const TIMESERIES_ROW_CAP = 300_000;
+
+type BucketSize = 'day' | 'week' | 'month';
+
+function resolveBucketSize(
+  spanDays: number | null,
+  posts: { publishedAt: Date | null }[],
+): BucketSize {
+  /*
+   * «كل الفترات» لا مدى له، فيُقاس من البيانات نفسها لا من الفلتر — وإلا
+   * عاد أقدمُ أرشيفٍ بدلاء يومية لأن أحداً لم يحدّد له نطاقاً.
+   */
+  const span =
+    spanDays ??
+    (() => {
+      const first = posts[0]?.publishedAt;
+      const last = posts[posts.length - 1]?.publishedAt;
+      if (!first || !last) return 0;
+      return Math.round((last.getTime() - first.getTime()) / 86_400_000);
+    })();
+
+  if (span > 400) return 'month';
+  if (span > 120) return 'week';
+  return 'day';
+}
+
+function bucketKey(date: Date, size: BucketSize): string {
+  if (size === 'day') return date.toISOString().slice(0, 10);
+
+  if (size === 'month') {
+    return `${date.toISOString().slice(0, 7)}-01`;
+  }
+
+  // الأسبوع يبدأ من الأحد — أوّل أيام الأسبوع في التقويم المعتمد هنا
+  const start = new Date(
+    Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate() - date.getUTCDay()),
+  );
+  return start.toISOString().slice(0, 10);
+}
+
 /** سلسلة زمنية للنشر والتفاعل — تُقرأ من الإحصاءات اليومية */
 export async function getTimeseries(filters: PostFilters, scope: AccountScope): Promise<
   { date: string; posts: number; engagement: number; likes: number; comments: number; shares: number }[]
@@ -143,8 +190,20 @@ export async function getTimeseries(filters: PostFilters, scope: AccountScope): 
     where: { ...where, publishedAt: { not: null, ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } },
     select: { publishedAt: true, engagementTotal: true, likes: true, comments: true, shares: true },
     orderBy: { publishedAt: 'asc' },
-    take: 50_000,
+    take: TIMESERIES_ROW_CAP,
   });
+
+  /*
+   * حجم الدلو يتبع طول المدى.
+   *
+   * يومٌ لكل نقطة صحيحٌ في ثلاثة أشهر وعبثٌ في خمس سنوات: ألفٌ وثمانمئة
+   * نقطة على عرض شاشة تعني خطاً مسنّناً لا يُقرأ منه اتجاه، وحمولةً تسافر
+   * بلا أن تُرى. والمفتاح يبقى تاريخاً كاملاً — أول يوم في الدلو — فلا
+   * يحتاج ما يقرأه إلى معرفة أيّ حجم اختير.
+   */
+  const spanDays =
+    from && to ? Math.max(1, Math.round((to.getTime() - from.getTime()) / 86_400_000)) : null;
+  const bucketSize = resolveBucketSize(spanDays, posts);
 
   const buckets = new Map<
     string,
@@ -153,7 +212,7 @@ export async function getTimeseries(filters: PostFilters, scope: AccountScope): 
 
   for (const post of posts) {
     if (!post.publishedAt) continue;
-    const key = post.publishedAt.toISOString().slice(0, 10);
+    const key = bucketKey(post.publishedAt, bucketSize);
     const bucket = buckets.get(key) ?? { posts: 0, engagement: 0, likes: 0, comments: 0, shares: 0 };
     bucket.posts += 1;
     bucket.engagement += post.engagementTotal;

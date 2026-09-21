@@ -36,6 +36,8 @@ export interface CreateRunOptions {
   sort?: 'Latest' | 'Top' | null;
   /** نوع المحتوى — إنستغرام وحدها */
   resultsType?: 'posts' | 'reels' | null;
+  /** المقطع الذي تنتمي إليه التشغيلة من استخراج تاريخي */
+  backfill?: { id: string; seq: number } | null;
 }
 
 export class ExtractionError extends Error {
@@ -158,6 +160,8 @@ export async function createExtractionRun(options: CreateRunOptions) {
       maxItems,
       windowFrom,
       windowTo,
+      backfillId: options.backfill?.id ?? null,
+      backfillSeq: options.backfill?.seq ?? null,
       input: input as never,
     },
     select: { id: true, actorId: true, maxItems: true, status: true },
@@ -454,6 +458,19 @@ async function finalizeRun(
       rawSample: (data.rawSample ?? undefined) as never,
     },
   });
+
+  /*
+   * المقطع التالي يُنشأ هنا لا في مكان آخر: finalizeRun هي المرور الوحيد
+   * الذي تسلكه كلّ نهاية — نجاحاً وفشلاً وبلا نتائج — فوضع السلسلة فيها
+   * يعني أن استخراجاً تاريخياً لا يتوقّف لأن مقطعاً انتهى من طريق لم
+   * نتذكّره. والاستيراد بالطلب يكسر دورة استيراد بين الوحدتين.
+   */
+  if (status !== 'CANCELLED') {
+    const { advanceBackfill } = await import('./backfill');
+    await advanceBackfill(runId).catch((error: unknown) => {
+      console.error('[backfill] تعذّر إنشاء المقطع التالي:', error);
+    });
+  }
 }
 
 async function failRun(runId: string, message: string, startedAt = new Date()): Promise<void> {
@@ -550,7 +567,7 @@ async function raiseAlerts(
 export async function cancelExtractionRun(runId: string): Promise<void> {
   const run = await prisma.extractionRun.findUnique({
     where: { id: runId },
-    select: { id: true, status: true, apifyRunId: true },
+    select: { id: true, status: true, apifyRunId: true, backfillId: true },
   });
   if (!run) throw new ExtractionError('عملية الاستخراج غير موجودة');
   if (!['PENDING', 'RUNNING'].includes(run.status)) {
@@ -561,6 +578,24 @@ export async function cancelExtractionRun(runId: string): Promise<void> {
     where: { id: runId },
     data: { status: 'CANCELLED', finishedAt: new Date() },
   });
+
+  /*
+   * إلغاء مقطعٍ إلغاءٌ للسلسلة كلها.
+   *
+   * من يُلغي مقطعاً واحداً من ثمانين لا يقصد أن يستأنف النظام من التاسع
+   * بعده — يقصد أن يتوقّف. ولو بقي الاستخراج التاريخي «قائماً» بعد إلغاء
+   * مقطعه الجاري لبقي معلّقاً إلى الأبد: لا مقطع يجري، ولا شيء يُنهيه.
+   */
+  if (run.backfillId) {
+    await prisma.backfill.updateMany({
+      where: { id: run.backfillId, status: 'RUNNING' },
+      data: {
+        status: 'CANCELLED',
+        stopReason: 'أُلغي أحد مقاطعه من سجل العمليات',
+        finishedAt: new Date(),
+      },
+    });
+  }
 
   await removeExtractionJob(runId);
   if (run.apifyRunId) await abortActorRun(run.apifyRunId).catch(() => undefined);

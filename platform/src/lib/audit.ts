@@ -39,6 +39,8 @@ export const AUDIT_ACTIONS = {
 
   EXTRACTION_STARTED: 'extraction.started',
   EXTRACTION_CANCELLED: 'extraction.cancelled',
+  BACKFILL_STARTED: 'backfill.started',
+  BACKFILL_CANCELLED: 'backfill.cancelled',
   EXTRACTION_COMPLETED: 'extraction.completed',
   EXTRACTION_FAILED: 'extraction.failed',
 

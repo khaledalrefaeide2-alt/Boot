@@ -196,6 +196,7 @@ model User {
   notifications      Notification[]
   savedDashboards    SavedDashboard[]
   extractionRuns     ExtractionRun[]
+  backfills          Backfill[]
   reportRuns         ReportRun[]
   reportTemplates    ReportTemplate[]
   reviewedPosts      Post[]               @relation("PostReviewedBy")
@@ -289,6 +290,7 @@ model Platform {
   accounts       Account[]
   posts          Post[]
   extractionRuns ExtractionRun[]
+  backfills      Backfill[]
   dailyStats     DailyPlatformStat[]
 
   @@index([status])
@@ -345,6 +347,7 @@ model Account {
   createdBy     User?              @relation("AccountCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
   posts         Post[]
   runs          ExtractionRun[]
+  backfills     Backfill[]
   keywords      AccountKeyword[]
   assignedUsers UserAccount[]
   dailyStats    DailyAccountStat[]
@@ -445,6 +448,14 @@ model ExtractionRun {
   /// عينة خام محدودة من النتائج للمراجعة والتشخيص
   rawSample    Json?
 
+  /**
+   * المقطع الذي تنتمي إليه هذه التشغيلة من استخراج تاريخي.
+   * تشغيلةٌ واحدة لا تغطّي سنوات، فالمدى الطويل يُقطَّع نوافذ متتابعة،
+   * ولكلّ نافذة تشغيلة كاملة بسقفها ونتائجها وعدّاداتها.
+   */
+  backfillId  String?
+  backfillSeq Int?
+
   queueJobId String?
   attempt    Int       @default(1)
   startedAt  DateTime?
@@ -456,13 +467,74 @@ model ExtractionRun {
   account     Account?  @relation(fields: [accountId], references: [id], onDelete: Cascade)
   platform    Platform? @relation(fields: [platformId], references: [id], onDelete: SetNull)
   requestedBy User?     @relation(fields: [requestedById], references: [id], onDelete: SetNull)
+  backfill    Backfill? @relation(fields: [backfillId], references: [id], onDelete: SetNull)
   posts       Post[]
 
   @@index([status, createdAt])
   @@index([accountId, createdAt])
   @@index([platformId, createdAt])
   @@index([apifyRunId])
+  @@index([backfillId, backfillSeq])
   @@map("extraction_runs")
+}
+
+/// حالة الاستخراج التاريخي
+enum BackfillStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+/**
+ * استخراج تاريخي — مدىً يمتدّ سنوات يُنفَّذ نافذةً بعد نافذة.
+ * المقاطع لا تُنشأ كلها مقدَّماً بل واحداً إثر واحد: صفٌّ واحد معلّق لكل
+ * حساب هو ما يفترضه قيد «لا تشغيل موازٍ»، وثمانون صفاً معلّقاً تُغرق سجلّ
+ * العمليات وتجعل الإلغاء ثمانين إلغاءً. فالتقدّم يُحفظ هنا، والمقطع التالي
+ * يُنشأ حين ينتهي الذي قبله.
+ */
+model Backfill {
+  id         String @id @default(cuid())
+  accountId  String
+  platformId String
+
+  /// المدى المطلوب كاملاً
+  fromDate DateTime
+  toDate   DateTime
+
+  /// طول النافذة الواحدة بالأيام
+  chunkDays        Int
+  /// سقف العناصر لكل نافذة — سقف الفوترة مضروبٌ في عدد المقاطع
+  maxItemsPerChunk Int
+
+  totalChunks  Int
+  doneChunks   Int @default(0)
+  /// مقاطع انتهت بالفشل — لا توقف البقية ما لم تتتابع
+  failedChunks Int @default(0)
+
+  status BackfillStatus @default(RUNNING)
+
+  /// حصيلة ما حُفظ فعلاً من كل المقاطع
+  itemsSaved   Int @default(0)
+  itemsFetched Int @default(0)
+
+  /// سبب التوقّف حين يتوقّف قبل إتمام المدى
+  stopReason String?
+
+  requestedById String?
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  finishedAt DateTime?
+
+  account     Account         @relation(fields: [accountId], references: [id], onDelete: Cascade)
+  platform    Platform        @relation(fields: [platformId], references: [id], onDelete: Cascade)
+  requestedBy User?           @relation(fields: [requestedById], references: [id], onDelete: SetNull)
+  runs        ExtractionRun[]
+
+  @@index([accountId, createdAt])
+  @@index([status, createdAt])
+  @@map("backfills")
 }
 
 // ============================ المنشورات ============================

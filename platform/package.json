@@ -33,6 +33,7 @@
     "analyze:posts": "tsx --conditions=react-server scripts/analyze-posts.ts",
     "verify:learning": "tsx --conditions=react-server scripts/verify-learning-guard.ts",
     "verify:window": "tsx --conditions=react-server scripts/verify-extraction-window.ts",
+    "verify:chunks": "tsx scripts/verify-backfill-chunks.ts",
     "cleanup:replies": "tsx --conditions=react-server scripts/delete-stored-replies.ts"
   },
   "dependencies": {

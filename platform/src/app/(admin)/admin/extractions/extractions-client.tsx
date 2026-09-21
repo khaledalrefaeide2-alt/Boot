@@ -22,6 +22,7 @@ import {
   EXTRACTION_TRIGGER_LABELS,
 } from '@/lib/domain/constants';
 import { formatDateTime, formatDuration, formatNumber, formatRelativeTime } from '@/lib/utils';
+import { BackfillPanel } from './backfill-panel';
 import type { ExtractionStatus, ExtractionTrigger } from '@/generated/prisma';
 
 interface RunRow {
@@ -39,6 +40,9 @@ interface RunRow {
   finishedAt: string | null;
   durationMs: number | null;
   createdAt: string;
+  backfillId: string | null;
+  backfillSeq: number | null;
+  backfill: { totalChunks: number } | null;
   account: { id: string; name: string } | null;
   platform: { id: string; name: string } | null;
   requestedBy: { name: string } | null;
@@ -245,6 +249,8 @@ export function ExtractionsClient({ canRun, canCancel }: { canRun: boolean; canC
         </Alert>
       )}
 
+      <BackfillPanel canRun={canRun} canCancel={canCancel} />
+
       <Card>
         <div className="flex flex-wrap items-end gap-3 border-b border-border px-4 py-3">
           <Select
@@ -327,7 +333,16 @@ export function ExtractionsClient({ canRun, canCancel }: { canRun: boolean; canC
                       </TD>
                       <TD className="text-xs text-muted-foreground">{run.platform?.name ?? '—'}</TD>
                       <TD className="text-xs text-muted-foreground">
-                        {EXTRACTION_TRIGGER_LABELS[run.trigger]}
+                        {run.backfillSeq !== null ? (
+                          <span className="whitespace-nowrap">
+                            تاريخي{' '}
+                            <span className="num">
+                              {run.backfillSeq}/{run.backfill?.totalChunks ?? '—'}
+                            </span>
+                          </span>
+                        ) : (
+                          EXTRACTION_TRIGGER_LABELS[run.trigger]
+                        )}
                       </TD>
                       <TD className="num">{formatNumber(run.itemsFetched)}</TD>
                       <TD className="num text-success">{formatNumber(run.itemsSaved)}</TD>

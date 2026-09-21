@@ -187,6 +187,38 @@ check(
   storedRawDenies.reason,
 );
 
+// ── الحدّ الأعلى في منصّات المسار الزمني
+const fb = buildActorInput({
+  platformCode: 'facebook',
+  url: 'https://facebook.com/example',
+  maxItems: 100,
+  windowDays: 30,
+  fromDate: '2022-01-01',
+  toDate: '2022-01-31',
+}) as Record<string, unknown>;
+check(
+  'فيسبوك يحمل حدّي المدى معاً',
+  fb.onlyPostsNewerThan === '2022-01-01' && fb.onlyPostsOlderThan === '2022-01-31',
+);
+
+/*
+ * الحدّ الأعلى في إنستغرام هو ما يجعل الاستخراج التاريخي ممكناً عليها:
+ * بحدٍّ أدنى وحده تُرجع كلّ نافذة أحدثَ المنشورات فتسقط خارج المدى، فيُدفع
+ * ثمنها ولا يُحفظ منها شيء.
+ */
+const ig = buildActorInput({
+  platformCode: 'instagram',
+  url: 'https://instagram.com/example',
+  maxItems: 100,
+  windowDays: 30,
+  fromDate: '2022-01-01',
+  toDate: '2022-01-31',
+}) as Record<string, unknown>;
+check(
+  'إنستغرام تحمل حدّي المدى معاً',
+  ig.onlyPostsNewerThan === '2022-01-01' && ig.onlyPostsOlderThan === '2022-01-31',
+);
+
 console.log('\n>> فحص النطاق الزمني في مدخلات المشغّل\n');
 let failed = 0;
 for (const c of checks) {
