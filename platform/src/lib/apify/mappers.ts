@@ -35,6 +35,8 @@ export interface MappedPost {
   hashtags: string[];
   /** عدد المتابعين إن أرجعه الـ Actor — يُحدَّث على مستوى الحساب */
   followersCount: number | null;
+  /** صورة صاحب الحساب إن أرجعها الـ Actor — تُحدَّث على مستوى الحساب */
+  authorAvatarUrl: string | null;
   /*
    * هل العنصر ردّ على منشور آخر؟
    *
@@ -512,6 +514,30 @@ export function mapApifyItem(raw: unknown, platformCode: string): MappedPost | n
     'ownerFollowersCount',
   ]);
 
+  /*
+   * صورة صاحب الحساب.
+   *
+   * تُقرأ من حقول الصورة الشخصية صراحةً لا من البحث العميق عن الوسائط:
+   * ذاك يتخطّى كل فرع اسمه profile أو avatar عمداً، لأن صورة الحساب ليست
+   * صورة المنشور — ووقوعها مكان صورة المنشور كان عطباً سابقاً. فهي تُلتقط
+   * هنا بابها الخاصّ، وتذهب إلى الحساب لا إلى المنشور.
+   */
+  const authorAvatarUrl = keepMedia(
+    pickString(source, [
+      'author.profilePicture',
+      'author.profilePicUrl',
+      'author.avatar',
+      'user.profile_image_url_https',
+      'user.profileImageUrl',
+      'user.profilePicture',
+      'profilePicture',
+      'profilePicUrl',
+      'ownerProfilePicUrl',
+      'pageProfilePicture',
+      'pageAvatar',
+    ]),
+  );
+
   const hashtagsFromText = extractHashtags(text);
   const declaredHashtags = Array.isArray(source.hashtags)
     ? source.hashtags.filter((tag): tag is string => typeof tag === 'string').map((tag) => tag.replace(/^#/, ''))
@@ -562,6 +588,7 @@ export function mapApifyItem(raw: unknown, platformCode: string): MappedPost | n
     saves,
     hashtags,
     followersCount,
+    authorAvatarUrl,
     isReply,
     replyToUsername,
   };

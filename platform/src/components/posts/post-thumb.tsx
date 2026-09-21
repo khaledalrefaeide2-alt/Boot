@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Play, Images } from 'lucide-react';
 import { RemoteMedia } from '@/components/posts/remote-media';
+import { cn } from '@/lib/utils';
 
 /**
  * صورة المنشور في البطاقة.
@@ -22,16 +23,22 @@ export function PostThumb({
   src,
   isVideo,
   extraCount = 0,
+  className,
 }: {
   postId: string;
   src: string;
   isVideo?: boolean;
   extraCount?: number;
+  /** زوايا الصورة وحدودها تتبع موضعها: ملتصقة بحافة البطاقة أو منزاحة داخلها */
+  className?: string;
 }) {
   return (
     <Link
       href={`/posts/${postId}`}
-      className="group relative block aspect-[16/10] overflow-hidden bg-surface-2"
+      className={cn(
+        'group relative block aspect-[16/10] overflow-hidden bg-surface-2',
+        className,
+      )}
       aria-label="فتح تفاصيل المنشور"
     >
       <RemoteMedia

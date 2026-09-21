@@ -22,6 +22,8 @@ export interface ImportResult {
   sentimentCounts: { positive: number; negative: number; neutral: number; unknown: number };
   matchedAlertKeywords: string[];
   followersCount: number | null;
+  /** آخر صورة حساب رآها الاستيراد — تُحدَّث على الحساب لا على المنشور */
+  authorAvatarUrl: string | null;
 }
 
 /** تحميل قواعد التصنيف والكلمات المفتاحية مرة واحدة لكل عملية استيراد */
@@ -86,6 +88,7 @@ export async function importPosts(
     sentimentCounts: { positive: 0, negative: 0, neutral: 0, unknown: 0 },
     matchedAlertKeywords: [],
     followersCount: null,
+    authorAvatarUrl: null,
   };
 
   if (posts.length === 0) return result;
@@ -149,6 +152,7 @@ export async function importPosts(
       const topic = classifyTopic(post.text, analysis.topicRules);
 
       if (post.followersCount !== null) result.followersCount = post.followersCount;
+      if (post.authorAvatarUrl) result.authorAvatarUrl = post.authorAvatarUrl;
 
       const existing = await prisma.post.findUnique({
         where: { accountId_dedupeKey: { accountId: context.accountId, dedupeKey: post.dedupeKey } },

@@ -305,12 +305,17 @@ export async function executeExtractionRun(runId: string): Promise<void> {
       accountUsername: run.account?.username ?? null,
     });
 
-    // تحديث عدد المتابعين إن أرجعه الـ Actor
-    if (imported.followersCount !== null) {
+    // تحديث عدد المتابعين وصورة الحساب إن أرجعهما الـ Actor
+    if (imported.followersCount !== null || imported.authorAvatarUrl) {
       await prisma.account
         .update({
           where: { id: run.accountId },
-          data: { followersCount: imported.followersCount },
+          data: {
+            ...(imported.followersCount !== null
+              ? { followersCount: imported.followersCount }
+              : {}),
+            ...(imported.authorAvatarUrl ? { avatarUrl: imported.authorAvatarUrl } : {}),
+          },
         })
         .catch(() => undefined);
     }

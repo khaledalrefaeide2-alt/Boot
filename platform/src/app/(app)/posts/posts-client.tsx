@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Download, LayoutGrid, List, Newspaper } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
@@ -11,6 +11,8 @@ import { Segmented } from '@/components/ui/button-group';
 import { Select } from '@/components/ui/field';
 import { EmptyState, ErrorState, SkeletonRows } from '@/components/ui/states';
 import { Pagination } from '@/components/ui/pagination';
+import { ConfirmDialog } from '@/components/ui/modal';
+import { useToast } from '@/components/ui/toast';
 import { FilterBar, EMPTY_FILTERS, filtersToParams, type PostFilterState } from '@/components/filters/filter-bar';
 import { useFilterOptions, EMPTY_OPTIONS } from '@/lib/hooks/use-filters';
 import { PostCard, PostRow, PostTableHead } from '@/components/posts/post-card';
@@ -38,10 +40,15 @@ const SORT_OPTIONS = [
 export function PostsClient({
   canReview,
   canExport,
+  canDelete,
 }: {
   canReview: boolean;
   canExport: boolean;
+  canDelete: boolean;
 }) {
+  const toast = useToast();
+  const queryClient = useQueryClient();
+  const [deleteTarget, setDeleteTarget] = useState<PostListItemView | null>(null);
   const [filters, setFilters] = useState<PostFilterState>(EMPTY_FILTERS);
   const [page, setPage] = useState(1);
   const [sort, setSort] = useState('publishedAt');
@@ -53,6 +60,25 @@ export function PostsClient({
   const query = useQuery({
     queryKey: ['posts', params],
     queryFn: () => api.get<PostsResponse>(buildQuery('/api/posts', params)),
+  });
+
+  /*
+   * الحذف نهائي ولا رجعة فيه، فله حوار تأكيد يذكر صاحب المنشور.
+   *
+   * ومن أراد إخفاءً قابلاً للتراجع فله «مخفي» في شاشة المراجعة — وهما
+   * بابان مختلفان عمداً: أحدهما يُخرج المنشور من العرض، والآخر يمحوه.
+   */
+  const deleteMutation = useMutation({
+    mutationFn: (post: PostListItemView) => api.delete(`/api/posts/${post.id}`),
+    onSuccess: () => {
+      toast.success('حُذف المنشور');
+      setDeleteTarget(null);
+      void queryClient.invalidateQueries({ queryKey: ['posts'] });
+    },
+    onError: (error) => {
+      toast.error('تعذّر الحذف', error instanceof ApiClientError ? error.message : undefined);
+      setDeleteTarget(null);
+    },
   });
 
   function updateFilters(next: PostFilterState) {
@@ -174,16 +200,25 @@ export function PostsClient({
       ) : view === 'cards' ? (
         <>
           {/*
-            خمس بطاقات في السطر على الشاشات العريضة جداً، وتتدرّج نزولاً:
-            2xl خمس · xl أربع · lg ثلاث · sm اثنتان · الجوال واحدة.
+            أربع بطاقات في السطر على الأعرض، وتتدرّج نزولاً:
+            2xl أربع · lg ثلاث · sm اثنتان · الجوال واحدة.
 
-            والتدرّج ليس ترفاً: خمسة أعمدة على شاشة 1280 تعطي البطاقة نحو
-            190 بكسل، وهو عرض لا يسع سطراً عربياً واحداً مفهوماً. فالعدد
-            يتبع العرض المتاح لا رغبةً في عدد بعينه.
+            كانت خمساً، ونزلت إلى أربع حين صارت البطاقة تحمل ترويسة: صورة
+            الحساب واسمه وزرّ الحذف في سطر واحد يحتاج عرضاً لا يتركه خمسة
+            أعمدة على شاشة 1280 — نحو 190 بكسل، يكفي الصورة والزرّ ولا يبقي
+            للاسم إلا حرفين وثلاث نقاط.
+
+            والفجوة 16px لا 10px: البطاقة صارت أعلى ارتفاعاً وأوضح حافّةً،
+            والفجوة الضيّقة بين جسمين كبيرين تجعلهما يبدوان ملتصقين.
           */}
-          <div className="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
             {query.data.posts.map((post) => (
-              <PostCard key={post.id} post={post} canReview={canReview} />
+              <PostCard
+                key={post.id}
+                post={post}
+                canReview={canReview}
+                onDelete={canDelete ? setDeleteTarget : undefined}
+              />
             ))}
           </div>
           <Card className="mt-4">
@@ -216,6 +251,16 @@ export function PostsClient({
           />
         </Card>
       )}
+
+      <ConfirmDialog
+        open={Boolean(deleteTarget)}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={() => deleteTarget && deleteMutation.mutate(deleteTarget)}
+        title="حذف المنشور"
+        message={`سيُحذف منشور «${deleteTarget?.account.name ?? ''}» نهائياً مع تحليله وتصنيفه. لا يمكن التراجع.`}
+        confirmLabel="حذف المنشور"
+        loading={deleteMutation.isPending}
+      />
     </>
   );
 }

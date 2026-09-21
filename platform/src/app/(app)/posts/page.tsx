@@ -11,6 +11,7 @@ export default async function PostsPage() {
     <PostsClient
       canReview={can(user, PERMISSIONS.POSTS_REVIEW)}
       canExport={can(user, PERMISSIONS.REPORTS_EXPORT)}
+      canDelete={can(user, PERMISSIONS.POSTS_DELETE)}
     />
   );
 }

@@ -1,8 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { ExternalLink, EyeOff, Heart, MessageSquare, Play, Share2 } from 'lucide-react';
+import { Eye, ExternalLink, EyeOff, MessageSquare, Share2, ThumbsUp, Trash2 } from 'lucide-react';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
+import { RemoteMedia } from '@/components/posts/remote-media';
 import { PostThumb } from '@/components/posts/post-thumb';
 import { TD, TH, THead, TR } from '@/components/ui/table';
 import {
@@ -36,7 +38,7 @@ export interface PostListItemView {
   hashtags: string[];
   detectedKeywords: string[];
   isHidden: boolean;
-  account: { id: string; name: string };
+  account: { id: string; name: string; avatarUrl: string | null };
   platform: { id: string; name: string; code: string };
   topic: { id: string; name: string } | null;
 }
@@ -51,7 +53,7 @@ function EngagementStat({
   value,
   label,
 }: {
-  icon: typeof Heart;
+  icon: typeof ThumbsUp;
   value: number;
   label: string;
 }) {
@@ -64,8 +66,61 @@ function EngagementStat({
   );
 }
 
+/*
+ * اسم المنصة كما يُعرض: «فيسبوك (Facebook)».
+ *
+ * الاسمان معاً لا أحدهما: العربي وحده يكفي القارئ العربي، واللاتيني هو ما
+ * يطابق ما يراه في المنصة نفسها حين يفتح الرابط. والرمز يُكتب بحرف أوّل
+ * كبير لأنه يُخزَّن صغيراً كله.
+ */
+function platformLabel(platform: { name: string; code: string }): string {
+  const latin = platform.code.charAt(0).toUpperCase() + platform.code.slice(1);
+  return `${platform.name} (${latin})`;
+}
+
+/**
+ * صورة الحساب.
+ *
+ * حين لا يُرجع المشغّل صورة — وهو الغالب في البيانات القديمة — يُعرض أوّل
+ * حرف من الاسم على دائرة زيتونية. والبديل الوحيد هو دائرة رمادية فارغة
+ * تتكرّر في كل بطاقة فلا تُميّز حساباً عن حساب.
+ */
+function AccountAvatar({ name, src }: { name: string; src: string | null }) {
+  /*
+   * الحرف يُرسم دائماً والصورة تعلوه.
+   *
+   * لا «إن وُجد رابط فصورة وإلا فحرف»: الرابط قد يوجد ثمّ يفشل تحميله —
+   * والصور الشخصية على شبكات التوصيل تنتهي صلاحيتها — فتبقى دائرة فارغة.
+   * أما الترتيب هنا فيجعل الفشل يكشف الحرف من تحته بلا حالة ثالثة.
+   */
+  return (
+    <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-olive-100 text-base font-semibold text-olive-800 ring-1 ring-border">
+      <span aria-hidden>{name.trim().charAt(0) || '؟'}</span>
+      {src && (
+        <RemoteMedia
+          src={src}
+          fallback="hide"
+          className="absolute inset-0 h-full w-full rounded-full"
+        />
+      )}
+      <span className="sr-only">{name}</span>
+    </span>
+  );
+}
+
 /** بطاقة منشور — العرض الافتراضي في شاشة المنشورات */
-export function PostCard({ post, canReview }: { post: PostListItemView; canReview?: boolean }) {
+export function PostCard({
+  post,
+  canReview,
+  onDelete,
+}: {
+  post: PostListItemView;
+  canReview?: boolean;
+  /** يُمرَّر لمن يملك صلاحية الحذف وحده — وغيابه يُخفي الزرّ */
+  onDelete?: (post: PostListItemView) => void;
+}) {
+  const hasMedia = Boolean(post.thumbnailUrl || post.imageUrl);
+
   return (
     /*
       @container يجعل البطاقة نفسها مرجع القياس لا النافذة.
@@ -73,97 +128,117 @@ export function PostCard({ post, canReview }: { post: PostListItemView; canRevie
       الجانبي معاً، فالنافذة وحدها لا تعرف كم بقي لها فعلاً. البطاقة بعرض
       220 بكسل تتصرّف تصرّفاً واحداً سواء أكانت النافذة 1280 أم 2560.
     */
-    <article className="@container card-interactive flex flex-col overflow-hidden rounded-xl border border-border bg-surface shadow-elev-1 print-avoid-break">
-      {(post.thumbnailUrl || post.imageUrl) && (
+    <article className="@container card-interactive flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-elev-2 print-avoid-break">
+      {/*
+        الترويسة: الحساب أوّلاً ثم الحذف في الطرف المقابل.
+
+        صاحبُ المنشور هو ما يبحث عنه المراجع في لوحة من أربع وعشرين بطاقة،
+        فيتصدّر. وكان في الأسفل تحت النصّ، فيُقرأ المنشور كله قبل أن يُعرف
+        قائله. والحذف معزول في الطرف الآخر لأنه لا رجعة فيه.
+      */}
+      <header className="flex items-center gap-3">
+        <Link href={`/accounts/${post.account.id}`} className="shrink-0">
+          <AccountAvatar name={post.account.name} src={post.account.avatarUrl} />
+        </Link>
+
+        <div className="min-w-0 flex-1">
+          <Link
+            href={`/accounts/${post.account.id}`}
+            className="block truncate text-sm font-semibold text-foreground hover:text-primary @[15rem]:text-[0.95rem]"
+          >
+            {post.account.name}
+          </Link>
+          <p className="truncate text-xs text-muted-foreground">{platformLabel(post.platform)}</p>
+        </div>
+
+        {onDelete && (
+          <Button
+            size="icon-sm"
+            variant="secondary"
+            className="shrink-0 text-danger"
+            aria-label={`حذف منشور ${post.account.name}`}
+            onClick={() => onDelete(post)}
+          >
+            <Trash2 aria-hidden />
+          </Button>
+        )}
+      </header>
+
+      {hasMedia && (
         <PostThumb
           postId={post.id}
           src={post.thumbnailUrl ?? post.imageUrl ?? ''}
           isVideo={Boolean(post.videoUrl) || post.postType === 'VIDEO' || post.postType === 'REEL'}
           extraCount={Math.max(0, (post.mediaUrls?.length ?? 0) - 1)}
+          className="rounded-xl"
         />
       )}
 
-      <div className="flex flex-1 flex-col gap-2 p-3">
-        {/*
-          شارتان دائماً (المنصة والمشاعر)، والنوع والموضوع يظهران على
-          الأعرض وحدها.
+      {/*
+        النصّ بارتفاع سطر واسع (2.0) لا افتراضي.
 
-          البطاقة عند خمسة أعمدة نحو 220 بكسل، وأربع شارات فيها تلتفّ إلى
-          ثلاثة سطور فتزيح النص وتأكل ارتفاع البطاقة كله. والمخفيّان ليسا
-          ضائعين: كلاهما ظاهر في عرض الجدول وفي صفحة المنشور.
-        */}
-        <div className="flex flex-wrap items-center gap-1.5">
-          <Badge tone="primary" size="sm">
-            {post.platform.name}
-          </Badge>
-          <Badge tone={sentimentTone(post.sentiment)} size="sm">
-            {SENTIMENT_LABELS[post.sentiment as keyof typeof SENTIMENT_LABELS] ?? post.sentiment}
-          </Badge>
-          <Badge size="sm" className="hidden @[15rem]:inline-flex">
-            {POST_TYPE_LABELS[post.postType as keyof typeof POST_TYPE_LABELS] ?? post.postType}
-          </Badge>
-          {post.topic && (
-            <Badge tone="info" size="sm" className="hidden @[17rem]:inline-flex">
-              {post.topic.name}
-            </Badge>
+        العربية تحمل نقاطاً تحت الحرف وتشكيلاً فوقه، فالسطران المتقاربان
+        يتداخلان بصرياً ويتعب المسح السريع. والفرق يُرى في فقرة من أربعة
+        أسطر لا في سطر واحد.
+      */}
+      <Link href={`/posts/${post.id}`} className="flex-1">
+        <p className="line-clamp-4 text-sm leading-[2] text-foreground">
+          {post.text ? (
+            truncate(post.text, 220)
+          ) : (
+            <span className="text-subtle-foreground">منشور بلا نص</span>
           )}
-          {post.isHidden && canReview && (
-            <Badge tone="warning" size="sm">
-              <EyeOff className="h-3 w-3" aria-hidden />
-              مخفي
-            </Badge>
-          )}
-        </div>
+        </p>
+      </Link>
 
-        <Link href={`/posts/${post.id}`} className="flex-1">
-          <p className="line-clamp-3 text-xs leading-relaxed text-foreground @[15rem]:line-clamp-4 @[15rem]:text-sm">
-            {post.text ? truncate(post.text, 180) : <span className="text-subtle-foreground">منشور بلا نص</span>}
-          </p>
-        </Link>
+      {/*
+        الشارات بعد النصّ لا قبله.
 
-        {post.hashtags.length > 0 && (
-          <p className="line-clamp-1 text-xs text-primary">
-            {post.hashtags.slice(0, 3).map((tag) => `#${tag}`).join(' ')}
-          </p>
+        المشاعر والتصنيف حكمٌ على المنشور، وقراءة الحكم قبل المحكوم عليه
+        تصبغ القراءة. وتظهر على البطاقة الواسعة وحدها — أربع شارات في بطاقة
+        بعرض 220 بكسل تلتفّ ثلاثة سطور فتأكل ارتفاعها.
+      */}
+      <div className="hidden flex-wrap items-center gap-1.5 @[15rem]:flex">
+        <Badge tone={sentimentTone(post.sentiment)} size="sm">
+          {SENTIMENT_LABELS[post.sentiment as keyof typeof SENTIMENT_LABELS] ?? post.sentiment}
+        </Badge>
+        {post.topic && (
+          <Badge tone="info" size="sm" className="hidden @[17rem]:inline-flex">
+            {post.topic.name}
+          </Badge>
         )}
-
-        <div className="flex items-center justify-between gap-2 border-t border-border pt-2">
-          <div className="min-w-0">
-            <Link
-              href={`/accounts/${post.account.id}`}
-              className="block truncate text-xs font-medium text-foreground hover:text-primary hover:underline"
-            >
-              {post.account.name}
-            </Link>
-            <p className="text-2xs text-subtle-foreground">
-              {formatDateTime(post.publishedAt)}
-            </p>
-          </div>
-          {post.url && (
-            /* p-1.5 يجعل مساحة اللمس 26px: أقل من 24px يصعب إصابته على الجوال */
-            <a
-              href={post.url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex shrink-0 items-center justify-center rounded p-1.5 text-muted-foreground transition-colors hover:bg-surface-2 hover:text-primary"
-              title="فتح المنشور في المنصة"
-              aria-label="فتح المنشور في المنصة"
-            >
-              <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-            </a>
-          )}
-        </div>
-
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-          <EngagementStat icon={Heart} value={post.likes} label="إعجابات" />
-          <EngagementStat icon={MessageSquare} value={post.comments} label="تعليقات" />
-          <EngagementStat icon={Share2} value={post.shares} label="مشاركات" />
-          {post.views > 0 && <EngagementStat icon={Play} value={post.views} label="مشاهدات" />}
-          <span className="num me-auto text-xs font-semibold text-primary" title="إجمالي التفاعل">
-            {formatCompactNumber(post.engagementTotal)}
-          </span>
-        </div>
+        {post.isHidden && canReview && (
+          <Badge tone="warning" size="sm">
+            <EyeOff className="h-3 w-3" aria-hidden />
+            مخفي
+          </Badge>
+        )}
       </div>
+
+      {post.url && (
+        <a
+          href={post.url}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="inline-flex w-fit items-center gap-1.5 text-xs font-medium text-primary hover:underline @[15rem]:text-sm"
+        >
+          عرض المنشور
+          <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+        </a>
+      )}
+
+      {/*
+        المقاييس موزّعة على العرض كله لا متلاصقة.
+
+        أربعة أرقام متجاورة تُقرأ رقماً واحداً طويلاً؛ وتوزيعها يجعل لكلٍّ
+        موضعاً ثابتاً في كل بطاقة، فتُقارَن البطاقات عمودياً بلمحة.
+      */}
+      <footer className="flex items-center justify-between border-t border-border pt-3">
+        <EngagementStat icon={ThumbsUp} value={post.likes} label="إعجابات" />
+        <EngagementStat icon={MessageSquare} value={post.comments} label="تعليقات" />
+        <EngagementStat icon={Share2} value={post.shares} label="مشاركات" />
+        <EngagementStat icon={Eye} value={post.views} label="مشاهدات" />
+      </footer>
     </article>
   );
 }
