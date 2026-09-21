@@ -313,6 +313,70 @@ function resolvePostType(
   return 'OTHER';
 }
 
+/*
+ * مفاتيح الصورة الشخصية.
+ *
+ * `picture` وحدها لا تكفي مفتاحاً: فيسبوك يسمّي صورة المنشور
+ * `full_picture` كذلك. فيلزم أن يقترن بما يدلّ على الحساب — profile أو
+ * avatar أو owner أو author أو user أو page.
+ */
+const PROFILE_IMAGE_KEY =
+  /^(profile|avatar)|(?:profile|avatar)(?:pic|picture|image|photo|url)|^(?:owner|author|user|page)(?:profile|avatar|pic|picture|image|photo)/i;
+
+/** فرعٌ يُرجَّح أن تكون الصورة الشخصية داخله */
+const PROFILE_BRANCH = /^(author|user|owner|page|account|profile|actor|pageInfo|page_info)$/i;
+
+/*
+ * داخل فرع الحساب يكفي مفتاحٌ عامّ.
+ *
+ * `author.picture` صورةُ صاحبِ المنشور بلا لبس، فالفرع قاله. والحارس
+ * الحقيقي هو `isMediaUrl`: `author.url` رابطُ صفحةٍ لا ملف، فيُرفض قبل أن
+ * يصل — ولذلك يجوز قبول `url` هنا أصلاً.
+ */
+const GENERIC_IMAGE_KEY = /^(pic|picture|image|photo|img|url|src|uri|imageUrl|photoUrl)$/i;
+
+/**
+ * البحث عن الصورة الشخصية في عمق الكائن.
+ *
+ * الأقرب إلى السطح يفوز: `author.profilePicture` أولى من صورةٍ شخصية
+ * لمعلّقٍ مدفونة في فرع بعيد.
+ */
+export function findProfileImage(value: unknown, depth = 0, inProfileBranch = false): string | null {
+  if (depth > 4) return null;
+
+  if (Array.isArray(value)) {
+    for (const item of value.slice(0, 5)) {
+      const found = findProfileImage(item, depth + 1, inProfileBranch);
+      if (found) return found;
+    }
+    return null;
+  }
+
+  const record = asRecord(value);
+  if (!record) return null;
+
+  // المستوى الحالي أولاً، ثم النزول — فالأقرب إلى السطح يُفضَّل
+  for (const [key, child] of Object.entries(record)) {
+    if (typeof child !== 'string' || !isMediaUrl(child)) continue;
+    if (PROFILE_IMAGE_KEY.test(key)) return child;
+    if (inProfileBranch && GENERIC_IMAGE_KEY.test(key)) return child;
+  }
+
+  for (const [key, child] of Object.entries(record)) {
+    if (typeof child === 'string') continue;
+    const branch = PROFILE_BRANCH.test(key);
+    /*
+     * في الجذر لا يُنزَل إلا إلى فروع الحساب: النزول في كل فرع يصل إلى
+     * وسائط المنشور ومرفقاته، فتصير صورة المنشور صورةَ الحساب.
+     */
+    if (depth === 0 && !branch) continue;
+    const found = findProfileImage(child, depth + 1, inProfileBranch || branch);
+    if (found) return found;
+  }
+
+  return null;
+}
+
 // ============================ المحوّل الموحّد ============================
 
 /**
@@ -517,26 +581,19 @@ export function mapApifyItem(raw: unknown, platformCode: string): MappedPost | n
   /*
    * صورة صاحب الحساب.
    *
-   * تُقرأ من حقول الصورة الشخصية صراحةً لا من البحث العميق عن الوسائط:
-   * ذاك يتخطّى كل فرع اسمه profile أو avatar عمداً، لأن صورة الحساب ليست
-   * صورة المنشور — ووقوعها مكان صورة المنشور كان عطباً سابقاً. فهي تُلتقط
-   * هنا بابها الخاصّ، وتذهب إلى الحساب لا إلى المنشور.
+   * بحثٌ عن نمط المفتاح لا قائمةُ مسارات ثابتة.
+   *
+   * القائمة الثابتة فشلت في أوّل تشغيل حقيقي: لكل مشغّل تسميته
+   * (`profilePicture`، `profile_image_url_https`، `ownerProfilePicUrl`،
+   * `pageProfilePicture`…)، وهي تتغيّر بين إصدارات المشغّل الواحد، ومن
+   * يعدّدها يظلّ يلاحقها. أما نمط «مفتاحٌ فيه profile/avatar ويحمل رابط
+   * صورة» فيصمد على التسميات كلها.
+   *
+   * وهي عكس `collectMediaDeep` تماماً: ذاك يتخطّى كل فرع اسمه profile أو
+   * avatar عمداً — لأن صورة الحساب ليست صورة المنشور، ووقوعها مكانها كان
+   * عطباً — وهذه تلتقط ذلك الفرع وحده. فالفرعان لا يتداخلان.
    */
-  const authorAvatarUrl = keepMedia(
-    pickString(source, [
-      'author.profilePicture',
-      'author.profilePicUrl',
-      'author.avatar',
-      'user.profile_image_url_https',
-      'user.profileImageUrl',
-      'user.profilePicture',
-      'profilePicture',
-      'profilePicUrl',
-      'ownerProfilePicUrl',
-      'pageProfilePicture',
-      'pageAvatar',
-    ]),
-  );
+  const authorAvatarUrl = findProfileImage(source);
 
   const hashtagsFromText = extractHashtags(text);
   const declaredHashtags = Array.isArray(source.hashtags)

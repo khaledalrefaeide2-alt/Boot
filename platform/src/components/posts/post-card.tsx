@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { Eye, ExternalLink, EyeOff, MessageSquare, Share2, ThumbsUp, Trash2 } from 'lucide-react';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { RemoteMedia } from '@/components/posts/remote-media';
+import { AccountAvatar } from '@/components/ui/avatar';
 import { PostThumb } from '@/components/posts/post-thumb';
 import { TD, TH, THead, TR } from '@/components/ui/table';
 import {
@@ -76,36 +76,6 @@ function EngagementStat({
 function platformLabel(platform: { name: string; code: string }): string {
   const latin = platform.code.charAt(0).toUpperCase() + platform.code.slice(1);
   return `${platform.name} (${latin})`;
-}
-
-/**
- * صورة الحساب.
- *
- * حين لا يُرجع المشغّل صورة — وهو الغالب في البيانات القديمة — يُعرض أوّل
- * حرف من الاسم على دائرة زيتونية. والبديل الوحيد هو دائرة رمادية فارغة
- * تتكرّر في كل بطاقة فلا تُميّز حساباً عن حساب.
- */
-function AccountAvatar({ name, src }: { name: string; src: string | null }) {
-  /*
-   * الحرف يُرسم دائماً والصورة تعلوه.
-   *
-   * لا «إن وُجد رابط فصورة وإلا فحرف»: الرابط قد يوجد ثمّ يفشل تحميله —
-   * والصور الشخصية على شبكات التوصيل تنتهي صلاحيتها — فتبقى دائرة فارغة.
-   * أما الترتيب هنا فيجعل الفشل يكشف الحرف من تحته بلا حالة ثالثة.
-   */
-  return (
-    <span className="relative flex h-11 w-11 shrink-0 items-center justify-center overflow-hidden rounded-full bg-olive-100 text-base font-semibold text-olive-800 ring-1 ring-border">
-      <span aria-hidden>{name.trim().charAt(0) || '؟'}</span>
-      {src && (
-        <RemoteMedia
-          src={src}
-          fallback="hide"
-          className="absolute inset-0 h-full w-full rounded-full"
-        />
-      )}
-      <span className="sr-only">{name}</span>
-    </span>
-  );
 }
 
 /** بطاقة منشور — العرض الافتراضي في شاشة المنشورات */

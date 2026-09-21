@@ -5,7 +5,7 @@
  * معقولة، والمنشورات الناقصة لا أثر لها — لا أحد يفتقد ما لم يره قطّ.
  */
 import { buildActorInput } from '../src/lib/apify/inputs';
-import { mapApifyItem } from '../src/lib/apify/mappers';
+import { findProfileImage, mapApifyItem } from '../src/lib/apify/mappers';
 import { isDeletableReply } from '../src/lib/extraction/reply-detect';
 
 const checks: { name: string; ok: boolean; detail?: string }[] = [];
@@ -217,6 +217,71 @@ const ig = buildActorInput({
 check(
   'إنستغرام تحمل حدّي المدى معاً',
   ig.onlyPostsNewerThan === '2022-01-01' && ig.onlyPostsOlderThan === '2022-01-31',
+);
+
+// ── صورة الحساب
+/*
+ * التسميات هنا مأخوذة من مشغّلات المنصات الثلاث على اختلافها. والغرض ألّا
+ * يعود اكتشافُ الصورة معلّقاً على اسمٍ بعينه: القائمة الثابتة سقطت في أوّل
+ * تشغيل حقيقي، والنمط هو ما يصمد.
+ */
+const AVATAR_CASES: [string, unknown, string | null][] = [
+  [
+    'إكس — author.profilePicture',
+    { author: { profilePicture: 'https://pbs.twimg.com/profile_images/1/a_normal.jpg' } },
+    'https://pbs.twimg.com/profile_images/1/a_normal.jpg',
+  ],
+  [
+    'إكس القديم — user.profile_image_url_https',
+    { user: { profile_image_url_https: 'https://pbs.twimg.com/profile_images/2/b.jpg' } },
+    'https://pbs.twimg.com/profile_images/2/b.jpg',
+  ],
+  [
+    'فيسبوك — user.profilePic',
+    { user: { profilePic: 'https://scontent.xx.fbcdn.net/v/t1/c.jpg' } },
+    'https://scontent.xx.fbcdn.net/v/t1/c.jpg',
+  ],
+  [
+    'إنستغرام — ownerProfilePicUrl في الجذر',
+    { ownerProfilePicUrl: 'https://instagram.fcai.fbcdn.net/v/t51/d.jpg' },
+    'https://instagram.fcai.fbcdn.net/v/t51/d.jpg',
+  ],
+  [
+    'مفتاح عامّ داخل فرع الحساب',
+    { author: { picture: 'https://scontent.xx.fbcdn.net/v/t1/e.jpg' } },
+    'https://scontent.xx.fbcdn.net/v/t1/e.jpg',
+  ],
+  [
+    'pageInfo.picture',
+    { pageInfo: { picture: 'https://scontent.xx.fbcdn.net/v/t1/f.jpg' } },
+    'https://scontent.xx.fbcdn.net/v/t1/f.jpg',
+  ],
+];
+
+for (const [name, input, expected] of AVATAR_CASES) {
+  const found = findProfileImage(input);
+  check(`صورة الحساب: ${name}`, found === expected, found ?? 'لم تُوجد');
+}
+
+/*
+ * ثلاثة نفيٍ أهمّ من الإثبات: كلٌّ منها يضع صورةً خاطئة مكان صورة الحساب،
+ * فتظهر البطاقة «صحيحة» وهي تعرض غير ما تدّعي.
+ */
+check(
+  'صورة المنشور ليست صورة الحساب',
+  findProfileImage({ full_picture: 'https://scontent.xx.fbcdn.net/v/t1/post.jpg' }) === null,
+);
+check(
+  'رابط صفحة الحساب ليس صورة',
+  findProfileImage({ author: { profilePicture: 'https://facebook.com/some-page' } }) === null,
+  'isMediaUrl يرفض مضيفات صفحات المنصات',
+);
+check(
+  'وسائط المنشور في الجذر لا يُنزَل إليها',
+  findProfileImage({
+    media: [{ image: 'https://scontent.xx.fbcdn.net/v/t1/media.jpg' }],
+  }) === null,
+  'النزول من الجذر محصور في فروع الحساب',
 );
 
 console.log('\n>> فحص النطاق الزمني في مدخلات المشغّل\n');

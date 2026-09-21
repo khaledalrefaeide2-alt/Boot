@@ -6,6 +6,7 @@ import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
 import { can, PERMISSIONS } from '@/lib/auth/rbac';
 import { PageHeader } from '@/components/layout/page-header';
+import { AccountAvatar } from '@/components/ui/avatar';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -87,6 +88,7 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
   return (
     <>
       <PageHeader
+        leading={<AccountAvatar name={account.name} src={account.avatarUrl} size="lg" />}
         title={account.name}
         description={`${account.platform.name} — ${ACCOUNT_TYPE_LABELS[account.type]}`}
         action={

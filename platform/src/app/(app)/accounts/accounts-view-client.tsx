@@ -20,6 +20,7 @@ import {
 } from '@/lib/domain/constants';
 import { formatCompactNumber, formatNumber, formatRelativeTime } from '@/lib/utils';
 import type { AccountOwnership, AccountType } from '@/generated/prisma';
+import { AccountAvatar } from '@/components/ui/avatar';
 
 interface AccountRow {
   id: string;
@@ -29,6 +30,7 @@ interface AccountRow {
   ownership: AccountOwnership;
   isActive: boolean;
   followersCount: number | null;
+  avatarUrl: string | null;
   lastExtractedAt: string | null;
   platform: { id: string; name: string };
   _count: { posts: number };
@@ -142,9 +144,12 @@ export function AccountsViewClient({ canManage }: { canManage: boolean }) {
                       <TD>
                         <Link
                           href={`/accounts/${account.id}`}
-                          className="block max-w-64 truncate font-medium hover:text-primary hover:underline"
+                          className="flex max-w-72 items-center gap-2.5"
                         >
-                          {account.name}
+                          <AccountAvatar name={account.name} src={account.avatarUrl} size="sm" />
+                          <span className="truncate font-medium hover:text-primary hover:underline">
+                            {account.name}
+                          </span>
                         </Link>
                       </TD>
                       <TD className="text-xs">{account.platform.name}</TD>

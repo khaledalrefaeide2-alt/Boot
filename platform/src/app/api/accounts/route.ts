@@ -72,6 +72,7 @@ export async function GET(request: NextRequest) {
           status: true,
           isActive: true,
           followersCount: true,
+          avatarUrl: true,
           extractionWindowDays: true,
           extractionIntervalMinutes: true,
           maxItemsPerRun: true,
@@ -132,6 +133,7 @@ export async function POST(request: NextRequest) {
         maxItemsPerRun: input.maxItemsPerRun,
         actorIdOverride: input.actorIdOverride,
         followersCount: input.followersCount ?? null,
+        avatarUrl: input.avatarUrl ?? null,
         notes: input.notes,
         createdById: actor.id,
         keywords: {

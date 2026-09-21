@@ -6,6 +6,7 @@ import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { Input, Select, Checkbox } from '@/components/ui/field';
 import { Alert } from '@/components/ui/alert';
+import { AccountAvatar } from '@/components/ui/avatar';
 import { useToast } from '@/components/ui/toast';
 import { api, ApiClientError } from '@/lib/api-client';
 import {
@@ -29,6 +30,7 @@ export interface AccountRow {
   url: string;
   externalId: string | null;
   notes: string | null;
+  avatarUrl: string | null;
   groupId: string | null;
   type: AccountType;
   ownership: AccountOwnership;
@@ -78,6 +80,7 @@ const EMPTY = {
   maxItemsPerRun: 100,
   actorIdOverride: '',
   notes: '',
+  avatarUrl: '',
 };
 
 export function AccountFormModal({
@@ -114,6 +117,7 @@ export function AccountFormModal({
             url: editing.url,
             externalId: editing.externalId ?? '',
             notes: editing.notes ?? '',
+            avatarUrl: editing.avatarUrl ?? '',
             groupId: editing.groupId ?? '',
             type: editing.type,
             ownership: editing.ownership,
@@ -218,6 +222,31 @@ export function AccountFormModal({
             placeholder="https://www.facebook.com/example"
             required
           />
+
+          {/*
+            صورة الحساب تُملأ تلقائياً من الاستخراج، وهذا الحقل لمن لا
+            يُرجع مشغّلُه صورةً أو أراد صورةً بعينها. والمعاينة بجانبه لأن
+            رابط صورة مكسور لا يُكتشف إلا حين يُعرض.
+          */}
+          <div className="flex items-end gap-3">
+            <Input
+              wrapperClassName="flex-1"
+              label="رابط صورة الحساب"
+              value={form.avatarUrl}
+              onChange={(event) => update('avatarUrl', event.target.value)}
+              error={fieldErrors.avatarUrl}
+              hint="اختياري — يُملأ تلقائياً بعد الاستخراج إن أرجعه المشغّل"
+              dir="ltr"
+              className="ltr"
+              placeholder="https://…/avatar.jpg"
+            />
+            <AccountAvatar
+              name={form.name || '؟'}
+              src={form.avatarUrl}
+              size="md"
+              className="mb-1"
+            />
+          </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
             <Input

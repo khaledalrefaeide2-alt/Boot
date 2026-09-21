@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { RowActions } from '@/components/ui/row-actions';
 import { Input, Select } from '@/components/ui/field';
 import { Badge } from '@/components/ui/badge';
+import { AccountAvatar } from '@/components/ui/avatar';
 import { Table, TBody, TD, TH, THead, TR, TableWrapper } from '@/components/ui/table';
 import { EmptyState, ErrorState, SkeletonRows } from '@/components/ui/states';
 import { Pagination } from '@/components/ui/pagination';
@@ -362,15 +363,22 @@ export function AccountsAdminClient({
                         </TD>
                       )}
                       <TD>
+                        {/*
+                          الصورة تسبق الاسم: مسحُ جدول من مئة حساب بالصور
+                          أسرع منه بالأسماء — الشكل يُعرف قبل أن يُقرأ.
+                        */}
                         <Link
                           href={`/accounts/${account.id}`}
-                          className="block min-w-0 max-w-64"
+                          className="flex min-w-0 max-w-72 items-center gap-2.5"
                         >
-                          <span className="block truncate font-medium hover:text-primary">
-                            {account.name}
-                          </span>
-                          <span className="ltr block truncate text-xs text-muted-foreground">
-                            {account.url}
+                          <AccountAvatar name={account.name} src={account.avatarUrl} size="sm" />
+                          <span className="min-w-0">
+                            <span className="block truncate font-medium hover:text-primary">
+                              {account.name}
+                            </span>
+                            <span className="ltr block truncate text-xs text-muted-foreground">
+                              {account.url}
+                            </span>
                           </span>
                         </Link>
                       </TD>

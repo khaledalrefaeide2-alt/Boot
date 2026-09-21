@@ -62,6 +62,18 @@ export const createAccountSchema = z.object({
   maxItemsPerRun: z.coerce.number().int().min(1).max(1000).default(100),
   actorIdOverride: actorIdSchema.optional().or(z.literal('')).transform((v) => v || null),
   followersCount: z.coerce.number().int().min(0).nullable().optional(),
+  /*
+   * صورة الحساب تُملأ تلقائياً من الاستخراج، وتبقى قابلة للضبط يدوياً:
+   * المشغّل قد لا يُرجعها أصلاً، ولا يُترك العرض معلّقاً على ما لا نملكه.
+   */
+  avatarUrl: z
+    .string()
+    .trim()
+    .max(600)
+    .url('رابط الصورة غير صالح')
+    .optional()
+    .or(z.literal(''))
+    .transform((value) => value || null),
   notes: optionalString(1000),
   keywordIds: z.array(z.string().trim().max(64)).max(100).default([]),
 });
