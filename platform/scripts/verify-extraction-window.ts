@@ -6,6 +6,7 @@
  */
 import { buildActorInput } from '../src/lib/apify/inputs';
 import { mapApifyItem } from '../src/lib/apify/mappers';
+import { isDeletableReply } from '../src/lib/extraction/reply-detect';
 
 const checks: { name: string; ok: boolean; detail?: string }[] = [];
 function check(name: string, ok: boolean, detail?: string) {
@@ -123,6 +124,67 @@ check(
   'متابعة السلسلة تُكشف ردّاً ويُعرف صاحبها',
   selfThread?.isReply === true && selfThread?.replyToUsername === 'example',
   'الاستيراد يقارنها بمعرّف الحساب فيُبقيها',
+);
+
+// ── كشف الردّ في صفٍّ محفوظ (سكربت التنظيف)
+const storedReply = isDeletableReply(
+  { text: '@someone شكراً على التغطية', rawData: null },
+  'example',
+);
+check(
+  'النصّ المتصدَّر بمنشن الغير ردٌّ يُحذف — بحكم ظنّي',
+  storedReply.deletable && storedReply.confidence === 'likely',
+  storedReply.reason,
+);
+
+const storedSelf = isDeletableReply({ text: '@example تتمّة البيان', rawData: null }, 'example');
+check(
+  'السلسلة الذاتية تُبقى ولا تُحذف',
+  storedSelf.isReply && !storedSelf.deletable,
+  'الاستيراد يُبقيها، فالحذف يلزمه أن يُبقيها',
+);
+
+const storedMixed = isDeletableReply({ text: '@example @other ردّ', rawData: null }, 'example');
+check(
+  'منشنٌ ذاتيّ ومنشنُ غيره → ردٌّ يُحذف',
+  storedMixed.deletable,
+  'ليست سلسلةً ذاتية ما دام فيها مخاطَبٌ آخر',
+);
+
+const storedOriginal = isDeletableReply({ text: 'بيان رسمي', rawData: null }, 'example');
+check('المنشور بلا منشن متصدّر لا يُحذف', !storedOriginal.isReply);
+
+const storedMidMention = isDeletableReply(
+  { text: 'شكراً لـ @someone على التغطية', rawData: null },
+  'example',
+);
+check('المنشن في وسط النصّ لا يجعله ردّاً', !storedMidMention.isReply);
+
+const storedRetweet = isDeletableReply({ text: 'RT @someone: خبر', rawData: null }, 'example');
+check('إعادة التغريدة ليست ردّاً', !storedRetweet.isReply);
+
+const storedRaw = isDeletableReply(
+  { text: 'تتمّة', rawData: { id: '2', conversationId: '1', inReplyToUsername: 'someone' } },
+  'example',
+);
+check(
+  'حقول المزوّد المحفوظة تحسم الحكم قطعاً',
+  storedRaw.deletable && storedRaw.confidence === 'certain',
+  storedRaw.reason,
+);
+
+/*
+ * أهمّ فحص في الباب: نفيٌ صريح من المزوّد يسبق ظنَّ النصّ. وبدونه يحذف
+ * السكربت تغريدةً أصليةً تخاطب جهةً، وهي أكثر ما يُخشى عليه هنا.
+ */
+const storedRawDenies = isDeletableReply(
+  { text: '@someone شكراً', rawData: { id: '1', conversationId: '1', isReply: false } },
+  'example',
+);
+check(
+  'نفيُ المزوّد الصريح يسبق ظنّ النصّ',
+  !storedRawDenies.isReply && !storedRawDenies.deletable,
+  storedRawDenies.reason,
 );
 
 console.log('\n>> فحص النطاق الزمني في مدخلات المشغّل\n');
