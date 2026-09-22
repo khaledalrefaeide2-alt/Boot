@@ -12,6 +12,8 @@ import { METRIC_ICONS } from '@/components/ui/stat-card';
 import { SectionHeader } from '@/components/sections/section-header';
 import { EMPTY_SCOPE, ScopeTabs, scopeParams, type SectionScope } from '@/components/sections/scope-tabs';
 import { api, ApiClientError, buildQuery } from '@/lib/api-client';
+import { useCan } from '@/lib/auth/permissions-client';
+import { PERMISSIONS } from '@/lib/auth/rbac';
 import { formatCompactNumber } from '@/lib/utils';
 
 /*
@@ -85,6 +87,7 @@ export function TopAccountsSection({
 }) {
   const [metric, setMetric] = useState<Metric>('posts');
   const [scope, setScope] = useState<SectionScope>(EMPTY_SCOPE);
+  const canBrowse = useCan(PERMISSIONS.ACCOUNTS_VIEW);
 
   const effective = scopeParams(params, scope);
 
@@ -100,7 +103,16 @@ export function TopAccountsSection({
 
   return (
     <section className={className}>
-      <SectionHeader title={title} description={description} href={href} hrefLabel="عرض جميع الحسابات">
+      {/*
+        «عرض جميع الحسابات» يُحذف لمن لا يملك الدليل — والقسم يبقى: أبرزُ
+        الحسابات قراءةُ نتيجة لا تصفّحُ مصدر.
+      */}
+      <SectionHeader
+        title={title}
+        description={description}
+        href={canBrowse ? href : undefined}
+        hrefLabel="عرض جميع الحسابات"
+      >
         <div className="space-y-2">
           <ScopeTabs value={scope} onChange={setScope} />
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
@@ -151,12 +163,18 @@ export function TopAccountsSection({
               <header className="flex items-center gap-3">
                 <AccountAvatar name={account.name} src={account.avatarUrl} />
                 <div className="min-w-0 flex-1">
-                  <Link
-                    href={`/accounts/${account.id}`}
-                    className="block truncate text-sm font-semibold text-foreground hover:text-primary @[15rem]:text-[0.95rem]"
-                  >
-                    {account.name}
-                  </Link>
+                  {canBrowse ? (
+                    <Link
+                      href={`/accounts/${account.id}`}
+                      className="block truncate text-sm font-semibold text-foreground hover:text-primary @[15rem]:text-[0.95rem]"
+                    >
+                      {account.name}
+                    </Link>
+                  ) : (
+                    <span className="block truncate text-sm font-semibold text-foreground @[15rem]:text-[0.95rem]">
+                      {account.name}
+                    </span>
+                  )}
                   <p className="truncate text-xs text-muted-foreground">{account.platformName}</p>
                 </div>
                 {/*

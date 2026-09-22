@@ -25,6 +25,8 @@ export default async function PlatformDetailPage({
   const user = await getSession();
   if (!can(user, PERMISSIONS.PLATFORMS_VIEW)) notFound();
 
+  const canBrowseAccounts = can(user, PERMISSIONS.ACCOUNTS_VIEW);
+
   const platform = await prisma.platform.findUnique({
     where: { id },
     select: { id: true, name: true, code: true, defaultActorId: true },
@@ -115,12 +117,17 @@ export default async function PlatformDetailPage({
                 {accounts.map((account) => (
                   <TR key={account.id}>
                     <TD>
-                      <Link
-                        href={`/accounts/${account.id}`}
-                        className="font-medium hover:text-primary hover:underline"
-                      >
-                        {account.name}
-                      </Link>
+                      {/* الرابط لمن يملك تصفّح الدليل — ولغيره الاسم وحده */}
+                      {canBrowseAccounts ? (
+                        <Link
+                          href={`/accounts/${account.id}`}
+                          className="font-medium hover:text-primary hover:underline"
+                        >
+                          {account.name}
+                        </Link>
+                      ) : (
+                        <span className="font-medium">{account.name}</span>
+                      )}
                     </TD>
                     <TD className="text-xs text-muted-foreground">
                       {account.isActive ? 'مفعّل' : 'معطّل'}

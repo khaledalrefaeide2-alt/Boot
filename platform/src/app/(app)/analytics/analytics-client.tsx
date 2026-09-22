@@ -21,6 +21,8 @@ import {
   WordCloud,
 } from '@/components/charts/distribution-charts';
 import { api, buildQuery } from '@/lib/api-client';
+import { useCan } from '@/lib/auth/permissions-client';
+import { PERMISSIONS } from '@/lib/auth/rbac';
 import { formatCompactNumber, formatNumber, formatPercent } from '@/lib/utils';
 import {
   POST_TYPE_LABELS,
@@ -31,6 +33,7 @@ import {
 export function AnalyticsClient() {
   const [filters, setFilters] = useState<PostFilterState>(EMPTY_FILTERS);
   const params = filtersToParams(filters);
+  const canBrowseAccounts = useCan(PERMISSIONS.ACCOUNTS_VIEW);
   const optionsQuery = useFilterOptions();
 
   const overview = useQuery({
@@ -302,12 +305,16 @@ export function AnalyticsClient() {
                     {(top.data?.accounts ?? []).map((account) => (
                       <TR key={account.id}>
                         <TD>
-                          <Link
-                            href={`/accounts/${account.id}`}
-                            className="font-medium hover:text-primary hover:underline"
-                          >
-                            {account.name}
-                          </Link>
+                          {canBrowseAccounts ? (
+                            <Link
+                              href={`/accounts/${account.id}`}
+                              className="font-medium hover:text-primary hover:underline"
+                            >
+                              {account.name}
+                            </Link>
+                          ) : (
+                            <span className="font-medium">{account.name}</span>
+                          )}
                         </TD>
                         <TD className="text-xs text-muted-foreground">{account.platformName}</TD>
                         <TD className="num">

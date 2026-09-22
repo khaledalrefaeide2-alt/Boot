@@ -19,6 +19,15 @@ export const PERMISSIONS = {
   ACCOUNTS_VIEW: 'accounts.view',
   ACCOUNTS_MANAGE: 'accounts.manage',
 
+  /**
+   * غرفة العمليات.
+   *
+   * صلاحية مستقلة لا مشتقّة من «اطلاع المنشورات»: الغرفة تعرض حالة
+   * التشغيل لحظةً بلحظة — ما يجري الآن وما تعثّر — وهي شاشة مشغّل لا شاشة
+   * قارئ. وكانت معلّقة على POSTS_VIEW فرآها كلُّ من يرى منشوراً.
+   */
+  OPS_VIEW: 'ops.view',
+
   EXTRACTION_VIEW: 'extraction.view',
   EXTRACTION_RUN: 'extraction.run',
   EXTRACTION_CANCEL: 'extraction.cancel',
@@ -46,10 +55,15 @@ export type Permission = (typeof PERMISSIONS)[keyof typeof PERMISSIONS];
 
 const P = PERMISSIONS;
 
-/** صلاحيات المستخدم العادي — الحد الأدنى المشترك بين كل الأدوار */
+/*
+ * صلاحيات المستخدم العادي — الحد الأدنى المشترك بين كل الأدوار.
+ *
+ * بلا `ACCOUNTS_VIEW` وبلا `OPS_VIEW`: دليل الحسابات وغرفة العمليات
+ * شاشتا مشغّل لا شاشتا قارئ. والقارئ يبقى يرى اسم الحساب على المنشور —
+ * ذاك بيانٌ في المنشور لا تصفّحٌ للدليل.
+ */
 const VIEWER_PERMISSIONS: Permission[] = [
   P.PLATFORMS_VIEW,
-  P.ACCOUNTS_VIEW,
   P.POSTS_VIEW,
   P.REPORTS_VIEW,
   P.REPORTS_EXPORT,
@@ -62,7 +76,9 @@ const SUPERVISOR_PERMISSIONS: Permission[] = [
   ...VIEWER_PERMISSIONS,
   P.ADMIN_ACCESS,
   P.PLATFORMS_MANAGE,
+  P.ACCOUNTS_VIEW,
   P.ACCOUNTS_MANAGE,
+  P.OPS_VIEW,
   P.EXTRACTION_VIEW,
   P.EXTRACTION_RUN,
   P.EXTRACTION_CANCEL,

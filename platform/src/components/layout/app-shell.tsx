@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api-client';
 import { ROLE_LABELS } from '@/lib/auth/rbac';
 import type { NavSection } from '@/lib/domain/navigation';
+import { PermissionsProvider } from '@/lib/auth/permissions-client';
+import type { Permission } from '@/lib/auth/rbac';
 import type { Role } from '@/generated/prisma';
 import { cn } from '@/lib/utils';
 
@@ -31,6 +33,7 @@ export function AppShell({
   unreadCount,
   canAccessAdmin,
   isAdminArea,
+  permissions,
   children,
 }: {
   user: ShellUser;
@@ -39,6 +42,8 @@ export function AppShell({
   unreadCount: number;
   canAccessAdmin: boolean;
   isAdminArea: boolean;
+  /** صلاحيات المستخدم — تُتاح لمكوّنات العميل لتُخفي ما لا يقود إلى شيء */
+  permissions: Permission[];
   children: React.ReactNode;
 }) {
   const router = useRouter();
@@ -231,7 +236,9 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 px-3 py-5 sm:px-6 sm:py-7">{children}</main>
+        <main className="min-w-0 flex-1 px-3 py-5 sm:px-6 sm:py-7">
+          <PermissionsProvider permissions={permissions}>{children}</PermissionsProvider>
+        </main>
       </div>
     </div>
   );

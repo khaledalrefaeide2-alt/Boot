@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import { getSession } from '@/lib/auth/session';
 import { can, PERMISSIONS } from '@/lib/auth/rbac';
 import { getOperationalSettings } from '@/lib/settings';
@@ -8,6 +9,8 @@ export const metadata: Metadata = { title: 'التقارير' };
 
 export default async function ReportsPage() {
   const user = await getSession();
+  // الحارس في الخادم لا في قائمة التنقّل: إخفاء الرابط يُخفي الباب ولا يُغلقه
+  if (!can(user, PERMISSIONS.REPORTS_VIEW)) notFound();
   const settings = await getOperationalSettings();
 
   return (

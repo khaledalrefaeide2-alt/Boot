@@ -53,6 +53,7 @@ export async function ProtectedShell({
       unreadCount={unreadCount}
       canAccessAdmin={can(user, PERMISSIONS.ADMIN_ACCESS)}
       isAdminArea={area === 'admin'}
+      permissions={user.permissions}
     >
       {children}
     </AppShell>

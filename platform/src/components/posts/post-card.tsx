@@ -5,6 +5,8 @@ import { Eye, ExternalLink, EyeOff, MessageSquare, Share2, ThumbsUp, Trash2 } fr
 import { Badge, type BadgeTone } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AccountAvatar } from '@/components/ui/avatar';
+import { useCan } from '@/lib/auth/permissions-client';
+import { PERMISSIONS } from '@/lib/auth/rbac';
 import { PostThumb } from '@/components/posts/post-thumb';
 import { TD, TH, THead, TR } from '@/components/ui/table';
 import {
@@ -79,6 +81,32 @@ function platformLabel(platform: { name: string; code: string }): string {
   return `${platform.name} (${latin})`;
 }
 
+/**
+ * اسم الحساب — رابطاً لمن يملك تصفّح الدليل، ونصّاً لغيره.
+ *
+ * الاسم يبقى للجميع: هو بيانٌ في المنشور لا تصفّحٌ للدليل، ومنشورٌ بلا
+ * قائله ناقص. أما الرابط فيقود إلى صفحة يحرسها الخادم، فوجودُه لمن لا
+ * يملكها وعدٌ بباب مغلق.
+ */
+function AccountName({
+  id,
+  name,
+  className,
+}: {
+  id: string;
+  name: string;
+  className?: string;
+}) {
+  const canBrowse = useCan(PERMISSIONS.ACCOUNTS_VIEW);
+  if (!canBrowse) return <span className={className}>{name}</span>;
+
+  return (
+    <Link href={`/accounts/${id}`} className={className}>
+      {name}
+    </Link>
+  );
+}
+
 /** بطاقة منشور — العرض الافتراضي في شاشة المنشورات */
 export function PostCard({
   post,
@@ -108,17 +136,14 @@ export function PostCard({
         قائله. والحذف معزول في الطرف الآخر لأنه لا رجعة فيه.
       */}
       <header className="flex items-center gap-3">
-        <Link href={`/accounts/${post.account.id}`} className="shrink-0">
-          <AccountAvatar name={post.account.name} src={post.account.avatarUrl} />
-        </Link>
+        <AccountAvatar name={post.account.name} src={post.account.avatarUrl} />
 
         <div className="min-w-0 flex-1">
-          <Link
-            href={`/accounts/${post.account.id}`}
+          <AccountName
+            id={post.account.id}
+            name={post.account.name}
             className="block truncate text-sm font-semibold text-foreground hover:text-primary @[15rem]:text-[0.95rem]"
-          >
-            {post.account.name}
-          </Link>
+          />
           <p className="truncate text-xs text-muted-foreground">{platformLabel(post.platform)}</p>
         </div>
 
@@ -246,9 +271,11 @@ export function PostRow({ post }: { post: PostListItemView }) {
         </Link>
       </TD>
       <TD className="text-xs">
-        <Link href={`/accounts/${post.account.id}`} className="hover:text-primary hover:underline">
-          {post.account.name}
-        </Link>
+        <AccountName
+          id={post.account.id}
+          name={post.account.name}
+          className="hover:text-primary hover:underline"
+        />
       </TD>
       <TD className="text-xs text-muted-foreground">{post.platform.name}</TD>
       <TD className="text-xs text-muted-foreground">

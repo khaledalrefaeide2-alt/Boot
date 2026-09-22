@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import { Activity, UserPlus, Users } from 'lucide-react';
 import { prisma } from '@/lib/db';
@@ -24,6 +25,8 @@ export const metadata: Metadata = { title: 'لوحة تحكم الإدارة' };
 
 export default async function AdminHomePage() {
   const user = await getSession();
+  // الحارس في الخادم لا في قائمة التنقّل: إخفاء الرابط يُخفي الباب ولا يُغلقه
+  if (!can(user, PERMISSIONS.ADMIN_ACCESS)) notFound();
 
   const [
     postsCount,

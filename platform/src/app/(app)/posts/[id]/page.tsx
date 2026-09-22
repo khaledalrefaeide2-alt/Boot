@@ -57,6 +57,7 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
   if (!scopeAllows(await getAccountScope(), post.accountId)) notFound();
   const canReview = can(user, PERMISSIONS.POSTS_REVIEW);
   const canAnalyze = can(user, PERMISSIONS.POSTS_CLASSIFY);
+  const canBrowseAccounts = can(user, PERMISSIONS.ACCOUNTS_VIEW);
   if (post.isHidden && !canReview) notFound();
 
   const mediaUrls = Array.isArray(post.mediaUrls) ? (post.mediaUrls as string[]) : [];
@@ -198,9 +199,14 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
           <CardBody className="py-1">
             <DetailRow label="المنصة">{post.platform.name}</DetailRow>
             <DetailRow label="الحساب">
-              <Link href={`/accounts/${post.account.id}`} className="text-primary hover:underline">
+              {/* الرابط لمن يملك تصفّح الدليل — ولغيره الاسم وحده */}
+              {canBrowseAccounts ? (
+                <Link href={`/accounts/${post.account.id}`} className="text-primary hover:underline">
                 {post.account.name}
               </Link>
+              ) : (
+                post.account.name
+              )}
             </DetailRow>
             <DetailRow label="الناشر">{post.authorName ?? '—'}</DetailRow>
             <DetailRow label="تاريخ النشر">{formatDateTime(post.publishedAt)}</DetailRow>

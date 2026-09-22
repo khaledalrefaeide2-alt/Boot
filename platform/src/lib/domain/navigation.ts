@@ -25,7 +25,7 @@ export const VIEWER_NAV: NavSection[] = [
       { href: '/', label: 'النظرة العامة', icon: 'LayoutDashboard', exact: true },
       { href: '/posts', label: 'المنشورات', icon: 'Newspaper', permission: PERMISSIONS.POSTS_VIEW },
       { href: '/analytics', label: 'الإحصائيات', icon: 'BarChart3', permission: PERMISSIONS.POSTS_VIEW },
-      { href: '/ops', label: 'غرفة العمليات', icon: 'MonitorPlay', permission: PERMISSIONS.POSTS_VIEW },
+      { href: '/ops', label: 'غرفة العمليات', icon: 'MonitorPlay', permission: PERMISSIONS.OPS_VIEW },
       { href: '/assistant', label: 'المساعد الذكي', icon: 'Sparkles', permission: PERMISSIONS.ASSISTANT_USE },
     ],
   },
