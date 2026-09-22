@@ -288,16 +288,36 @@ export async function getBreakdowns(filters: PostFilters, scope: AccountScope) {
 }
 
 /** أكثر الحسابات نشراً وتفاعلاً */
-export async function getTopAccounts(filters: PostFilters, scope: AccountScope, limit = 10) {
+/*
+ * ترتيب الحسابات بمقياسٍ يختاره القارئ.
+ *
+ * «الأكثر نشراً» و«الأعلى تفاعلاً» سؤالان مختلفان تماماً: حسابٌ ينشر مئة
+ * منشور باهت يتصدّر الأوّل ويغيب عن الثاني، وحسابٌ ينشر خمسةً تنتشر يفعل
+ * العكس. وعرضُ أحدهما وحده يُخفي نصف الصورة.
+ */
+export type TopAccountMetric = 'posts' | 'engagement' | 'likes' | 'comments' | 'shares' | 'views';
+
+export async function getTopAccounts(
+  filters: PostFilters,
+  scope: AccountScope,
+  limit = 10,
+  metric: TopAccountMetric = 'posts',
+) {
   const where = buildPostWhere(filters, scope);
 
+  /*
+   * التجميع يشمل الحسابات كلها ثم يُرتَّب هنا، ولا يُرتَّب في القاعدة.
+   *
+   * ترتيبُ groupBy في Prisma يلزمه شكلٌ حرفيّ لكل مقياس، فمقياسٌ يختاره
+   * المستخدم يعني ستّ نسخ من الاستعلام نفسه. والصفّ الواحد لكل حساب —
+   * والحسابات عشرات لا ملايين — فالترتيب في الذاكرة أرخص من ستّ نسخ
+   * تتباعد مع أوّل تعديل.
+   */
   const grouped = await prisma.post.groupBy({
     by: ['accountId'],
     where,
     _count: { _all: true },
     _sum: { engagementTotal: true, likes: true, comments: true, shares: true, views: true },
-    orderBy: { _count: { accountId: 'desc' } },
-    take: limit,
   });
 
   if (grouped.length === 0) return [];
@@ -308,12 +328,13 @@ export async function getTopAccounts(filters: PostFilters, scope: AccountScope, 
       id: true,
       name: true,
       followersCount: true,
+      avatarUrl: true,
       platform: { select: { name: true, code: true, color: true } },
     },
   });
   const accountMap = new Map(accounts.map((a) => [a.id, a]));
 
-  return grouped.map((row) => {
+  const rows = grouped.map((row) => {
     const account = accountMap.get(row.accountId);
     const posts = row._count._all;
     const engagement = row._sum.engagementTotal ?? 0;
@@ -323,6 +344,7 @@ export async function getTopAccounts(filters: PostFilters, scope: AccountScope, 
       platformName: account?.platform.name ?? '',
       platformCode: account?.platform.code ?? '',
       followersCount: account?.followersCount ?? null,
+      avatarUrl: account?.avatarUrl ?? null,
       posts,
       engagement,
       likes: row._sum.likes ?? 0,
@@ -332,6 +354,8 @@ export async function getTopAccounts(filters: PostFilters, scope: AccountScope, 
       engagementRate: posts > 0 ? Number((engagement / posts).toFixed(1)) : 0,
     };
   });
+
+  return rows.sort((a, b) => b[metric] - a[metric]).slice(0, limit);
 }
 
 /** أكثر الهاشتاغات استخداماً ضمن الفلاتر الحالية */

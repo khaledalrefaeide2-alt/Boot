@@ -8,6 +8,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { METRIC_ICONS, StatCard, StatGrid } from '@/components/ui/stat-card';
+import { TopPostsSection } from '@/components/sections/top-posts-section';
 import { EmptyState, SkeletonCards } from '@/components/ui/states';
 import { Table, TBody, TD, TH, THead, TR, TableWrapper } from '@/components/ui/table';
 import { FilterBar, EMPTY_FILTERS, filtersToParams, type PostFilterState } from '@/components/filters/filter-bar';
@@ -269,6 +270,16 @@ export function AnalyticsClient() {
                 height={200}
               />
             </div>
+
+            {/*
+              أبرز المنشورات ببطاقاتها هنا، والحسابات تبقى في جدولها أسفلُ.
+
+              ليس تكراراً بموضعين: البطاقة تُري المنشور نفسه — صورته ونصّه
+              وصاحبه — وهو ما لا يُقرأ من سطرٍ في جدول. أما الحسابات فما
+              يُطلب منها في شاشة التحليل مقارنةُ ستّة أرقام لعشرة حسابات،
+              وذلك عملُ جدول لا بطاقات.
+            */}
+            <TopPostsSection params={params} />
 
             <Card>
               <CardHeader

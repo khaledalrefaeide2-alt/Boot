@@ -8,16 +8,18 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Reveal } from '@/components/motion/reveal';
 import { HighlightCard, METRIC_ICONS, StatCard, StatGrid } from '@/components/ui/stat-card';
 import { Button } from '@/components/ui/button';
-import { Card, CardBody, CardHeader } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { EmptyState, ErrorState, SkeletonCards, SkeletonRows } from '@/components/ui/states';
-import { Table, TBody, TD, TH, THead, TR, TableWrapper } from '@/components/ui/table';
+import { Card } from '@/components/ui/card';
+
+import { EmptyState, ErrorState, SkeletonCards } from '@/components/ui/states';
+
 import { FilterBar, EMPTY_FILTERS, filtersToParams, type PostFilterState } from '@/components/filters/filter-bar';
 import { useFilterOptions, EMPTY_OPTIONS } from '@/lib/hooks/use-filters';
 import { TimelineChart } from '@/components/charts/timeline-chart';
+import { TopPostsSection } from '@/components/sections/top-posts-section';
+import { TopAccountsSection } from '@/components/sections/top-accounts-section';
 import { ComparisonBars, DonutChart, SentimentChart } from '@/components/charts/distribution-charts';
 import { api, ApiClientError, buildQuery } from '@/lib/api-client';
-import { formatCompactNumber, formatDateTime, formatNumber, truncate } from '@/lib/utils';
+import { formatNumber, truncate } from '@/lib/utils';
 import { POST_TYPE_LABELS, SENTIMENT_LABELS } from '@/lib/domain/constants';
 
 interface OverviewResponse {
@@ -49,18 +51,6 @@ interface BreakdownsResponse {
   bySentiment: { sentiment: string; posts: number }[];
 }
 
-interface TopResponse {
-  accounts: { id: string; name: string; platformName: string; posts: number; engagement: number }[];
-  posts: {
-    id: string;
-    text: string | null;
-    publishedAt: string | null;
-    engagementTotal: number;
-    account: { id: string; name: string };
-    platform: { id: string; name: string };
-  }[];
-}
-
 export function OverviewClient() {
   const [filters, setFilters] = useState<PostFilterState>(EMPTY_FILTERS);
   const params = filtersToParams(filters);
@@ -82,11 +72,6 @@ export function OverviewClient() {
   const breakdowns = useQuery({
     queryKey: ['breakdowns', params],
     queryFn: () => api.get<BreakdownsResponse>(buildQuery('/api/stats/breakdowns', params)),
-  });
-
-  const top = useQuery({
-    queryKey: ['top', params],
-    queryFn: () => api.get<TopResponse>(buildQuery('/api/stats/top', params)),
   });
 
   const stats = overview.data;
@@ -293,96 +278,18 @@ export function OverviewClient() {
             />
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <Card>
-              <CardHeader
-                title="أكثر الحسابات نشراً"
-                action={
-                  <Link href="/compare">
-                    <Button variant="ghost" size="sm">
-                      مقارنة الحسابات
-                    </Button>
-                  </Link>
-                }
-              />
-              {top.isPending ? (
-                <SkeletonRows rows={5} />
-              ) : (top.data?.accounts.length ?? 0) === 0 ? (
-                <EmptyState title="لا توجد بيانات" />
-              ) : (
-                <TableWrapper>
-                  <Table>
-                    <THead>
-                      <TR>
-                        <TH>الحساب</TH>
-                        <TH>المنصة</TH>
-                        <TH>المنشورات</TH>
-                        <TH>التفاعل</TH>
-                      </TR>
-                    </THead>
-                    <TBody>
-                      {top.data?.accounts.map((account) => (
-                        <TR key={account.id}>
-                          <TD>
-                            <Link
-                              href={`/accounts/${account.id}`}
-                              className="font-medium hover:text-primary hover:underline"
-                            >
-                              {account.name}
-                            </Link>
-                          </TD>
-                          <TD className="text-xs text-muted-foreground">{account.platformName}</TD>
-                          <TD className="num">{formatNumber(account.posts)}</TD>
-                          <TD className="num font-medium">{formatCompactNumber(account.engagement)}</TD>
-                        </TR>
-                      ))}
-                    </TBody>
-                  </Table>
-                </TableWrapper>
-              )}
-            </Card>
+          {/*
+            القسمان يحلّان محلّ جدولين كانا هنا: «أكثر الحسابات نشراً»
+            و«أعلى المنشورات تفاعلاً».
 
-            <Card>
-              <CardHeader
-                title="أعلى المنشورات تفاعلاً"
-                action={
-                  <Link href="/posts">
-                    <Button variant="ghost" size="sm">
-                      كل المنشورات
-                    </Button>
-                  </Link>
-                }
-              />
-              {top.isPending ? (
-                <SkeletonRows rows={5} />
-              ) : (top.data?.posts.length ?? 0) === 0 ? (
-                <EmptyState title="لا توجد بيانات" />
-              ) : (
-                <CardBody className="space-y-2.5 py-3">
-                  {top.data?.posts.slice(0, 6).map((post) => (
-                    <Link
-                      key={post.id}
-                      href={`/posts/${post.id}`}
-                      className="flex items-start gap-3 rounded-md border border-border p-2.5 transition-colors hover:bg-surface-2/50"
-                    >
-                      <div className="min-w-0 flex-1 space-y-1">
-                        <p className="line-clamp-2 text-sm leading-relaxed">
-                          {truncate(post.text, 120) || 'منشور بلا نص'}
-                        </p>
-                        <p className="text-xs text-muted-foreground">
-                          {post.account.name} · {post.platform.name} ·{' '}
-                          {formatDateTime(post.publishedAt)}
-                        </p>
-                      </div>
-                      <Badge tone="primary" className="shrink-0">
-                        <span className="num">{formatCompactNumber(post.engagementTotal)}</span>
-                      </Badge>
-                    </Link>
-                  ))}
-                </CardBody>
-              )}
-            </Card>
-          </div>
+            والجدول يُجيب سؤالاً واحداً بترتيبٍ ثابت لا يملك القارئ تغييره:
+            «الأكثر نشراً» و«الأعلى تفاعلاً» سؤالان مختلفان، وحسابٌ ينشر
+            مئة منشور باهت يتصدّر الأوّل ويغيب عن الثاني. فصار المقياس
+            يُبدَّل بقرصٍ واحد، وصار المنشور يُعرض ببطاقته لا بسطرٍ من نصّ.
+          */}
+          <TopPostsSection params={params} />
+
+          <TopAccountsSection params={params} />
         </div>
       )}
     </>

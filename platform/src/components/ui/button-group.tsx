@@ -115,6 +115,7 @@ export function Segmented<T extends string>({
   label,
   className,
   size = 'md',
+  variant = 'panel',
 }: {
   value: T;
   onChange: (value: T) => void;
@@ -122,13 +123,25 @@ export function Segmented<T extends string>({
   label: string;
   className?: string;
   size?: 'sm' | 'md';
+  /**
+   * `panel` — حاوية بحدّ والخيار النشط أبيض داخلها. لخيارين أو ثلاثة.
+   *
+   * `pills` — بلا حاوية، والخيار النشط وحده ممتلئ. لصفٍّ طويل من الخيارات
+   * يلتفّ على الشاشات الضيّقة: حاويةٌ تلتفّ حول عشرة خيارات تصير مستطيلاً
+   * غريباً، أما الأقراص فتلتفّ كما يلتفّ النصّ.
+   */
+  variant?: 'panel' | 'pills';
 }) {
+  const pills = variant === 'pills';
+
   return (
     <div
       role="radiogroup"
       aria-label={label}
       className={cn(
-        'inline-flex rounded-lg border border-border bg-olive-50 p-0.5',
+        pills
+          ? 'flex flex-wrap items-center gap-1.5'
+          : 'inline-flex rounded-lg border border-border bg-olive-50 p-0.5',
         className,
       )}
     >
@@ -142,13 +155,18 @@ export function Segmented<T extends string>({
             aria-checked={active}
             onClick={() => onChange(option.value)}
             className={cn(
-              'inline-flex items-center justify-center rounded-md font-semibold leading-none whitespace-nowrap',
+              'inline-flex items-center justify-center gap-1.5 font-semibold leading-none whitespace-nowrap',
               'transition-[background-color,color,box-shadow] duration-150',
               'focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_var(--surface),0_0_0_4px_var(--olive-500)]',
+              pills ? 'rounded-full' : 'rounded-md',
               size === 'sm' ? 'h-7 px-3 text-[13px]' : 'h-9 px-4 text-sm',
-              active
-                ? 'bg-surface text-olive-900 shadow-elev-1'
-                : 'bg-transparent text-olive-700 hover:text-olive-900',
+              pills
+                ? active
+                  ? 'bg-olive-700 text-white shadow-elev-1'
+                  : 'bg-transparent text-muted-foreground hover:bg-olive-50 hover:text-olive-800'
+                : active
+                  ? 'bg-surface text-olive-900 shadow-elev-1'
+                  : 'bg-transparent text-olive-700 hover:text-olive-900',
             )}
           >
             {option.label}
