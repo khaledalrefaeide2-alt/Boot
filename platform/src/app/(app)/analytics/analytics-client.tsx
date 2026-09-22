@@ -7,7 +7,7 @@ import { Printer } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { StatCard } from '@/components/ui/stat-card';
+import { METRIC_ICONS, StatCard, StatGrid } from '@/components/ui/stat-card';
 import { EmptyState, SkeletonCards } from '@/components/ui/states';
 import { Table, TBody, TD, TH, THead, TR, TableWrapper } from '@/components/ui/table';
 import { FilterBar, EMPTY_FILTERS, filtersToParams, type PostFilterState } from '@/components/filters/filter-bar';
@@ -129,26 +129,60 @@ export function AnalyticsClient() {
       ) : (
         stats && (
           <div className="space-y-4">
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <StatCard label="إجمالي المنشورات" value={stats.totalPosts} />
-              <StatCard label="منشورات اليوم" value={stats.postsToday} />
-              <StatCard label="منشورات الأسبوع" value={stats.postsThisWeek} />
-              <StatCard label="منشورات الشهر" value={stats.postsThisMonth} />
-              <StatCard label="إجمالي الإعجابات" value={stats.totalLikes} compact />
-              <StatCard label="إجمالي التعليقات" value={stats.totalComments} compact />
-              <StatCard label="إجمالي المشاركات" value={stats.totalShares} compact />
-              <StatCard label="إجمالي المشاهدات" value={stats.totalViews} compact />
+            <StatGrid count={10}>
+              <StatCard
+                label="إجمالي المنشورات"
+                value={stats.totalPosts}
+                icon={METRIC_ICONS.posts}
+              />
+              <StatCard label="منشورات اليوم" value={stats.postsToday} icon={METRIC_ICONS.today} />
+              <StatCard
+                label="منشورات الأسبوع"
+                value={stats.postsThisWeek}
+                icon={METRIC_ICONS.week}
+              />
+              <StatCard
+                label="منشورات الشهر"
+                value={stats.postsThisMonth}
+                icon={METRIC_ICONS.month}
+              />
+              <StatCard
+                label="إجمالي الإعجابات"
+                value={stats.totalLikes}
+                icon={METRIC_ICONS.likes}
+                compact
+              />
+              <StatCard
+                label="إجمالي التعليقات"
+                value={stats.totalComments}
+                icon={METRIC_ICONS.comments}
+                compact
+              />
+              <StatCard
+                label="إجمالي المشاركات"
+                value={stats.totalShares}
+                icon={METRIC_ICONS.shares}
+                compact
+              />
+              <StatCard
+                label="إجمالي المشاهدات"
+                value={stats.totalViews}
+                icon={METRIC_ICONS.views}
+                compact
+              />
               <StatCard
                 label="إجمالي التفاعل"
                 value={stats.totalEngagement}
+                icon={METRIC_ICONS.engagement}
                 tone="primary"
                 compact
               />
               <StatCard
                 label="معدل التفاعل لكل منشور"
                 value={formatNumber(stats.engagementRate)}
+                icon={METRIC_ICONS.rate}
               />
-            </div>
+            </StatGrid>
 
             <div className="grid gap-4 lg:grid-cols-2">
               <TimelineChart

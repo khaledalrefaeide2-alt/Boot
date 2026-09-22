@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ExternalLink, Heart, MessageSquare, Play, Share2, Bookmark } from 'lucide-react';
+import { ExternalLink, Play } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
 import { can, PERMISSIONS } from '@/lib/auth/rbac';
@@ -10,7 +10,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { AnalysisPanel } from '@/components/analysis/analysis-panel';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { StatCard } from '@/components/ui/stat-card';
+import { METRIC_ICONS, StatCard, StatGrid } from '@/components/ui/stat-card';
 import { Alert } from '@/components/ui/alert';
 import {
   POST_TYPE_LABELS,
@@ -89,14 +89,20 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
         </Alert>
       )}
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-3 lg:grid-cols-6">
-        <StatCard label="الإعجابات" value={post.likes} icon={Heart} compact />
-        <StatCard label="التعليقات" value={post.comments} icon={MessageSquare} compact />
-        <StatCard label="المشاركات" value={post.shares} icon={Share2} compact />
-        <StatCard label="المشاهدات" value={post.views} icon={Play} compact />
-        <StatCard label="الحفظ" value={post.saves} icon={Bookmark} compact />
-        <StatCard label="إجمالي التفاعل" value={post.engagementTotal} tone="primary" compact />
-      </div>
+      <StatGrid count={6} className="mb-4">
+        <StatCard label="الإعجابات" value={post.likes} icon={METRIC_ICONS.likes} compact />
+        <StatCard label="التعليقات" value={post.comments} icon={METRIC_ICONS.comments} compact />
+        <StatCard label="المشاركات" value={post.shares} icon={METRIC_ICONS.shares} compact />
+        <StatCard label="المشاهدات" value={post.views} icon={METRIC_ICONS.views} compact />
+        <StatCard label="الحفظ" value={post.saves} icon={METRIC_ICONS.saves} compact />
+        <StatCard
+          label="إجمالي التفاعل"
+          value={post.engagementTotal}
+          icon={METRIC_ICONS.engagement}
+          tone="primary"
+          compact
+        />
+      </StatGrid>
 
       <div className="grid gap-4 lg:grid-cols-3">
         <Card className="lg:col-span-2">

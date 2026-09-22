@@ -9,7 +9,7 @@ import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Badge, StatusDot } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
-import { StatCard } from '@/components/ui/stat-card';
+import { METRIC_ICONS, StatCard, StatGrid } from '@/components/ui/stat-card';
 import { EmptyState } from '@/components/ui/states';
 import {
   EXTRACTION_STATUS_LABELS,
@@ -106,23 +106,34 @@ export default async function ExtractionDetailPage({
         متجاهَل. وبلا بطاقة «خارج النافذة» كان الفارق يبقى بلا تفسير —
         «جُلب 855 · حُفظ 43» ولا شيء يقول أين ذهبت الثمانمئة.
       */}
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7">
-        <StatCard label="العناصر المجلوبة" value={run.itemsFetched} />
-        <StatCard label="منشورات جديدة" value={run.itemsSaved} tone="success" />
-        <StatCard label="منشورات محدّثة" value={run.itemsSkipped} />
+      <StatGrid count={7} className="mb-4">
+        <StatCard label="العناصر المجلوبة" value={run.itemsFetched} icon={METRIC_ICONS.posts} />
+        <StatCard
+          label="منشورات جديدة"
+          value={run.itemsSaved}
+          icon={METRIC_ICONS.posts}
+          tone="success"
+        />
+        <StatCard label="منشورات محدّثة" value={run.itemsSkipped} icon={METRIC_ICONS.skipped} />
         <StatCard
           label="خارج النافذة الزمنية"
+          icon={METRIC_ICONS.month}
           value={run.itemsOutOfWindow}
           tone={run.itemsOutOfWindow > run.itemsSaved ? 'warning' : 'default'}
         />
-        <StatCard label="ردود مستبعَدة" value={run.itemsReplies} />
+        <StatCard label="ردود مستبعَدة" value={run.itemsReplies} icon={METRIC_ICONS.comments} />
         <StatCard
           label="عناصر متجاهَلة"
+          icon={METRIC_ICONS.failed}
           value={run.itemsFailed}
           tone={run.itemsFailed > 0 ? 'warning' : 'default'}
         />
-        <StatCard label="المدة" value={formatDuration(run.durationMs)} />
-      </div>
+        <StatCard
+          label="المدة"
+          value={formatDuration(run.durationMs)}
+          icon={METRIC_ICONS.duration}
+        />
+      </StatGrid>
 
       {/*
         تنبيه الهدر: حين يسقط خارج النافذة أكثرُ ممّا حُفظ، فالمشغّل يدفع

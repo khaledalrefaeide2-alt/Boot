@@ -1,10 +1,85 @@
 import Link from 'next/link';
 import { cn, formatCompactNumber, formatNumber } from '@/lib/utils';
-import type { LucideIcon } from 'lucide-react';
+import {
+  BellRing,
+  Bookmark,
+  CalendarClock,
+  CalendarDays,
+  CalendarRange,
+  Eye,
+  EyeOff,
+  FileBarChart,
+  Filter,
+  Flame,
+  FolderTree,
+  Gauge,
+  Layers,
+  MessageSquare,
+  Newspaper,
+  PlayCircle,
+  Shapes,
+  Share2,
+  Tags,
+  ThumbsUp,
+  Timer,
+  TriangleAlert,
+  Users,
+  type LucideIcon,
+} from 'lucide-react';
+
+/*
+ * أيقونة لكل مقياس، معرّفة مرة واحدة.
+ *
+ * الغرض ثباتُ المعنى لا التزيين: «الإعجابات» يجب أن تحمل الأيقونة نفسها في
+ * التحليلات وفي صفحة الحساب وفي صفحة المنشور. وحين تُختار في كل شاشة على
+ * حدة تختلف بينها، فيضيع أسرعُ ما في اللوحة — التعرّف على المقياس بشكله
+ * قبل قراءة اسمه.
+ */
+export const METRIC_ICONS = {
+  posts: Newspaper,
+  today: CalendarDays,
+  week: CalendarRange,
+  month: CalendarClock,
+  likes: ThumbsUp,
+  comments: MessageSquare,
+  shares: Share2,
+  views: Eye,
+  saves: Bookmark,
+  engagement: Flame,
+  rate: Gauge,
+  followers: Users,
+  accounts: Users,
+  platforms: Layers,
+  groups: FolderTree,
+  keywords: Tags,
+  topics: Shapes,
+  runs: PlayCircle,
+  alerts: BellRing,
+  reports: FileBarChart,
+  hidden: EyeOff,
+  duration: Timer,
+  skipped: Filter,
+  failed: TriangleAlert,
+} as const satisfies Record<string, LucideIcon>;
+
+const TONES = {
+  default: { chip: 'bg-olive-100 text-olive-800', value: 'text-foreground' },
+  primary: { chip: 'bg-olive-100 text-olive-800', value: 'text-primary' },
+  success: { chip: 'bg-success-soft text-success', value: 'text-success' },
+  warning: { chip: 'bg-warning-soft text-warning', value: 'text-warning' },
+  danger: { chip: 'bg-danger-soft text-danger', value: 'text-danger' },
+} as const;
 
 /**
- * بطاقة إحصاء — رقم عنوان واحد مع سياقه.
- * ليست رسماً بيانياً: قيمة واحدة تُقرأ فوراً، ولا تحمل تفاعلاً زائداً.
+ * بطاقة إحصاء — رقم واحد مع سياقه.
+ *
+ * أفقيّة ومضغوطة: أيقونةٌ ثم الاسم فوق الرقم. وكانت رأسيّةً برقمٍ بحجم
+ * 30px وحشوة 16px، فبلغ ارتفاعها مئة بكسل — وعشرةُ مقاييس بهذا الارتفاع
+ * تحتلّ ثلاثة سطور وتملأ الشاشة قبل أن يظهر أوّل رسم بياني. والمقياس
+ * الواحد لا يستحقّ ذلك: قيمةٌ تُقرأ في جزء من ثانية ثم تُترك.
+ *
+ * والرقم بقي أبرزَ ما في البطاقة وإن صغر — الوزن والتباين يفعلان ما كان
+ * يفعله الحجم، بلا أن يأكلا الشاشة.
  */
 export function StatCard({
   label,
@@ -22,16 +97,10 @@ export function StatCard({
   icon?: LucideIcon;
   href?: string;
   compact?: boolean;
-  tone?: 'default' | 'primary' | 'success' | 'warning' | 'danger';
+  tone?: keyof typeof TONES;
   className?: string;
 }) {
-  const tones = {
-    default: 'text-foreground',
-    primary: 'text-primary',
-    success: 'text-success',
-    warning: 'text-warning',
-    danger: 'text-danger',
-  } as const;
+  const styles = TONES[tone];
 
   const display =
     typeof value === 'number' ? (compact ? formatCompactNumber(value) : formatNumber(value)) : value;
@@ -39,32 +108,37 @@ export function StatCard({
   const content = (
     <div
       className={cn(
-        'flex h-full items-start gap-3 rounded-xl border border-border bg-surface p-4 shadow-elev-1 print-avoid-break',
+        'flex h-full items-center gap-2.5 rounded-xl border border-border bg-surface px-3.5 py-3 shadow-elev-1 print-avoid-break',
         href && 'card-interactive hover:bg-surface-2/40',
         className,
       )}
     >
       {Icon && (
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-primary-soft">
-          <Icon className="h-4.5 w-4.5 text-primary-soft-foreground" aria-hidden />
-        </div>
+        <span
+          className={cn(
+            'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+            styles.chip,
+          )}
+        >
+          <Icon className="h-4 w-4" aria-hidden />
+        </span>
       )}
-      <div className="min-w-0 space-y-0.5">
-        <p className="eyebrow">{label}</p>
+      <div className="min-w-0 flex-1">
+        <p className="eyebrow truncate">{label}</p>
         {/*
-          الرقم هو البطل: وزن ثقيل وتتبّع سالب يجمع الأرقام في كتلة واحدة
-          تُقرأ دفعةً. والتتبّع السالب آمن هنا بلا تحفّظ — الأرقام لاتينية
-          منفصلة لا حروفاً عربية متصلة.
+          التتبّع السالب آمن على الرقم بلا تحفّظ — الأرقام لاتينية منفصلة
+          لا حروفاً عربية متصلة. و tabular-nums يُبقي خانات الأرقام على عرض
+          واحد، فلا يرقص الرقم بين تحديثين.
         */}
         <p
           className={cn(
-            'num text-2xl font-extrabold tracking-[-0.03em] tabular-nums sm:text-3xl',
-            tones[tone],
+            'num truncate text-lg font-bold leading-tight tracking-[-0.02em] tabular-nums',
+            styles.value,
           )}
         >
           {display}
         </p>
-        {hint && <p className="truncate text-xs text-subtle-foreground">{hint}</p>}
+        {hint && <p className="truncate text-2xs text-subtle-foreground">{hint}</p>}
       </div>
     </div>
   );
@@ -75,6 +149,39 @@ export function StatCard({
     </Link>
   ) : (
     content
+  );
+}
+
+/*
+ * شبكة المقاييس.
+ *
+ * عددُ الأعمدة يقسم عددَ البطاقات بلا باقٍ — وهذا هو كلّ الفرق بين صفٍّ
+ * منظّم وصفٍّ أخير فيه بطاقتان وفجوة. عشرُ بطاقات على أربعة أعمدة تُخرج
+ * 4+4+2؛ وعلى خمسة تُخرج 5+5.
+ */
+const COLUMNS: Record<number, string> = {
+  4: 'grid-cols-2 lg:grid-cols-4',
+  5: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5',
+  6: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6',
+  7: 'grid-cols-2 sm:grid-cols-4 xl:grid-cols-7',
+  8: 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8',
+  10: 'grid-cols-2 sm:grid-cols-5 2xl:grid-cols-10',
+};
+
+export function StatGrid({
+  count,
+  children,
+  className,
+}: {
+  /** عدد البطاقات — تُختار به الأعمدة التي تقسمه بلا باقٍ */
+  count: number;
+  children: React.ReactNode;
+  className?: string;
+}) {
+  return (
+    <div className={cn('grid gap-2.5', COLUMNS[count] ?? 'grid-cols-2 lg:grid-cols-4', className)}>
+      {children}
+    </div>
   );
 }
 

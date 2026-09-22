@@ -1,22 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import {
-  Activity,
-  AlertTriangle,
-  Building2,
-  CheckCircle2,
-  Newspaper,
-  UserPlus,
-  Users,
-  UsersRound,
-} from 'lucide-react';
+import { Activity, UserPlus, Users } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
 import { can, PERMISSIONS } from '@/lib/auth/rbac';
 import { isApifyConfigured } from '@/lib/apify/client';
 import { isRedisReady } from '@/lib/redis';
 import { PageHeader } from '@/components/layout/page-header';
-import { StatCard } from '@/components/ui/stat-card';
+import { METRIC_ICONS, StatCard, StatGrid } from '@/components/ui/stat-card';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge, StatusDot } from '@/components/ui/badge';
@@ -128,10 +119,10 @@ export default async function AdminHomePage() {
         )}
       </div>
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-        <StatCard label="المنشورات" value={postsCount} icon={Newspaper} href="/posts" compact />
-        <StatCard label="الحسابات" value={accountsCount} icon={UsersRound} href="/admin/accounts" />
-        <StatCard label="المنصات" value={platformsCount} icon={Building2} href="/admin/platforms" />
+      <StatGrid count={6} className="mb-4">
+        <StatCard label="المنشورات" value={postsCount} icon={METRIC_ICONS.posts} href="/posts" compact />
+        <StatCard label="الحسابات" value={accountsCount} icon={METRIC_ICONS.accounts} href="/admin/accounts" />
+        <StatCard label="المنصات" value={platformsCount} icon={METRIC_ICONS.platforms} href="/admin/platforms" />
         <StatCard label="المستخدمون" value={usersCount} icon={Users} href="/admin/users" />
         <StatCard
           label="بانتظار الموافقة"
@@ -147,7 +138,7 @@ export default async function AdminHomePage() {
           href="/admin/extractions"
           tone={activeRuns > 0 ? 'primary' : 'default'}
         />
-      </div>
+      </StatGrid>
 
       <Card>
         <CardHeader

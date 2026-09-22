@@ -10,7 +10,7 @@ import { AccountAvatar } from '@/components/ui/avatar';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { StatCard } from '@/components/ui/stat-card';
+import { METRIC_ICONS, StatCard, StatGrid } from '@/components/ui/stat-card';
 import { EmptyState } from '@/components/ui/states';
 import { AccountTimeline } from './account-timeline';
 import { getOverviewStats, getTimeseries } from '@/lib/queries/stats';
@@ -106,16 +106,31 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
         }
       />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <StatCard label="المنشورات" value={stats.totalPosts} />
-        <StatCard label="إجمالي التفاعل" value={stats.totalEngagement} compact tone="primary" />
-        <StatCard label="معدل التفاعل" value={formatNumber(stats.engagementRate)} />
+      <StatGrid count={5} className="mb-4">
+        <StatCard label="المنشورات" value={stats.totalPosts} icon={METRIC_ICONS.posts} />
+        <StatCard
+          label="إجمالي التفاعل"
+          value={stats.totalEngagement}
+          icon={METRIC_ICONS.engagement}
+          compact
+          tone="primary"
+        />
+        <StatCard
+          label="معدل التفاعل"
+          value={formatNumber(stats.engagementRate)}
+          icon={METRIC_ICONS.rate}
+        />
         <StatCard
           label="المتابعون"
           value={account.followersCount ? formatCompactNumber(account.followersCount) : '—'}
+          icon={METRIC_ICONS.followers}
         />
-        <StatCard label="عمليات الاستخراج" value={account._count.runs} />
-      </div>
+        <StatCard
+          label="عمليات الاستخراج"
+          value={account._count.runs}
+          icon={METRIC_ICONS.runs}
+        />
+      </StatGrid>
 
       <div className="mb-4">
         <AccountTimeline data={series} />

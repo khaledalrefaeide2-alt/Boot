@@ -7,7 +7,7 @@ import { can, PERMISSIONS } from '@/lib/auth/rbac';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { StatCard } from '@/components/ui/stat-card';
+import { METRIC_ICONS, StatCard, StatGrid } from '@/components/ui/stat-card';
 import { EmptyState } from '@/components/ui/states';
 import { Table, TBody, TD, TH, THead, TR, TableWrapper } from '@/components/ui/table';
 import { getOverviewStats } from '@/lib/queries/stats';
@@ -63,13 +63,34 @@ export default async function PlatformDetailPage({
         }
       />
 
-      <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-        <StatCard label="إجمالي المنشورات" value={stats.totalPosts} />
-        <StatCard label="إجمالي التفاعل" value={stats.totalEngagement} compact tone="primary" />
-        <StatCard label="الإعجابات" value={stats.totalLikes} compact />
-        <StatCard label="التعليقات" value={stats.totalComments} compact />
-        <StatCard label="المشاهدات" value={stats.totalViews} compact />
-      </div>
+      <StatGrid count={5} className="mb-4">
+        <StatCard label="إجمالي المنشورات" value={stats.totalPosts} icon={METRIC_ICONS.posts} />
+        <StatCard
+          label="إجمالي التفاعل"
+          value={stats.totalEngagement}
+          icon={METRIC_ICONS.engagement}
+          compact
+          tone="primary"
+        />
+        <StatCard
+          label="الإعجابات"
+          value={stats.totalLikes}
+          icon={METRIC_ICONS.likes}
+          compact
+        />
+        <StatCard
+          label="التعليقات"
+          value={stats.totalComments}
+          icon={METRIC_ICONS.comments}
+          compact
+        />
+        <StatCard
+          label="المشاهدات"
+          value={stats.totalViews}
+          icon={METRIC_ICONS.views}
+          compact
+        />
+      </StatGrid>
 
       <Card>
         <CardHeader title="حسابات المنصة" />

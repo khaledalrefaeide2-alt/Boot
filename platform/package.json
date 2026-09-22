@@ -35,6 +35,7 @@
     "verify:window": "tsx --conditions=react-server scripts/verify-extraction-window.ts",
     "verify:chunks": "tsx scripts/verify-backfill-chunks.ts",
     "verify:buttons": "tsx scripts/verify-buttons.ts",
+    "verify:stats": "tsx scripts/verify-stats.ts",
     "avatars:backfill": "tsx --conditions=react-server scripts/backfill-avatars.ts",
     "cleanup:replies": "tsx --conditions=react-server scripts/delete-stored-replies.ts"
   },

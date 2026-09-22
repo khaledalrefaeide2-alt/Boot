@@ -3,19 +3,10 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import {
-  Building2,
-  FileSpreadsheet,
-  Heart,
-  MessageSquare,
-  Newspaper,
-  Share2,
-  TrendingUp,
-  UsersRound,
-} from 'lucide-react';
+import { FileSpreadsheet } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Reveal } from '@/components/motion/reveal';
-import { StatCard, HighlightCard } from '@/components/ui/stat-card';
+import { HighlightCard, METRIC_ICONS, StatCard, StatGrid } from '@/components/ui/stat-card';
 import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -159,7 +150,7 @@ export function OverviewClient() {
               label="إجمالي المنشورات"
               value={stats.totalPosts}
               hint={`${formatNumber(stats.postsToday)} اليوم · ${formatNumber(stats.postsThisWeek)} هذا الأسبوع`}
-              icon={Newspaper}
+              icon={METRIC_ICONS.posts}
               href="/posts"
             />
             </Reveal>
@@ -168,7 +159,7 @@ export function OverviewClient() {
               label="عدد الحسابات"
               value={stats.accountsCount}
               hint="الحسابات المرصودة النشطة"
-              icon={UsersRound}
+              icon={METRIC_ICONS.accounts}
               href="/accounts"
             />
             </Reveal>
@@ -177,7 +168,7 @@ export function OverviewClient() {
               label="عدد المنصات"
               value={stats.platformsCount}
               hint="المنصات المفعّلة"
-              icon={Building2}
+              icon={METRIC_ICONS.platforms}
               href="/platforms"
             />
             </Reveal>
@@ -186,7 +177,7 @@ export function OverviewClient() {
               label="إجمالي التفاعل"
               value={stats.totalEngagement}
               hint={`معدل ${formatNumber(stats.engagementRate)} لكل منشور`}
-              icon={TrendingUp}
+              icon={METRIC_ICONS.engagement}
               compact
               tone="primary"
             />
@@ -220,12 +211,32 @@ export function OverviewClient() {
           </div>
 
           {/* مجاميع التفاعل التفصيلية */}
-          <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-            <StatCard label="الإعجابات" value={stats.totalLikes} icon={Heart} compact />
-            <StatCard label="التعليقات" value={stats.totalComments} icon={MessageSquare} compact />
-            <StatCard label="المشاركات" value={stats.totalShares} icon={Share2} compact />
-            <StatCard label="المشاهدات" value={stats.totalViews} icon={TrendingUp} compact />
-          </div>
+          <StatGrid count={4} className="mb-4">
+            <StatCard
+              label="الإعجابات"
+              value={stats.totalLikes}
+              icon={METRIC_ICONS.likes}
+              compact
+            />
+            <StatCard
+              label="التعليقات"
+              value={stats.totalComments}
+              icon={METRIC_ICONS.comments}
+              compact
+            />
+            <StatCard
+              label="المشاركات"
+              value={stats.totalShares}
+              icon={METRIC_ICONS.shares}
+              compact
+            />
+            <StatCard
+              label="المشاهدات"
+              value={stats.totalViews}
+              icon={METRIC_ICONS.views}
+              compact
+            />
+          </StatGrid>
         </>
       ) : null}
 
