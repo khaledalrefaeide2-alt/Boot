@@ -10,6 +10,7 @@ import { AccountAvatar } from '@/components/ui/avatar';
 import { EmptyState, ErrorState, SkeletonRows } from '@/components/ui/states';
 import { METRIC_ICONS } from '@/components/ui/stat-card';
 import { SectionHeader } from '@/components/sections/section-header';
+import { EMPTY_SCOPE, ScopeTabs, scopeParams, type SectionScope } from '@/components/sections/scope-tabs';
 import { api, ApiClientError, buildQuery } from '@/lib/api-client';
 import { formatCompactNumber } from '@/lib/utils';
 
@@ -69,7 +70,7 @@ function Stat({
 
 export function TopAccountsSection({
   title = 'أبرز الحسابات',
-  description = 'اختر المقياس لعرض الحسابات الأربعة الأولى بحسبه وأرقامها.',
+  description = 'اختر المنصة أو المجموعة والمقياس، لعرض الحسابات الأولى بحسبها وأرقامها.',
   params = {},
   limit = 4,
   href = '/accounts',
@@ -83,12 +84,15 @@ export function TopAccountsSection({
   className?: string;
 }) {
   const [metric, setMetric] = useState<Metric>('posts');
+  const [scope, setScope] = useState<SectionScope>(EMPTY_SCOPE);
+
+  const effective = scopeParams(params, scope);
 
   const query = useQuery({
-    queryKey: ['top-accounts', metric, limit, params],
+    queryKey: ['top-accounts', metric, limit, effective],
     queryFn: () =>
       api.get<{ accounts: TopAccount[] }>(
-        buildQuery('/api/stats/top-accounts', { ...params, metric, limit }),
+        buildQuery('/api/stats/top-accounts', { ...effective, metric, limit }),
       ),
   });
 
@@ -97,14 +101,20 @@ export function TopAccountsSection({
   return (
     <section className={className}>
       <SectionHeader title={title} description={description} href={href} hrefLabel="عرض جميع الحسابات">
-        <Segmented
-          variant="pills"
-          size="sm"
-          label="مقياس الترتيب"
-          value={metric}
-          onChange={setMetric}
-          options={METRICS.map((item) => ({ value: item.value, label: item.label }))}
-        />
+        <div className="space-y-2">
+          <ScopeTabs value={scope} onChange={setScope} />
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+            <span className="eyebrow shrink-0">المقياس</span>
+            <Segmented
+              variant="pills"
+              size="sm"
+              label="مقياس الترتيب"
+              value={metric}
+              onChange={setMetric}
+              options={METRICS.map((item) => ({ value: item.value, label: item.label }))}
+            />
+          </div>
+        </div>
       </SectionHeader>
 
       {query.isPending ? (
