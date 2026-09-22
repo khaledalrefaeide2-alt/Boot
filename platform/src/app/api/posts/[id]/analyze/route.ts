@@ -61,11 +61,12 @@ export async function POST(_request: NextRequest, { params }: Params) {
       action: AUDIT_ACTIONS.POST_ANALYZED,
       entityType: 'post',
       entityId: post.id,
-      summary: `تحليل منشور بالذكاء الاصطناعي — الموقف ${result.stance}`,
+      summary: `تصنيف منشور بالذكاء الاصطناعي — ${result.sentiment}`,
       metadata: {
-        stance: result.stance,
         sentiment: result.sentiment,
+        stance: result.stance,
         confidence: result.confidence,
+        isMixed: result.isMixed,
         riskFlags: result.riskFlags,
       },
     });

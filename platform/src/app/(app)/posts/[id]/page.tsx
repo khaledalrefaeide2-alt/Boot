@@ -16,6 +16,7 @@ import {
   POST_TYPE_LABELS,
   SENTIMENT_LABELS,
   SENTIMENT_TONE,
+  STANCE_METRIC,
   languageLabel,
 } from '@/lib/domain/constants';
 import { formatDateTime, formatNumber } from '@/lib/utils';
@@ -183,6 +184,12 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
                   sentiment: post.analysis.sentiment,
                   confidence: post.analysis.confidence,
                   rationale: post.analysis.rationale,
+                  target: post.analysis.target,
+                  subject: post.analysis.subject,
+                  evidence: post.analysis.evidence,
+                  isMixed: post.analysis.isMixed,
+                  isRelayedCriticism: post.analysis.isRelayedCriticism,
+                  reviewReason: post.analysis.reviewReason,
                   themes: post.analysis.themes,
                   riskFlags: post.analysis.riskFlags,
                   riskSeverity: post.analysis.riskSeverity,
@@ -214,7 +221,7 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
             <DetailRow label="اللغة">{languageLabel(post.language)}</DetailRow>
             <DetailRow label="الدولة">{post.country ?? '—'}</DetailRow>
             <DetailRow label="الموقع">{post.location ?? '—'}</DetailRow>
-            <DetailRow label="المشاعر">
+            <DetailRow label={STANCE_METRIC.compact}>
               <Badge tone={SENTIMENT_TONE[post.sentiment]}>
                 {SENTIMENT_LABELS[post.sentiment]}
               </Badge>
@@ -224,7 +231,7 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
                 </span>
               )}
             </DetailRow>
-            <DetailRow label="مصدر تحليل المشاعر">
+            <DetailRow label="مصدر التصنيف">
               {post.sentimentSource === 'MANUAL'
                 ? 'تعديل يدوي'
                 : post.sentimentSource === 'AI'

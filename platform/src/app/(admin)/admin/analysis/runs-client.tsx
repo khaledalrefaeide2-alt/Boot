@@ -28,6 +28,7 @@ interface AnalysisRun {
   total: number;
   done: number;
   failed: number;
+  negative: number;
   review: number;
   flagged: number;
   errorMessage: string | null;
@@ -90,6 +91,11 @@ function RunCounters({ run }: { run: AnalysisRun }) {
         <span className="num font-semibold text-foreground">{formatNumber(run.done)}</span> من{' '}
         <span className="num">{formatNumber(run.total)}</span>
       </span>
+      {run.negative > 0 && (
+        <span>
+          سلبي: <span className="num font-semibold">{formatNumber(run.negative)}</span>
+        </span>
+      )}
       {run.review > 0 && (
         <span>
           بحاجة مراجعة: <span className="num font-semibold">{formatNumber(run.review)}</span>

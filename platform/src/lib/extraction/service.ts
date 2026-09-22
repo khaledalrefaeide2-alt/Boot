@@ -525,10 +525,6 @@ async function raiseAlerts(
   imported: Awaited<ReturnType<typeof importPosts>>,
 ): Promise<void> {
   const settings = await getOperationalSettings();
-  const totalAnalyzed =
-    imported.sentimentCounts.positive +
-    imported.sentimentCounts.negative +
-    imported.sentimentCounts.neutral;
 
   await notifyOperators({
     type: 'EXTRACTION_SUCCEEDED',
@@ -554,20 +550,17 @@ async function raiseAlerts(
     });
   }
 
-  if (totalAnalyzed >= 5) {
-    const negativeRatio = imported.sentimentCounts.negative / totalAnalyzed;
-    if (negativeRatio >= settings.negativeSentimentRatio) {
-      await notifyOperators({
-        type: 'NEGATIVE_SENTIMENT_SPIKE',
-        severity: 'WARNING',
-        title: `ارتفاع في المشاعر السلبية على ${accountName}`,
-        body: `${imported.sentimentCounts.negative} من ${totalAnalyzed} منشوراً سلبية في هذه الدفعة.`,
-        link: `/admin/extractions/${runId}`,
-        entityType: 'extraction_run',
-        entityId: runId,
-      });
-    }
-  }
+  /*
+   * تنبيه ارتفاع السلبية انتقل إلى نهاية جولة التحليل.
+   *
+   * كان يُحسب هنا من تصنيفٍ يضعه الاستيراد بمحرّك كلمات مفتاحية يقيس نبرة
+   * النصّ — فيُنذر لأن الدفعة ذكرت «حادث» و«تأخير»، لا لأن فيها نقداً
+   * للجهات. والإنذار الكاذب المتكرّر أسوأ من لا إنذار: يُسكِت المشغّل عن
+   * الحقيقيّ حين يأتي.
+   *
+   * والاستيراد اليوم لا يصنّف أصلاً، فلا رقم هنا يُبنى عليه. والجولة وحدها
+   * تعرف كم منشوراً صُنّف سلبياً وفق السياسة.
+   */
 
   if (imported.matchedAlertKeywords.length > 0) {
     await notifyOperators({

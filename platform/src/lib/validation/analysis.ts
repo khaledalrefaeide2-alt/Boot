@@ -2,7 +2,15 @@ import { z } from 'zod';
 import { postFiltersSchema } from './posts';
 
 const stance = z.enum(['SUPPORTIVE', 'OPPOSED', 'NEUTRAL', 'MIXED', 'UNCLEAR']);
-const sentiment = z.enum(['POSITIVE', 'NEGATIVE', 'NEUTRAL', 'MIXED', 'UNKNOWN']);
+/*
+ * المؤشّر أربع قيم لا خمس.
+ *
+ * «مختلط» حُذف عمداً: السياسة تصنّف ما جمع مدحاً ونقداً سلبياً وتضع عليه
+ * علامة، لا تجعله صنفاً ثالثاً. والقيمة باقية في نوع القاعدة لأن صفوفاً
+ * قديمة تحملها، لكنها لا تُقبل مدخلاً جديداً — لا من النموذج ولا من
+ * المراجع.
+ */
+const sentiment = z.enum(['POSITIVE', 'NEGATIVE', 'NEUTRAL', 'UNKNOWN']);
 const riskFlag = z.enum([
   'INCITEMENT_VIOLENCE',
   'SECTARIAN_REGIONAL',

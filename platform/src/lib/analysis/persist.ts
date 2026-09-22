@@ -40,6 +40,12 @@ export async function analyzeAndSave(postId: string, text: string) {
         sentiment: result.sentiment,
         confidence: result.confidence,
         rationale: result.rationale,
+        target: result.target,
+        subject: result.subject,
+        evidence: result.evidence,
+        isMixed: result.isMixed,
+        isRelayedCriticism: result.isRelayedCriticism,
+        reviewReason: result.reviewReason,
         themes: result.themes.slice(0, 10),
         riskFlags: result.riskFlags,
         riskSeverity: result.riskSeverity,
@@ -51,6 +57,12 @@ export async function analyzeAndSave(postId: string, text: string) {
         sentiment: result.sentiment,
         confidence: result.confidence,
         rationale: result.rationale,
+        target: result.target,
+        subject: result.subject,
+        evidence: result.evidence,
+        isMixed: result.isMixed,
+        isRelayedCriticism: result.isRelayedCriticism,
+        reviewReason: result.reviewReason,
         themes: result.themes.slice(0, 10),
         riskFlags: result.riskFlags,
         riskSeverity: result.riskSeverity,
@@ -59,7 +71,12 @@ export async function analyzeAndSave(postId: string, text: string) {
       },
     }),
     /*
-     * المشاعر تُحدَّث والمصدر يُوسم AI.
+     * المؤشّر يُحدَّث والمصدر يُوسم AI.
+     *
+     * والحقل اسمه `sentiment` في القاعدة لسببٍ تاريخي، ومعناه اليوم ما
+     * تقوله السياسة: موقف المنشور تجاه الجهات والخدمات الحكومية. أُبقي
+     * الاسم لأن تغييره يمسّ عشرات الاستعلامات والفهارس والتقارير بلا أن
+     * يُضيف للقارئ شيئاً — والقارئ يرى التسمية العربية لا اسم العمود.
      *
      * والوسم ليس تفصيلاً: شاشة المراجعة تفرّق بين ما قرّره إنسان وما
      * اقترحه نموذج، ومن دونه يصير رأي النموذج ورأي المراجع سواءً في

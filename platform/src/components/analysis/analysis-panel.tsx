@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
 import { api, ApiClientError } from '@/lib/api-client';
+import { SENTIMENT_LABELS, SENTIMENT_TONE, STANCE_METRIC } from '@/lib/domain/constants';
 import { CorrectionModal } from './correction-modal';
 
 export interface PostAnalysisView {
@@ -14,6 +15,12 @@ export interface PostAnalysisView {
   sentiment: string;
   confidence: number;
   rationale: string;
+  target: string | null;
+  subject: string | null;
+  evidence: string | null;
+  isMixed: boolean;
+  isRelayedCriticism: boolean;
+  reviewReason: string | null;
   themes: string[];
   riskFlags: string[];
   riskSeverity: string;
@@ -95,7 +102,7 @@ export function AnalysisPanel({
   return (
     <Card>
       <CardHeader
-        title="التحليل الآلي"
+        title="التصنيف الآلي"
         action={
           <div className="flex items-center gap-2">
             {canCorrect && current && (
@@ -118,13 +125,47 @@ export function AnalysisPanel({
           <p className="text-sm text-muted-foreground">لم يُحلَّل هذا المنشور بعد.</p>
         ) : (
           <>
+            {/*
+              التصنيف يتصدّر لا الموقف.
+
+              هو المؤشّر الذي تقيسه السياسة وتعرضه التقارير، والموقف
+              مشتقٌّ منه. وكان الموقف وحده في الصدارة، فيقرأ المراجع
+              «معارض لسياسات الدولة» عن منشور يشكو انقطاع المياه — وهي
+              عبارة أثقل بكثير ممّا في النصّ.
+            */}
             <div className="flex flex-wrap items-center gap-2">
-              <Badge tone={stance!.tone}>{stance!.label}</Badge>
-              <Badge tone={severity!.tone}>{severity!.label}</Badge>
+              <Badge
+                tone={
+                  SENTIMENT_TONE[current.sentiment as keyof typeof SENTIMENT_TONE] ?? 'neutral'
+                }
+              >
+                {SENTIMENT_LABELS[current.sentiment as keyof typeof SENTIMENT_LABELS] ??
+                  current.sentiment}
+              </Badge>
+              {current.isMixed && (
+                <Badge tone="warning" size="sm">
+                  محتوى مختلط
+                </Badge>
+              )}
+              {current.isRelayedCriticism && (
+                <Badge tone="info" size="sm">
+                  نقل نقد
+                </Badge>
+              )}
+              <Badge tone={stance!.tone} size="sm">
+                {stance!.label}
+              </Badge>
+              <Badge tone={severity!.tone} size="sm">
+                {severity!.label}
+              </Badge>
               <span className="num text-xs text-muted-foreground">
                 الثقة {Math.round(current.confidence * 100)}%
               </span>
             </div>
+
+            <p className="text-2xs leading-relaxed text-subtle-foreground">
+              {STANCE_METRIC.caveat}
+            </p>
 
             {/*
               تنبيه الثقة المنخفضة صريح لا مضمر في رقم.
@@ -134,6 +175,13 @@ export function AnalysisPanel({
               <p className="flex items-start gap-2 rounded-md border border-warning/25 bg-warning-soft px-3 py-2 text-xs text-warning">
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
                 ثقة منخفضة — هذا التصنيف ترجيح لا نتيجة، ويحتاج قراءة بشرية.
+              </p>
+            )}
+
+            {current.reviewReason && (
+              <p className="flex items-start gap-2 rounded-md border border-warning/25 bg-warning-soft px-3 py-2 text-xs text-warning">
+                <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
+                {current.reviewReason}
               </p>
             )}
 
@@ -158,10 +206,41 @@ export function AnalysisPanel({
               </div>
             )}
 
+            {(current.target || current.subject) && (
+              <dl className="grid gap-x-4 gap-y-1.5 text-sm sm:grid-cols-[auto_1fr]">
+                {current.target && (
+                  <>
+                    <dt className="text-xs font-medium text-muted-foreground">الجهة المستهدفة</dt>
+                    <dd className="text-foreground">{current.target}</dd>
+                  </>
+                )}
+                {current.subject && (
+                  <>
+                    <dt className="text-xs font-medium text-muted-foreground">الموضوع</dt>
+                    <dd className="text-foreground">{current.subject}</dd>
+                  </>
+                )}
+              </dl>
+            )}
+
             <div>
-              <p className="mb-1 text-xs font-medium text-muted-foreground">التعليل</p>
+              <p className="mb-1 text-xs font-medium text-muted-foreground">سبب التصنيف</p>
               <p className="text-sm leading-relaxed text-foreground">{current.rationale}</p>
             </div>
+
+            {/*
+              الدليل مقتطفٌ حرفيّ تُحقَّق مطابقتُه لنصّ المنشور قبل الحفظ.
+              وما لم يطابق لا يصل إلى هنا أصلاً — فما يُعرض بين قوسين
+              مقروءٌ في المنشور لا مصوغٌ من النموذج.
+            */}
+            {current.evidence && (
+              <div>
+                <p className="mb-1 text-xs font-medium text-muted-foreground">الدليل من النصّ</p>
+                <blockquote className="border-s-2 border-primary/40 ps-3 text-sm leading-relaxed text-foreground">
+                  «{current.evidence}»
+                </blockquote>
+              </div>
+            )}
 
             {current.themes.length > 0 && (
               <div>

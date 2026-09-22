@@ -4,7 +4,12 @@ import { prisma } from '@/lib/db';
 import { buildPostWhere } from '@/lib/queries/posts';
 import { getBreakdowns, getOverviewStats, getTopAccounts } from '@/lib/queries/stats';
 import type { PostFilters } from '@/lib/validation/posts';
-import { POST_TYPE_LABELS, SENTIMENT_LABELS, languageLabel } from '@/lib/domain/constants';
+import {
+  POST_TYPE_LABELS,
+  SENTIMENT_LABELS,
+  STANCE_METRIC,
+  languageLabel,
+} from '@/lib/domain/constants';
 import type { AccountScope } from '@/lib/auth/account-scope';
 import { DATE_RANGES } from '@/lib/domain/constants';
 
@@ -95,7 +100,7 @@ export async function buildPostsWorkbook(
     { header: 'النوع', key: 'type', width: 12 },
     { header: 'اللغة', key: 'language', width: 12 },
     { header: 'الدولة', key: 'country', width: 14 },
-    { header: 'المشاعر', key: 'sentiment', width: 12 },
+    { header: STANCE_METRIC.compact, key: 'sentiment', width: 12 },
     { header: 'التصنيف', key: 'topic', width: 16 },
     { header: 'إعجابات', key: 'likes', width: 11 },
     { header: 'تعليقات', key: 'comments', width: 11 },
@@ -190,7 +195,7 @@ export async function buildPostsWorkbook(
   }
   for (const row of breakdowns.bySentiment) {
     breakdownSheet.addRow({
-      group: 'حسب المشاعر',
+      group: `حسب ${STANCE_METRIC.short}`,
       item: SENTIMENT_LABELS[row.sentiment] ?? row.sentiment,
       posts: row.posts,
     });

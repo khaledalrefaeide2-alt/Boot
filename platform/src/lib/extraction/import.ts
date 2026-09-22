@@ -1,6 +1,5 @@
 import 'server-only';
 import { prisma } from '@/lib/db';
-import { analyzeSentiment } from '@/lib/analysis/sentiment';
 import { classifyTopic, detectKeywords, parseTopicRules } from '@/lib/analysis/classify';
 import { normalizeArabic } from '@/lib/analysis/text';
 import type { MappedPost } from '@/lib/apify/mappers';
@@ -19,7 +18,6 @@ export interface ImportResult {
   fetchedTo: Date | null;
   /** أعلى منشور تفاعلاً في هذه الدفعة — لتنبيه التفاعل المرتفع */
   topPost: { id: string; engagement: number; text: string | null } | null;
-  sentimentCounts: { positive: number; negative: number; neutral: number; unknown: number };
   matchedAlertKeywords: string[];
   followersCount: number | null;
   /** آخر صورة حساب رآها الاستيراد — تُحدَّث على الحساب لا على المنشور */
@@ -85,7 +83,6 @@ export async function importPosts(
     fetchedFrom: null,
     fetchedTo: null,
     topPost: null,
-    sentimentCounts: { positive: 0, negative: 0, neutral: 0, unknown: 0 },
     matchedAlertKeywords: [],
     followersCount: null,
     authorAvatarUrl: null,
@@ -147,7 +144,6 @@ export async function importPosts(
       }
 
       const engagementTotal = post.likes + post.comments + post.shares + post.saves;
-      const sentiment = analyzeSentiment(post.text);
       const matchedKeywords = detectKeywords(post.text, analysis.keywords);
       const topic = classifyTopic(post.text, analysis.topicRules);
 
@@ -188,14 +184,18 @@ export async function importPosts(
 
       if (existing) {
         // المنشور موجود — نحدّث أرقام التفاعل والتحليل فقط ولا نعيد إنشاءه
+        /*
+         * إعادة الاستخراج تحدّث الأرقام ولا تمسّ التصنيف.
+         *
+         * وكانت تكتب `sentimentSource: 'RULES'` فوق كل شيء، فكل استخراج
+         * تالٍ يمحو ما كتبه الذكاء الاصطناعي وما صحّحه مراجعٌ بشريّ معاً:
+         * تُدفع كلفة جولة تحليل كاملة ثم يمحوها استخراجٌ دوريّ بعد ساعة،
+         * ولا يظهر ذلك في أيّ سجلّ. الأرقام تتغيّر مع الوقت — والتصنيف
+         * حكمٌ على نصٍّ لم يتغيّر.
+         */
         const updated = await prisma.post.update({
           where: { id: existing.id },
-          data: {
-            ...data,
-            sentiment: sentiment.sentiment,
-            sentimentScore: sentiment.score,
-            sentimentSource: 'RULES',
-          },
+          data,
           select: { id: true },
         });
         postId = updated.id;
@@ -207,9 +207,18 @@ export async function importPosts(
             accountId: context.accountId,
             platformId: context.platformId,
             dedupeKey: post.dedupeKey,
-            sentiment: sentiment.sentiment,
-            sentimentScore: sentiment.score,
-            sentimentSource: 'RULES',
+            /*
+             * المنشور الجديد يدخل بلا تصنيف — UNKNOWN بحكم المخطّط.
+             *
+             * وكان يُصنَّف هنا بمحرّك كلمات مفتاحية يقيس نبرة النصّ، وهو
+             * محورٌ آخر غير الذي تقيسه السياسة. فـ«افتتاح» كانت تجعل الخبر
+             * إيجابياً و«حادث» تجعله سلبياً، والسياسة تنصّ على عكس
+             * الاثنين: لا افتتاحٌ إيجابيّ بلا إشادة، ولا ذكرُ حادثٍ سلبيّ
+             * بلا نقد. ووسمُ منشورٍ بمعيارٍ ثم عرضُه تحت اسم معيارٍ آخر
+             * خطأٌ لا يكتشفه أحد، لأن الرقم يبدو معقولاً دائماً.
+             *
+             * فيبقى «غير محسوم» حتى تشمله جولة تحليل من /admin/analysis.
+             */
             ...(topic ? { topicId: topic.topicId, topicSource: 'RULES' as const } : {}),
           },
           select: { id: true },
@@ -250,11 +259,6 @@ export async function importPosts(
       }
 
       result.publishedDates.push(post.publishedAt);
-
-      if (sentiment.sentiment === 'POSITIVE') result.sentimentCounts.positive += 1;
-      else if (sentiment.sentiment === 'NEGATIVE') result.sentimentCounts.negative += 1;
-      else if (sentiment.sentiment === 'UNKNOWN') result.sentimentCounts.unknown += 1;
-      else result.sentimentCounts.neutral += 1;
 
       if (!result.topPost || engagementTotal > result.topPost.engagement) {
         result.topPost = { id: postId, engagement: engagementTotal, text: post.text };

@@ -8,6 +8,7 @@ import {
   SENTIMENT_COLORS,
   seriesColor,
 } from './chart-kit';
+import { STANCE_METRIC } from '@/lib/domain/constants';
 import { formatNumber, formatPercent } from '@/lib/utils';
 
 /**
@@ -144,11 +145,11 @@ export function DonutChart({
   );
 }
 
-/** توزيع المشاعر — ألوان حالة محجوزة مع تسميات عربية دائماً */
+/** توزيع الموقف من الجهات والخدمات — ألوان حالة محجوزة مع تسميات عربية دائماً */
 export function SentimentChart({
   data,
   labels,
-  title = 'المشاعر العامة',
+  title = STANCE_METRIC.full,
   description,
 }: {
   data: { sentiment: string; posts: number }[];

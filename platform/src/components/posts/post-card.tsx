@@ -13,6 +13,7 @@ import {
   POST_TYPE_LABELS,
   SENTIMENT_LABELS,
   SENTIMENT_TONE,
+  STANCE_METRIC,
   languageLabel,
 } from '@/lib/domain/constants';
 import { formatCompactNumber, formatDateTime, formatNumber, truncate } from '@/lib/utils';
@@ -249,7 +250,7 @@ export function PostTableHead() {
         <TH>الحساب</TH>
         <TH>المنصة</TH>
         <TH>النوع</TH>
-        <TH>المشاعر</TH>
+        <TH>{STANCE_METRIC.compact}</TH>
         <TH>تاريخ النشر</TH>
         <TH>إعجابات</TH>
         <TH>تعليقات</TH>

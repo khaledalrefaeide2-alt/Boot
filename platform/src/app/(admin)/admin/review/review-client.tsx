@@ -17,7 +17,7 @@ import { useToast } from '@/components/ui/toast';
 import { FilterBar, EMPTY_FILTERS, filtersToParams, type PostFilterState } from '@/components/filters/filter-bar';
 import { useFilterOptions, EMPTY_OPTIONS } from '@/lib/hooks/use-filters';
 import { api, ApiClientError, buildQuery } from '@/lib/api-client';
-import { SENTIMENT_LABELS, SENTIMENT_TONE } from '@/lib/domain/constants';
+import { SENTIMENT_LABELS, SENTIMENT_TONE, STANCE_METRIC } from '@/lib/domain/constants';
 import { formatDateTime, formatNumber, truncate } from '@/lib/utils';
 import type { PostListItemView } from '@/components/posts/post-card';
 import type { Sentiment } from '@/generated/prisma';
@@ -74,7 +74,7 @@ export function ReviewClient() {
     <>
       <PageHeader
         title="مراجعة البيانات"
-        description="تصحيح التصنيف والمشاعر، وإخفاء أو حذف المنشورات غير الصالحة"
+        description="تصحيح الموقف والتصنيف، وإخفاء أو حذف المنشورات غير الصالحة"
       />
 
       <Alert tone="info" className="mb-4">
@@ -110,7 +110,7 @@ export function ReviewClient() {
                     <TH>الحساب</TH>
                     <TH>التاريخ</TH>
                     <TH>التفاعل</TH>
-                    <TH>المشاعر</TH>
+                    <TH>{STANCE_METRIC.compact}</TH>
                     <TH>التصنيف</TH>
                     <TH className="text-end">إجراءات</TH>
                   </TR>
@@ -143,7 +143,7 @@ export function ReviewClient() {
                               data: { sentiment: event.target.value as Sentiment },
                             })
                           }
-                          aria-label="تعديل المشاعر"
+                          aria-label="تعديل الموقف"
                         >
                           {Object.entries(SENTIMENT_LABELS).map(([value, label]) => (
                             <option key={value} value={value}>

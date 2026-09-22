@@ -1,4 +1,5 @@
 import 'server-only';
+import { STANCE_METRIC } from '@/lib/domain/constants';
 import type { AssistantContext, RetrievedPost } from './types';
 
 /*
@@ -45,7 +46,7 @@ function formatPost(post: RetrievedPost, index: number): string {
   const parts = [
     `[${index + 1}] الحساب: ${post.accountName} (${post.platformName})`,
     `التاريخ: ${formatDate(post.publishedAt)}`,
-    `المشاعر: ${SENTIMENT_LABELS[post.sentiment] ?? post.sentiment}`,
+    `${STANCE_METRIC.compact}: ${SENTIMENT_LABELS[post.sentiment] ?? post.sentiment}`,
     `التفاعل: ${post.engagementTotal}`,
     `النص: ${post.chunkText}`,
   ];
@@ -67,7 +68,7 @@ export function buildContextBlock(context: AssistantContext): string {
     `## أرقام الفترة
 إجمالي المنشورات: ${snapshot.totalPosts}
 إجمالي التفاعل: ${snapshot.totalEngagement}
-توزيع المشاعر: ${sentiment || 'لا توجد بيانات'}`,
+توزيع ${STANCE_METRIC.short}: ${sentiment || 'لا توجد بيانات'}`,
   ];
 
   if (snapshot.topTopics.length > 0) {

@@ -11,6 +11,7 @@ import {
   POST_TYPE_LABELS,
   SENTIMENT_LABELS,
   LANGUAGE_LABELS,
+  STANCE_METRIC,
 } from '@/lib/domain/constants';
 
 export interface PostFilterState {
@@ -254,7 +255,7 @@ export function FilterBar({
           </Select>
 
           <Select
-            label="المشاعر"
+            label={STANCE_METRIC.compact}
             value={filters.sentiment}
             onChange={(event) => set('sentiment', event.target.value)}
           >

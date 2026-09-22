@@ -143,9 +143,7 @@ async function main() {
     console.log(
       `الاستيراد: ${imported.saved} جديد، ${imported.updated} محدّث، ${imported.failed} فاشل`,
     );
-    console.log(
-      `المشاعر: إيجابي ${imported.sentimentCounts.positive} | سلبي ${imported.sentimentCounts.negative} | محايد ${imported.sentimentCounts.neutral} | غير محدد ${imported.sentimentCounts.unknown}`,
-    );
+    // التصنيف لا يحدث في الاستيراد — يأتي من جولة تحليل مستقلّة
     if (imported.topPost) console.log(`أعلى تفاعل: ${imported.topPost.engagement}`);
     if (imported.followersCount) console.log(`المتابعون: ${imported.followersCount}`);
 

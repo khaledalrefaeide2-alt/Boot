@@ -31,14 +31,14 @@ interface Guidance {
 const SCOPES = [
   { value: 'GENERAL', label: 'عام' },
   { value: 'STANCE', label: 'الموقف' },
-  { value: 'SENTIMENT', label: 'المشاعر' },
+  { value: 'SENTIMENT', label: 'الموقف من الجهات والخدمات' },
   { value: 'RISK', label: 'إشارات المحتوى الضارّ' },
 ];
 
 const SCOPE_LABEL: Record<string, string> = {
   GENERAL: 'عام',
   STANCE: 'الموقف',
-  SENTIMENT: 'المشاعر',
+  SENTIMENT: 'الموقف من الجهات والخدمات',
   RISK: 'إشارات المحتوى الضارّ',
 };
 

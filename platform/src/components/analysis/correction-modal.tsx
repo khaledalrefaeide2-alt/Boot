@@ -8,6 +8,7 @@ import { Select, Textarea } from '@/components/ui/field';
 import { Alert } from '@/components/ui/alert';
 import { useToast } from '@/components/ui/toast';
 import { api, ApiClientError } from '@/lib/api-client';
+import { STANCE_METRIC } from '@/lib/domain/constants';
 
 const STANCE = [
   { value: 'SUPPORTIVE', label: 'مؤيّد لسياسات الدولة' },
@@ -17,12 +18,19 @@ const STANCE = [
   { value: 'UNCLEAR', label: 'غير واضح' },
 ];
 
+/*
+ * «مختلط» ليس خياراً هنا.
+ *
+ * السياسة تحسمه: ما جمع مدحاً ونقداً سلبيٌّ بعلامة «محتوى مختلط»، لا
+ * صنفٌ ثالث. وتركُه في القائمة يجعل المراجع يصحّح إلى قيمة لا يقبلها
+ * النموذج ولا تعرفها التقارير، فيختلف الإنسان والآلة على منشورٍ واحد
+ * بمعيارين — وهو أسوأ ممّا يصلحه التصحيح.
+ */
 const SENTIMENT = [
   { value: 'POSITIVE', label: 'إيجابي' },
   { value: 'NEGATIVE', label: 'سلبي' },
   { value: 'NEUTRAL', label: 'محايد' },
-  { value: 'MIXED', label: 'مختلط' },
-  { value: 'UNKNOWN', label: 'غير محدّد' },
+  { value: 'UNKNOWN', label: 'غير محسوم' },
 ];
 
 const RISK = [
@@ -130,10 +138,10 @@ export function CorrectionModal({
         </Select>
 
         <Select
-          label="المشاعر الصحيحة"
+          label={`${STANCE_METRIC.compact} الصحيح`}
           value={sentiment}
           onChange={(event) => setSentiment(event.target.value)}
-          hint="اتركه فارغاً إن كانت المشاعر صحيحة"
+          hint="اتركه فارغاً إن كان التصنيف صحيحاً"
         >
           <option value="">— بلا تغيير —</option>
           {SENTIMENT.map((item) => (

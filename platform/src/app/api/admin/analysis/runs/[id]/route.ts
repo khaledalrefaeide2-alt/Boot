@@ -21,6 +21,7 @@ const RUN_SELECT = {
   total: true,
   done: true,
   failed: true,
+  negative: true,
   review: true,
   flagged: true,
   errorMessage: true,

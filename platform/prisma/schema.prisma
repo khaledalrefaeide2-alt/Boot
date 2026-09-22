@@ -1089,6 +1089,28 @@ model PostAnalysis {
   /// تعليل مختصر بالعربية يشرح سبب التصنيف، فيُراجَع الحكم لا يُقبل وحده
   rationale String
 
+  /// الجهة المستهدفة — مؤسسة أو مسؤول أو خدمة، كما وردت في النصّ
+  target String?
+
+  /// الموضوع في كلمات قليلة
+  subject String?
+
+  /**
+   * الدليل — مقتطف حرفيّ من المنشور يحمل التصنيف.
+   * يُطابَق بنصّ المنشور قبل الحفظ، وما لا يطابق لا يُكتب: مراجعٌ يقرأ
+   * اقتباساً بين قوسين يصدّقه، فالمقتطف المختلَق ضررٌ صافٍ لا فائدة ناقصة.
+   */
+  evidence String?
+
+  /// جمع بين مدح ونقد — والتصنيف العام سلبيّ وفق السياسة
+  isMixed Boolean @default(false)
+
+  /// ينقل نقد غيره بلا تبنٍّ ولا ردّ — والتصنيف العام محايد
+  isRelayedCriticism Boolean @default(false)
+
+  /// سبب الحاجة إلى المراجعة البشرية، إن وُجد
+  reviewReason String?
+
   /// الموضوعات المكتشفة في النصّ
   themes String[] @default([])
 
@@ -1111,6 +1133,7 @@ model PostAnalysis {
   @@index([stance])
   @@index([riskSeverity])
   @@index([needsReview])
+  @@index([isMixed])
   @@map("post_analyses")
 }
 
@@ -1140,9 +1163,12 @@ model AnalysisRun {
   /// هل تُعاد المحلَّلة سابقاً أم تُتخطّى؟
   reanalyze Boolean @default(false)
 
-  total   Int @default(0)
-  done    Int @default(0)
-  failed  Int @default(0)
+  total    Int @default(0)
+  done     Int @default(0)
+  failed   Int @default(0)
+  /// منشورات صُنّفت سلبيةً وفق السياسة — منها يُحسب إنذار ارتفاع السلبية
+  negative Int @default(0)
+
   /// منشورات رُفعت للمراجعة لانخفاض ثقة النموذج
   review  Int @default(0)
   /// منشورات حملت إشارة خطر

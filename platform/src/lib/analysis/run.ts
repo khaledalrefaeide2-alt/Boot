@@ -5,6 +5,8 @@ import { buildPostWhere } from '@/lib/queries/posts';
 import { postFiltersSchema, type PostFilters } from '@/lib/validation/posts';
 import type { AccountScope } from '@/lib/auth/account-scope';
 import { enqueueAnalysis, removeAnalysisJob } from '@/lib/queue';
+import { notifyOperators } from '@/lib/notifications';
+import { getOperationalSettings } from '@/lib/settings';
 import { analyzeAndSave } from './persist';
 
 /*
@@ -260,8 +262,44 @@ export async function cancelAnalysisRun(runId: string): Promise<boolean> {
 interface Counters {
   done: number;
   failed: number;
+  negative: number;
   review: number;
   flagged: number;
+}
+
+/** أقلّ عدد محلَّل يُبنى عليه إنذار — نسبةٌ من ثلاثة منشورات ليست ظاهرة */
+const ALERT_MIN_SAMPLE = 5;
+
+/**
+ * إنذار ارتفاع السلبية — بعد الجولة لا بعد الاستيراد.
+ *
+ * كان يُحسب عند الاستيراد من تصنيفٍ يضعه محرّك كلمات مفتاحية يقيس نبرة
+ * النصّ، فيُنذر لأن الدفعة ذكرت «حادث» و«تأخير» لا لأن فيها نقداً
+ * للجهات. وهنا يُحسب من تصنيفٍ وضعته السياسة على منشورات قرأها النموذج،
+ * فالرقم يعني ما يقوله.
+ *
+ * ولا يُفشل الجولة إن تعثّر: الجولة انتهت وحُفظت، والإنذار خدمةٌ فوقها.
+ */
+async function raiseNegativeAlert(runId: string, counters: Counters): Promise<void> {
+  try {
+    if (counters.done < ALERT_MIN_SAMPLE) return;
+
+    const settings = await getOperationalSettings();
+    const ratio = counters.negative / counters.done;
+    if (ratio < settings.negativeSentimentRatio) return;
+
+    await notifyOperators({
+      type: 'NEGATIVE_SENTIMENT_SPIKE',
+      severity: 'WARNING',
+      title: 'ارتفاع في المنشورات السلبية تجاه الجهات والخدمات',
+      body: `${counters.negative} من ${counters.done} منشوراً صُنّفت سلبيةً في هذه الجولة (${Math.round(ratio * 100)}%).`,
+      link: '/admin/analysis',
+      entityType: 'analysis_run',
+      entityId: runId,
+    });
+  } catch (error) {
+    console.error('[analysis] تعذّر رفع إنذار السلبية:', error);
+  }
 }
 
 /** كتابة العدّادات — كل خمسة منشورات وفي نهاية كل دفعة */
@@ -291,7 +329,7 @@ export async function executeAnalysisRun(runId: string): Promise<void> {
     data: { status: 'RUNNING', startedAt: new Date() },
   });
 
-  const counters: Counters = { done: 0, failed: 0, review: 0, flagged: 0 };
+  const counters: Counters = { done: 0, failed: 0, negative: 0, review: 0, flagged: 0 };
   let consecutiveFailures = 0;
   let cursor: string | undefined;
   let stopReason: string | null = null;
@@ -338,6 +376,7 @@ export async function executeAnalysisRun(runId: string): Promise<void> {
           const result = await analyzeAndSave(post.id, text);
           counters.done += 1;
           consecutiveFailures = 0;
+          if (result.sentiment === 'NEGATIVE') counters.negative += 1;
           if (result.needsReview) counters.review += 1;
           if (result.riskFlags.length > 0) counters.flagged += 1;
         } catch (error) {
@@ -377,6 +416,8 @@ export async function executeAnalysisRun(runId: string): Promise<void> {
         finishedAt: new Date(),
       },
     });
+
+    if (!stopReason) await raiseNegativeAlert(runId, counters);
   } catch (error) {
     const message = error instanceof Error ? error.message : 'خطأ غير متوقّع';
     console.error('[analysis] فشلت الجولة:', message);

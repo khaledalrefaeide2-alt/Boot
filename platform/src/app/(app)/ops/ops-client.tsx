@@ -10,7 +10,7 @@ import { TimelineChart } from '@/components/charts/timeline-chart';
 import { ComparisonBars, SentimentChart } from '@/components/charts/distribution-charts';
 import { api, buildQuery } from '@/lib/api-client';
 import { formatCompactNumber, formatDateTime, formatNumber, truncate } from '@/lib/utils';
-import { SENTIMENT_LABELS } from '@/lib/domain/constants';
+import { SENTIMENT_LABELS, STANCE_METRIC } from '@/lib/domain/constants';
 
 /** فترة التحديث التلقائي لشاشة العرض */
 const REFRESH_MS = 60_000;
@@ -163,7 +163,7 @@ export function OpsRoomClient() {
               <SentimentChart
                 data={breakdowns.data?.bySentiment ?? []}
                 labels={SENTIMENT_LABELS}
-                title="المشاعر العامة"
+                title={STANCE_METRIC.full}
               />
             </div>
 

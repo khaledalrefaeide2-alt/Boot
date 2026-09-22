@@ -69,6 +69,7 @@ export async function GET(request: NextRequest) {
         total: true,
         done: true,
         failed: true,
+        negative: true,
         review: true,
         flagged: true,
         errorMessage: true,
