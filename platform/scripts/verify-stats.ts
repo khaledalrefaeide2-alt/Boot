@@ -40,22 +40,56 @@ const entries = [...columnsBlock.matchAll(/(\d+):\s*'([^']+)'/g)];
 check('جدول الأعمدة موجود', entries.length > 0, `${entries.length} مدخلاً`);
 
 /*
- * المقيس هو أوسع نقطة توقّف وحدها.
+ * لا فجوة في آخر صفّ — عند كل نقطة توقّف لا عند الأوسع وحدها.
  *
- * هي الشاشة التي اشتُكي منها: صفٌّ أخير فيه بطاقتان وفجوة بعرض نصف الشاشة.
- * أما النقاط الأضيق فبعضُ الأعداد لا يقبل القسمة عليها أصلاً — خمس بطاقات
- * لا تنقسم على ثلاثة أعمدة مهما رُتّبت — وصفٌّ أخير ناقصُ بطاقة على لوح
- * ليس عطباً بل حدّ الرياضيات.
+ * الحساب: (العدد − 1 + امتداد الأخيرة) يقبل القسمة على الأعمدة. فالبطاقة
+ * الأخيرة تُمدّ لتملأ ما بقي حين لا ينقسم العدد — والسبعةُ لا تنقسم على
+ * شيء، فلا سبيل غيره.
+ *
+ * ونقاط التوقّف تتوارث: ما لم يُعلَن عند نقطةٍ يبقى على قيمته من أصغرها.
  */
-for (const [, countRaw, classes] of entries) {
+const BREAKPOINTS = ['base', 'sm', 'md', 'lg', 'xl', '2xl'] as const;
+
+function valueAt(classes: string, pattern: RegExp, fallback: number): Map<string, number> {
+  const resolved = new Map<string, number>();
+  let current = fallback;
+  for (const bp of BREAKPOINTS) {
+    const prefix = bp === 'base' ? '' : `${bp}:`;
+    const match = classes.match(
+      new RegExp(`(?:^|\\s)${prefix.replace(':', '\\:')}${pattern.source}`),
+    );
+    if (match?.[1]) current = Number(match[1]);
+    resolved.set(bp, current);
+  }
+  return resolved;
+}
+
+for (const [, countRaw, classesRaw] of entries) {
   const count = Number(countRaw);
-  const columns = [...(classes ?? '').matchAll(/grid-cols-(\d+)/g)].map((m) => Number(m[1]));
-  const widest = columns[columns.length - 1] ?? 0;
+  const classes = classesRaw ?? '';
+  const columns = valueAt(classes, /grid-cols-(\d+)/, 1);
+  const spans = valueAt(classes, /\[&>\*\:last-child\]\:col-span-(\d+)/, 1);
+
+  const broken: string[] = [];
+  for (const bp of BREAKPOINTS) {
+    const cols = columns.get(bp) ?? 1;
+    const span = Math.min(spans.get(bp) ?? 1, cols);
+    if ((count - 1 + span) % cols !== 0) broken.push(`${bp}: ${cols} عمود`);
+  }
+
   check(
-    `${count} بطاقة: أوسع شاشة تعرضها في صفٍّ منظّم`,
-    widest > 0 && count % widest === 0,
-    `الأعمدة ${columns.join(' ← ')} — الأوسع ${widest}`,
+    `${count} بطاقة: لا فجوة في آخر صفّ عند أي عرض`,
+    broken.length === 0,
+    broken.length > 0
+      ? broken.join('، ')
+      : [...new Set(BREAKPOINTS.map((bp) => columns.get(bp)))].join(' ← ') + ' عمود',
   );
+
+  /*
+   * سقف الأعمدة خمسة: ما فوقها يقصّ الاسم العربي والرقم معاً.
+   */
+  const widest = Math.max(...BREAKPOINTS.map((bp) => columns.get(bp) ?? 1));
+  check(`${count} بطاقة: لا تتجاوز خمسة أعمدة`, widest <= 5, `الأوسع ${widest}`);
 }
 
 /*
@@ -130,7 +164,18 @@ check(`كل بطاقة تحمل أيقونة (${cards} بطاقة)`, iconless.le
 check('الأيقونات معرّفة في خريطة واحدة', SOURCE.includes('export const METRIC_ICONS'));
 check('الرقم بخانات متساوية العرض', SOURCE.includes('tabular-nums'));
 check('البطاقة أفقية مضغوطة', /items-center gap-2\.5[^']*px-3\.5 py-3/.test(SOURCE));
-check('الاسم بالحدّ الأدنى للعربية (12px)', SOURCE.includes('className="eyebrow truncate"'));
+check('الاسم بالحدّ الأدنى للعربية (12px)', SOURCE.includes('className="eyebrow line-clamp-2"'));
+/*
+ * فحصان على القصّ، وهما سبب هذه المراجعة كلها.
+ *
+ * «معدل التف…» و«4.3 ن…» كانتا على الشاشة فعلاً: الاسم يُقصّ فيصير لغزاً،
+ * والرقم يُقصّ فيصير كذباً.
+ */
+check('الاسم يلتفّ ولا يُقصّ', /className="eyebrow line-clamp-2" title=\{label\}/.test(SOURCE));
+check(
+  'الرقم لا يُقصّ أبداً',
+  SOURCE.includes("'num whitespace-nowrap text-lg") && !/num truncate/.test(SOURCE),
+);
 
 console.log('\n>> فحص شريط المقاييس\n');
 let failed = 0;

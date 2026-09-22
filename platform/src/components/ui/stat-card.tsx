@@ -124,15 +124,29 @@ export function StatCard({
         </span>
       )}
       <div className="min-w-0 flex-1">
-        <p className="eyebrow truncate">{label}</p>
         {/*
-          التتبّع السالب آمن على الرقم بلا تحفّظ — الأرقام لاتينية منفصلة
-          لا حروفاً عربية متصلة. و tabular-nums يُبقي خانات الأرقام على عرض
-          واحد، فلا يرقص الرقم بين تحديثين.
+          الاسم يلتفّ سطرين ولا يُقصّ.
+
+          «معدل التف…» ليست تسميةً بل لغزاً: العربية لا تُقرأ ببدايتها كما
+          تُقرأ اللاتينية، والقصُّ فيها يُتلف الكلمة. والالتفاف لا يُغيّر
+          ارتفاع البطاقة لأن الشبكة تُسوّي صفّها كلَّه على أطولها.
+        */}
+        <p className="eyebrow line-clamp-2" title={label}>
+          {label}
+        </p>
+        {/*
+          الرقم لا يُقصّ أبداً.
+
+          كان يُقصّ مع الاسم، فصارت «4.3 مليون» تُعرض «4.3 ن…» — والرقم هو
+          كلّ ما في البطاقة. فإن ضاق المكان فليضِق الاسمُ لا هو.
+
+          والتتبّع السالب آمن عليه بلا تحفّظ — الأرقام لاتينية منفصلة لا
+          حروفاً عربية متصلة. و tabular-nums يُبقي الخانات على عرض واحد،
+          فلا يرقص الرقم بين تحديثين.
         */}
         <p
           className={cn(
-            'num truncate text-lg font-bold leading-tight tracking-[-0.02em] tabular-nums',
+            'num whitespace-nowrap text-lg font-bold leading-tight tracking-[-0.02em] tabular-nums',
             styles.value,
           )}
         >
@@ -155,17 +169,23 @@ export function StatCard({
 /*
  * شبكة المقاييس.
  *
- * عددُ الأعمدة يقسم عددَ البطاقات بلا باقٍ — وهذا هو كلّ الفرق بين صفٍّ
- * منظّم وصفٍّ أخير فيه بطاقتان وفجوة. عشرُ بطاقات على أربعة أعمدة تُخرج
- * 4+4+2؛ وعلى خمسة تُخرج 5+5.
+ * قاعدتان تحكمانها:
+ *
+ * ١) خمسةُ أعمدة سقفاً. عشرُ بطاقات في صفٍّ واحد تُعطي كلَّ بطاقة نحو
+ *    190 بكسل، وهو عرضٌ يقصّ الاسم العربي والرقم معاً — «معدل التف…» و
+ *    «4.3 ن…». والصفّ الواحد ليس غايةً في نفسه: غايته أن يُقرأ، وصفّان
+ *    يُقرآن خيرٌ من صفٍّ لا يُقرأ.
+ *
+ * ٢) لا فجوة في آخر صفّ. الأعمدة تقسم العدد بلا باقٍ، وحين يتعذّر —
+ *    والسبعةُ لا تنقسم على شيء — تمتدّ البطاقة الأخيرة لتملأ ما بقي.
  */
 const COLUMNS: Record<number, string> = {
   4: 'grid-cols-2 lg:grid-cols-4',
-  5: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5',
-  6: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-6',
-  7: 'grid-cols-2 sm:grid-cols-4 xl:grid-cols-7',
-  8: 'grid-cols-2 sm:grid-cols-4 lg:grid-cols-8',
-  10: 'grid-cols-2 sm:grid-cols-5 2xl:grid-cols-10',
+  5: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 [&>*:last-child]:col-span-2 lg:[&>*:last-child]:col-span-1',
+  6: 'grid-cols-2 lg:grid-cols-3',
+  7: 'grid-cols-2 sm:grid-cols-4 [&>*:last-child]:col-span-2',
+  8: 'grid-cols-2 lg:grid-cols-4',
+  10: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 sm:[&>*:last-child]:col-span-3 lg:[&>*:last-child]:col-span-1',
 };
 
 export function StatGrid({
