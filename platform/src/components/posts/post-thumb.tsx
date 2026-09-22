@@ -23,12 +23,15 @@ export function PostThumb({
   src,
   isVideo,
   extraCount = 0,
+  mediaKey,
   className,
 }: {
   postId: string;
   src: string;
   isVideo?: boolean;
   extraCount?: number;
+  /** مفتاح المصغّرة المحفوظة — يُفضَّل على رابط المصدر المنتهي */
+  mediaKey?: string | null;
   /** زوايا الصورة وحدودها تتبع موضعها: ملتصقة بحافة البطاقة أو منزاحة داخلها */
   className?: string;
 }) {
@@ -43,6 +46,7 @@ export function PostThumb({
     >
       <RemoteMedia
         src={src}
+        mediaKey={mediaKey}
         className="h-full w-full transition-transform duration-500 ease-out group-hover:scale-[1.04]"
       />
 

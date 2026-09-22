@@ -80,7 +80,10 @@ COPY docker-entrypoint.sh /usr/local/bin/docker-entrypoint.sh
 # تجريد أحرف CR التي يضيفها Git على ويندوز — بدونها تفشل نقطة الدخول داخل الحاوية
 RUN sed -i 's/\r$//' /usr/local/bin/docker-entrypoint.sh \
   && chmod +x /usr/local/bin/docker-entrypoint.sh \
-  && mkdir -p /app/exports && chown -R nextjs:nodejs /app/exports
+  && mkdir -p /app/exports && chown -R nextjs:nodejs /app/exports \
+  # مخزن المصغّرات يُنشأ هنا مملوكاً للمستخدم: مجلّد يركّبه Docker ولا وجود
+  # له في الصورة يُنشأ مملوكاً للجذر، فتعجز الحاوية عن الكتابة فيه صامتةً
+  && mkdir -p /app/media && chown -R nextjs:nodejs /app/media
 
 USER nextjs
 

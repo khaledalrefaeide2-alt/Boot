@@ -68,6 +68,8 @@ services:
       APIFY_TOKEN: ${APIFY_TOKEN:-}
       APIFY_API_BASE: ${APIFY_API_BASE:-https://api.apify.com/v2}
       APIFY_MAX_ITEMS_HARD_CAP: ${APIFY_MAX_ITEMS_HARD_CAP:-1000}
+      MEDIA_DIR: ${MEDIA_DIR:-/app/media}
+      MEDIA_MAX_MB: ${MEDIA_MAX_MB:-2048}
       APIFY_RUN_TIMEOUT_SECONDS: ${APIFY_RUN_TIMEOUT_SECONDS:-900}
       SEED_OWNER_EMAIL: ${SEED_OWNER_EMAIL:-}
       SEED_OWNER_NAME: ${SEED_OWNER_NAME:-}
@@ -101,6 +103,8 @@ services:
         condition: service_healthy
     volumes:
       - exports_data:/app/exports
+      # مخزن المصغّرات — يكتبه العامل ويقدّمه التطبيق، فيتشاركانه
+      - media_data:/app/media
 
   worker:
     build:
@@ -111,6 +115,8 @@ services:
     restart: unless-stopped
     logging: *logging
     command: ['worker']
+    volumes:
+      - media_data:/app/media
     environment:
       DATABASE_URL: postgresql://${POSTGRES_USER:-monitor}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-monitoring}?schema=public
       REDIS_URL: redis://redis:6379
@@ -119,6 +125,8 @@ services:
       APIFY_TOKEN: ${APIFY_TOKEN:-}
       APIFY_API_BASE: ${APIFY_API_BASE:-https://api.apify.com/v2}
       APIFY_MAX_ITEMS_HARD_CAP: ${APIFY_MAX_ITEMS_HARD_CAP:-1000}
+      MEDIA_DIR: ${MEDIA_DIR:-/app/media}
+      MEDIA_MAX_MB: ${MEDIA_MAX_MB:-2048}
       APIFY_RUN_TIMEOUT_SECONDS: ${APIFY_RUN_TIMEOUT_SECONDS:-900}
       # ── المساعد الذكي (OpenAI) ──
       # يُمرَّر صراحةً كبقيّة الأسرار: ملف .env يُقرأ للاستبدال النصّي
@@ -180,6 +188,7 @@ services:
       retries: 10
 
 volumes:
+  media_data:
   postgres_data:
   redis_data:
   exports_data:

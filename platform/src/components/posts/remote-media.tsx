@@ -22,18 +22,31 @@ type LoadState = 'loading' | 'loaded' | 'failed';
  */
 export function RemoteMedia({
   src,
+  mediaKey,
   className,
   fallback = 'placeholder',
   fallbackLabel = 'تعذّر عرض الوسائط',
 }: {
   src: string;
+  /**
+   * مفتاح المصغّرة المحفوظة عندنا — يُفضَّل على المصدر حين يوجد.
+   *
+   * روابط المنصات موقّعة وتنتهي صلاحيتها، فالمصدر يموت والمصغّرة تبقى.
+   * ويُسقَط إلى المصدر حين لا مصغّرة: منشورٌ استُورد قبل المخزن، أو صورةٌ
+   * تعذّر جلبها.
+   */
+  mediaKey?: string | null;
   className?: string;
   /** `hide` يزيل العنصر كلياً، و`placeholder` يُبقي مكانه محجوزاً */
   fallback?: 'hide' | 'placeholder';
   fallbackLabel?: string;
 }) {
   const [state, setState] = useState<LoadState>('loading');
+  const [useSource, setUseSource] = useState(false);
   const imageRef = useRef<HTMLImageElement>(null);
+
+  const stored = mediaKey ? `/api/media/${mediaKey}` : null;
+  const url = stored && !useSource ? stored : src;
 
   /*
    * الصورة المخزّنة في ذاكرة المتصفح تكتمل قبل أن يربط React مستمع onLoad،
@@ -44,7 +57,22 @@ export function RemoteMedia({
     const image = imageRef.current;
     if (!image?.complete) return;
     setState(image.naturalWidth > 0 ? 'loaded' : 'failed');
-  }, [src]);
+  }, [url]);
+
+  /*
+   * فشلُ المصغّرة ليس فشلاً نهائياً.
+   *
+   * الملف قد يكون حُذف في تنظيف المخزن، والمصدر قد يكون ما زال حيّاً.
+   * فتُجرَّب المرّة الثانية على المصدر قبل أن يُعلن العجز.
+   */
+  const handleError = () => {
+    if (stored && !useSource) {
+      setUseSource(true);
+      setState('loading');
+      return;
+    }
+    setState('failed');
+  };
 
   if (state === 'failed' && fallback === 'hide') return null;
 
@@ -65,13 +93,14 @@ export function RemoteMedia({
         // eslint-disable-next-line @next/next/no-img-element
         <img
           ref={imageRef}
-          src={src}
+          key={url}
+          src={url}
           alt=""
           loading="lazy"
           decoding="async"
           referrerPolicy="no-referrer"
           onLoad={() => setState('loaded')}
-          onError={() => setState('failed')}
+          onError={handleError}
           className={cn(
             'absolute inset-0 h-full w-full object-cover transition-opacity duration-500',
             state === 'loaded' ? 'opacity-100' : 'opacity-0',

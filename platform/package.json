@@ -36,7 +36,9 @@
     "verify:chunks": "tsx scripts/verify-backfill-chunks.ts",
     "verify:buttons": "tsx scripts/verify-buttons.ts",
     "verify:stats": "tsx scripts/verify-stats.ts",
+    "verify:media": "tsx --conditions=react-server scripts/verify-media.ts",
     "avatars:backfill": "tsx --conditions=react-server scripts/backfill-avatars.ts",
+    "media:cache": "tsx --conditions=react-server scripts/cache-media.ts",
     "cleanup:replies": "tsx --conditions=react-server scripts/delete-stored-replies.ts"
   },
   "dependencies": {
@@ -62,6 +64,7 @@
     "react-dom": "19.2.8",
     "recharts": "3.10.1",
     "server-only": "^0.0.1",
+    "sharp": "^0.35.4",
     "tailwind-merge": "3.4.1",
     "tsx": "4.20.6",
     "zod": "4.5.4"

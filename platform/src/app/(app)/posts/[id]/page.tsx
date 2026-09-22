@@ -114,10 +114,19 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
               <p className="text-sm text-subtle-foreground">منشور بلا نص</p>
             )}
 
+            {/*
+              المصغّرة المحفوظة تُنسب إلى الرابط الذي حُفظت منه بعينه —
+              وهو `thumbnailUrl ?? imageUrl` كما في البطاقة. ونسبتُها إلى
+              «الأولى» مهما كانت تعرض صورةً مكان أخرى حين يختلف الترتيب.
+            */}
             <MediaGallery
-              urls={[post.imageUrl, ...mediaUrls]
+              items={[post.imageUrl, ...mediaUrls]
                 .filter((url, index, list): url is string => Boolean(url) && list.indexOf(url) === index)
-                .slice(0, 12)}
+                .slice(0, 12)
+                .map((url) => ({
+                  url,
+                  mediaKey: url === (post.thumbnailUrl ?? post.imageUrl) ? post.mediaKey : null,
+                }))}
             />
 
             {post.videoUrl && (

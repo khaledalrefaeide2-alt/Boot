@@ -13,6 +13,7 @@ import { DEFAULT_ACTORS, buildActorInput } from '@/lib/apify/inputs';
 import { mapApifyItems } from '@/lib/apify/mappers';
 import { importPosts } from './import';
 import { refreshStatsAfterImport } from '@/lib/stats';
+import { cacheRunThumbnails } from '@/lib/media/cache-posts';
 import { notifyOperators } from '@/lib/notifications';
 import { auditSystem, AUDIT_ACTIONS } from '@/lib/audit';
 import { getExcludeReplies, getOperationalSettings } from '@/lib/settings';
@@ -319,6 +320,19 @@ export async function executeExtractionRun(runId: string): Promise<void> {
         })
         .catch(() => undefined);
     }
+
+    /*
+     * المصغّرات تُجلب الآن لا حين تُعرض.
+     *
+     * روابط صور المنصات موقّعة وتنتهي صلاحيتها بعد ساعات إلى أيام، وهذه هي
+     * اللحظة الوحيدة التي يكون فيها الرابط حيّاً بيقين. وتأجيلُها إلى وقت
+     * العرض يعني أرشيفاً بلا صور بعد أسبوع.
+     *
+     * وهي بأفضل جهد: فشلُ صورة — أو المخزن كلّه — لا يُفشل استخراجاً نجح.
+     */
+    await cacheRunThumbnails(run.id).catch((error: unknown) => {
+      console.error('[media] تعذّر حفظ المصغّرات:', error);
+    });
 
     await refreshStatsAfterImport(run.accountId, run.platformId, imported.publishedDates);
 

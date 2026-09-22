@@ -12,9 +12,22 @@ import { RemoteMedia } from '@/components/posts/remote-media';
  * من اليمين إلى اليسار، فالسهم الأيسر ينتقل إلى التالي كما تتوقع العين،
  * لا كما يفعل في الواجهات اللاتينية.
  */
-export function MediaGallery({ urls }: { urls: string[] }) {
+/*
+ * المصغّرة المحفوظة تُعطى للصورة التي حُفظت منها وحدها.
+ *
+ * المخزن يحفظ صورةً واحدة لكل منشور — صورةَ بطاقته — لا ألبومه كلَّه:
+ * منشورٌ بعشر صور يضاعف المساحة عشراً مقابل صورٍ لا تُفتح إلا حين يفتح
+ * المراجع المنشور نفسه. فالأولى تصمد بعد انتهاء الرابط، والبقية تتبع
+ * مصدرها.
+ */
+export interface GalleryItem {
+  url: string;
+  mediaKey?: string | null;
+}
+
+export function MediaGallery({ items }: { items: GalleryItem[] }) {
   const [openIndex, setOpenIndex] = useState<number | null>(null);
-  const total = urls.length;
+  const total = items.length;
 
   const close = useCallback(() => setOpenIndex(null), []);
   const step = useCallback(
@@ -54,9 +67,9 @@ export function MediaGallery({ urls }: { urls: string[] }) {
         النسبة على الزر نفسه لا على الصورة، فتملأ الصورة الخانة دون أشرطة فارغة.
       */}
       <div className={total === 1 ? 'mt-4' : 'mt-4 grid grid-cols-2 gap-2 sm:grid-cols-3'}>
-        {urls.map((url, index) => (
+        {items.map((item, index) => (
           <button
-            key={url}
+            key={item.url}
             type="button"
             onClick={() => setOpenIndex(index)}
             className={`group relative block w-full overflow-hidden rounded-md border border-border transition-colors hover:border-primary focus-visible:border-primary ${
@@ -65,7 +78,8 @@ export function MediaGallery({ urls }: { urls: string[] }) {
             aria-label={`تكبير الصورة ${index + 1} من ${total}`}
           >
             <RemoteMedia
-              src={url}
+              src={item.url}
+              mediaKey={item.mediaKey}
               className="h-full w-full transition-transform duration-500 ease-out group-hover:scale-[1.04]"
             />
           </button>
@@ -122,7 +136,15 @@ export function MediaGallery({ urls }: { urls: string[] }) {
 
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
-            src={urls[openIndex]}
+            /*
+              العارض يفتح المصدر الأصلي حين يوجد: المصغّرة 480 بكسل تكفي
+              الشبكة ولا تكفي تكبيراً على ملء الشاشة. وحين يكون المصدر
+              منتهياً تبقى المصغّرة خيراً من لا شيء.
+            */
+            src={
+              items[openIndex]?.url ??
+              (items[openIndex]?.mediaKey ? `/api/media/${items[openIndex]?.mediaKey}` : '')
+            }
             alt=""
             referrerPolicy="no-referrer"
             className="max-h-[85vh] max-w-[90vw] rounded-lg object-contain shadow-elev-4"

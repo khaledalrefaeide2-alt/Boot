@@ -584,6 +584,16 @@ model Post {
   detectedKeywords String[] @default([])
   hashtags         String[] @default([])
 
+  /**
+   * مفتاح المصغّرة المحفوظة عندنا.
+   * روابط صور فيسبوك موقّعة وتنتهي صلاحيتها بعد ساعات إلى أيام (oh/oe في
+   * الرابط)، فالمنشور القديم يفقد صورته وإن بقي رابطها مخزّناً. فتُجلب
+   * الصورة عند الاستيراد وتُحفظ مصغّرةً، ويبقى هذا مفتاحها.
+   * والمفتاح بصمةُ الرابط لا معرّفُ المنشور: الصورة الواحدة تُشارَك بين
+   * منشورات عدّة، فتُحفظ مرة.
+   */
+  mediaKey String?
+
   /// البيانات الخام من Apify للرجوع إليها عند الحاجة
   rawData Json?
 
@@ -624,6 +634,7 @@ model Post {
   @@index([topicId])
   @@index([isHidden, publishedAt(sort: Desc)])
   @@index([extractionRunId])
+  @@index([mediaKey])
   @@index([text(ops: raw("gin_trgm_ops"))], type: Gin)
   @@index([hashtags], type: Gin)
   @@index([detectedKeywords], type: Gin)

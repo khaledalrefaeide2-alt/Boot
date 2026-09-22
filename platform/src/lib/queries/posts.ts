@@ -107,6 +107,7 @@ export const POST_LIST_SELECT = {
   detectedKeywords: true,
   isHidden: true,
   createdAt: true,
+  mediaKey: true,
   account: { select: { id: true, name: true, url: true, avatarUrl: true } },
   platform: { select: { id: true, name: true, code: true, color: true } },
   topic: { select: { id: true, name: true, color: true } },

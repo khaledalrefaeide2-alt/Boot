@@ -28,6 +28,7 @@ export interface PostListItemView {
   videoUrl: string | null;
   thumbnailUrl: string | null;
   mediaUrls?: string[] | null;
+  mediaKey?: string | null;
   likes: number;
   comments: number;
   shares: number;
@@ -140,6 +141,7 @@ export function PostCard({
           src={post.thumbnailUrl ?? post.imageUrl ?? ''}
           isVideo={Boolean(post.videoUrl) || post.postType === 'VIDEO' || post.postType === 'REEL'}
           extraCount={Math.max(0, (post.mediaUrls?.length ?? 0) - 1)}
+          mediaKey={post.mediaKey}
           className="rounded-xl"
         />
       )}

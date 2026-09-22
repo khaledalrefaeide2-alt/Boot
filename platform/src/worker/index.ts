@@ -5,6 +5,7 @@ import { QUEUE_NAMES, type ExtractionJobData, type MaintenanceJobData } from '@/
 import { executeExtractionRun } from '@/lib/extraction/service';
 import { purgeExpiredSessions } from '@/lib/auth/session';
 import { rebuildAllDailyStats } from '@/lib/stats';
+import { pruneStore } from '@/lib/media/prune';
 import { scheduleDueAccounts } from './scheduler';
 
 /**
@@ -79,6 +80,26 @@ const purgeTimer = setInterval(() => {
   void purgeExpiredSessions().catch(() => undefined);
 }, SESSION_PURGE_INTERVAL_MS);
 
+/*
+ * تنظيف مخزن المصغّرات.
+ *
+ * المخزن ينمو مع كل استخراج ولا ينقص من تلقاء نفسه، وقرصُ الخادم محدود.
+ * فيُقلَّم إلى سقفه كل ستّ ساعات، والأقدمُ وصولاً يُحذف أولاً — والحذف لا
+ * يفقد شيئاً لا رجعة فيه: تُعاد الصورة إن كان رابطها حيّاً، وإلا فقد كان
+ * ميتاً أصلاً.
+ */
+const MEDIA_PRUNE_INTERVAL_MS = 6 * 60 * 60 * 1000;
+const mediaCapBytes = Number(process.env.MEDIA_MAX_MB ?? '2048') * 1024 * 1024;
+const mediaTimer = setInterval(() => {
+  void pruneStore(mediaCapBytes)
+    .then(({ removed, bytes }) => {
+      if (removed > 0) {
+        console.log(`[worker] نُظّف المخزن: حُذف ${removed} ملفاً، وبقي ${Math.round(bytes / 1048576)} ميجابايت`);
+      }
+    })
+    .catch(() => undefined);
+}, MEDIA_PRUNE_INTERVAL_MS);
+
 console.log('');
 console.log('  ⚙️  عامل المهام الخلفية يعمل');
 console.log(`  📥 طابور الاستخراج — تزامن ${CONCURRENCY}`);
@@ -89,6 +110,7 @@ async function shutdown(signal: string): Promise<void> {
   console.log(`\n[worker] إيقاف بأمان بعد إشارة ${signal}…`);
   clearInterval(schedulerTimer);
   clearInterval(purgeTimer);
+  clearInterval(mediaTimer);
   await Promise.allSettled([extractionWorker.close(), maintenanceWorker.close()]);
   process.exit(0);
 }
