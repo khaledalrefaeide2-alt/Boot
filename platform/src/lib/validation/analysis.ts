@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { postFiltersSchema } from './posts';
 
 const stance = z.enum(['SUPPORTIVE', 'OPPOSED', 'NEUTRAL', 'MIXED', 'UNCLEAR']);
 const sentiment = z.enum(['POSITIVE', 'NEGATIVE', 'NEUTRAL', 'MIXED', 'UNKNOWN']);
@@ -47,3 +48,34 @@ export const guidanceSchema = z.object({
 });
 
 export const updateGuidanceSchema = guidanceSchema.partial();
+
+/*
+ * جولة التحليل.
+ *
+ * الفلاتر نفسها التي تحكم شاشة المنشورات، فلا يتعلّم المستخدم لغتين:
+ * ما يراه في القائمة هو ما ستشمله الجولة.
+ */
+export const analysisRunSchema = postFiltersSchema.extend({
+  /*
+   * إعادة تحليل ما حُلّل سابقاً — وإلا فغير المحلَّل وحده.
+   *
+   * ولا تُستعمل `z.coerce.boolean` هنا: هي تقرأ النصّ "false" صحيحاً لأنه
+   * غير فارغ، فتصير الجولة إعادةً للكلّ بينما طُلب عكسُه — وهي كلفةٌ لا
+   * تُسترَدّ. فتُقرأ القيمة منطقيةً، ويُترجَم النصّان وحدهما.
+   */
+  reanalyze: z
+    .union([z.boolean(), z.enum(['true', 'false']).transform((value) => value === 'true')])
+    .default(false),
+  /*
+   * السقف إلزاميّ بقيمة افتراضية متحفّظة.
+   *
+   * كلّ منشور في الجولة استدعاءٌ مدفوع لمزوّد خارجي، وفلترٌ أوسع ممّا قصد
+   * صاحبه يصير فاتورة لا خطأ شاشة. فالسقف يُعرض ويُعدَّل بقصد.
+   */
+  limit: z.coerce.number().int().min(1).max(20_000).default(500),
+});
+
+/** التوجيهات التي التقطها المساعد وتنتظر قراراً */
+export const guidanceListSchema = z.object({
+  source: z.enum(['ALL', 'MANUAL', 'ASSISTANT']).default('ALL'),
+});

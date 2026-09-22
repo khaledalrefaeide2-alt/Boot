@@ -25,13 +25,27 @@ export async function GET() {
     await requirePermission(PERMISSIONS.TAXONOMY_MANAGE);
 
     const guidance = await prisma.analysisGuidance.findMany({
-      orderBy: [{ sortOrder: 'asc' }, { createdAt: 'asc' }],
+      /*
+       * ما ينتظر القرار يتصدّر.
+       *
+       * التوجيه الملتقَط من محادثة يُحفظ معطَّلاً، ولا أثر له حتى يُفعَّل.
+       * ولو رُتّب مع البقية بالترتيب وحده لغرق بين عشرات التوجيهات
+       * المفعّلة، فبقي معطَّلاً لأن أحداً لم يره — لا لأن أحداً رفضه.
+       */
+      orderBy: [
+        { isActive: 'asc' },
+        { source: 'desc' },
+        { sortOrder: 'asc' },
+        { createdAt: 'asc' },
+      ],
       select: {
         id: true,
         scope: true,
         instruction: true,
         isActive: true,
         sortOrder: true,
+        source: true,
+        sourceMessage: true,
         createdAt: true,
         createdBy: { select: { name: true } },
       },

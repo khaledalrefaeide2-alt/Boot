@@ -36,6 +36,9 @@ export const AUDIT_ACTIONS = {
   POST_ANALYZED: 'post.analyzed',
   ANALYSIS_CORRECTED: 'analysis.corrected',
   ANALYSIS_GUIDANCE_CHANGED: 'analysis.guidance_changed',
+  ANALYSIS_GUIDANCE_CAPTURED: 'analysis.guidance_captured',
+  ANALYSIS_RUN_STARTED: 'analysis.run_started',
+  ANALYSIS_RUN_CANCELLED: 'analysis.run_cancelled',
 
   EXTRACTION_STARTED: 'extraction.started',
   EXTRACTION_CANCELLED: 'extraction.cancelled',

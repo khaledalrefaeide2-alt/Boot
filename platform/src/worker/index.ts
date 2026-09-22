@@ -1,8 +1,14 @@
 import 'dotenv/config';
 import { Worker, type Job } from 'bullmq';
 import { bullConnection } from '@/lib/redis';
-import { QUEUE_NAMES, type ExtractionJobData, type MaintenanceJobData } from '@/lib/queue';
+import {
+  QUEUE_NAMES,
+  type AnalysisJobData,
+  type ExtractionJobData,
+  type MaintenanceJobData,
+} from '@/lib/queue';
 import { executeExtractionRun } from '@/lib/extraction/service';
+import { executeAnalysisRun } from '@/lib/analysis/run';
 import { purgeExpiredSessions } from '@/lib/auth/session';
 import { rebuildAllDailyStats } from '@/lib/stats';
 import { pruneStore } from '@/lib/media/prune';
@@ -55,6 +61,27 @@ const maintenanceWorker = new Worker<MaintenanceJobData>(
   { connection: bullConnection, concurrency: 1 },
 );
 
+/*
+ * عامل التحليل — تزامن واحد مهما بلغ WORKER_CONCURRENCY.
+ *
+ * الجولة نفسها متسلسلة داخلياً، وتشغيل جولتين معاً يضاعف الضغط على حدّ
+ * الطلبات لدى المزوّد فتفشل الاثنتان. والجولة الواحدة هي القاعدة أصلاً:
+ * طبقة الإنشاء تمنع الثانية.
+ */
+const analysisWorker = new Worker<AnalysisJobData>(
+  QUEUE_NAMES.ANALYSIS,
+  async (job: Job<AnalysisJobData>) => {
+    console.log(`[worker] تنفيذ جولة تحليل ${job.data.runId}`);
+    await executeAnalysisRun(job.data.runId);
+  },
+  {
+    connection: bullConnection,
+    concurrency: 1,
+    // جولة من آلاف المنشورات تمتدّ ساعة — القفل يجب أن يتجاوزها
+    lockDuration: 90 * 60 * 1000,
+  },
+);
+
 extractionWorker.on('failed', (job, error) => {
   console.error(`[worker] فشلت المهمة ${job?.id}:`, error.message);
 });
@@ -65,6 +92,10 @@ extractionWorker.on('completed', (job) => {
 
 maintenanceWorker.on('failed', (job, error) => {
   console.error(`[worker] فشلت مهمة الصيانة ${job?.id}:`, error.message);
+});
+
+analysisWorker.on('failed', (job, error) => {
+  console.error(`[worker] فشلت جولة التحليل ${job?.id}:`, error.message);
 });
 
 /** فحص دوري للحسابات المستحقة للاستخراج التلقائي وتنظيف الجلسات */
@@ -103,6 +134,7 @@ const mediaTimer = setInterval(() => {
 console.log('');
 console.log('  ⚙️  عامل المهام الخلفية يعمل');
 console.log(`  📥 طابور الاستخراج — تزامن ${CONCURRENCY}`);
+console.log('  🧠 طابور التحليل — جولة واحدة في الوقت الواحد');
 console.log('  🕒 فحص الجدولة كل دقيقة');
 console.log('');
 
@@ -111,7 +143,11 @@ async function shutdown(signal: string): Promise<void> {
   clearInterval(schedulerTimer);
   clearInterval(purgeTimer);
   clearInterval(mediaTimer);
-  await Promise.allSettled([extractionWorker.close(), maintenanceWorker.close()]);
+  await Promise.allSettled([
+    extractionWorker.close(),
+    maintenanceWorker.close(),
+    analysisWorker.close(),
+  ]);
   process.exit(0);
 }
 

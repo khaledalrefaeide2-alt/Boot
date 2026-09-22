@@ -38,6 +38,7 @@
     "verify:buttons": "tsx scripts/verify-buttons.ts",
     "verify:stats": "tsx scripts/verify-stats.ts",
     "verify:media": "tsx --conditions=react-server scripts/verify-media.ts",
+    "verify:analysis": "tsx --conditions=react-server scripts/verify-analysis.ts",
     "avatars:backfill": "tsx --conditions=react-server scripts/backfill-avatars.ts",
     "media:cache": "tsx --conditions=react-server scripts/cache-media.ts",
     "cleanup:replies": "tsx --conditions=react-server scripts/delete-stored-replies.ts"

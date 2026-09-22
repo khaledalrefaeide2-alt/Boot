@@ -2,8 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { GraduationCap, Plus, Trash2 } from 'lucide-react';
-import { PageHeader } from '@/components/layout/page-header';
+import { GraduationCap, MessageSquareQuote, Plus, Trash2 } from 'lucide-react';
 import { Card, CardBody } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -21,6 +20,10 @@ interface Guidance {
   instruction: string;
   isActive: boolean;
   sortOrder: number;
+  /** MANUAL كتبه مدير هنا · ASSISTANT التقطه المساعد من محادثة */
+  source: 'MANUAL' | 'ASSISTANT';
+  /** نصّ المستخدم كما كتبه — لمن يراجع ما استُخلص منه */
+  sourceMessage: string | null;
   createdAt: string;
   createdBy: { name: string };
 }
@@ -91,14 +94,10 @@ export function GuidanceClient() {
 
   const guidance = query.data?.guidance ?? [];
 
+  const awaiting = guidance.filter((item) => item.source === 'ASSISTANT' && !item.isActive);
+
   return (
     <>
-      <PageHeader
-        eyebrow="تحليل"
-        title="توجيهات التحليل"
-        description="قواعد تُضاف إلى دليل التصنيف وتسري على كل منشور يُحلَّل بعدها."
-      />
-
       <div className="grid gap-5 lg:grid-cols-[22rem_1fr]">
         <Card>
           <CardBody className="space-y-4">
@@ -159,7 +158,22 @@ export function GuidanceClient() {
           </CardBody>
         </Card>
 
-        <Card>
+        <div className="space-y-4">
+          {/*
+            ما التقطه المساعد يُعلَن لا يُدسّ في القائمة.
+
+            التوجيه الملتقَط لا أثر له حتى يُفعَّل، فلو مرّ صامتاً لبقي
+            معطَّلاً لأن أحداً لم يره — والمستخدم الذي أملاه على المساعد
+            يحسبه سارياً. الرقم هنا يقول إن هناك قراراً لم يُتَّخذ بعد.
+          */}
+          {awaiting.length > 0 && (
+            <Alert tone="warning" title={`${awaiting.length} توجيهاً بانتظار قرارك`}>
+              التقطها المساعد من محادثات المستخدمين وحفظها معطَّلة. لا يدخل أيٌّ منها
+              التحليل حتى تُفعّله أنت.
+            </Alert>
+          )}
+
+          <Card>
           {query.isPending ? (
             <SkeletonRows rows={5} />
           ) : query.isError ? (
@@ -186,6 +200,12 @@ export function GuidanceClient() {
                       <Badge tone={item.isActive ? 'success' : 'neutral'} size="sm">
                         {item.isActive ? 'مفعّل' : 'معطّل'}
                       </Badge>
+                      {item.source === 'ASSISTANT' && (
+                        <Badge tone="info" size="sm">
+                          <MessageSquareQuote className="h-3 w-3" aria-hidden />
+                          من المساعد
+                        </Badge>
+                      )}
                       <span className="num text-2xs text-subtle-foreground">
                         #{item.sortOrder}
                       </span>
@@ -193,6 +213,26 @@ export function GuidanceClient() {
                     <p className="text-sm leading-relaxed text-foreground">
                       {item.instruction}
                     </p>
+
+                    {/*
+                      نصّ المستخدم الأصلي يُعرض مع ما استُخلص منه.
+
+                      التوجيه المعروض صياغةُ نموذجٍ لجملةِ إنسان، والنموذج
+                      يخطئ في الصياغة كما يخطئ في غيرها. ومن يُفعّل قاعدة
+                      تحكم تصنيف كل منشور بعدها يحتاج أن يرى ما قيل فعلاً
+                      لا ما فهمه النموذج وحده.
+                    */}
+                    {item.sourceMessage && (
+                      <details className="group">
+                        <summary className="cursor-pointer text-2xs text-muted-foreground hover:text-foreground">
+                          اعرض نصّ المستخدم الأصلي
+                        </summary>
+                        <blockquote className="mt-1.5 border-s-2 border-border ps-2.5 text-2xs leading-relaxed text-subtle-foreground">
+                          {item.sourceMessage}
+                        </blockquote>
+                      </details>
+                    )}
+
                     <p className="text-2xs text-subtle-foreground">
                       {item.createdBy.name} · {formatDate(item.createdAt)}
                     </p>
@@ -216,7 +256,8 @@ export function GuidanceClient() {
               ))}
             </ul>
           )}
-        </Card>
+          </Card>
+        </div>
       </div>
 
       <ConfirmDialog

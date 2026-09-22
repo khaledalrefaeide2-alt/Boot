@@ -197,6 +197,7 @@ model User {
   savedDashboards    SavedDashboard[]
   extractionRuns     ExtractionRun[]
   backfills          Backfill[]
+  analysisRuns       AnalysisRun[]
   reportRuns         ReportRun[]
   reportTemplates    ReportTemplate[]
   reviewedPosts      Post[]               @relation("PostReviewedBy")
@@ -1113,6 +1114,56 @@ model PostAnalysis {
   @@map("post_analyses")
 }
 
+// ═══════════════ جولات التحليل ═══════════════
+
+/// حالة جولة التحليل
+enum AnalysisRunStatus {
+  PENDING
+  RUNNING
+  SUCCEEDED
+  FAILED
+  CANCELLED
+}
+
+/**
+ * جولة تحليل بالذكاء الاصطناعي.
+ * التحليل كان يُشغَّل من سطر الأوامر وحده، فلا يملكه إلا من يملك الخادم.
+ * وهو عملٌ يمتدّ دقائق على آلاف المنشورات، فلا يصلح أن يُنتظر في طلب
+ * HTTP — ولا أن يُشغَّل بلا أثر يقول كم أُنجز وكم تعثّر.
+ */
+model AnalysisRun {
+  id     String            @id @default(cuid())
+  status AnalysisRunStatus @default(PENDING)
+
+  /// الفلاتر التي حُدّدت للجولة — تُعرض ليُعرف ما شملته
+  filters   Json?
+  /// هل تُعاد المحلَّلة سابقاً أم تُتخطّى؟
+  reanalyze Boolean @default(false)
+
+  total   Int @default(0)
+  done    Int @default(0)
+  failed  Int @default(0)
+  /// منشورات رُفعت للمراجعة لانخفاض ثقة النموذج
+  review  Int @default(0)
+  /// منشورات حملت إشارة خطر
+  flagged Int @default(0)
+
+  errorMessage String?
+
+  requestedById String?
+  queueJobId    String?
+
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  startedAt  DateTime?
+  finishedAt DateTime?
+
+  requestedBy User? @relation(fields: [requestedById], references: [id], onDelete: SetNull)
+
+  @@index([status, createdAt])
+  @@map("analysis_runs")
+}
+
 // ═══════════════ تعلّم التحليل من المراجعين ═══════════════
 
 /// نطاق التوجيه — يُحقن في القسم المناسب من الدليل لا في أوّله
@@ -1121,6 +1172,12 @@ enum GuidanceScope {
   SENTIMENT
   RISK
   GENERAL
+}
+
+/// من أين جاء التوجيه
+enum GuidanceSource {
+  MANUAL
+  ASSISTANT
 }
 
 /// تصحيح مراجع بشريّ على تحليل آلي.
@@ -1178,7 +1235,17 @@ model AnalysisGuidance {
   scope       GuidanceScope @default(GENERAL)
   instruction String
 
-  isActive  Boolean @default(true)
+  /**
+   * مصدر التوجيه.
+   * ما يلتقطه المساعد من كلام المستخدم يُحفظ غير مفعّل: التوجيه يُغيّر
+   * تصنيف كل منشور قادم، وجملةٌ قيلت في سياق سؤال قد تُقرأ أمراً دائماً
+   * وهي ليست كذلك. فيُحفظ ويُعرض ويُفعَّل بقرار.
+   */
+  source        GuidanceSource @default(MANUAL)
+  /// نصّ المستخدم كما كتبه — ليُراجَع ما استُخلص منه
+  sourceMessage String?
+
+  isActive  Boolean @default(false)
   sortOrder Int     @default(0)
 
   createdById String

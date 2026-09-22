@@ -6,6 +6,7 @@ import { bullConnection, isRedisReady } from '@/lib/redis';
 export const QUEUE_NAMES = {
   EXTRACTION: 'extraction',
   MAINTENANCE: 'maintenance',
+  ANALYSIS: 'analysis',
 } as const;
 
 export interface ExtractionJobData {
@@ -16,9 +17,14 @@ export interface MaintenanceJobData {
   task: 'purge-sessions' | 'rebuild-daily-stats' | 'schedule-due-accounts';
 }
 
+export interface AnalysisJobData {
+  runId: string;
+}
+
 const globalForQueues = globalThis as unknown as {
   extractionQueue: Queue<ExtractionJobData> | undefined;
   maintenanceQueue: Queue<MaintenanceJobData> | undefined;
+  analysisQueue: Queue<AnalysisJobData> | undefined;
 };
 
 const defaultJobOptions: JobsOptions = {
@@ -46,6 +52,50 @@ export function getMaintenanceQueue(): Queue<MaintenanceJobData> {
     });
   }
   return globalForQueues.maintenanceQueue;
+}
+
+/*
+ * طابور التحليل — محاولة واحدة لا ثلاث.
+ *
+ * إعادة المحاولة هنا ليست مجانية كما في الاستخراج: الجولة المعادة تستدعي
+ * المزوّد من جديد لكلّ منشور حُلّل قبل الانقطاع، فتُدفع كلفته مرّتين ولا
+ * يتغيّر الناتج. والجولة نفسها تحصي فشلها منشوراً منشوراً وتمضي، فالفشل
+ * الذي يصل إلى هنا عطبٌ عامّ لا تصلحه محاولة ثانية.
+ */
+export function getAnalysisQueue(): Queue<AnalysisJobData> {
+  if (!globalForQueues.analysisQueue) {
+    globalForQueues.analysisQueue = new Queue<AnalysisJobData>(QUEUE_NAMES.ANALYSIS, {
+      connection: bullConnection,
+      defaultJobOptions: { ...defaultJobOptions, attempts: 1 },
+    });
+  }
+  return globalForQueues.analysisQueue;
+}
+
+function analysisJobId(runId: string): string {
+  return `analysis-${runId}`;
+}
+
+/** إضافة جولة تحليل إلى الطابور — تُرجع null إذا تعذّر ذلك */
+export async function enqueueAnalysis(runId: string): Promise<string | null> {
+  if (!(await isRedisReady())) return null;
+  try {
+    const job = await getAnalysisQueue().add('run', { runId }, { jobId: analysisJobId(runId) });
+    return job.id ?? null;
+  } catch (error) {
+    console.error('[queue] تعذّرت إضافة جولة التحليل إلى الطابور:', error);
+    return null;
+  }
+}
+
+/** إزالة جولة تحليل لم تبدأ بعد */
+export async function removeAnalysisJob(runId: string): Promise<void> {
+  try {
+    const job = await getAnalysisQueue().getJob(analysisJobId(runId));
+    if (job) await job.remove();
+  } catch {
+    // الجولة قد تكون قيد التنفيذ — إيقافها يتم بتغيير حالتها في القاعدة
+  }
 }
 
 /**

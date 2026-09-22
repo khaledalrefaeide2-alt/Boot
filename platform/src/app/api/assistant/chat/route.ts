@@ -15,6 +15,7 @@ import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { audit, AUDIT_ACTIONS } from '@/lib/audit';
 import { chatSchema } from '@/lib/validation/assistant';
 import { buildContext } from '@/lib/assistant/rag';
+import { captureGuidance } from '@/lib/analysis/capture';
 import {
   AssistantError,
   generateAssistantResponse,
@@ -148,6 +149,23 @@ export async function POST(request: NextRequest) {
     await prisma.assistantMessage.create({
       data: { conversationId: conversation.id, role: 'USER', content: input.message },
     });
+
+    /*
+     * التقاط ما في الرسالة من أوامر تصنيف — بلا انتظار.
+     *
+     * المستخدم يكتب للمساعد أحياناً قاعدةً لا سؤالاً: «اعتبر المطالبة
+     * بالخدمات نقداً لا معارضة». وكانت تضيع في المحادثة، وعلى قائلها أن
+     * يفتح شاشة الإدارة ويعيد كتابتها ليبقى لها أثر.
+     *
+     * ولا يُنتظر الالتقاط: هو أثرٌ جانبي، والمستخدم ينتظر جوابه لا حفظ
+     * قاعدته. وهو لا يرمي أصلاً — يبتلع فشله في داخله — فلا حاجة إلى
+     * `catch` هنا، والمرشّح النصّي بداخله يمنع استدعاء المزوّد لكل سؤال.
+     *
+     * وما يُلتقط يُحفظ معطَّلاً: التوجيه المفعّل يدخل تحليل كل منشور بعده
+     * ويُغيّر تصنيف الجميع، فلا يصحّ أن يفعّله مستخدمٌ واحد بجملة في
+     * محادثة خاصة. يُعرض على من يملك ضبط التصنيف فيقرّر.
+     */
+    void captureGuidance(actor.id, input.message);
 
     await audit(actor, {
       action: AUDIT_ACTIONS.ASSISTANT_ASKED,
