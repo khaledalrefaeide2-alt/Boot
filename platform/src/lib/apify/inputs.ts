@@ -53,6 +53,30 @@ export function usernameFromUrl(url: string): string | null {
   }
 }
 
+/**
+ * اليوم التالي بصيغة YYYY-MM-DD.
+ *
+ * يلزم لأن حدود النهاية في المشغّلات كلها **حصرية** لا شاملة، وهي تُقاس
+ * من منتصف ليل اليوم المذكور:
+ *
+ *   • إكس: `until:2026-09-10` يُرجع ما نُشر حتى نهاية التاسع فقط.
+ *   • فيسبوك وإنستغرام: `onlyPostsOlderThan: "2026-09-10"` يعني ما قبل
+ *     منتصف ليل العاشر — أي التاسع فما دونه.
+ *
+ * فطلبُ المستخدم «حتى العاشر» يعني في الثلاثة اليومَ الحادي عشر. ونسيانُ
+ * هذا يُسقط اليوم الأخير كاملاً من كل تشغيل، بصمت.
+ *
+ * ★ وأسوأ حالاته يومٌ واحد: «من العاشر إلى العاشر» تصير نافذةً فارغة —
+ *   «أحدث من العاشر» و«أقدم من العاشر» معاً لا يجتمعان على شيء — فيعود
+ *   المشغّل بـ`no_items` عن حسابٍ ينشر كل يوم، ويبدو العطب في الحساب أو
+ *   في الرمز أو في المشغّل، وهو في سطرٍ واحد هنا.
+ */
+function nextDay(date: string): string {
+  const next = new Date(`${date}T00:00:00.000Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  return next.toISOString().slice(0, 10);
+}
+
 /** فيسبوك — apify/facebook-posts-scraper */
 function facebookInput(ctx: BuildInputContext): Record<string, unknown> {
   const input: Record<string, unknown> = {
@@ -60,21 +84,8 @@ function facebookInput(ctx: BuildInputContext): Record<string, unknown> {
     resultsLimit: ctx.maxItems,
     onlyPostsNewerThan: ctx.fromDate ?? daysAgoDate(ctx.windowDays),
   };
-  if (ctx.toDate) input.onlyPostsOlderThan = ctx.toDate;
+  if (ctx.toDate) input.onlyPostsOlderThan = nextDay(ctx.toDate);
   return input;
-}
-
-/**
- * اليوم التالي بصيغة YYYY-MM-DD.
- *
- * يلزم لأن `until:` في بحث إكس حصريّ لا شامل: `until:2026-09-10` يُرجع ما
- * نُشر حتى نهاية التاسع فقط. فطلبُ المستخدم «حتى العاشر» يعني `until:` اليوم
- * الحادي عشر — ونسيانُ هذا يُسقط اليوم الأخير كاملاً من كل تشغيل، بصمت.
- */
-function nextDay(date: string): string {
-  const next = new Date(`${date}T00:00:00.000Z`);
-  next.setUTCDate(next.getUTCDate() + 1);
-  return next.toISOString().slice(0, 10);
 }
 
 /**
@@ -157,7 +168,7 @@ function instagramInput(ctx: BuildInputContext): Record<string, unknown> {
    * نافذة قديمة تُعيد منشورات هذا الشهر ثمّ تُسقطها «خارج النافذة» —
    * تُدفع الحصة ولا يُحفظ شيء، نافذةً بعد نافذة.
    */
-  if (ctx.toDate) input.onlyPostsOlderThan = ctx.toDate;
+  if (ctx.toDate) input.onlyPostsOlderThan = nextDay(ctx.toDate);
   return input;
 }
 

@@ -196,9 +196,17 @@ const fb = buildActorInput({
   fromDate: '2022-01-01',
   toDate: '2022-01-31',
 }) as Record<string, unknown>;
+/*
+ * كان هذا الفحص يُثبّت العطب نفسه.
+ *
+ * طالب بأن يساوي الحدّ الأعلى تاريخَ النهاية، فمرّ أخضر على شيفرةٍ تُسقط
+ * اليوم الأخير من كل تشغيل — والفحص الذي يصف ما تفعله الشيفرة لا ما
+ * يجب أن تفعله لا يحرس شيئاً، بل يحرس الخطأ من الإصلاح.
+ */
 check(
-  'فيسبوك يحمل حدّي المدى معاً',
-  fb.onlyPostsNewerThan === '2022-01-01' && fb.onlyPostsOlderThan === '2022-01-31',
+  'فيسبوك يحمل حدّي المدى، والأعلى حصريّ',
+  fb.onlyPostsNewerThan === '2022-01-01' && fb.onlyPostsOlderThan === '2022-02-01',
+  `${String(fb.onlyPostsNewerThan)} ← ${String(fb.onlyPostsOlderThan)}`,
 );
 
 /*
@@ -215,8 +223,9 @@ const ig = buildActorInput({
   toDate: '2022-01-31',
 }) as Record<string, unknown>;
 check(
-  'إنستغرام تحمل حدّي المدى معاً',
-  ig.onlyPostsNewerThan === '2022-01-01' && ig.onlyPostsOlderThan === '2022-01-31',
+  'إنستغرام تحمل حدّي المدى، والأعلى حصريّ',
+  ig.onlyPostsNewerThan === '2022-01-01' && ig.onlyPostsOlderThan === '2022-02-01',
+  `${String(ig.onlyPostsNewerThan)} ← ${String(ig.onlyPostsOlderThan)}`,
 );
 
 // ── صورة الحساب
@@ -282,6 +291,96 @@ check(
     media: [{ image: 'https://scontent.xx.fbcdn.net/v/t1/media.jpg' }],
   }) === null,
   'النزول من الجذر محصور في فروع الحساب',
+);
+
+/*
+ * ★ الحدّ الأعلى في فيسبوك وإنستغرام حصريّ كما في إكس.
+ *
+ * وهذه الفحوص وُلدت من عطبٍ وقع فعلاً في الإنتاج: كان
+ * `onlyPostsOlderThan` يُمرَّر بتاريخ النهاية نفسه، فطلبُ يومٍ واحد يصير
+ * نافذةً فارغة — «أحدث من 23» و«أقدم من 23» لا يجتمعان — فيعود المشغّل
+ * بـ`{"error":"no_items"}` عن ثمانية عشر حساباً تنشر كل يوم. وبدا العطب
+ * في الرمز وفي الرصيد وفي الحسابات، وهو في سطرٍ واحد.
+ *
+ * وأهمّ فحصٍ هنا هو فحص اليوم الواحد: هو أسوأ حالات الخطأ وأظهرها، ولا
+ * يلتقطه فحصُ نطاقٍ واسع لأن النافذة تبقى فيه غير فارغة رغم نقصان يوم.
+ */
+const SAME_DAY = '2026-09-23';
+
+for (const [label, platformCode] of [
+  ['فيسبوك', 'facebook'],
+  ['إنستغرام', 'instagram'],
+] as const) {
+  const wide = buildActorInput({
+    platformCode,
+    url: 'https://www.facebook.com/example',
+    maxItems: 200,
+    windowDays: 7,
+    fromDate: '2026-09-01',
+    toDate: '2026-09-10',
+  }) as Record<string, unknown>;
+
+  check(
+    `${label}: الحدّ الأدنى هو بداية النطاق`,
+    wide.onlyPostsNewerThan === '2026-09-01',
+    String(wide.onlyPostsNewerThan),
+  );
+  check(
+    `${label}: الحدّ الأعلى هو اليوم التالي للنهاية`,
+    wide.onlyPostsOlderThan === '2026-09-11',
+    `المطلوب حتى 2026-09-10، وجاء ${String(wide.onlyPostsOlderThan)}`,
+  );
+
+  const day = buildActorInput({
+    platformCode,
+    url: 'https://www.facebook.com/example',
+    maxItems: 200,
+    windowDays: 1,
+    fromDate: SAME_DAY,
+    toDate: SAME_DAY,
+  }) as Record<string, unknown>;
+
+  check(
+    `${label}: يومٌ واحد لا يُنتج نافذة فارغة`,
+    day.onlyPostsNewerThan !== day.onlyPostsOlderThan,
+    `${String(day.onlyPostsNewerThan)} ← ${String(day.onlyPostsOlderThan)}`,
+  );
+  check(
+    `${label}: ويومُ الطلب داخلها`,
+    day.onlyPostsNewerThan === SAME_DAY && day.onlyPostsOlderThan === '2026-09-24',
+    `${String(day.onlyPostsNewerThan)} ← ${String(day.onlyPostsOlderThan)}`,
+  );
+
+  const open = buildActorInput({
+    platformCode,
+    url: 'https://www.facebook.com/example',
+    maxItems: 200,
+    windowDays: 7,
+    fromDate: '2026-09-01',
+    toDate: null,
+  }) as Record<string, unknown>;
+  check(
+    `${label}: بلا نهاية لا يُمرَّر حدّ أعلى`,
+    open.onlyPostsOlderThan === undefined,
+    'حدٌّ أعلى مخترَع يقصّ النطاق المفتوح',
+  );
+}
+
+// واليوم الواحد في إكس كذلك — النافذة تُقاس بـ since/until لا بالحقول
+const xDay = buildActorInput({
+  platformCode: 'x',
+  url: 'https://x.com/example',
+  username: 'example',
+  maxItems: 200,
+  windowDays: 1,
+  fromDate: SAME_DAY,
+  toDate: SAME_DAY,
+}) as Record<string, unknown>;
+const xDayTerms = (xDay.searchTerms as string[] | undefined)?.[0] ?? '';
+check(
+  'إكس: يومٌ واحد يبقى نطاقاً صالحاً',
+  xDayTerms.includes(`since:${SAME_DAY}`) && xDayTerms.includes('until:2026-09-24'),
+  xDayTerms,
 );
 
 console.log('\n>> فحص النطاق الزمني في مدخلات المشغّل\n');
