@@ -149,3 +149,23 @@ export async function getIndexSettings(): Promise<{
     dailyCap: Number.isFinite(cap) && cap > 0 ? Math.floor(cap) : 0,
   };
 }
+
+/**
+ * هل يبحث المساعد في الويب؟
+ *
+ * يُمرَّر إلى OpenAI أداةَ بحثٍ مدمجة، فيصير المساعد قادراً على جلب ما
+ * لا يملكه: خبرٌ وقع اليوم، أو سياقُ حدثٍ خارج منصّتك، أو مرجعٌ تُبنى
+ * عليه توصية.
+ *
+ * ★ ولا يمسّ ذلك قاعدة الأرقام. أرقام هذه المنصة تبقى من قاعدتها وحدها،
+ *   والويب لا يُستشار فيها أبداً: رقمٌ عن منشوراتك جاء من مقالٍ على
+ *   الإنترنت ليس تقريباً بل اختلاقاً بمصدر.
+ *
+ * والبحث يُكلّف فوق كلفة الرسالة، فيُطفأ لمن لا يحتاجه.
+ */
+export async function getWebSearchEnabled(): Promise<boolean> {
+  const raw = await getSetting<unknown>('assistant.webSearch', true);
+  if (typeof raw === 'boolean') return raw;
+  if (raw === 'false' || raw === 0) return false;
+  return true;
+}

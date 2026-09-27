@@ -8,6 +8,13 @@ export interface DisplayMessage {
   role: 'USER' | 'ASSISTANT';
   content: string;
   pending?: boolean;
+  /**
+   * ما يفعله المساعد الآن — «يبحث في الويب…» مثلاً.
+   *
+   * البحث يستغرق ثوانيَ لا يصل فيها حرفٌ واحد، وصمتُ عشرِ ثوانٍ يُقرأ
+   * عطلاً: يُعاد تحميل الصفحة فيضيع جوابٌ دُفع ثمنه ولم يُعرض.
+   */
+  status?: string;
 }
 
 /*
@@ -129,7 +136,7 @@ export function MessageBubble({ message }: { message: DisplayMessage }) {
         ) : message.content ? (
           <div>{renderMarkdown(message.content)}</div>
         ) : (
-          <p className="text-sm text-muted-foreground">المساعد يفكّر…</p>
+          <p className="text-sm text-muted-foreground">{message.status ?? 'المساعد يفكّر…'}</p>
         )}
 
         {message.pending && message.content && (

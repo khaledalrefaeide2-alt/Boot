@@ -182,6 +182,13 @@ export function ChatWindow({ configured }: { configured: boolean }) {
                   : message,
               ),
             );
+          } else if (event === 'status' && typeof payload.text === 'string') {
+            const status = payload.text;
+            setMessages((current) =>
+              current.map((message) =>
+                message.id === draftId ? { ...message, status } : message,
+              ),
+            );
           } else if (event === 'error' && typeof payload.message === 'string') {
             throw new Error(payload.message);
           }

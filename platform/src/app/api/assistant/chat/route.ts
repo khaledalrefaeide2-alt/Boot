@@ -19,9 +19,12 @@ import { captureGuidance } from '@/lib/analysis/capture';
 import {
   AssistantError,
   generateAssistantResponse,
+  generateWithWebSearch,
   streamAssistantResponse,
+  streamWithWebSearch,
   toAssistantError,
 } from '@/lib/assistant/openai';
+import { getWebSearchEnabled } from '@/lib/settings';
 import {
   ASSISTANT_LIMITS,
   getAssistantConfig,
@@ -116,6 +119,7 @@ export async function POST(request: NextRequest) {
     }
 
     const config = getAssistantConfig();
+    const webSearch = await getWebSearchEnabled();
 
     const conversation = await resolveConversation(actor.id, input.conversationId, input.message);
     const scope = await getAccountScope();
@@ -137,6 +141,7 @@ export async function POST(request: NextRequest) {
       retrievedPostIds: context.posts.map((post) => post.postId),
       windowDays: input.windowDays,
       totalPostsInWindow: context.snapshot.totalPosts,
+      webSearch,
     };
 
     /*
@@ -194,9 +199,26 @@ export async function POST(request: NextRequest) {
 
           let full = '';
           try {
-            for await (const delta of streamAssistantResponse(messages)) {
-              full += delta;
-              send('delta', { text: delta });
+            if (webSearch) {
+              /*
+               * البحث يُعلَن حين يبدأ.
+               *
+               * المستخدم ينتظر صامتاً بينما يبحث النموذج، وصمتُ عشر ثوانٍ
+               * يُقرأ عطلاً — فتُعاد الصفحة ويضيع الجواب بعد أن دُفع ثمنه.
+               */
+              for await (const event of streamWithWebSearch(messages)) {
+                if (event.kind === 'delta') {
+                  full += event.text;
+                  send('delta', { text: event.text });
+                } else {
+                  send('status', { text: 'يبحث في الويب…' });
+                }
+              }
+            } else {
+              for await (const delta of streamAssistantResponse(messages)) {
+                full += delta;
+                send('delta', { text: delta });
+              }
             }
 
             await prisma.assistantMessage.create({
@@ -235,7 +257,9 @@ export async function POST(request: NextRequest) {
     }
 
     // ── الردّ الكامل
-    const answer = await generateAssistantResponse(messages);
+    const answer = webSearch
+      ? await generateWithWebSearch(messages)
+      : await generateAssistantResponse(messages);
 
     await prisma.assistantMessage.create({
       data: {

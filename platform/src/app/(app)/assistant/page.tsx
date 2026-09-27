@@ -24,7 +24,7 @@ export default async function AssistantPage() {
       <PageHeader
         eyebrow="تحليل"
         title="المساعد الذكي"
-        description="اسأل عن بيانات الرصد ضمن نطاقك — الإجابات مبنية على المنشورات المخزَّنة."
+        description="اسأل عن بيانات الرصد، أو عن الخطط والتقارير ومنهجيات العمل، أو عن أي شيء. أرقام المنصة من قاعدتها وحدها."
       />
       <ChatWindow configured={isAssistantConfigured()} />
     </>

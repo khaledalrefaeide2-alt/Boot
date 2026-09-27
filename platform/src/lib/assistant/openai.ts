@@ -124,6 +124,130 @@ export function toAssistantError(error: unknown): AssistantError {
   return new AssistantError('unknown', 'تعذّر إنتاج الإجابة. حاول مرة أخرى.', 502);
 }
 
+/*
+ * البحث في الويب.
+ *
+ * يمرّ بـResponses API لا بـChat Completions: أداة البحث المدمجة لا
+ * تعمل إلا هناك. ويُبقى المسار القديم كما هو ولا يُمسّ — فإن تعثّر
+ * الجديد أعاد إطفاءُ الإعداد السلوكَ السابق كاملاً بلا نشر.
+ *
+ * والرسائل تُترجَم لا تُمرَّر كما هي: `system` تصير `instructions`،
+ * والباقي `input`. وهو اختلافٌ في الشكل لا في المعنى.
+ */
+function splitMessages(messages: ChatMessage[]): {
+  instructions: string;
+  input: { role: 'user' | 'assistant'; content: string }[];
+} {
+  const instructions = messages
+    .filter((m) => m.role === 'system')
+    .map((m) => m.content)
+    .join('\n\n');
+
+  const input = messages
+    .filter((m): m is ChatMessage & { role: 'user' | 'assistant' } => m.role !== 'system')
+    .map((m) => ({ role: m.role, content: m.content }));
+
+  return { instructions, input };
+}
+
+/** أداة البحث — الوصول الحيّ مسموح، وحجم السياق متوسّط */
+const WEB_SEARCH_TOOL = { type: 'web_search' as const, search_context_size: 'medium' as const };
+
+/**
+ * استخراج النصّ من ردّ Responses.
+ *
+ * `output_text` حقلٌ ميسّر في المكتبة، ولا يُعتمد عليه وحده: الردّ الذي
+ * يحمل استدعاء أداة قد يضع النصّ في عناصر المخرجات. فيُقرأ الميسَّر أولاً
+ * ثمّ يُمشى على المخرجات — وأيّهما وجد نصّاً كفى.
+ */
+function responseText(response: unknown): string {
+  const record = response as {
+    output_text?: unknown;
+    output?: { type?: string; content?: { type?: string; text?: unknown }[] }[];
+  };
+
+  if (typeof record.output_text === 'string' && record.output_text.trim()) {
+    return record.output_text.trim();
+  }
+
+  const parts: string[] = [];
+  for (const item of record.output ?? []) {
+    if (item.type !== 'message') continue;
+    for (const piece of item.content ?? []) {
+      if (piece.type === 'output_text' && typeof piece.text === 'string') parts.push(piece.text);
+    }
+  }
+  return parts.join('').trim();
+}
+
+/** استدعاء مع بحث في الويب — يُعيد النصّ كاملاً */
+export async function generateWithWebSearch(
+  messages: ChatMessage[],
+): Promise<{ content: string; model: string; promptTokens?: number; completionTokens?: number }> {
+  const config = getAssistantConfig();
+  const { instructions, input } = splitMessages(messages);
+
+  try {
+    const response = await client().responses.create({
+      model: config.chatModel,
+      instructions,
+      input,
+      tools: [WEB_SEARCH_TOOL],
+      temperature: 0.2,
+      max_output_tokens: 1800,
+    });
+
+    const content = responseText(response);
+    if (!content) {
+      throw new AssistantError('empty', 'لم تُنتج الخدمة إجابة. حاول مرة أخرى.', 502);
+    }
+
+    return {
+      content,
+      model: response.model,
+      promptTokens: response.usage?.input_tokens,
+      completionTokens: response.usage?.output_tokens,
+    };
+  } catch (error) {
+    throw toAssistantError(error);
+  }
+}
+
+/**
+ * استدعاء مع بحث في الويب، متدفّقاً.
+ *
+ * ويُرسَل حدثٌ حين يبدأ البحث: المستخدم ينتظر صامتاً ثوانيَ بينما يبحث
+ * النموذج، وصمتُ عشر ثوانٍ يُقرأ عطلاً فيُعاد تحميل الصفحة ويضيع الجواب.
+ */
+export async function* streamWithWebSearch(
+  messages: ChatMessage[],
+): AsyncGenerator<{ kind: 'delta'; text: string } | { kind: 'searching' }, void, undefined> {
+  const config = getAssistantConfig();
+  const { instructions, input } = splitMessages(messages);
+
+  try {
+    const stream = await client().responses.create({
+      model: config.chatModel,
+      instructions,
+      input,
+      tools: [WEB_SEARCH_TOOL],
+      temperature: 0.2,
+      max_output_tokens: 1800,
+      stream: true,
+    });
+
+    for await (const event of stream) {
+      if (event.type === 'response.output_text.delta' && event.delta) {
+        yield { kind: 'delta', text: event.delta };
+      } else if (event.type === 'response.web_search_call.in_progress') {
+        yield { kind: 'searching' };
+      }
+    }
+  } catch (error) {
+    throw toAssistantError(error);
+  }
+}
+
 /** استدعاء المحادثة — يُعيد النصّ كاملاً */
 export async function generateAssistantResponse(
   messages: ChatMessage[],

@@ -544,6 +544,52 @@ check(
   /ولا تقل\s*\n?إنّ بيانات اليوم غير متاحة/.test(promptSource),
 );
 
+// ══════════════ البحث في الويب ══════════════
+
+/*
+ * ★ الويب يوسّع ما يُجاب، ولا يمسّ من أين تأتي الأرقام.
+ *
+ * رقمٌ عن منشوراتهم جاء من مقالٍ على الإنترنت ليس تقريباً بل اختلاقاً
+ * بمصدر — وهو أخطر من الاختلاق بلا مصدر، لأنه يبدو موثّقاً فلا يُراجَع.
+ */
+const openaiSource = readCode('src/lib/assistant/openai.ts');
+const chatRoute = readCode('src/app/api/assistant/chat/route.ts');
+
+check('أداة البحث مُعرَّفة', /type: 'web_search' as const/.test(openaiSource));
+check(
+  'وتمرّ بـResponses API لا بـChat Completions',
+  /responses\.create\(/.test(openaiSource),
+  'أداة البحث المدمجة لا تعمل في Chat Completions',
+);
+check(
+  'والمسار القديم باقٍ كما هو',
+  /chat\.completions\.create\(/.test(openaiSource),
+  'إطفاء الإعداد يجب أن يُعيد السلوك السابق كاملاً بلا نشر',
+);
+check('والمسار يُختار من الإعدادات', /getWebSearchEnabled\(\)/.test(chatRoute));
+check(
+  'وكلا الشكلين مغطّى — متدفّق وكامل',
+  /streamWithWebSearch\(/.test(chatRoute) && /generateWithWebSearch\(/.test(chatRoute),
+);
+check(
+  'والبحث يُعلَن للمستخدم حين يبدأ',
+  /send\('status'/.test(chatRoute),
+  'صمتُ عشر ثوانٍ يُقرأ عطلاً فتُعاد الصفحة ويضيع جوابٌ دُفع ثمنه',
+);
+check(
+  'والسياسة تمنع البحث عن أرقام المنصة',
+  /لا تبحث في الويب عن أرقام هذه المنصة أبداً/.test(promptSource),
+);
+check(
+  'وتصف الرقم الآتي من الويب اختلاقاً بمصدر',
+  /ليس تقريباً بل اختلاقاً بمصدر/.test(promptSource),
+);
+check(
+  'وتأمر بذكر المصدر وتاريخه',
+  /واذكر المصدر ومتى نُشر/.test(promptSource),
+  'نتيجةُ بحثٍ بلا مصدر لا تُفرَّق عن معرفةٍ قديمة',
+);
+
 // ══════════════ الصلاحية ══════════════
 
 const runIdRoute = read('src/app/api/admin/analysis/runs/[id]/route.ts');
