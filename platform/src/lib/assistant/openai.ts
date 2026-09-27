@@ -248,6 +248,127 @@ export async function* streamWithWebSearch(
   }
 }
 
+/**
+ * حلقة الوكيل — النموذج يسأل القاعدة بنفسه.
+ *
+ * كان يتلقّى ملخّصاً جاهزاً عن نافذة ثابتة، فلا يستطيع أن يسأل شيئاً
+ * خارجه. وهنا يُعطى أدوات قراءة، فيُنادي ما يحتاج، ويُغذّى بالنتيجة،
+ * ويُنادي ثانيةً إن لزم — حتى يكتفي فيكتب الجواب.
+ *
+ * والحلقة تتدفّق في كل دورة لا في الأخيرة وحدها: النموذج قد يكتب تمهيداً
+ * ثم ينادي أداةً ثم يُتمّ، وحجبُ ما كُتب قبل النداء يُظهر الشاشة ساكنةً
+ * ثم تقفز.
+ *
+ * ★ وسقف الدورات ليس تحوّطاً: نموذجٌ يُنادي أداةً تُعيد خطأً فيُعيد
+ *   النداء نفسه يدور إلى ما لا نهاية — يحرق الحصة، ويُبقي المستخدم
+ *   ينتظر جواباً لن يأتي. والسقف يكسر الدورة ويترك ما جُمع.
+ */
+const MAX_TOOL_ROUNDS = 5;
+
+export type AgentEvent =
+  | { kind: 'delta'; text: string }
+  | { kind: 'status'; text: string };
+
+interface AgentOptions {
+  webSearch: boolean;
+  tools: unknown[];
+  runTool: (name: string, args: Record<string, unknown>) => Promise<unknown>;
+}
+
+/** وصفٌ عربيّ لما يفعله النموذج الآن — يُعرض للمستخدم أثناء الانتظار */
+const TOOL_STATUS: Record<string, string> = {
+  list_accounts: 'يقرأ قائمة الحسابات…',
+  get_stats: 'يحسب الأرقام من قاعدتك…',
+  search_posts: 'يبحث في منشوراتك…',
+  get_post: 'يقرأ منشوراً كاملاً…',
+  compare_accounts: 'يقارن الحسابات…',
+};
+
+export async function* runAssistantAgent(
+  messages: ChatMessage[],
+  options: AgentOptions,
+): AsyncGenerator<AgentEvent, void, undefined> {
+  const config = getAssistantConfig();
+  const { instructions, input } = splitMessages(messages);
+
+  const conversation: unknown[] = [...input];
+  const tools = options.webSearch ? [WEB_SEARCH_TOOL, ...options.tools] : [...options.tools];
+
+  try {
+    for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
+      const stream = await client().responses.create({
+        model: config.chatModel,
+        instructions,
+        input: conversation as never,
+        tools: tools as never,
+        temperature: 0.2,
+        max_output_tokens: 2400,
+        stream: true,
+      });
+
+      let completed: { output?: unknown[] } | null = null;
+
+      for await (const event of stream) {
+        if (event.type === 'response.output_text.delta' && event.delta) {
+          yield { kind: 'delta', text: event.delta };
+        } else if (event.type === 'response.web_search_call.in_progress') {
+          yield { kind: 'status', text: 'يبحث في الويب…' };
+        } else if (event.type === 'response.completed') {
+          completed = event.response as unknown as { output?: unknown[] };
+        }
+      }
+
+      const output = completed?.output ?? [];
+      const calls = output.filter(
+        (item): item is { type: 'function_call'; name: string; arguments: string; call_id: string } =>
+          (item as { type?: string }).type === 'function_call',
+      );
+
+      if (calls.length === 0) return;
+
+      /*
+       * مخرجات الدورة تُعاد كما هي قبل نتائج الأدوات.
+       *
+       * النموذج يربط النتيجة بندائها عبر `call_id`، ونتيجةٌ بلا نداء
+       * يسبقها تُرفض من المزوّد. فتُنسخ المخرجات كلها لا الأسماء وحدها.
+       */
+      conversation.push(...output);
+
+      for (const call of calls) {
+        yield { kind: 'status', text: TOOL_STATUS[call.name] ?? 'يستعلم من قاعدتك…' };
+
+        let parsed: Record<string, unknown> = {};
+        try {
+          parsed = JSON.parse(call.arguments || '{}') as Record<string, unknown>;
+        } catch {
+          // معاملاتٌ مشوَّهة تُعاد خطأً ليصحّحها، لا تُسقط المحادثة
+          parsed = {};
+        }
+
+        const result = await options.runTool(call.name, parsed);
+        conversation.push({
+          type: 'function_call_output',
+          call_id: call.call_id,
+          output: JSON.stringify(result).slice(0, 60_000),
+        });
+      }
+    }
+
+    /*
+     * بلوغ السقف يُقال للمستخدم لا يُكتَم.
+     *
+     * جوابٌ ينقطع بلا سبب يُقرأ عطلاً في المنصة، وهو ليس كذلك: النموذج
+     * دار خمس مرات ولم يصل. والقول له يجعل السؤال يُعاد أضيق.
+     */
+    yield {
+      kind: 'delta',
+      text: '\n\n— توقّفت بعد عدّة محاولات استعلام. جرّب سؤالاً أضيق أو حدّد المدى والحساب.',
+    };
+  } catch (error) {
+    throw toAssistantError(error);
+  }
+}
+
 /** استدعاء المحادثة — يُعيد النصّ كاملاً */
 export async function generateAssistantResponse(
   messages: ChatMessage[],

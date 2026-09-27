@@ -20,11 +20,13 @@ import {
   AssistantError,
   generateAssistantResponse,
   generateWithWebSearch,
+  runAssistantAgent,
   streamAssistantResponse,
   streamWithWebSearch,
   toAssistantError,
 } from '@/lib/assistant/openai';
-import { getWebSearchEnabled } from '@/lib/settings';
+import { ASSISTANT_TOOLS, runTool } from '@/lib/assistant/tools';
+import { getAgentEnabled, getWebSearchEnabled } from '@/lib/settings';
 import {
   ASSISTANT_LIMITS,
   getAssistantConfig,
@@ -119,7 +121,7 @@ export async function POST(request: NextRequest) {
     }
 
     const config = getAssistantConfig();
-    const webSearch = await getWebSearchEnabled();
+    const [webSearch, agent] = await Promise.all([getWebSearchEnabled(), getAgentEnabled()]);
 
     const conversation = await resolveConversation(actor.id, input.conversationId, input.message);
     const scope = await getAccountScope();
@@ -142,6 +144,7 @@ export async function POST(request: NextRequest) {
       windowDays: input.windowDays,
       totalPostsInWindow: context.snapshot.totalPosts,
       webSearch,
+      agent,
     };
 
     /*
@@ -199,7 +202,27 @@ export async function POST(request: NextRequest) {
 
           let full = '';
           try {
-            if (webSearch) {
+            if (agent) {
+              /*
+               * النطاق يُمرَّر إلى الأدوات ولا يُؤخذ من النموذج.
+               *
+               * هو نطاق صاحب الجلسة كما قُرئ من القاعدة، ومعاملات الأداة
+               * تتقاطع معه لا تحلّ محلّه. ولو اعتُمد على النموذج في ذلك
+               * لكان تسريباً ينتظر جملةً ذكيّة.
+               */
+              for await (const event of runAssistantAgent(messages, {
+                webSearch,
+                tools: ASSISTANT_TOOLS,
+                runTool: (name, args) => runTool(name, args, { scope }),
+              })) {
+                if (event.kind === 'delta') {
+                  full += event.text;
+                  send('delta', { text: event.text });
+                } else {
+                  send('status', { text: event.text });
+                }
+              }
+            } else if (webSearch) {
               /*
                * البحث يُعلَن حين يبدأ.
                *

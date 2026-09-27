@@ -77,6 +77,8 @@ export interface AssistantContext {
 export interface AnswerMetadata {
   /** هل كانت أداة البحث في الويب متاحة لهذا الردّ؟ */
   webSearch?: boolean;
+  /** هل كانت أدوات الاستعلام من القاعدة متاحة؟ */
+  agent?: boolean;
   chatModel: string;
   embedModel: string;
   retrievedPostIds: string[];

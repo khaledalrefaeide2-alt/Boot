@@ -169,3 +169,24 @@ export async function getWebSearchEnabled(): Promise<boolean> {
   if (raw === 'false' || raw === 0) return false;
   return true;
 }
+
+/**
+ * هل يستعلم المساعد من القاعدة بنفسه؟
+ *
+ * بدونه يقرأ ملخّصاً جاهزاً عن نافذة ثابتة يختارها المستخدم من قائمة،
+ * فلا يجيب عمّا خرج عنها: «قارن حسابين في شهرين»، «منشورات حساب بعينه
+ * عن الكهرباء»، «كيف تغيّر بين الربعين». وبه يحدّد المدى ويرشّح ويجمّع
+ * ويقرأ النصّ كاملاً — وهو الفرق بين من يقرأ تقريراً ومن يجلس إلى
+ * القاعدة.
+ *
+ * والأدوات قراءةٌ فقط، ونطاق حسابات صاحب الجلسة مفروضٌ عليها في الخادم.
+ *
+ * وإطفاؤه يُعيد المسار السابق كاملاً: ملخّصٌ جاهز واستدعاءٌ واحد. وهو
+ * أرخص وأسرع، وأعجزُ عن كل سؤال خارج النافذة.
+ */
+export async function getAgentEnabled(): Promise<boolean> {
+  const raw = await getSetting<unknown>('assistant.agent', true);
+  if (typeof raw === 'boolean') return raw;
+  if (raw === 'false' || raw === 0) return false;
+  return true;
+}
