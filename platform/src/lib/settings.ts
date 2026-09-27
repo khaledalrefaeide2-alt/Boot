@@ -118,3 +118,34 @@ export async function getAnalysisSettings(): Promise<{
     dailyCap: Number.isFinite(cap) && cap > 0 ? Math.floor(cap) : 0,
   };
 }
+
+/**
+ * إعدادات الفهرسة الدلالية.
+ *
+ * المساعد يقرأ نصوص المنشورات عبر المتّجهات وحدها، والمتّجه لا يُبنى إلا
+ * بفهرسة. وكانت يدويةً لا يُشغّلها أحد، فبقي المساعد يرى الأرقام ولا
+ * يقرأ نصّاً — ويجيب عن «أهمّ المنشورات» بأن لا بيانات.
+ *
+ * والسقف اليومي يُقاس بالمقاطع لا بالمنشورات: المنشور الطويل يُقطَّع
+ * مقاطع، وكلّ مقطع استدعاء. وهو أعلى كثيراً من سقف التصنيف لأن نموذج
+ * التضمين جزءٌ من ثمن نموذج المحادثة، والمقاطع تُرسَل دفعةً واحدة.
+ */
+export async function getIndexSettings(): Promise<{
+  auto: boolean;
+  batch: number;
+  dailyCap: number;
+}> {
+  const settings = await getAllSettings();
+
+  const rawAuto = settings['assistant.autoIndex'];
+  const auto = rawAuto === undefined ? true : rawAuto !== false && rawAuto !== 'false' && rawAuto !== 0;
+
+  const batch = Number(settings['assistant.indexBatch'] ?? 100);
+  const cap = Number(settings['assistant.indexDailyCap'] ?? 50_000);
+
+  return {
+    auto,
+    batch: Number.isFinite(batch) ? Math.min(500, Math.max(1, Math.floor(batch))) : 100,
+    dailyCap: Number.isFinite(cap) && cap > 0 ? Math.floor(cap) : 0,
+  };
+}

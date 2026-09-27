@@ -35,7 +35,17 @@ export interface PeriodSnapshot {
 }
 
 /** كل ما يُعرض على النموذج قبل السؤال */
+/**
+ * كيف وصلت المنشورات المرفقة.
+ *
+ * `SEMANTIC` بحثٌ دلاليّ عن السؤال، و`FALLBACK` أعلى الفترة تفاعلاً حين
+ * لم تُفهرس المنشورات بعد. والفرق يُقال للنموذج لا يُكتم: قائمةٌ لم
+ * تُبحَث لا يصحّ أن تُعرض على أنها أجوبة السؤال.
+ */
+export type RetrievalMode = 'SEMANTIC' | 'FALLBACK' | 'NONE';
+
 export interface AssistantContext {
+  retrieval: RetrievalMode;
   snapshot: PeriodSnapshot;
   posts: RetrievedPost[];
   /** صحيح حين لا توجد بيانات أصلاً — يغيّر نبرة الجواب لا يُخفيه */

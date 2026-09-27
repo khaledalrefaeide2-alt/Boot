@@ -108,6 +108,64 @@ export async function searchSimilarPosts(
   return rows.map((row) => ({ ...row, similarity: Number(row.similarity) }));
 }
 
+/**
+ * منشورات بديلة حين لا يُرجع البحث الدلالي شيئاً.
+ *
+ * ★ هذا ما يمنع المساعد من قول «لا بيانات» وفي القاعدة عشرة آلاف منشور.
+ *
+ * البحث الدلالي يقرأ من جدول المتّجهات، والمتّجه لا يُبنى إلا بعد
+ * الفهرسة. وبين وصول المنشور وفهرسته فجوة — دقائق في الحالة العادية،
+ * وأيامٌ حين تُستأنف فهرسة أرشيف كامل. وفي تلك الفجوة كان المساعد يرى
+ * الأرقام ولا يقرأ نصّاً واحداً، فيجيب أن لا منشورات «مطابقة» — ويفهمها
+ * القارئ «لا منشورات».
+ *
+ * والبديل ليس بحثاً: أعلى منشورات الفترة تفاعلاً. لا يجيب عن «ما المنشور
+ * الذي تحدّث عن الكهرباء؟»، ويجيب عن «ما أهمّ منشورات أمس؟» — وهو أكثر
+ * ما يُسأل. ويُقال للنموذج صراحةً إنّها ليست نتائج بحث، فلا يدّعي صلةً
+ * بالسؤال لا يملكها.
+ */
+async function fallbackPosts(
+  scope: AccountScope,
+  from: Date,
+  to: Date,
+  limit: number,
+): Promise<RetrievedPost[]> {
+  const posts = await prisma.post.findMany({
+    where: {
+      isHidden: false,
+      text: { not: null },
+      publishedAt: { gte: from, lte: to },
+      ...scopeWhere(scope),
+    },
+    select: {
+      id: true,
+      url: true,
+      text: true,
+      publishedAt: true,
+      sentiment: true,
+      engagementTotal: true,
+      account: { select: { name: true } },
+      platform: { select: { name: true } },
+    },
+    orderBy: [{ engagementTotal: 'desc' }, { publishedAt: 'desc' }],
+    take: limit,
+  });
+
+  return posts.map((post) => ({
+    postId: post.id,
+    // النصّ يُقصّ إلى طول المقطع نفسه، فلا تنتفخ كلفة النافذة بمنشور طويل
+    chunkText: (post.text ?? '').replace(/\s+/g, ' ').trim().slice(0, 900),
+    // صفر لا رقم مخترَع: لم يُحسب تشابه أصلاً
+    similarity: 0,
+    accountName: post.account.name,
+    platformName: post.platform.name,
+    publishedAt: post.publishedAt,
+    sentiment: post.sentiment,
+    engagementTotal: post.engagementTotal,
+    url: post.url,
+  }));
+}
+
 /** ترقية نتائج التشابه إلى منشورات كاملة — بإعادة تطبيق النطاق */
 async function hydratePosts(
   rows: SimilarityRow[],
@@ -280,7 +338,22 @@ export async function buildContext(
     searchSimilarPosts(question, scope, from, to),
   ]);
 
-  const posts = await hydratePosts(rows, scope);
+  let posts = await hydratePosts(rows, scope);
+  let retrieval: AssistantContext['retrieval'] = 'SEMANTIC';
 
-  return { snapshot, posts, empty: snapshot.totalPosts === 0 };
+  /*
+   * السقوط إلى البديل حين يخلو البحث والفترة ليست خالية.
+   *
+   * الشرط الثاني مهمّ: فترةٌ لا منشور فيها أصلاً لا بديل لها، وإرجاع
+   * قائمة فارغة عنها هو الصواب.
+   */
+  if (posts.length === 0 && snapshot.totalPosts > 0) {
+    posts = await fallbackPosts(scope, from, to, ASSISTANT_LIMITS.retrievalTopK);
+    retrieval = 'FALLBACK';
+  }
+
+  // قائمةٌ فارغة ليست بحثاً ولا بديلاً — والوسم يقول ذلك بدل أن يزعم أحدهما
+  if (posts.length === 0) retrieval = 'NONE';
+
+  return { snapshot, posts, retrieval, empty: snapshot.totalPosts === 0 };
 }

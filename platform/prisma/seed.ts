@@ -151,6 +151,29 @@ const SETTINGS = [
       'حاجز كلفة: كل منشور استدعاءٌ مدفوع. عند بلوغ السقف تتوقّف المكنسة حتى اليوم التالي، ويبقى التشغيل اليدوي متاحاً. صفر يعني بلا سقف.',
   },
   {
+    key: 'assistant.autoIndex',
+    value: true,
+    category: 'assistant',
+    label: 'الفهرسة الدلالية التلقائية',
+    description:
+      'يفهرس النظام كل منشور جديد ليستطيع المساعد الذكي قراءة نصّه. إطفاؤه يُبقي المساعد يرى الأرقام دون أن يقرأ نصوص المنشورات.',
+  },
+  {
+    key: 'assistant.indexBatch',
+    value: 100,
+    category: 'assistant',
+    label: 'عدد المنشورات في دورة الفهرسة الواحدة',
+    description: 'تعمل المكنسة كل ثلاث دقائق. الأكبر أسرع في تصفية الأرشيف المتراكم.',
+  },
+  {
+    key: 'assistant.indexDailyCap',
+    value: 50000,
+    category: 'assistant',
+    label: 'سقف المقاطع المفهرسة في اليوم',
+    description:
+      'حاجز كلفة. نموذج التضمين أرخص بكثير من نموذج التصنيف، لذلك السقف أعلى. صفر يعني بلا سقف.',
+  },
+  {
     key: 'alerts.highEngagementThreshold',
     value: 1000,
     category: 'alerts',

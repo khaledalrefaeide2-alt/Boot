@@ -443,6 +443,82 @@ check(
   /وإن كان سؤالاً عامّاً أو في منهجيات العمل/.test(prompt),
 );
 
+// ══════════════ الفهرسة الدلالية ══════════════
+
+/*
+ * المساعد يقرأ نصوص المنشورات عبر المتّجهات وحدها.
+ *
+ * وكانت تُبنى بأمرٍ يدوي لا يُشغّله أحد، فبقيت قاعدةٌ فيها خمسة وخمسون ألف
+ * منشور بلا متّجه واحد — والمساعد يرى الأرقام ولا يقرأ نصّاً، فيجيب عن
+ * «أهمّ المنشورات» بأن لا بيانات. وهو يقول الصدق عمّا وصله: لم يصله شيء.
+ */
+const indexer = readCode('src/lib/assistant/indexer.ts');
+const ragSource = readCode('src/lib/assistant/rag.ts');
+const script = readCode('scripts/reindex-embeddings.ts');
+
+check('مكنسة الفهرسة تعمل في العامل الخلفي', /sweepIndexing\(/.test(worker2));
+check('ولها مؤقّت يُنظَّف عند الإيقاف', /clearInterval\(indexTimer\)/.test(worker2));
+check('وتُطفأ من الإعدادات', /settings\.auto/.test(worker2));
+check('ولها سقف يومي', /dailyCap/.test(indexer));
+check('ولا تعمل بلا مفتاح', /isAssistantConfigured\(\)/.test(indexer));
+check(
+  'ولا ترمي أبداً',
+  /export async function sweepIndexing[\s\S]{0,200}?try \{/.test(indexer),
+);
+
+/*
+ * التقطيع نسخةٌ واحدة لا نسختان.
+ *
+ * كان في السكربت وحده، فلو نُسخ إلى المكنسة لانحرف أحدهما عن الآخر بمرور
+ * الوقت — ومتّجهاتٌ بُنيت بتقطيعين مختلفين لا تُقارَن، والبحث يضلّ بصمت.
+ */
+check('التقطيع في وحدة مشتركة', /export function chunkText/.test(indexer));
+check(
+  'والسكربت يستوردها ولا ينسخها',
+  /from '\.\.\/src\/lib\/assistant\/indexer'/.test(script) &&
+    !/function chunk\(/.test(script),
+  'نسختان من التقطيع تنحرفان، ومتّجهاتهما لا تُقارَن',
+);
+
+/*
+ * ★ البديل هو ما يمنع «لا بيانات» وفي القاعدة عشرة آلاف منشور.
+ *
+ * البحث الدلالي يقرأ من جدول المتّجهات، وبين وصول المنشور وفهرسته فجوة.
+ * وفي تلك الفجوة كان المساعد يرى الأرقام ولا يقرأ نصّاً واحداً.
+ */
+check('للاسترجاع بديلٌ حين لا متّجهات', /fallbackPosts\(/.test(ragSource));
+check(
+  'ولا يعمل إلا والفترة غير خالية',
+  /posts\.length === 0 && snapshot\.totalPosts > 0/.test(ragSource),
+  'فترةٌ بلا منشورات لا بديل لها، وإرجاع قائمة فارغة عنها هو الصواب',
+);
+check(
+  'والبديل لا يدّعي تشابهاً لم يُحسب',
+  /similarity: 0/.test(ragSource),
+  'رقمُ تشابهٍ مخترَع يجعل النموذج يرجّح منشوراً على آخر بلا سبب',
+);
+check(
+  'ووضع الاسترجاع يُمرَّر إلى السياق',
+  /retrieval = 'FALLBACK'/.test(ragSource) &&
+    /return \{ snapshot, posts, retrieval/.test(ragSource),
+);
+check(
+  'والقائمة الفارغة تُوسم NONE لا بحثاً',
+  /posts\.length === 0\) retrieval = 'NONE'/.test(ragSource),
+);
+
+const promptSource = readCode('src/lib/assistant/prompts.ts');
+check(
+  'والسياق يقول إنّها ليست نتائج بحث',
+  /ليست نتائج بحث عن السؤال/.test(promptSource),
+  'قائمةٌ رُتّبت بالتفاعل تُعرض نتيجةَ بحثٍ تجعل النموذج يختار أقربها شكلاً',
+);
+check(
+  'ولا يقول «لا منشورات» عن فترة فيها منشورات',
+  /ولا تقل إنّ الفترة بلا منشورات/.test(promptSource),
+  'جملةٌ صحيحة حرفياً ومضلّلة عملياً — يقرؤها النموذج «لا بيانات»',
+);
+
 // ══════════════ الصلاحية ══════════════
 
 const runIdRoute = read('src/app/api/admin/analysis/runs/[id]/route.ts');

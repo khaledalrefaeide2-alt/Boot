@@ -10,6 +10,8 @@ import {
 import { executeExtractionRun } from '@/lib/extraction/service';
 import { executeAnalysisRun } from '@/lib/analysis/run';
 import { SWEEP_INTERVAL_MS, sweepAutoAnalysis } from '@/lib/analysis/auto';
+import { INDEX_SWEEP_INTERVAL_MS, sweepIndexing } from '@/lib/assistant/indexer';
+import { getIndexSettings } from '@/lib/settings';
 import { purgeExpiredSessions } from '@/lib/auth/session';
 import { rebuildAllDailyStats } from '@/lib/stats';
 import { pruneStore } from '@/lib/media/prune';
@@ -125,6 +127,31 @@ const sweepTimer = setInterval(() => {
   });
 }, SWEEP_INTERVAL_MS);
 
+/*
+ * مكنسة الفهرسة الدلالية.
+ *
+ * المساعد يقرأ نصوص المنشورات عبر المتّجهات وحدها، فبلا فهرسة يرى الأرقام
+ * ولا يقرأ نصّاً — ويجيب عن «أهمّ المنشورات» بأن لا بيانات.
+ *
+ * ودورتها أقصر من دورة التصنيف لأنها أرخص بكثير: نموذج التضمين جزءٌ من
+ * ثمن نموذج المحادثة، والمقاطع تُرسَل دفعةً واحدة لا واحداً واحداً.
+ */
+const indexTimer = setInterval(() => {
+  void getIndexSettings()
+    .then((settings) => {
+      if (!settings.auto) return null;
+      return sweepIndexing({ batch: settings.batch, dailyCap: settings.dailyCap });
+    })
+    .then((outcome) => {
+      if (outcome?.swept) {
+        console.log(
+          `[worker] فهرسة دلالية: ${outcome.processed} منشوراً و${outcome.inserted} مقطعاً — بقي ${outcome.remaining}`,
+        );
+      }
+    })
+    .catch(() => undefined);
+}, INDEX_SWEEP_INTERVAL_MS);
+
 const SESSION_PURGE_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const purgeTimer = setInterval(() => {
   void purgeExpiredSessions().catch(() => undefined);
@@ -155,6 +182,7 @@ console.log('  ⚙️  عامل المهام الخلفية يعمل');
 console.log(`  📥 طابور الاستخراج — تزامن ${CONCURRENCY}`);
 console.log('  🧠 طابور التحليل — جولة واحدة في الوقت الواحد');
 console.log(`  🤖 مكنسة التصنيف التلقائي كل ${SWEEP_INTERVAL_MS / 60000} دقائق`);
+console.log(`  🔎 مكنسة الفهرسة الدلالية كل ${INDEX_SWEEP_INTERVAL_MS / 60000} دقائق`);
 console.log('  🕒 فحص الجدولة كل دقيقة');
 console.log('');
 
@@ -162,6 +190,7 @@ async function shutdown(signal: string): Promise<void> {
   console.log(`\n[worker] إيقاف بأمان بعد إشارة ${signal}…`);
   clearInterval(schedulerTimer);
   clearInterval(sweepTimer);
+  clearInterval(indexTimer);
   clearInterval(purgeTimer);
   clearInterval(mediaTimer);
   await Promise.allSettled([
