@@ -261,7 +261,11 @@ check(
 
 // ══════════════ الجولة: أين تُنفَّذ وبأي حدّ ══════════════
 
-const run = read('src/lib/analysis/run.ts');
+/*
+ * بلا تعليقات: تعليقات هذا الملفّ تقتبس ما أُزيل منه لتشرح لماذا أُزيل،
+ * فالفحص على النصّ الخام يسقط على الجملة التي تنهى عن الفعل.
+ */
+const run = readCode('src/lib/analysis/run.ts');
 const worker = read('src/worker/index.ts');
 const runsRoute = read('src/app/api/admin/analysis/runs/route.ts');
 
@@ -314,7 +318,7 @@ check('والشرط يمرّ ببنّاء المنشورات نفسه', /buildPo
 const persist = readCode('src/lib/analysis/persist.ts');
 check(
   'الجولة تمرّ بطبقة الحفظ نفسها',
-  /analyzeAndSave\(post\.id, text\)/.test(run),
+  /analyzeAndSave\(post\.id, post\.text \?\? ''\)/.test(run),
   'مسارٌ ثانٍ للكتابة يعني قيدين مختلفين على البيانات نفسها',
 );
 check('ولا تُكتب النتيجة فوق تصنيف يدوي', /NOT:\s*\{\s*sentimentSource:\s*'MANUAL'\s*\}/.test(persist));
@@ -691,6 +695,63 @@ for (const [label, clause] of [
 ] as const) {
   check(`السياسة: ${label}`, flatPrompt.includes(clause), clause.slice(0, 45));
 }
+
+// ══════════════ لا منشور يبقى بلا حسم ══════════════
+
+/*
+ * ★ كان المنشور بلا نصّ يُتخطّى صامتاً.
+ *
+ * لا يُصنَّف، ولا يُوسَم، ولا يخرج من طابور الانتظار. فيبقى «غير محسوم»
+ * إلى الأبد، ويُعاد قراءته في كل دورة من دورات المكنسة، ويُحسب في «ما
+ * ينتظر التصنيف» فلا يبلغ العدّاد صفراً أبداً.
+ *
+ * وصفحةٌ تنشر صورةً واحدة تحمل كلّ الكلام كانت أوضحَ ما في اللوحة
+ * وأبعدَها عن التصنيف.
+ */
+const persistSource = readCode('src/lib/analysis/persist.ts');
+const analyzerSource = readCode('src/lib/analysis/ai-analyzer.ts');
+const autoSource = readCode('src/lib/analysis/auto.ts');
+
+check(
+  'المنشور المصوَّر يُصنَّف من صورته',
+  /export async function analyzePostImage/.test(analyzerSource),
+);
+check(
+  'والصورة تُقرأ من المخزن المحلّي لا من رابط المنصة',
+  /readThumbnail\(post\.mediaKey\)/.test(persistSource),
+  'روابط شبكات التوزيع تنتهي بعد ساعات، فينجح التصنيف اليوم ويفشل غداً',
+);
+check(
+  'وبلا نصّ ولا صورة تُسجَّل إحالة إلى المراجعة',
+  /function emptyResult/.test(persistSource) && /needsReview: true/.test(persistSource),
+  'السياسة تقول: أحِله إلى المراجعة بدل اختلاق تصنيف — والإحالة قرارٌ يُسجَّل',
+);
+check(
+  'ولا تخطٍّ صامت في حلقة الجولة',
+  !/text\.length < MIN_TEXT_LENGTH\) continue/.test(run),
+  'المتخطّى لا يُعدّ ولا يُوسَم، فيعود في كل دورة إلى الأبد',
+);
+check(
+  'والجولة لا تستثني المنشور بلا نصّ',
+  !/text: \{ not: null \}/.test(run),
+);
+check(
+  'والمكنسة كذلك',
+  !/text: \{ not: null \}/.test(autoSource),
+  'استثناؤه هنا يُبقيه خارج العدّ فلا يُصنَّف أبداً',
+);
+check(
+  'ومقتطف الصورة يُقال إنّه لم يُطابَق',
+  /لم يُطابَق آلياً/.test(persistSource),
+  'مرجعُ المقتطف صورةٌ لا يملك الخادم مطابقتها، فلا يُقرأ موثّقاً كنظيره',
+);
+check(
+  'والبطاقة تشرح لماذا لم يُحسم',
+  /لم يُحسم بعد — إمّا أنّ المنشور بلا نصّ/.test(
+    read('src/components/posts/post-card.tsx'),
+  ),
+  '«غير محسوم» وحدها تُقرأ عطلاً في المنصة',
+);
 
 // ══════════════ الصلاحية ══════════════
 

@@ -197,7 +197,21 @@ export function PostCard({
         بعرض 220 بكسل تلتفّ ثلاثة سطور فتأكل ارتفاعها.
       */}
       <div className="hidden flex-wrap items-center gap-1.5 @[15rem]:flex">
-        <Badge tone={sentimentTone(post.sentiment)} size="sm">
+        {/*
+          «غير محسوم» وحدها تُقرأ عطلاً في المنصة.
+
+          والسبب يُعرف: منشورٌ بلا نصّ ولا صورة، أو لم تبلغه المكنسة بعد.
+          فيُوضَع في `title` — لا يشغل مساحة، ويجيب من سأل.
+        */}
+        <Badge
+          tone={sentimentTone(post.sentiment)}
+          size="sm"
+          title={
+            post.sentiment === 'UNKNOWN'
+              ? 'لم يُحسم بعد — إمّا أنّ المنشور بلا نصّ ولا صورة مخزَّنة، وإمّا أنّ التصنيف التلقائي لم يبلغه بعد'
+              : undefined
+          }
+        >
           {SENTIMENT_LABELS[post.sentiment as keyof typeof SENTIMENT_LABELS] ?? post.sentiment}
         </Badge>
         {post.topic && (

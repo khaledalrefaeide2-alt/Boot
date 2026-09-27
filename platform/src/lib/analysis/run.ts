@@ -55,9 +55,6 @@ const BATCH_SIZE = 25;
  */
 const FLUSH_EVERY = 5;
 
-/** أقصر نصّ يستحق استدعاء المزوّد — ما دونه لا يحمل معنى يُصنَّف */
-const MIN_TEXT_LENGTH = 10;
-
 /**
  * سقف الفشل المتتالي.
  *
@@ -114,8 +111,17 @@ function readStored(value: Prisma.JsonValue | null): StoredFilters {
 function targetWhere(stored: StoredFilters, reanalyze: boolean): Prisma.PostWhereInput {
   return {
     ...buildPostWhere(stored.filters, stored.scope),
-    // منشورٌ بلا نصّ لا يُحلَّل: لا مادة للنموذج، والاستدعاء كلفةٌ بلا ناتج
-    text: { not: null },
+    /*
+     * المنشور بلا نصّ يدخل الجولة.
+     *
+     * وكان يُستثنى بـ`text: { not: null }` — فصفحةٌ تنشر صورةً واحدة تحمل
+     * كلّ الكلام تبقى «غير محسومة» إلى الأبد، وهي أوضح ما في اللوحة.
+     * وطبقةُ الحفظ اليوم تقرأ صورته المخزَّنة وتصنّف منها، فإن لم تجد
+     * سجّلت إحالةً إلى المراجعة — ولا يبقى منشورٌ بلا صفّ مهما كان حاله.
+     *
+     * وهو شرطُ أن يبلغ عدّاد «ما ينتظر التصنيف» صفراً يوماً ما: منشورٌ
+     * لا يُصنَّف ولا يُوسَم يُقرأ في كل دورة إلى الأبد.
+     */
     // ما لم تُطلب الإعادة، تُتخطّى المنشورات التي لها تحليل سابق
     ...(reanalyze ? {} : { analysis: { is: null } }),
   };
@@ -390,11 +396,15 @@ export async function executeAnalysisRun(runId: string): Promise<void> {
       cursor = posts[posts.length - 1]!.id;
 
       for (const post of posts) {
-        const text = (post.text ?? '').trim();
-        if (text.length < MIN_TEXT_LENGTH) continue;
-
+        /*
+         * لا تخطٍّ صامت بعد اليوم.
+         *
+         * كان القصير يُتخطّى هنا فلا يُعدّ في «أُنجز» ولا في «تعثّر» ولا
+         * يُكتب له صفّ — فيعود في كلّ دورة، ويبقى العدّاد لا يصل صفراً.
+         * وطبقةُ الحفظ تتولّى أمره الآن: صورةٌ تُقرأ، أو إحالةٌ تُسجَّل.
+         */
         try {
-          const result = await analyzeAndSave(post.id, text);
+          const result = await analyzeAndSave(post.id, post.text ?? '');
           counters.done += 1;
           consecutiveFailures = 0;
           if (result.sentiment === 'NEGATIVE') counters.negative += 1;

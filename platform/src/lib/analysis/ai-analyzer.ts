@@ -309,6 +309,80 @@ export function requiresReview(result: PostAnalysisResult): boolean {
 }
 
 /**
+ * تصنيف منشور من صورته.
+ *
+ * ★ المنشور بلا نصّ ليس منشوراً بلا موقف.
+ *
+ * كثيرٌ من صفحات الرصد تنشر صورةً واحدة تحمل كلّ الكلام — ملصقٌ فيه
+ * مطالبة، أو لقطةُ خبر، أو بطاقةٌ مكتوبة. ومصنّفُ نصوصٍ لا يرى شيئاً
+ * فيها، فيتركها «غير محسومة» إلى الأبد وهي أوضح ما في اللوحة.
+ *
+ * والصورة تُقرأ من المخزن المحلّي لا من رابط المنصة: روابط شبكات التوزيع
+ * تنتهي صلاحيتها بعد ساعات، فالتصنيف من الرابط ينجح اليوم ويفشل غداً على
+ * المنشور نفسه — وهو أسوأ من فشلٍ ثابت لأنه لا يُعاد إنتاجه.
+ */
+export async function analyzePostImage(
+  image: Buffer,
+  caption: string,
+  learning?: string,
+): Promise<PostAnalysisResult> {
+  const config = getAssistantConfig();
+  const systemPrompt = learning ? `${ANALYSIS_RUBRIC}\n\n---\n\n${learning}` : ANALYSIS_RUBRIC;
+  const dataUrl = `data:image/jpeg;base64,${image.toString('base64')}`;
+
+  try {
+    const completion = await client().chat.completions.create({
+      model: config.chatModel,
+      temperature: 0,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        {
+          role: 'user',
+          content: [
+            {
+              type: 'text',
+              text:
+                'هذا منشور صورته هي محتواه. اقرأ ما في الصورة من نصّ ومشهد، وصنّفه بالسياسة نفسها.' +
+                (caption ? `\n\nوما كُتب معه: ${caption.slice(0, 500)}` : '') +
+                '\n\nوإن لم تجد في الصورة ما يدلّ على موقف تجاه الجهات أو الخدمات، فالتصنيف NEUTRAL لا UNKNOWN — الصورة وصلتك وقرأتها.' +
+                '\n\nوالدليل (evidence) اقتبسه حرفياً من النصّ الظاهر في الصورة، أو اتركه null إن لم يكن فيها نصّ.',
+            },
+            { type: 'image_url', image_url: { url: dataUrl, detail: 'low' } },
+          ],
+        },
+      ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'post_analysis',
+          strict: true,
+          schema: SCHEMA as unknown as Record<string, unknown>,
+        },
+      },
+    });
+
+    const raw = completion.choices[0]?.message?.content;
+    if (!raw) throw new Error('رد فارغ');
+
+    const parsed = JSON.parse(raw) as RawAnalysis;
+    parsed.confidence = Math.min(1, Math.max(0, Number(parsed.confidence) || 0));
+
+    /*
+     * الدليل هنا لا يُطابَق بنصّ المنشور — لا نصّ له.
+     *
+     * فيُقصّ طولاً وحده. والمطابقة التي تحرس المقتطف المختلَق في مسار
+     * النصّ لا معنى لها هنا: مرجعُ المقتطف صورةٌ لا يملك الخادم قراءتها.
+     * ويُقال ذلك في سبب المراجعة، فلا يُقرأ المقتطف موثّقاً كنظيره.
+     */
+    if (parsed.evidence) parsed.evidence = parsed.evidence.trim().slice(0, MAX_EVIDENCE_CHARS);
+
+    return { ...parsed, stance: deriveStance(parsed) };
+  } catch (error) {
+    throw toAssistantError(error);
+  }
+}
+
+/**
  * تحليل نصّ منشور واحد.
  *
  * `learning` كتلةٌ اختيارية تحمل توجيهات الإدارة وأمثلة من تصحيحات

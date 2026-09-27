@@ -32,7 +32,8 @@ export type SweepOutcome =
 /** المنشورات التي تنتظر تصنيفاً الآن */
 export async function pendingCount(): Promise<number> {
   return prisma.post.count({
-    where: { text: { not: null }, isHidden: false, analysis: { is: null } },
+    // بلا شرط النصّ: المنشور المصوَّر يُصنَّف من صورته، وما لا مادّة فيه تُسجَّل إحالته
+    where: { isHidden: false, analysis: { is: null } },
   });
 }
 

@@ -1,6 +1,13 @@
 import 'server-only';
 import { prisma } from '@/lib/db';
-import { analyzePostText, requiresReview, type PostAnalysisResult } from './ai-analyzer';
+import {
+  analyzePostImage,
+  analyzePostText,
+  deriveStance,
+  requiresReview,
+  type PostAnalysisResult,
+} from './ai-analyzer';
+import { readThumbnail } from '@/lib/media/store';
 import { activeGuidance, buildLearningBlock, findSimilarCorrections } from './learning';
 import { getAssistantConfig } from '@/lib/assistant/config';
 
@@ -14,6 +21,40 @@ import { getAssistantConfig } from '@/lib/assistant/config';
  * ولا يُلمس `topicId` ولا `isHidden` ولا أي حقل يُغيّر ظهور المنشور:
  * التحليل يصف ولا يتصرّف. إخفاء منشور قرارٌ بشريّ يمرّ بشاشة المراجعة.
  */
+/** أقصر نصّ يستحقّ التصنيف من النصّ وحده */
+const MIN_TEXT_LENGTH = 10;
+
+/**
+ * نتيجةُ منشورٍ لا مادّة فيه.
+ *
+ * ★ هذه هي التي كانت ناقصة.
+ *
+ * المنشور بلا نصّ ولا صورة كان يُتخطّى صامتاً: لا يُصنَّف، ولا يُوسَم،
+ * ولا يخرج من طابور الانتظار. فيبقى «غير محسوم» إلى الأبد، ويُعاد قراءته
+ * في كلّ دورة من دورات المكنسة، ويُحسب في «ما ينتظر التصنيف» فلا يبلغ
+ * العدّاد صفراً أبداً.
+ *
+ * والسياسة نفسها تقول ما يُفعل: «أحله إلى المراجعة بدل اختلاق تصنيف».
+ * والإحالة قرارٌ يُسجَّل لا عملٌ يُترك.
+ */
+function emptyResult(reason: string): PostAnalysisResult & { needsReview: boolean } {
+  const raw = {
+    sentiment: 'UNKNOWN' as const,
+    target: null,
+    subject: '',
+    rationale: reason,
+    evidence: null,
+    isMixed: false,
+    isRelayedCriticism: false,
+    reviewReason: reason,
+    confidence: 0,
+    themes: [],
+    riskFlags: [],
+    riskSeverity: 'NONE' as const,
+  };
+  return { ...raw, stance: deriveStance(raw), needsReview: true };
+}
+
 export async function analyzeAndSave(postId: string, text: string) {
   const config = getAssistantConfig();
 
@@ -28,8 +69,49 @@ export async function analyzeAndSave(postId: string, text: string) {
   ]);
 
   const learning = buildLearningBlock(guidance, examples);
-  const result: PostAnalysisResult = await analyzePostText(text, learning || undefined);
-  const needsReview = requiresReview(result);
+
+  /*
+   * المسار يُختار بحسب ما يملكه المنشور فعلاً.
+   *
+   * نصٌّ كافٍ ← تصنيفٌ من النصّ. وبلا نصّ ← تصنيفٌ من الصورة المخزَّنة.
+   * وبلا هذا ولا ذاك ← إحالةٌ مسجَّلة إلى المراجعة.
+   *
+   * ولا يبقى منشورٌ بلا صفٍّ في الجدول مهما كان حاله — وهو شرط أن يبلغ
+   * عدّاد «ما ينتظر التصنيف» صفراً يوماً ما.
+   */
+  const trimmed = text.trim();
+  let result: PostAnalysisResult;
+  let needsReview: boolean;
+
+  if (trimmed.length >= MIN_TEXT_LENGTH) {
+    result = await analyzePostText(trimmed, learning || undefined);
+    needsReview = requiresReview(result);
+  } else {
+    const post = await prisma.post.findUnique({
+      where: { id: postId },
+      select: { mediaKey: true },
+    });
+    const image = post?.mediaKey ? await readThumbnail(post.mediaKey) : null;
+
+    if (image) {
+      result = await analyzePostImage(image, trimmed, learning || undefined);
+      needsReview = requiresReview(result);
+      // مرجعُ المقتطف صورةٌ لا يملك الخادم مطابقتها، فيُقال ذلك لا يُكتم
+      if (result.evidence) {
+        result.reviewReason =
+          result.reviewReason ?? 'التصنيف من صورة المنشور — المقتطف من نصّ الصورة لم يُطابَق آلياً';
+        needsReview = true;
+      }
+    } else {
+      const fallback = emptyResult(
+        trimmed.length === 0
+          ? 'المنشور بلا نصّ وبلا صورة مخزَّنة — لا مادّة للتصنيف'
+          : 'نصّ المنشور أقصر من أن يُصنَّف، ولا صورة مخزَّنة له',
+      );
+      result = fallback;
+      needsReview = fallback.needsReview;
+    }
+  }
 
   await prisma.$transaction([
     prisma.postAnalysis.upsert({
