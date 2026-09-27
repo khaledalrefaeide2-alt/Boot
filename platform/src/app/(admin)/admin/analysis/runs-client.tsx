@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { Brain, CircleSlash, Play } from 'lucide-react';
+import { Bot, Brain, CircleSlash, Play } from 'lucide-react';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
@@ -24,6 +24,7 @@ import { formatDateTime, formatNumber } from '@/lib/utils';
 interface AnalysisRun {
   id: string;
   status: 'PENDING' | 'RUNNING' | 'SUCCEEDED' | 'FAILED' | 'CANCELLED';
+  trigger: 'MANUAL' | 'AUTO';
   reanalyze: boolean;
   total: number;
   done: number;
@@ -53,6 +54,14 @@ const STATUS_TONE: Record<AnalysisRun['status'], BadgeTone> = {
   FAILED: 'danger',
   CANCELLED: 'warning',
 };
+
+interface AutoStatus {
+  enabled: boolean;
+  pending: number;
+  today: number;
+  dailyCap: number;
+  batch: number;
+}
 
 function isLive(status: AnalysisRun['status']): boolean {
   return status === 'PENDING' || status === 'RUNNING';
@@ -146,7 +155,8 @@ export function RunsClient() {
 
   const runsQuery = useQuery({
     queryKey: ['analysis-runs'],
-    queryFn: () => api.get<{ runs: AnalysisRun[] }>('/api/admin/analysis/runs'),
+    queryFn: () =>
+      api.get<{ runs: AnalysisRun[]; auto: AutoStatus }>('/api/admin/analysis/runs'),
     /*
      * الاستطلاع يعمل ما دامت هناك جولة حيّة، ويتوقّف بعدها.
      *
@@ -159,7 +169,15 @@ export function RunsClient() {
   });
 
   const runs = runsQuery.data?.runs ?? [];
+  const auto = runsQuery.data?.auto;
   const active = runs.find((run) => isLive(run.status)) ?? null;
+  /*
+   * الجولة التلقائية لا تُعطّل الزرّ.
+   *
+   * المكنسة تعمل كل خمس دقائق، فلو عُطّل الزرّ لوجودها لبدا معطّلاً أكثر
+   * الوقت بلا سبب مفهوم. والخادم يُلغيها ويُسلّم الطابور لمن طلب.
+   */
+  const blockedByManual = active !== null && active.trigger === 'MANUAL';
   const preview = previewQuery.data?.preview;
   const candidates = reanalyze ? preview?.matching : preview?.pending;
   const willAnalyze = Math.min(candidates ?? 0, Number(limit) || 0);
@@ -199,10 +217,60 @@ export function RunsClient() {
 
   return (
     <div className="space-y-5">
+      {/*
+        حال الأتمتة أوّل ما يُرى.
+
+        التصنيف يجري من تلقاء نفسه، فأوّل سؤال لمن يفتح هذه الشاشة: «هل
+        يعمل؟ وكم بقي؟». والجولة اليدوية تحتها لأنها الاستثناء اليوم لا
+        القاعدة — تُستعمل لإعادة تصنيف ما سبق، أو لتعجيل دفعةٍ بعينها.
+      */}
+      {auto && (
+        <Alert
+          tone={auto.enabled ? 'info' : 'warning'}
+          title={auto.enabled ? 'التصنيف التلقائي يعمل' : 'التصنيف التلقائي مُطفأ'}
+        >
+          {auto.enabled ? (
+            <>
+              يصنّف الذكاء الاصطناعي كل منشور جديد من تلقاء نفسه، بدفعات من{' '}
+              <span className="num font-semibold">{formatNumber(auto.batch)}</span> كل خمس دقائق.{' '}
+              {auto.pending > 0 ? (
+                <>
+                  بانتظار التصنيف الآن:{' '}
+                  <span className="num font-semibold">{formatNumber(auto.pending)}</span> منشوراً.
+                </>
+              ) : (
+                'لا منشورات تنتظر التصنيف.'
+              )}{' '}
+              صُنّف تلقائياً في آخر ٢٤ ساعة:{' '}
+              <span className="num font-semibold">{formatNumber(auto.today)}</span>
+              {auto.dailyCap > 0 ? (
+                <>
+                  {' '}
+                  من سقف <span className="num">{formatNumber(auto.dailyCap)}</span>.
+                </>
+              ) : (
+                ' (بلا سقف يومي).'
+              )}
+            </>
+          ) : (
+            <>
+              المنشورات الجديدة تبقى «غير محسومة» حتى تُشغَّل جولة من هنا. فعّله من شاشة
+              الإعدادات إن أردته تلقائياً.{' '}
+              {auto.pending > 0 && (
+                <>
+                  ينتظر التصنيف الآن{' '}
+                  <span className="num font-semibold">{formatNumber(auto.pending)}</span> منشوراً.
+                </>
+              )}
+            </>
+          )}
+        </Alert>
+      )}
+
       <Card>
         <CardHeader
-          title="جولة تحليل جديدة"
-          description="يُعيد الذكاء الاصطناعي قراءة المنشورات المحدَّدة ويكتب لها موقفاً ومشاعر وإشارات خطر."
+          title="جولة تحليل يدوية"
+          description="لتعجيل دفعةٍ بعينها، أو لإعادة تصنيف ما صُنّف سابقاً بعد تغيير التوجيهات."
         />
         <CardBody className="space-y-4">
           <FilterBar
@@ -262,11 +330,11 @@ export function RunsClient() {
           <Button
             className="w-full sm:w-auto"
             onClick={() => setConfirming(true)}
-            disabled={Boolean(active) || willAnalyze === 0 || previewQuery.isPending}
+            disabled={blockedByManual || willAnalyze === 0 || previewQuery.isPending}
           >
             <Play aria-hidden />
-            {active
-              ? 'هناك جولة قائمة'
+            {blockedByManual
+              ? 'هناك جولة يدوية قائمة'
               : willAnalyze > 0
                 ? `حلّل ${formatNumber(willAnalyze)} منشوراً`
                 : 'لا منشورات مطابقة'}
@@ -282,6 +350,12 @@ export function RunsClient() {
                 <Badge tone={STATUS_TONE[active.status]} size="sm">
                   {STATUS_LABEL[active.status]}
                 </Badge>
+                {active.trigger === 'AUTO' && (
+                  <Badge tone="info" size="sm">
+                    <Bot className="h-3 w-3" aria-hidden />
+                    تلقائي
+                  </Badge>
+                )}
                 {active.reanalyze && (
                   <Badge tone="neutral" size="sm">
                     إعادة تحليل
@@ -325,6 +399,12 @@ export function RunsClient() {
                     <Badge tone={STATUS_TONE[run.status]} size="sm">
                       {STATUS_LABEL[run.status]}
                     </Badge>
+                    {run.trigger === 'AUTO' && (
+                      <Badge tone="info" size="sm">
+                        <Bot className="h-3 w-3" aria-hidden />
+                        تلقائي
+                      </Badge>
+                    )}
                     {run.reanalyze && (
                       <Badge tone="neutral" size="sm">
                         إعادة تحليل

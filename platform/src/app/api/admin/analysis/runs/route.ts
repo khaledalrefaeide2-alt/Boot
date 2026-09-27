@@ -22,6 +22,8 @@ import {
   createAnalysisRun,
   reapStaleRuns,
 } from '@/lib/analysis/run';
+import { analyzedToday, pendingCount } from '@/lib/analysis/auto';
+import { getAnalysisSettings } from '@/lib/settings';
 
 /*
  * جولات التحليل.
@@ -65,6 +67,7 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         status: true,
+        trigger: true,
         reanalyze: true,
         total: true,
         done: true,
@@ -80,7 +83,29 @@ export async function GET(request: NextRequest) {
       },
     });
 
-    return jsonOk({ runs });
+    /*
+     * حال الأتمتة يُعرض مع القائمة لا في شاشة الإعدادات وحدها.
+     *
+     * التصنيف يجري من تلقاء نفسه، فأوّل سؤال يسأله من يفتح هذه الشاشة:
+     * «هل يعمل؟ وكم بقي؟». ورؤية جولاتٍ تلقائية في القائمة لا تجيب عن
+     * ذلك: قد تكون آخرها قبل ساعة لأن السقف بلغ، ولا شيء يقول ذلك.
+     */
+    const [settings, pending, today] = await Promise.all([
+      getAnalysisSettings(),
+      pendingCount(),
+      analyzedToday(),
+    ]);
+
+    return jsonOk({
+      runs,
+      auto: {
+        enabled: settings.auto,
+        pending,
+        today,
+        dailyCap: settings.dailyCap,
+        batch: settings.autoBatch,
+      },
+    });
   } catch (error) {
     return jsonError(error);
   }

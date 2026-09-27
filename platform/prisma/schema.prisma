@@ -1139,6 +1139,12 @@ model PostAnalysis {
 
 // ═══════════════ جولات التحليل ═══════════════
 
+/// من طلب جولة التحليل
+enum AnalysisRunTrigger {
+  MANUAL
+  AUTO
+}
+
 /// حالة جولة التحليل
 enum AnalysisRunStatus {
   PENDING
@@ -1157,6 +1163,14 @@ enum AnalysisRunStatus {
 model AnalysisRun {
   id     String            @id @default(cuid())
   status AnalysisRunStatus @default(PENDING)
+
+  /**
+   * يدويّة أم تلقائية.
+   * التصنيف يجري من تلقاء نفسه على ما يصل من منشورات، فأكثر الجولات
+   * تلقائية. وخلطها بما طلبه إنسان يُخفي الاثنين: من يبحث عن جولته بين
+   * أربعٍ وعشرين جولةً تلقائية لا يجدها.
+   */
+  trigger AnalysisRunTrigger @default(MANUAL)
 
   /// الفلاتر التي حُدّدت للجولة — تُعرض ليُعرف ما شملته
   filters   Json?
@@ -1187,6 +1201,7 @@ model AnalysisRun {
   requestedBy User? @relation(fields: [requestedById], references: [id], onDelete: SetNull)
 
   @@index([status, createdAt])
+  @@index([trigger, finishedAt])
   @@map("analysis_runs")
 }
 

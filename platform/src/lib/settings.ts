@@ -85,3 +85,36 @@ export async function getExcludeReplies(): Promise<boolean> {
   if (raw === 'false' || raw === 0) return false;
   return true;
 }
+
+/**
+ * إعدادات التصنيف التلقائي.
+ *
+ * التصنيف يجري من تلقاء نفسه على ما يصل من منشورات — لا ينتظر أحداً
+ * يفتح شاشة ويضغط زرّاً. والمكنسة تعمل في العامل الخلفي وتلتقط كل منشور
+ * بلا تصنيف: الجديد الوارد، والمتراكم القديم، وما أخفق في جولة سابقة.
+ *
+ * والسقف اليومي ليس تحفّظاً على الأتمتة بل شرطُ أن تكون آمنة: كلّ منشور
+ * استدعاءٌ مدفوع، وحسابٌ واحد يُضاف بخطأ وينشر ألفاً في اليوم يصير فاتورةً
+ * لا أحد طلبها. والسقف يوقف المكنسة ولا يوقف التشغيل اليدوي، فيبقى
+ * لصاحب المنصة أن يتجاوزه بقصد.
+ */
+export async function getAnalysisSettings(): Promise<{
+  auto: boolean;
+  autoBatch: number;
+  dailyCap: number;
+}> {
+  const settings = await getAllSettings();
+
+  const rawAuto = settings['analysis.auto'];
+  const auto = rawAuto === undefined ? true : rawAuto !== false && rawAuto !== 'false' && rawAuto !== 0;
+
+  const batch = Number(settings['analysis.autoBatch'] ?? 200);
+  const cap = Number(settings['analysis.dailyCap'] ?? 3000);
+
+  return {
+    auto,
+    // حدّان صلبان حول ما يُقرأ من القاعدة: قيمةٌ مشوَّهة لا توقف العمل ولا تُطلقه
+    autoBatch: Number.isFinite(batch) ? Math.min(2000, Math.max(1, Math.floor(batch))) : 200,
+    dailyCap: Number.isFinite(cap) && cap > 0 ? Math.floor(cap) : 0,
+  };
+}

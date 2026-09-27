@@ -17,6 +17,7 @@ type Params = { params: Promise<{ id: string }> };
 const RUN_SELECT = {
   id: true,
   status: true,
+  trigger: true,
   reanalyze: true,
   total: true,
   done: true,

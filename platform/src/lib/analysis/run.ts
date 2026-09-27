@@ -156,7 +156,7 @@ export async function activeRun() {
   return prisma.analysisRun.findFirst({
     where: { status: { in: ['PENDING', 'RUNNING'] } },
     orderBy: { createdAt: 'desc' },
-    select: { id: true, status: true, total: true, done: true, createdAt: true },
+    select: { id: true, status: true, total: true, done: true, createdAt: true, trigger: true },
   });
 }
 
@@ -165,7 +165,9 @@ export interface CreateAnalysisRunOptions {
   scope: AccountScope;
   reanalyze: boolean;
   limit: number;
-  requestedById: string;
+  /** null للجولة التلقائية — لا إنسان طلبها */
+  requestedById: string | null;
+  trigger?: 'MANUAL' | 'AUTO';
 }
 
 export interface CreateAnalysisRunResult {
@@ -186,12 +188,30 @@ export async function createAnalysisRun(
 ): Promise<CreateAnalysisRunResult> {
   await reapStaleRuns();
 
+  const trigger = options.trigger ?? 'MANUAL';
+
+  /*
+   * طلبُ الإنسان يسبق المكنسة.
+   *
+   * المكنسة تعمل كل بضع دقائق بلا انقطاع، فلو مُنع التشغيل اليدوي لوجودها
+   * لصار الزرّ معطّلاً أكثر الوقت — ولا يفهم من يضغطه لماذا. فتُلغى
+   * الجولة التلقائية ويُسلَّم الطابور لمن طلب، وما صنّفته قبل الإلغاء
+   * محفوظ، وستعود هي في الدورة التالية إلى ما بقي.
+   *
+   * والعكس لا يصحّ: المكنسة لا تُلغي جولةً يدوية، بل تتخطّى دورتها.
+   */
   const existing = await activeRun();
   if (existing) {
-    throw new AnalysisRunError(
-      409,
-      'هناك جولة تحليل قائمة الآن — انتظر انتهاءها أو ألغِها قبل بدء جولة جديدة',
-    );
+    if (trigger === 'MANUAL' && existing.trigger === 'AUTO') {
+      await cancelAnalysisRun(existing.id);
+    } else {
+      throw new AnalysisRunError(
+        409,
+        trigger === 'MANUAL'
+          ? 'هناك جولة تحليل قائمة الآن — انتظر انتهاءها أو ألغِها قبل بدء جولة جديدة'
+          : 'جولة قائمة',
+      );
+    }
   }
 
   const stored = storedFilters(options.filters, options.scope);
@@ -212,6 +232,7 @@ export async function createAnalysisRun(
       status: 'PENDING',
       filters: stored as unknown as Prisma.InputJsonValue,
       reanalyze: options.reanalyze,
+      trigger,
       total,
       requestedById: options.requestedById,
     },

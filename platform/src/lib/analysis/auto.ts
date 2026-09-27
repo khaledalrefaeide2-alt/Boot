@@ -1,0 +1,127 @@
+import 'server-only';
+import { prisma } from '@/lib/db';
+import { getAnalysisSettings } from '@/lib/settings';
+import { isAssistantConfigured } from '@/lib/assistant/config';
+import { postFiltersSchema } from '@/lib/validation/posts';
+import { AnalysisRunError, activeRun, createAnalysisRun, reapStaleRuns } from './run';
+
+/*
+ * المكنسة — التصنيف يجري من تلقاء نفسه.
+ *
+ * كان التصنيف ينتظر إنساناً يفتح شاشة ويضغط زرّاً، فالمنشور الوارد ليلاً
+ * يبقى «غير محسوم» إلى أن ينتبه أحد. ولوحةٌ نصفُ منشوراتها بلا تصنيف لا
+ * تُقرأ: النِّسب فيها محسوبة على ما صُنّف وحده، وهي تبدو نسباً كاملة.
+ *
+ * وهذه تعمل في العامل الخلفي كل بضع دقائق، وتلتقط كلّ منشور بلا تصنيف —
+ * الجديد الوارد، والمتراكم القديم، وما أخفق في جولة سابقة. مكنسةٌ واحدة
+ * تكفي عن مسارين: لا حاجة إلى تعليقها بنهاية الاستخراج، ولا إلى مسارٍ
+ * ثانٍ يُصلح ما فات الأول — ما يفوتها الآن تلتقطه بعد دقائق.
+ *
+ * ★ ولا تلمس ما صُنّف. الشرط `analysis IS NULL` يُبقيها على غير المصنَّف
+ *   وحده، فلا تُعيد تصنيف شيء ولا تكتب فوق تصحيح مراجع. وإعادة التصنيف
+ *   قرارٌ يُطلب من الشاشة بقصد.
+ */
+
+/** كل كم تعمل المكنسة — دقائق لا ثوانٍ: التصنيف ليس عاجلاً */
+export const SWEEP_INTERVAL_MS = 5 * 60 * 1000;
+
+export type SweepOutcome =
+  | { swept: false; reason: string }
+  | { swept: true; runId: string; total: number; pending: number };
+
+/** المنشورات التي تنتظر تصنيفاً الآن */
+export async function pendingCount(): Promise<number> {
+  return prisma.post.count({
+    where: { text: { not: null }, isHidden: false, analysis: { is: null } },
+  });
+}
+
+/**
+ * ما صنّفته المكنسة في آخر أربع وعشرين ساعة.
+ *
+ * يُحسب من الجولات التلقائية وحدها: التشغيل اليدوي قرارٌ صريح من صاحب
+ * المنصة، ولا يصحّ أن يستهلك السقف الذي يحمي من الإنفاق غير المقصود ثمّ
+ * يوقف الأتمتة بسببه.
+ *
+ * ويُحسب من `done` لا من `total`: الجولة التي أُلغيت بعد عشرة منشورات
+ * دفعت ثمن عشرة لا ثمن مئتين.
+ */
+export async function analyzedToday(): Promise<number> {
+  const since = new Date(Date.now() - 24 * 60 * 60 * 1000);
+  const rows = await prisma.analysisRun.aggregate({
+    where: { trigger: 'AUTO', createdAt: { gte: since } },
+    _sum: { done: true },
+  });
+  return rows._sum.done ?? 0;
+}
+
+/**
+ * دورة واحدة من المكنسة.
+ *
+ * لا ترمي أبداً — تعمل في مؤقّت بلا من يلتقط خطأها، والاستثناء الخارج
+ * منها يسقط العامل الخلفي كله ومعه الاستخراج والصيانة.
+ */
+export async function sweepAutoAnalysis(): Promise<SweepOutcome> {
+  try {
+    const settings = await getAnalysisSettings();
+    if (!settings.auto) return { swept: false, reason: 'التصنيف التلقائي مُطفأ من الإعدادات' };
+
+    if (!isAssistantConfigured()) {
+      return { swept: false, reason: 'مفتاح OpenAI غير معرّف' };
+    }
+
+    // الجولة الميتة تُغلق أولاً، وإلا قفلت المكنسة إلى الأبد
+    await reapStaleRuns();
+
+    const running = await activeRun();
+    if (running) return { swept: false, reason: 'جولة قائمة' };
+
+    const pending = await pendingCount();
+    if (pending === 0) return { swept: false, reason: 'لا منشورات تنتظر التصنيف' };
+
+    if (settings.dailyCap > 0) {
+      const used = await analyzedToday();
+      if (used >= settings.dailyCap) {
+        return { swept: false, reason: `بُلغ سقف اليوم (${settings.dailyCap})` };
+      }
+      // الدفعة الأخيرة تُقصّ على ما بقي من السقف فلا تتجاوزه
+      const room = settings.dailyCap - used;
+      if (room < settings.autoBatch) settings.autoBatch = room;
+    }
+
+    /*
+     * الفلاتر مفتوحة والنطاق كامل.
+     *
+     * المكنسة ليست مستخدماً له نطاق حسابات: هي النظام يصنّف ما في قاعدته.
+     * وحصرُها بنطاقٍ ما يترك حسابات بلا تصنيف إلى الأبد — لا أحد سيمرّ
+     * عليها، لأن المرور هو ما ألغيناه.
+     *
+     * و`range: 'all'` لأن المتراكم القديم يحتاج تصفيةً هو أيضاً، لا
+     * الوارد الجديد وحده.
+     */
+    const result = await createAnalysisRun({
+      filters: postFiltersSchema.parse({ range: 'all' }),
+      scope: null,
+      reanalyze: false,
+      limit: settings.autoBatch,
+      requestedById: null,
+      trigger: 'AUTO',
+    });
+
+    return { swept: true, runId: result.run.id, total: result.run.total, pending };
+  } catch (error) {
+    /*
+     * «جولة قائمة» و«لا منشورات» ليستا خطأً بل حالتين عاديتين في مكنسة
+     * تعمل كل خمس دقائق. وطباعتهما في السجلّ كل دورة تُغرقه بما لا يُقرأ،
+     * فيضيع فيه العطب الحقيقي حين يقع.
+     */
+    if (error instanceof AnalysisRunError) {
+      return { swept: false, reason: error.message };
+    }
+    console.error(
+      '[auto-analysis] تعثّرت دورة المكنسة:',
+      error instanceof Error ? error.message : error,
+    );
+    return { swept: false, reason: 'خطأ غير متوقّع' };
+  }
+}

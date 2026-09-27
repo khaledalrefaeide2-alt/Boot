@@ -9,6 +9,7 @@ import {
 } from '@/lib/queue';
 import { executeExtractionRun } from '@/lib/extraction/service';
 import { executeAnalysisRun } from '@/lib/analysis/run';
+import { SWEEP_INTERVAL_MS, sweepAutoAnalysis } from '@/lib/analysis/auto';
 import { purgeExpiredSessions } from '@/lib/auth/session';
 import { rebuildAllDailyStats } from '@/lib/stats';
 import { pruneStore } from '@/lib/media/prune';
@@ -106,6 +107,24 @@ const schedulerTimer = setInterval(() => {
   });
 }, SCHEDULER_INTERVAL_MS);
 
+/*
+ * مكنسة التصنيف التلقائي.
+ *
+ * التصنيف لا ينتظر أحداً يفتح شاشة: كل بضع دقائق تُلتقط المنشورات التي
+ * بلا تصنيف وتُسلَّم إلى جولة. والدورة التي لا تجد شيئاً — أو تجد جولةً
+ * قائمة — تصمت ولا تكتب في السجلّ: مكنسةٌ تعمل كل خمس دقائق تُغرق السجلّ
+ * بما لا يُقرأ، فيضيع فيه العطب الحقيقي حين يقع.
+ */
+const sweepTimer = setInterval(() => {
+  void sweepAutoAnalysis().then((outcome) => {
+    if (outcome.swept) {
+      console.log(
+        `[worker] تصنيف تلقائي: بدأت جولة لـ${outcome.total} منشوراً (بانتظار التصنيف ${outcome.pending})`,
+      );
+    }
+  });
+}, SWEEP_INTERVAL_MS);
+
 const SESSION_PURGE_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const purgeTimer = setInterval(() => {
   void purgeExpiredSessions().catch(() => undefined);
@@ -135,12 +154,14 @@ console.log('');
 console.log('  ⚙️  عامل المهام الخلفية يعمل');
 console.log(`  📥 طابور الاستخراج — تزامن ${CONCURRENCY}`);
 console.log('  🧠 طابور التحليل — جولة واحدة في الوقت الواحد');
+console.log(`  🤖 مكنسة التصنيف التلقائي كل ${SWEEP_INTERVAL_MS / 60000} دقائق`);
 console.log('  🕒 فحص الجدولة كل دقيقة');
 console.log('');
 
 async function shutdown(signal: string): Promise<void> {
   console.log(`\n[worker] إيقاف بأمان بعد إشارة ${signal}…`);
   clearInterval(schedulerTimer);
+  clearInterval(sweepTimer);
   clearInterval(purgeTimer);
   clearInterval(mediaTimer);
   await Promise.allSettled([
