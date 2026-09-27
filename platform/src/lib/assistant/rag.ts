@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db';
 import { type AccountScope } from '@/lib/auth/account-scope';
 import { ASSISTANT_LIMITS, embeddingDimensions, getAssistantConfig } from './config';
 import { generateEmbedding } from './openai';
-import type { AssistantContext, PeriodSnapshot, RetrievedPost } from './types';
+import type { AssistantContext, DailyRow, PeriodSnapshot, RetrievedPost } from './types';
 
 /*
  * طبقة الاسترجاع.
@@ -209,6 +209,70 @@ async function hydratePosts(
     .filter((post): post is RetrievedPost => post !== null);
 }
 
+interface DailyRawRow {
+  day: Date;
+  posts: bigint;
+  engagement: bigint | null;
+  positive: bigint;
+  negative: bigint;
+  neutral: bigint;
+  unknown: bigint;
+}
+
+/**
+ * التفصيل اليومي.
+ *
+ * استعلامٌ واحد يجمع كل ما يخصّ اليوم: العدد، والتفاعل، وتوزيع الموقف.
+ * ولا يمرّ بـ`groupBy` في Prisma لأنها لا تجمّع على تعبير — والتجميع هنا
+ * على `DATE(publishedAt)` لا على عمود.
+ *
+ * والتاريخ يُقصّ في المنطقة الزمنية للقاعدة، وهي UTC في هذا النشر. ولو
+ * اختلفت لصار «أمس» في الجواب غير «أمس» عند القارئ بساعات — وهو خطأ لا
+ * يظهر إلا في منشورات ما بعد منتصف الليل.
+ */
+async function buildDaily(
+  scope: AccountScope,
+  from: Date,
+  to: Date,
+): Promise<DailyRow[]> {
+  const scopeFilter =
+    scope === null
+      ? Prisma.empty
+      : scope.length === 0
+        ? Prisma.sql`AND FALSE`
+        : Prisma.sql`AND p."accountId" IN (${Prisma.join(scope)})`;
+
+  const rows = await prisma.$queryRaw<DailyRawRow[]>(Prisma.sql`
+    SELECT
+      DATE(p."publishedAt")                                        AS "day",
+      COUNT(*)                                                     AS "posts",
+      SUM(p."engagementTotal")                                     AS "engagement",
+      COUNT(*) FILTER (WHERE p."sentiment" = 'POSITIVE')           AS "positive",
+      COUNT(*) FILTER (WHERE p."sentiment" = 'NEGATIVE')           AS "negative",
+      COUNT(*) FILTER (WHERE p."sentiment" = 'NEUTRAL')            AS "neutral",
+      COUNT(*) FILTER (WHERE p."sentiment" NOT IN ('POSITIVE', 'NEGATIVE', 'NEUTRAL'))
+                                                                   AS "unknown"
+    FROM "posts" p
+    WHERE p."isHidden" = FALSE
+      AND p."publishedAt" >= ${from}
+      AND p."publishedAt" <= ${to}
+      ${scopeFilter}
+    GROUP BY 1
+    ORDER BY 1 DESC
+    LIMIT 120
+  `);
+
+  return rows.map((row) => ({
+    day: row.day.toISOString().slice(0, 10),
+    posts: Number(row.posts),
+    engagement: Number(row.engagement ?? 0),
+    positive: Number(row.positive),
+    negative: Number(row.negative),
+    neutral: Number(row.neutral),
+    unknown: Number(row.unknown),
+  }));
+}
+
 /** لقطة رقمية عن الفترة — كلّها من القاعدة، ولا رقم منها من النموذج */
 export async function buildSnapshot(
   scope: AccountScope,
@@ -221,9 +285,10 @@ export async function buildSnapshot(
     ...scopeWhere(scope),
   };
 
-  const [total, sentimentGroups, topicGroups, accountGroups, engagement, notifications] =
+  const [total, daily, sentimentGroups, topicGroups, accountGroups, engagement, notifications] =
     await Promise.all([
       prisma.post.count({ where }),
+      buildDaily(scope, from, to),
       prisma.post.groupBy({ by: ['sentiment'], where, _count: { _all: true } }),
       prisma.post.groupBy({
         by: ['topicId'],
@@ -297,6 +362,7 @@ export async function buildSnapshot(
     fromDate: from,
     toDate: to,
     totalPosts: total,
+    daily,
     totalEngagement: engagement._sum.engagementTotal ?? 0,
     sentimentCounts,
     topTopics: topicGroups

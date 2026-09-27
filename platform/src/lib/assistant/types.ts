@@ -22,10 +22,31 @@ export interface RetrievedPost {
 }
 
 /** لقطة رقمية عن الفترة — تُبنى من القاعدة لا من النموذج */
+/** صفٌّ ليومٍ واحد في الفترة */
+export interface DailyRow {
+  /** YYYY-MM-DD */
+  day: string;
+  posts: number;
+  engagement: number;
+  positive: number;
+  negative: number;
+  neutral: number;
+  unknown: number;
+}
+
 export interface PeriodSnapshot {
   fromDate: Date;
   toDate: Date;
   totalPosts: number;
+  /**
+   * تفصيل الفترة يوماً بيوم.
+   *
+   * ★ بدونه لا يستطيع المساعد أن يجيب «كم منشوراً أمس؟» — وهو أكثر ما
+   *   يُسأل في منصة رصد. كانت اللقطة تحمل مجاميع الفترة كلها، فيُسأل عن
+   *   يومٍ بعينه فيقول «البيانات غير متاحة» — وهي متاحة، لكنها لم تصله
+   *   مفصَّلة. والجمع الذي لا يُفكّ يُخفي كلّ سؤال أدقّ منه.
+   */
+  daily: DailyRow[];
   sentimentCounts: Record<string, number>;
   topTopics: { name: string; count: number }[];
   topKeywords: { term: string; count: number }[];
