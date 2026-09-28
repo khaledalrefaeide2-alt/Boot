@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, LayoutGrid, List, Newspaper } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
@@ -10,7 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Segmented } from '@/components/ui/button-group';
 import { Select } from '@/components/ui/field';
 import { EmptyState, ErrorState, SkeletonRows } from '@/components/ui/states';
-import { Pagination } from '@/components/ui/pagination';
+import { InfiniteSentinel } from '@/components/ui/infinite-scroll';
 import { ConfirmDialog } from '@/components/ui/modal';
 import { useToast } from '@/components/ui/toast';
 import { FilterBar, EMPTY_FILTERS, filtersToParams, type PostFilterState } from '@/components/filters/filter-bar';
@@ -27,6 +27,9 @@ interface PostsResponse {
   page: number;
   pageSize: number;
 }
+
+/** حجم الدفعة الواحدة في التمرير */
+const PAGE_SIZE = 24;
 
 const SORT_OPTIONS = [
   { value: 'publishedAt', label: 'الأحدث نشراً' },
@@ -50,17 +53,31 @@ export function PostsClient({
   const queryClient = useQueryClient();
   const [deleteTarget, setDeleteTarget] = useState<PostListItemView | null>(null);
   const [filters, setFilters] = useState<PostFilterState>(EMPTY_FILTERS);
-  const [page, setPage] = useState(1);
   const [sort, setSort] = useState('publishedAt');
   const [view, setView] = useState<'cards' | 'table'>('cards');
 
   const optionsQuery = useFilterOptions();
-  const params = { ...filtersToParams(filters), sort, page, pageSize: 24 };
+  const params = { ...filtersToParams(filters), sort, pageSize: PAGE_SIZE };
 
-  const query = useQuery({
+  /*
+   * قائمةٌ تتصل بالتمرير لا صفحاتٌ تُقلَّب.
+   *
+   * وتغيّر الفلاتر أو الترتيب يُغيّر `queryKey`، فتبدأ القائمة من أوّلها
+   * تلقائياً — ولا حاجة إلى إعادة ضبط رقم صفحة باليد، وهي إعادةٌ تُنسى
+   * فيبقى القارئ في الصفحة السابعة من نتائج لم تعد موجودة.
+   */
+  const query = useInfiniteQuery({
     queryKey: ['posts', params],
-    queryFn: () => api.get<PostsResponse>(buildQuery('/api/posts', params)),
+    initialPageParam: 1,
+    queryFn: ({ pageParam }) =>
+      api.get<PostsResponse>(buildQuery('/api/posts', { ...params, page: pageParam })),
+    getNextPageParam: (last) =>
+      last.page * last.pageSize < last.total ? last.page + 1 : undefined,
   });
+
+  // صفحات مسطَّحة في قائمة واحدة — البطاقات والجدول يقرآن منها معاً
+  const posts = query.data?.pages.flatMap((group) => group.posts) ?? [];
+  const total = query.data?.pages[0]?.total ?? 0;
 
   /*
    * الحذف نهائي ولا رجعة فيه، فله حوار تأكيد يذكر صاحب المنشور.
@@ -81,9 +98,9 @@ export function PostsClient({
     },
   });
 
+  // تغيّر الفلاتر يُغيّر `queryKey` فتبدأ القائمة من أوّلها وحدها
   function updateFilters(next: PostFilterState) {
     setFilters(next);
-    setPage(1);
   }
 
   const exportHref = buildQuery('/api/reports/export', {
@@ -97,7 +114,7 @@ export function PostsClient({
         title="المنشورات"
         description={
           query.data
-            ? `${formatNumber(query.data.total)} منشوراً مطابقاً للفلاتر الحالية`
+            ? `${formatNumber(total)} منشوراً مطابقاً للفلاتر الحالية`
             : 'كل المنشورات المستخرجة من المنصات المرصودة'
         }
         action={
@@ -153,10 +170,7 @@ export function PostsClient({
         <Select
           wrapperClassName="w-52"
           value={sort}
-          onChange={(event) => {
-            setSort(event.target.value);
-            setPage(1);
-          }}
+          onChange={(event) => setSort(event.target.value)}
           aria-label="ترتيب النتائج"
         >
           {SORT_OPTIONS.map((option) => (
@@ -184,7 +198,7 @@ export function PostsClient({
             }
           />
         </Card>
-      ) : !query.data || query.data.posts.length === 0 ? (
+      ) : posts.length === 0 ? (
         <Card>
           <EmptyState
             icon={Newspaper}
@@ -200,19 +214,21 @@ export function PostsClient({
       ) : view === 'cards' ? (
         <>
           {/*
-            أربع بطاقات في السطر على الأعرض، وتتدرّج نزولاً:
-            2xl أربع · lg ثلاث · sm اثنتان · الجوال واحدة.
+            خمس بطاقات في السطر على الأعرض، وتتدرّج نزولاً:
+            2xl خمس · xl أربع · lg ثلاث · sm اثنتان · الجوال واحدة.
 
-            كانت خمساً، ونزلت إلى أربع حين صارت البطاقة تحمل ترويسة: صورة
-            الحساب واسمه وزرّ الحذف في سطر واحد يحتاج عرضاً لا يتركه خمسة
-            أعمدة على شاشة 1280 — نحو 190 بكسل، يكفي الصورة والزرّ ولا يبقي
-            للاسم إلا حرفين وثلاث نقاط.
+            وخمسٌ تبدأ من 1536 بكسل لا من 1280. والسبب قياسٌ لا ذوق:
+            البطاقة تحمل ترويسة فيها صورة الحساب واسمه وزرّ الحذف في سطر
+            واحد. وخمسة أعمدة على شاشة 1280 تترك لكلٍّ نحو 190 بكسل —
+            تكفي الصورة والزرّ ولا تبقي للاسم إلا حرفين وثلاث نقاط.
+            وعلى 1536 فأكثر يصير نصيب البطاقة 280 بكسل فما فوق، وهو
+            يتّسع للاسم كاملاً.
 
-            والفجوة 16px لا 10px: البطاقة صارت أعلى ارتفاعاً وأوضح حافّةً،
+            والفجوة 16px لا 10px: البطاقة عالية الارتفاع واضحة الحافّة،
             والفجوة الضيّقة بين جسمين كبيرين تجعلهما يبدوان ملتصقين.
           */}
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4">
-            {query.data.posts.map((post) => (
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
+            {posts.map((post) => (
               <PostCard
                 key={post.id}
                 post={post}
@@ -221,15 +237,14 @@ export function PostsClient({
               />
             ))}
           </div>
-          <Card className="mt-4">
-            <Pagination
-              page={query.data.page}
-              pageSize={query.data.pageSize}
-              total={query.data.total}
-              onPageChange={setPage}
-              className="border-t-0"
-            />
-          </Card>
+
+          <InfiniteSentinel
+            hasMore={Boolean(query.hasNextPage)}
+            isLoading={query.isFetchingNextPage}
+            onLoad={() => void query.fetchNextPage()}
+            loaded={posts.length}
+            total={total}
+          />
         </>
       ) : (
         <Card>
@@ -237,17 +252,20 @@ export function PostsClient({
             <Table>
               <PostTableHead />
               <TBody>
-                {query.data.posts.map((post) => (
+                {posts.map((post) => (
                   <PostRow key={post.id} post={post} />
                 ))}
               </TBody>
             </Table>
           </TableWrapper>
-          <Pagination
-            page={query.data.page}
-            pageSize={query.data.pageSize}
-            total={query.data.total}
-            onPageChange={setPage}
+
+          {/* الجدول يتصل بالتمرير كالبطاقات — مسارٌ واحد لا اثنان */}
+          <InfiniteSentinel
+            hasMore={Boolean(query.hasNextPage)}
+            isLoading={query.isFetchingNextPage}
+            onLoad={() => void query.fetchNextPage()}
+            loaded={posts.length}
+            total={total}
           />
         </Card>
       )}
