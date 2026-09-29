@@ -3,6 +3,7 @@ import type { Prisma } from '@/generated/prisma';
 import type { PostFilters } from '@/lib/validation/posts';
 import { resolveDateRange } from '@/lib/validation/common';
 import { intersectScope, type AccountScope } from '@/lib/auth/account-scope';
+import { parseSearchTerms } from '@/lib/domain/search-terms';
 
 /** تحويل قيمة قد تكون نصاً أو مصفوفة إلى مصفوفة نظيفة */
 function toArray(value: string | string[] | undefined): string[] {
@@ -74,16 +75,66 @@ export function buildPostWhere(
     };
   }
 
-  // البحث النصي داخل نص المنشور واسم الحساب والهاشتاغات والكلمات المكتشفة
-  if (filters.q) {
-    const term = filters.q.trim();
-    where.OR = [
-      { text: { contains: term, mode: 'insensitive' } },
-      { authorName: { contains: term, mode: 'insensitive' } },
-      { account: { name: { contains: term, mode: 'insensitive' } } },
-      { hashtags: { has: term.replace(/^#/, '') } },
-      { detectedKeywords: { has: term } },
-    ];
+  Object.assign(where, postSearchWhere(filters.q, filters.qMode));
+
+  return where;
+}
+
+/**
+ * الحقول التي يُطابَق فيها الحدّ الواحد.
+ *
+ * خمسة مواضع لأنّ الموظّف لا يعرف أين وردت كلمته: في نصّ المنشور، أو في
+ * اسم كاتبه، أو في اسم الحساب، أو في هاشتاغ، أو في كلمةٍ اكتشفها النظام.
+ * وسؤالُه «أين تبحث؟» قبل أن يبحث نقلٌ للعمل إليه.
+ *
+ * والمصفوفتان `hashtags` و`detectedKeywords` تُطابَقان بالتساوي التامّ
+ * (`has`) لا بالاحتواء: عناصرهما كلماتٌ مفردة مخزّنة كما هي.
+ */
+function searchFields(term: string): Prisma.PostWhereInput[] {
+  return [
+    { text: { contains: term, mode: 'insensitive' } },
+    { authorName: { contains: term, mode: 'insensitive' } },
+    { account: { name: { contains: term, mode: 'insensitive' } } },
+    { hashtags: { has: term.replace(/^#/, '') } },
+    { detectedKeywords: { has: term } },
+  ];
+}
+
+/**
+ * شرط البحث النصّي — حدٌّ واحد أو عدّة حدود.
+ *
+ * ★ الحدّ الواحد يبقى كما كان.
+ *
+ *   `include` بحدٍّ واحد في نمط `all` يعطي `AND: [{ OR: [...] }]` — وهو
+ *   عين ما كان يعطيه `OR: [...]`. فالبحث القديم لا يتغيّر سلوكه، ويُضاف
+ *   التعدّد فوقه.
+ *
+ * ★ والاستبعاد نفيٌ لاجتماعها لا اجتماعُ نفيَيْها.
+ *
+ *   `NOT: { OR: [أ، ب] }` تعني «لا أ ولا ب» — وهي المقصودة. أمّا
+ *   `NOT: [أ، ب]` في Prisma فتعني «ليس (أ و ب) معاً»، فتمرّ منشورات فيها
+ *   أحدهما. والفرق لا يظهر إلا حين يُستبعد حدّان، وحينها يكون الجدول
+ *   مليئاً بما طُلب إخراجه.
+ *
+ * ويُشارك هذه الدالّة المساعدُ الذكي، فلا يختلف بحثه عن بحث صاحبه.
+ */
+export function postSearchWhere(
+  q: string | undefined | null,
+  mode: 'all' | 'any' = 'all',
+): Prisma.PostWhereInput {
+  const parsed = parseSearchTerms(q);
+  const where: Prisma.PostWhereInput = {};
+
+  if (parsed.include.length > 0) {
+    if (mode === 'any') {
+      where.OR = parsed.include.flatMap(searchFields);
+    } else {
+      where.AND = parsed.include.map((term) => ({ OR: searchFields(term) }));
+    }
+  }
+
+  if (parsed.exclude.length > 0) {
+    where.NOT = { OR: parsed.exclude.flatMap(searchFields) };
   }
 
   return where;

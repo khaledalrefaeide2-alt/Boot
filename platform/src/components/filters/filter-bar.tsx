@@ -1,10 +1,12 @@
 'use client';
 
 import { useState } from 'react';
-import { Filter, RotateCcw, Search } from 'lucide-react';
+import { Filter, Minus, RotateCcw, Search } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { Segmented } from '@/components/ui/button-group';
 import { Input, Select } from '@/components/ui/field';
 import { Badge } from '@/components/ui/badge';
+import { hasMultipleTerms, MAX_SEARCH_TERMS, parseSearchTerms } from '@/lib/domain/search-terms';
 import { cn } from '@/lib/utils';
 import {
   DATE_RANGES,
@@ -16,6 +18,8 @@ import {
 
 export interface PostFilterState {
   q: string;
+  /** نمط تعدّد الكلمات: كلّها أو أيٌّ منها */
+  qMode: 'all' | 'any';
   /** مجموعة الحسابات — بُعد مستقل عن المنصة */
   groupId: string;
   platformId: string;
@@ -33,6 +37,7 @@ export interface PostFilterState {
 
 export const EMPTY_FILTERS: PostFilterState = {
   q: '',
+  qMode: 'all',
   groupId: '',
   platformId: '',
   accountId: '',
@@ -57,6 +62,12 @@ export interface FilterOptions {
 /** عدد الفلاتر المفعّلة — يُعرض للمستخدم ليعرف لماذا النتائج محدودة */
 export function activeFilterCount(filters: PostFilterState): number {
   let count = 0;
+  /*
+   * النمط لا يُعدّ فلتراً بذاته.
+   *
+   * لأنّه لا يضيّق شيئاً بلا كلمات: عدّاد يقول «فلتران» على سطر بحثٍ
+   * واحد يدفع الموظّف إلى البحث عن فلترٍ ثانٍ لا وجود له.
+   */
   if (filters.q) count += 1;
   if (filters.groupId) count += 1;
   if (filters.platformId) count += 1;
@@ -112,6 +123,27 @@ export function FilterBar({
 
   const count = activeFilterCount(filters);
 
+  /*
+   * ما فُهم من السطر يُعرض قبل الضغط لا بعده.
+   *
+   * ★ وهذا هو جوهر الميزة، لا خيار النمط.
+   *
+   *   قواعد كهذه — عبارةٌ بين علامتَي تنصيص، وناقصٌ للاستبعاد — تُكتب في
+   *   سطر مساعدة لا يقرؤه أحد، فيكتب الموظّف «"وزارة الكهرباء» بعلامة
+   *   واحدة ويرى نتائج لا يفهمها. والشرائح تحت الحقل تقول له ما فُهم
+   *   بالضبط، فيصحّح قبل أن يبحث لا بعد أن يشكّ.
+   *
+   * والقراءة من `searchInput` لا من `filters.q`: المعروض ما سيُبحث عنه
+   * عند الضغط، لا ما بُحث عنه قبل قليل.
+   */
+  const parsed = parseSearchTerms(searchInput);
+  const showTerms = hasMultipleTerms(parsed) || parsed.dropped.length > 0;
+
+  /** الضغط يُثبّت الكلمات والنمط معاً — فلا يُطبَّق نمطٌ على كلماتٍ قديمة */
+  function apply(mode: PostFilterState['qMode'] = filters.qMode) {
+    onChange({ ...filters, q: searchInput.trim(), qMode: mode });
+  }
+
   return (
     <div className={cn('rounded-lg border border-border bg-surface shadow-elev-1 no-print', className)}>
       <div className="flex flex-wrap items-end gap-3 px-4 py-3">
@@ -120,13 +152,13 @@ export function FilterBar({
             className="flex min-w-56 flex-1 items-end gap-2"
             onSubmit={(event) => {
               event.preventDefault();
-              set('q', searchInput.trim());
+              apply();
             }}
           >
             <Input
               wrapperClassName="flex-1"
               label="بحث"
-              placeholder="ابحث في نص المنشور واسم الحساب والهاشتاغات"
+              placeholder="كلمة أو أكثر… «عبارة» بعلامتَي تنصيص، و-كلمة للاستبعاد"
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
             />
@@ -222,6 +254,68 @@ export function FilterBar({
         )}
       </div>
 
+      {/*
+        صفٌّ يظهر عند الكلمة الثانية ويغيب عند الأولى.
+        فالبحث بكلمةٍ واحدة — وهو أكثر ما يقع — يبقى كما كان بلا زيادة،
+        ولا يُعرض خيار نمطٍ لا معنى له على كلمةٍ واحدة.
+      */}
+      {showSearch && showTerms && (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border px-4 py-2.5">
+          <span className="text-2xs text-muted-foreground">يُبحث عن:</span>
+
+          <ul className="flex flex-wrap items-center gap-1.5">
+            {parsed.include.map((term) => (
+              <li key={`in-${term}`}>
+                <Badge tone="primary" size="sm">
+                  {term}
+                </Badge>
+              </li>
+            ))}
+            {parsed.exclude.map((term) => (
+              <li key={`out-${term}`}>
+                <Badge tone="danger" size="sm">
+                  <Minus className="h-3 w-3" aria-hidden />
+                  {term}
+                </Badge>
+              </li>
+            ))}
+          </ul>
+
+          {/*
+            المُسقَط يُقال ولا يُكتم.
+
+            حدٌّ من حرف واحد، أو مكرَّر، يُسقَط بصمت فيظنّ الموظّف أنّه
+            بحث به — ويقرأ نتيجةً أوسع ممّا طلب على أنّها ما طلبه.
+          */}
+          {parsed.dropped.length > 0 && (
+            <span className="text-2xs text-warning">
+              أُسقط: {parsed.dropped.join('، ')} — حرفٌ واحد أو مكرَّر أو أطول من الحدّ
+            </span>
+          )}
+
+          {parsed.include.length + parsed.exclude.length >= MAX_SEARCH_TERMS && (
+            <span className="num text-2xs text-warning">
+              الحدّ الأقصى {MAX_SEARCH_TERMS} كلمات
+            </span>
+          )}
+
+          {parsed.include.length > 1 && (
+            <div className="ms-auto">
+              <Segmented
+                label="نمط تعدّد الكلمات"
+                value={filters.qMode}
+                onChange={(mode) => apply(mode)}
+                options={[
+                  { value: 'all', label: 'كل الكلمات' },
+                  { value: 'any', label: 'أيّ كلمة' },
+                ]}
+                size="sm"
+              />
+            </div>
+          )}
+        </div>
+      )}
+
       {expanded && (
         <div className="grid gap-3 border-t border-border px-4 py-3 sm:grid-cols-2 lg:grid-cols-4">
           {filters.range === 'custom' && (
@@ -315,6 +409,8 @@ export function FilterBar({
 export function filtersToParams(filters: PostFilterState): Record<string, string> {
   const params: Record<string, string> = { range: filters.range };
   if (filters.q) params.q = filters.q;
+  // النمط يُرسَل مع الكلمات وحدها — وبلا بحثٍ لا معنى له في الرابط
+  if (filters.q && filters.qMode === 'any') params.qMode = 'any';
   if (filters.groupId) params.groupId = filters.groupId;
   if (filters.platformId) params.platformId = filters.platformId;
   if (filters.accountId) params.accountId = filters.accountId;

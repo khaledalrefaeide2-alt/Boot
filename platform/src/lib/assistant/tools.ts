@@ -5,6 +5,7 @@ import { intersectScope, type AccountScope } from '@/lib/auth/account-scope';
 import { entityKey } from '@/lib/analysis/entities';
 import { rankEntities } from '@/lib/queries/entities';
 import { rankStories } from '@/lib/queries/stories';
+import { postSearchWhere } from '@/lib/queries/posts';
 
 /*
  * أدوات المساعد — استعلاماته الخاصة على القاعدة.
@@ -239,6 +240,7 @@ async function searchPosts(
   ctx: ToolContext,
   args: {
     query?: string;
+    queryMode?: 'all' | 'any';
     from?: string;
     to?: string;
     accountIds?: string[];
@@ -257,15 +259,14 @@ async function searchPosts(
     ...(args.entityId ? { postEntities: { some: { entityId: args.entityId } } } : {}),
     // معرّف الحدث يأتي من top_stories — لقراءة ما قيل فيه كلّه
     ...(args.storyId ? { storyId: args.storyId } : {}),
-    ...(args.query
-      ? {
-          OR: [
-            { text: { contains: args.query, mode: 'insensitive' } },
-            { hashtags: { has: args.query.replace(/^#/, '') } },
-            { detectedKeywords: { has: args.query } },
-          ],
-        }
-      : {}),
+    /*
+     * البحث يمرّ بقارئ الحدود نفسه الذي تمرّ به شاشة المنشورات.
+     *
+     * فلا يختلف ما يجده المساعد عمّا يجده صاحبه بالسطر نفسه — والنموذج
+     * يكتب «وزارة الكهرباء انقطاع» كما يكتبها الموظّف، ولو طُوبقت حرفياً
+     * لأجاب بأن لا شيء، وهو موجود في مئتي منشور.
+     */
+    ...postSearchWhere(args.query, args.queryMode),
   };
 
   const take = Math.min(Math.max(1, args.limit ?? 15), MAX_ROWS);
@@ -584,7 +585,17 @@ export const ASSISTANT_TOOLS = [
       type: 'object',
       additionalProperties: false,
       properties: {
-        query: { type: 'string', description: 'كلمة أو عبارة تُبحث في نصّ المنشور' },
+        query: {
+          type: 'string',
+          description:
+            'كلمة أو أكثر تُبحث في نصّ المنشور وهاشتاغاته وكلماته المكتشفة واسم حسابه. الكلمات المتعدّدة تُطابَق كلّها افتراضاً، و"عبارة" بين علامتَي تنصيص تُطابَق بمسافاتها، و-كلمة تُستبعد.',
+        },
+        queryMode: {
+          type: 'string',
+          enum: ['all', 'any'],
+          description:
+            'all يشترط كل الكلمات (الافتراض)، any يقبل أيّاً منها. استعمل any حين يسأل المستخدم عن موضوع له عدّة تسميات.',
+        },
         from: { type: 'string', description: DATE_DESC },
         to: { type: 'string', description: DATE_DESC },
         accountIds: { type: 'array', items: { type: 'string' } },

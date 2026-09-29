@@ -40,6 +40,7 @@
     "verify:media": "tsx --conditions=react-server scripts/verify-media.ts",
     "verify:analysis": "tsx --conditions=react-server scripts/verify-analysis.ts",
     "verify:stories": "tsx --conditions=react-server scripts/verify-stories.ts",
+    "verify:search": "tsx --conditions=react-server scripts/verify-search.ts",
     "stories:rebuild": "tsx --conditions=react-server scripts/rebuild-stories.ts",
     "avatars:backfill": "tsx --conditions=react-server scripts/backfill-avatars.ts",
     "media:cache": "tsx --conditions=react-server scripts/cache-media.ts",

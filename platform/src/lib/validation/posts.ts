@@ -3,7 +3,20 @@ import { paginationSchema, RANGE_VALUES } from './common';
 
 /** فلاتر المنشورات — مشتركة بين العرض والتصدير والإحصاءات */
 export const postFiltersSchema = z.object({
-  q: z.string().trim().max(200).optional(),
+  q: z.string().trim().max(300).optional(),
+  /**
+   * نمط تعدّد الكلمات.
+   *
+   * `all` يضيّق و`any` يوسّع، و`all` هو الافتراض: من كتب كلمتين يريد
+   * المنشور الذي فيه الاثنتان في الغالب — ولو كان الافتراض `any` لعاد
+   * بنتائج أكثر ممّا أعادته كلمةٌ واحدة، وهو عكس ما يقصده من يضيف كلمة.
+   *
+   * واختياريّ لا `default`: عدّة مواضع في الخادم تبني فلاتر المنشورات
+   * كائناً مباشراً لشاشةٍ لا بحث فيها أصلاً (صفحة حساب، صفحة منصة)، فحقلٌ
+   * إلزاميّ كان سيُلزمها بذكر نمطٍ لا يعنيها. والافتراض يقع في
+   * `postSearchWhere` — موضعٌ واحد لا اثنان.
+   */
+  qMode: z.enum(['all', 'any']).optional(),
   platformId: z.union([z.string(), z.array(z.string())]).optional(),
   accountId: z.union([z.string(), z.array(z.string())]).optional(),
   /** مجموعة الحسابات — تُطبَّق عبر الحساب لا عبر المنشور */
