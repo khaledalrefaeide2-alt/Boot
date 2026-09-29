@@ -3,7 +3,17 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { FileSpreadsheet, FolderInput, Play, Plus, Search, Trash2, UsersRound, X } from 'lucide-react';
+import {
+  FileSpreadsheet,
+  FolderInput,
+  Play,
+  Plus,
+  Search,
+  SlidersHorizontal,
+  Trash2,
+  UsersRound,
+  X,
+} from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -26,6 +36,7 @@ import { arabicPlural, formatNumber, formatRelativeTime } from '@/lib/utils';
 import { AccountFormModal, type AccountRow } from './account-form-modal';
 import { AccountsImportModal } from './import-modal';
 import { BulkRunModal, type RunTarget } from './bulk-run-modal';
+import { BulkExtractionModal, type LimitTarget } from './bulk-extraction-modal';
 import { AssignGroupModal } from './assign-group-modal';
 
 interface AccountsResponse {
@@ -56,8 +67,15 @@ export function AccountsAdminClient({
   const [editing, setEditing] = useState<AccountRow | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<AccountRow | null>(null);
   const [importOpen, setImportOpen] = useState(false);
-  const [selected, setSelected] = useState<Map<string, RunTarget>>(new Map());
+  /*
+   * المحدَّد يحمل السقف مع بيانات التشغيل.
+   *
+   * ونافذة الضبط تعرض المدى الحالي قبل التغيير، فلو لم يُحمَل هنا
+   * لاحتاجت طلباً ثانياً للقاعدة عن حسابات في يد المتصفّح أصلاً.
+   */
+  const [selected, setSelected] = useState<Map<string, RunTarget & LimitTarget>>(new Map());
   const [runTargets, setRunTargets] = useState<RunTarget[]>([]);
+  const [limitsOpen, setLimitsOpen] = useState(false);
   const [assignOpen, setAssignOpen] = useState(false);
 
   /*
@@ -102,11 +120,12 @@ export function AccountsAdminClient({
    * كان هذا الزر يرسل معرّف الحساب وحده بلا نطاق زمني ولا عدد، فيرفضه
    * الخادم لأن التشغيل اليدوي يشترطهما. توحيد المسارين يمنع تكرار ذلك.
    */
-  const toTarget = (account: AccountRow): RunTarget => ({
+  const toTarget = (account: AccountRow): RunTarget & LimitTarget => ({
     id: account.id,
     name: account.name,
     platformCode: account.platform.code,
     platformName: account.platform.name,
+    maxItemsPerRun: account.maxItemsPerRun,
   });
 
   const deleteMutation = useMutation({
@@ -276,6 +295,12 @@ export function AccountsAdminClient({
               <Button size="sm" variant="secondary" onClick={() => setAssignOpen(true)}>
                 <FolderInput className="h-3.5 w-3.5" aria-hidden />
                 إسناد إلى مجموعة
+              </Button>
+            )}
+            {canManageAccounts && (
+              <Button size="sm" variant="secondary" onClick={() => setLimitsOpen(true)}>
+                <SlidersHorizontal className="h-3.5 w-3.5" aria-hidden />
+                سقف المنشورات
               </Button>
             )}
             {canRunExtraction && (
@@ -487,6 +512,22 @@ export function AccountsAdminClient({
           // التحديد يُصفَّر بعد النقل: الحسابات قد تخرج من تصفية المجموعة
           // الحالية، فيبقى الشريط يعدّ صفوفاً لم تعد ظاهرة في الجدول.
           setSelected(new Map());
+          void invalidate();
+        }}
+      />
+
+      <BulkExtractionModal
+        open={limitsOpen}
+        targets={Array.from(selected.values())}
+        onClose={() => setLimitsOpen(false)}
+        onSaved={() => {
+          /*
+           * التحديد يبقى بعد الحفظ خلافاً لإسناد المجموعة.
+           *
+           * الحسابات لا تخرج من التصفية بتغيّر سقفها — تبقى في مكانها من
+           * الجدول. وتصفيرُ التحديد هنا يُجبر من أراد تعديلاً ثانياً على
+           * إعادة تحديد أربعين صفّاً من جديد.
+           */
           void invalidate();
         }}
       />

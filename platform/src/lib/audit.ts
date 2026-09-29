@@ -31,6 +31,7 @@ export const AUDIT_ACTIONS = {
   ACCOUNT_DELETED: 'account.deleted',
   ACCOUNTS_IMPORTED: 'account.imported',
   ACCOUNTS_GROUPED: 'account.grouped',
+  ACCOUNTS_LIMITS_CHANGED: 'account.limits_changed',
 
   ASSISTANT_ASKED: 'assistant.asked',
   POST_ANALYZED: 'post.analyzed',

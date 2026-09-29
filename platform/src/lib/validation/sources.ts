@@ -123,3 +123,30 @@ export type CreateAccountInput = z.infer<typeof createAccountSchema>;
 export type UpdateAccountInput = z.infer<typeof updateAccountSchema>;
 export type CreatePlatformInput = z.infer<typeof createPlatformSchema>;
 export type BulkAssignGroupInput = z.infer<typeof bulkAssignGroupSchema>;
+
+/*
+ * ضبط سقف المنشورات لعدّة حسابات دفعةً واحدة.
+ *
+ * السقف هو حاجز الفوترة على Apify: كلّ تشغيل يدفع بعدد ما يجلب. وضبطه
+ * حساباً حساباً على أربعين حساباً أربعون فتحاً لنافذة وأربعون حفظاً —
+ * فيُترك على قيمته الافتراضية، وتُدفع فاتورةٌ لم يقصدها أحد.
+ *
+ * والحدّ الأعلى هو نفسه في النموذج المفرد (1000). ولو اختلفا لأمكن
+ * تجاوز حدّ الشاشة من الدفعة — وهو باب يُفتح بلا أن ينتبه أحد.
+ */
+export const bulkExtractionSettingsSchema = z.object({
+  accountIds: z
+    .array(z.string().trim().min(1).max(64))
+    .min(1, 'اختر حساباً واحداً على الأقل')
+    .max(
+      MAX_GROUP_ASSIGN_BATCH,
+      `لا يمكن تعديل أكثر من ${MAX_GROUP_ASSIGN_BATCH} حساباً في دفعة واحدة`,
+    ),
+  maxItemsPerRun: z.coerce
+    .number()
+    .int()
+    .min(1, 'أقلّ قيمة منشور واحد')
+    .max(1000, 'أقصى قيمة ألف منشور في التشغيل الواحد'),
+});
+
+export type BulkExtractionSettingsInput = z.infer<typeof bulkExtractionSettingsSchema>;

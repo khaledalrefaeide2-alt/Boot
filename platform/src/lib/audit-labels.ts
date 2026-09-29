@@ -27,6 +27,7 @@ export const AUDIT_ACTION_LABELS: Record<string, string> = {
   'account.deleted': 'حذف حساب',
   'account.imported': 'استيراد حسابات من ملف Excel',
   'account.grouped': 'إسناد حسابات إلى مجموعة',
+  'account.limits_changed': 'تعديل سقف الاستخراج لحسابات',
   'assistant.asked': 'سؤال إلى المساعد الذكي',
   'post.analyzed': 'تحليل منشور بالذكاء الاصطناعي',
   'analysis.corrected': 'تصحيح تحليل آلي',
