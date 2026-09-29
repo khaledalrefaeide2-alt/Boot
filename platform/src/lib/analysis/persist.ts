@@ -7,6 +7,7 @@ import {
   requiresReview,
   type PostAnalysisResult,
 } from './ai-analyzer';
+import { cleanEntities, linkEntities } from './entities';
 import { readThumbnail } from '@/lib/media/store';
 import { activeGuidance, buildLearningBlock, findSimilarCorrections } from './learning';
 import { getAssistantConfig } from '@/lib/assistant/config';
@@ -51,6 +52,7 @@ function emptyResult(reason: string): PostAnalysisResult & { needsReview: boolea
     themes: [],
     riskFlags: [],
     riskSeverity: 'NONE' as const,
+    entities: [],
   };
   return { ...raw, stance: deriveStance(raw), needsReview: true };
 }
@@ -83,9 +85,19 @@ export async function analyzeAndSave(postId: string, text: string) {
   let result: PostAnalysisResult;
   let needsReview: boolean;
 
+  /*
+   * النصّ الذي تُطابَق به أسماء الكيانات — أو `null` حين لا نصّ.
+   *
+   * التصنيف من الصورة يقرأ أسماءً لا يملك الخادم نصّها، فالمطابقة عندها
+   * مستحيلة لا متساهلة. ويُقال ذلك هنا صراحةً بدل تمرير سلسلة فارغة
+   * تُسقط كلّ كيانات الصور صامتةً.
+   */
+  let mentionSource: string | null = null;
+
   if (trimmed.length >= MIN_TEXT_LENGTH) {
     result = await analyzePostText(trimmed, learning || undefined);
     needsReview = requiresReview(result);
+    mentionSource = trimmed;
   } else {
     const post = await prisma.post.findUnique({
       where: { id: postId },
@@ -113,8 +125,18 @@ export async function analyzeAndSave(postId: string, text: string) {
     }
   }
 
-  await prisma.$transaction([
-    prisma.postAnalysis.upsert({
+  const entities = cleanEntities(result.entities, mentionSource);
+
+  /*
+   * معاملة تفاعلية لا مصفوفة عمليات.
+   *
+   * ربط الكيانات يحتاج معرّف الكيان، والمعرّف لا يُعرف إلا بعد كتابته —
+   * ولا تُمرَّر نتيجةُ عمليةٍ إلى تاليتها في المصفوفة. والبديل — كتابة
+   * الروابط خارج المعاملة — يترك منشوراً صُنِّف بلا كياناته إن انقطع
+   * الاتصال بينهما، وهو نقصٌ صامت لا يظهر في أيّ عدّاد.
+   */
+  await prisma.$transaction(async (tx) => {
+    await tx.postAnalysis.upsert({
       where: { postId },
       create: {
         postId,
@@ -151,7 +173,8 @@ export async function analyzeAndSave(postId: string, text: string) {
         needsReview,
         model: config.chatModel,
       },
-    }),
+    });
+
     /*
      * المؤشّر يُحدَّث والمصدر يُوسم AI.
      *
@@ -164,15 +187,17 @@ export async function analyzeAndSave(postId: string, text: string) {
      * اقترحه نموذج، ومن دونه يصير رأي النموذج ورأي المراجع سواءً في
      * القاعدة. ولذلك لا يُكتب فوق تصنيف يدوي.
      */
-    prisma.post.updateMany({
+    await tx.post.updateMany({
       where: { id: postId, NOT: { sentimentSource: 'MANUAL' } },
       data: {
         sentiment: result.sentiment,
         sentimentScore: result.confidence,
         sentimentSource: 'AI',
       },
-    }),
-  ]);
+    });
 
-  return { ...result, needsReview };
+    await linkEntities(tx, postId, entities);
+  });
+
+  return { ...result, entities, needsReview };
 }

@@ -9,6 +9,8 @@ export const postFiltersSchema = z.object({
   /** مجموعة الحسابات — تُطبَّق عبر الحساب لا عبر المنشور */
   groupId: z.string().trim().max(64).optional(),
   keywordId: z.string().trim().max(64).optional(),
+  /** كيان مذكور في المنشور — شخص أو مؤسسة أو مكان */
+  entityId: z.string().trim().max(64).optional(),
   hashtag: z.string().trim().max(100).optional(),
   postType: z.enum(['TEXT', 'IMAGE', 'VIDEO', 'REEL', 'LINK', 'ALBUM', 'STORY', 'OTHER']).optional(),
   language: z.string().trim().max(10).optional(),

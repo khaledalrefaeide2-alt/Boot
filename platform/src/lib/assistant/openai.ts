@@ -281,6 +281,7 @@ const TOOL_STATUS: Record<string, string> = {
   get_stats: 'يحسب الأرقام من قاعدتك…',
   search_posts: 'يبحث في منشوراتك…',
   get_post: 'يقرأ منشوراً كاملاً…',
+  top_entities: 'يعدّ من ذُكر في منشوراتك…',
   compare_accounts: 'يقارن الحسابات…',
 };
 

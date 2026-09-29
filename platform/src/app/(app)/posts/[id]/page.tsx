@@ -13,6 +13,8 @@ import { Button } from '@/components/ui/button';
 import { METRIC_ICONS, StatCard, StatGrid } from '@/components/ui/stat-card';
 import { Alert } from '@/components/ui/alert';
 import {
+  ENTITY_TYPE_LABELS,
+  ENTITY_TYPE_TONE,
   POST_TYPE_LABELS,
   SENTIMENT_LABELS,
   SENTIMENT_TONE,
@@ -46,6 +48,10 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
       platform: { select: { id: true, name: true } },
       topic: { select: { id: true, name: true } },
       keywordLinks: { include: { keyword: { select: { id: true, term: true } } } },
+      postEntities: {
+        include: { entity: { select: { id: true, name: true, type: true } } },
+        take: 12,
+      },
       extractionRun: { select: { id: true, createdAt: true } },
       reviewedBy: { select: { name: true } },
       analysis: true,
@@ -162,6 +168,30 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
                     href={`/posts?keywordId=${link.keyword.id}&range=all`}
                   >
                     <Badge tone="info">{link.keyword.term}</Badge>
+                  </Link>
+                ))}
+              </div>
+            )}
+
+            {/*
+              الكيانات تُعرض كالكلمات المكتشفة ويفترقان في المصدر.
+
+              الكلمة مطابقةٌ نصّية لقائمةٍ عرّفها الإداري، والكيان استخراجٌ
+              من النموذج — فيُسمّى «كيانات مستخرجة» لا «كيانات»، ويصحبه
+              النوع. ومن يرى «وزارة الكهرباء» تحت منشورٍ لا يذكرها يحتاج
+              أن يعرف من قالها ليصحّحه.
+            */}
+            {post.postEntities.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">كيانات مستخرجة:</span>
+                {post.postEntities.map((link) => (
+                  <Link key={link.entity.id} href={`/entities/${link.entity.id}`}>
+                    <Badge tone={ENTITY_TYPE_TONE[link.entity.type]}>
+                      {link.entity.name}
+                      <span className="text-2xs opacity-70">
+                        {ENTITY_TYPE_LABELS[link.entity.type]}
+                      </span>
+                    </Badge>
                   </Link>
                 ))}
               </div>

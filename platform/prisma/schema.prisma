@@ -621,7 +621,8 @@ model Post {
 
   analysis PostAnalysis?
 
-  corrections AnalysisCorrection[]
+  corrections  AnalysisCorrection[]
+  postEntities PostEntity[]
 
   @@unique([accountId, dedupeKey])
   @@index([publishedAt(sort: Desc)])
@@ -1135,6 +1136,75 @@ model PostAnalysis {
   @@index([needsReview])
   @@index([isMixed])
   @@map("post_analyses")
+}
+
+// ═══════════════ الكيانات المذكورة ═══════════════
+
+/// نوع الكيان
+enum EntityType {
+  PERSON
+  ORGANIZATION
+  PLACE
+  OTHER
+}
+
+/**
+ * كيانٌ يُذكر في المنشورات — شخص أو مؤسسة أو مكان.
+ * التصنيف يقول «سلبي تجاه الخدمات»، ولا يقول **من** ذُكر. وسؤال «ما قيل
+ * عن وزير الكهرباء هذا الشهر» أكثر ما يُسأل في الرصد، ولا يُجاب عنه ببحثٍ
+ * نصّي: الوزير يُذكر باسمه، وبمنصبه، وباسمه ومنصبه معاً، وبأخطاء إملائية.
+ * فتُجمَع الصور كلها تحت كيانٍ واحد.
+ */
+model Entity {
+  id String @id @default(cuid())
+
+  /**
+   * المفتاح الموحَّد — عليه يقع الدمج.
+   * يُشتقّ بـ`normalizeArabic`: بلا تشكيل، والهمزات موحَّدة، والتاء
+   * المربوطة هاء. فـ«وزارة الكهرباء» و«وزارة الكهرباء» بفارق همزة كيانٌ
+   * واحد لا اثنان — ولولاه لتفرّق الكيان الواحد على عشر صور، ولم يجمع
+   * أيٌّ منها ما يكفي ليظهر في قائمة.
+   */
+  key  String     @unique
+  /// الاسم كما يُعرض — أوّل صورة وردت، أو أطولها
+  name String
+  type EntityType @default(OTHER)
+
+  /**
+   * لا عدّاد مخزَّن هنا.
+   * ★ عدد المنشورات يُحسب بالاستعلام لا يُحفظ في عمود.
+   * لأنّ العدد ليس واحداً: من نطاقه ثلاثة حسابات يرى «وزارة الكهرباء»
+   * في منشورات هذه الثلاثة وحدها، ومن يفتح آخر سبعة أيام يرى عدد
+   * الأسبوع. والعمود الواحد لا يحمل إلا رقماً واحداً — فيُعرض لصاحب
+   * النطاق المحدود رقمُ المنصّة كلها، وهو تسريبٌ لحجم ما لا يراه.
+   * وهو يزيح خطراً ثانياً: إعادة التحليل تُعيد استخراج الكيانات، فعدّادٌ
+   * يُزاد عند كلّ ربط ينتفخ بلا حدّ، وعدّادٌ يُنقص عند فكّ الربط ينحرف
+   * عند أوّل عملية تنقطع في منتصفها. والمحسوب لا ينحرف.
+   */
+  firstSeenAt DateTime @default(now())
+  lastSeenAt  DateTime @default(now())
+
+  posts PostEntity[]
+
+  @@index([type])
+  @@index([lastSeenAt])
+  @@map("entities")
+}
+
+/// ذكرُ كيانٍ في منشور
+model PostEntity {
+  postId   String
+  entityId String
+
+  /// الصورة التي ورد بها في هذا المنشور — تُعرض دليلاً على الربط
+  mention String
+
+  post   Post   @relation(fields: [postId], references: [id], onDelete: Cascade)
+  entity Entity @relation(fields: [entityId], references: [id], onDelete: Cascade)
+
+  @@id([postId, entityId])
+  @@index([entityId])
+  @@map("post_entities")
 }
 
 // ═══════════════ جولات التحليل ═══════════════

@@ -14,6 +14,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { looksLikeDirective, normalizeInstruction } from '../src/lib/analysis/directive';
 import { deriveStance, evidenceAppearsIn } from '../src/lib/analysis/ai-analyzer';
+import { cleanEntities, entityKey, mentionAppearsIn } from '../src/lib/analysis/entities';
 
 const root = process.cwd();
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
@@ -161,6 +162,7 @@ const base: Omit<Parameters<typeof deriveStance>[0], 'sentiment' | 'isMixed'> = 
   reviewReason: null,
   confidence: 0.9,
   themes: [],
+  entities: [],
   riskFlags: [],
   riskSeverity: 'NONE',
 };
@@ -751,6 +753,139 @@ check(
     read('src/components/posts/post-card.tsx'),
   ),
   '«غير محسوم» وحدها تُقرأ عطلاً في المنصة',
+);
+
+// ══════════════ الكيانات ══════════════
+
+/*
+ * الكيان المختلَق أخطر من المقتطف المختلَق.
+ *
+ * المقتطف يُقرأ في منشورٍ واحد أمام مراجعٍ يرى النصّ تحته. والكيان يدخل
+ * عدّاداً يُقرأ في شاشةٍ أخرى بلا نصّ ولا سياق: «وزارة الكهرباء — ٣٢٠
+ * منشوراً، ٧١٪ سلبي» جملةٌ تُنقل إلى تقرير، وأحدُ هذه الثلاثمئة قد يكون
+ * منشوراً لم يذكر الوزارة أصلاً. فتُطابَق الأسماء بنصّ المنشور قبل
+ * الحفظ.
+ */
+const ENTITY_POST =
+  'قال وزير الكهرباء محمد البشير إن مديرية كهرباء حلب أنهت الصيانة، وشكر أهالي حيّ الأشرفية.';
+
+check(
+  'المفتاح يوحّد الهمزة والتاء المربوطة',
+  entityKey('وزارة الكهرباء') === entityKey('وزاره الكهرباء'),
+);
+check('ويُسقط الترقيم', entityKey('«وزارة الكهرباء»') === entityKey('وزارة الكهرباء'));
+check(
+  'ويوحّد المسافات والأسطر',
+  entityKey('مديرية\n  كهرباء حلب') === entityKey('مديرية كهرباء حلب'),
+);
+check(
+  'والاسمان المختلفان يبقيان مختلفين',
+  entityKey('وزارة الكهرباء') !== entityKey('وزارة الصحة'),
+  'تطبيعٌ يجمع ما لا يُجمع أسوأ من لا تطبيع',
+);
+
+check('الاسم الوارد يُقبل', mentionAppearsIn(ENTITY_POST, 'مديرية كهرباء حلب'));
+check(
+  'ويُقبل بفارق الهمزة',
+  mentionAppearsIn(ENTITY_POST, 'حيّ الاشرفية'),
+  'المطابقة هنا على المفتاح لا على الحرف — بخلاف مقتطف الدليل',
+);
+check('والمختلَق يُردّ', !mentionAppearsIn(ENTITY_POST, 'وزارة الصحة'));
+
+const CLEANED = cleanEntities(
+  [
+    { name: 'وزير الكهرباء محمد البشير', type: 'PERSON' },
+    { name: 'مديرية كهرباء حلب', type: 'ORGANIZATION' },
+    { name: 'مديريه كهرباء حلب', type: 'ORGANIZATION' },
+    { name: 'وزارة الصحة', type: 'ORGANIZATION' },
+    { name: 'الحكومة', type: 'ORGANIZATION' },
+    { name: '٢٠٢٦', type: 'OTHER' },
+    { name: 'حلب', type: 'PLACE' },
+  ],
+  ENTITY_POST,
+);
+const names = CLEANED.map((entity) => entity.name);
+
+check('الكيان الوارد يُحفظ', names.includes('وزير الكهرباء محمد البشير'));
+check(
+  'والمكرَّر بصورتين يُحفظ مرّة',
+  CLEANED.filter((entity) => entity.key === entityKey('مديرية كهرباء حلب')).length === 1,
+);
+check(
+  'والمختلَق يُسقَط',
+  !names.includes('وزارة الصحة'),
+  'اسمٌ لم يرد في النصّ يدخل عدّاداً يُقرأ في شاشةٍ أخرى بلا سياق يكشفه',
+);
+check('والإشارة العامّة تُسقَط', !names.includes('الحكومة'));
+check('والرقم يُسقَط', !names.includes('٢٠٢٦'));
+check(
+  'والاسم يُعرض كما ورد لا مطبَّعاً',
+  CLEANED.every((entity) => !/مديريه/.test(entity.name)),
+  'التطبيع للمطابقة لا للعرض — وإلا قرأ الموظّف عربيةً مكسورة',
+);
+check(
+  'وبلا نصّ تُقبل الأسماء بلا مطابقة',
+  cleanEntities([{ name: 'وزارة الصحة', type: 'ORGANIZATION' }], null).length === 1,
+  'التصنيف من الصورة يقرأ أسماءً لا يملك الخادم نصّها — والمطابقة عندها مستحيلة لا متساهلة',
+);
+check('والقائمة الفارغة جوابٌ صحيح', cleanEntities([], ENTITY_POST).length === 0);
+check('وغير المصفوفة لا تُسقط التحليل', cleanEntities(undefined, ENTITY_POST).length === 0);
+
+check(
+  'المخطّط يطلب الكيانات من النموذج',
+  /required: \[[\s\S]*?'entities'/.test(rubric),
+  'حقلٌ خارج required في الوضع الصارم قد لا يعود أصلاً',
+);
+check(
+  'والسياسة تنهى عن اختلاقها',
+  /لا تستخرج إلا ما ورد في النصّ/.test(rubric),
+);
+
+const entitiesSource = readCode('src/lib/analysis/entities.ts');
+check(
+  'الروابط تُستبدل ولا تُضاف',
+  /deleteMany\(\{ where: \{ postId, entityId: \{ notIn: ids \} \} \}\)/.test(entitiesSource),
+  'إعادة التحليل تُبقي كياناً سقط من النتيجة مربوطاً بالمنشور إلى الأبد',
+);
+check(
+  'والربط داخل معاملة حفظ التحليل',
+  /\$transaction\(async \(tx\) =>[\s\S]*?linkEntities\(tx, postId/.test(persistSource),
+  'تصنيفٌ حُفظ بلا كياناته نقصٌ صامت لا يظهر في أيّ عدّاد',
+);
+check(
+  'والأسماء تُنقّى قبل الحفظ',
+  /cleanEntities\(result\.entities, mentionSource\)/.test(persistSource),
+);
+
+/*
+ * العدّ محسوبٌ لا مقروءٌ من عمود.
+ *
+ * عمودٌ واحد يحمل رقماً واحداً، ومن نطاقه ثلاثة حسابات يجب أن يرى عدد
+ * الثلاثة. فوجود `mentions` في المخطّط يكفي وحده لأن يُقرأ يوماً ويُعرض
+ * لمن لا يحقّ له — ولذلك لا يوجد.
+ */
+check(
+  'لا عدّاد مخزَّن على الكيان',
+  !/mentions\s+Int/.test(read('prisma/schema.prisma')),
+  'الرقم المخزَّن واحد، والقرّاء نطاقاتهم مختلفة',
+);
+check(
+  'والعدّ يمرّ بـbuildPostWhere نفسها',
+  /buildPostWhere\(filters, scope\)/.test(readCode('src/lib/queries/entities.ts')),
+  'شرطٌ موازٍ ينحرف عن شاشة المنشورات عند أوّل فلتر يُضاف إلى أحدهما',
+);
+check(
+  'والكيان خارج النطاق يُقرأ «غير موجود»',
+  /if \(totals\._count\._all === 0\) return null;/.test(readCode('src/lib/queries/entities.ts')),
+  'صفٌّ بأصفارٍ يؤكّد وجود الاسم في المنصة لمن لا يرى منشوراته',
+);
+
+const entitiesRoute = read('src/app/api/entities/route.ts');
+check('مسار الكيانات محروس بـPOSTS_VIEW', /PERMISSIONS\.POSTS_VIEW/.test(entitiesRoute));
+check(
+  'ويطبّق نطاق الحسابات',
+  /getAccountScope\(\)/.test(entitiesRoute) &&
+    /getAccountScope\(\)/.test(read('src/app/api/entities/[id]/route.ts')),
 );
 
 // ══════════════ الصلاحية ══════════════

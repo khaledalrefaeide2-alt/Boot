@@ -3,6 +3,7 @@ import type {
   AccountType,
   AccountVisibility,
   EntityStatus,
+  EntityType,
   ExtractionStatus,
   ExtractionTrigger,
   NotificationSeverity,
@@ -130,6 +131,29 @@ export const SENTIMENT_TONE: Record<Sentiment, 'success' | 'neutral' | 'danger' 
   NEGATIVE: 'danger',
   MIXED: 'warning',
   UNKNOWN: 'neutral',
+};
+
+/*
+ * أنواع الكيانات المستخرجة من نصّ المنشور.
+ *
+ * ★ «أخرى» ليست سلّةً للمهمل.
+ *
+ *   النموذج يضعها حين يجد اسم علم لا يدخل في الثلاثة — مشروعٌ أو قانونٌ
+ *   أو مبادرة. وهي أنفع من إجباره على اختيار نوعٍ لا يناسب: كيانٌ صُنّف
+ *   «مؤسسة» وهو قانون يفسد قائمة المؤسسات، و«أخرى» تقول الحقيقة.
+ */
+export const ENTITY_TYPE_LABELS: Record<EntityType, string> = {
+  PERSON: 'شخص',
+  ORGANIZATION: 'مؤسسة',
+  PLACE: 'مكان',
+  OTHER: 'أخرى',
+};
+
+export const ENTITY_TYPE_TONE: Record<EntityType, 'info' | 'success' | 'warning' | 'neutral'> = {
+  PERSON: 'info',
+  ORGANIZATION: 'success',
+  PLACE: 'warning',
+  OTHER: 'neutral',
 };
 
 export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {

@@ -45,6 +45,14 @@ export function buildPostWhere(
     ...(filters.hashtag ? { hashtags: { has: filters.hashtag.replace(/^#/, '') } } : {}),
     ...(filters.keywordId ? { keywordLinks: { some: { keywordId: filters.keywordId } } } : {}),
     /*
+     * فلتر الكيان يمرّ عبر جدول الربط كالكلمة المفتاحية.
+     *
+     * والفرق أنّ الكلمة تُطابَق نصّياً والكيان يُستخرَج بالنموذج: «وزارة
+     * الكهرباء» تظهر هنا وإن كتبها المنشور «وزارة الكهربا» — لأن الربط
+     * وقع على مفتاح موحَّد لا على صورة الكلمة.
+     */
+    ...(filters.entityId ? { postEntities: { some: { entityId: filters.entityId } } } : {}),
+    /*
      * فلتر المجموعة يمرّ عبر الحساب لا عبر المنشور.
      *
      * المنشور لا يحمل مجموعة — المجموعة صفة الحساب الذي نشره. وربطها

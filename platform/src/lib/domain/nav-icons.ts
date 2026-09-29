@@ -1,5 +1,6 @@
 import {
   Activity,
+  AtSign,
   BarChart3,
   Bell,
   Brain,
@@ -31,6 +32,7 @@ import {
  */
 export const NAV_ICONS = {
   Activity,
+  AtSign,
   BarChart3,
   Bell,
   Brain,

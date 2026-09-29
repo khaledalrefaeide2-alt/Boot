@@ -32,7 +32,14 @@ export function InfiniteSentinel({
   isLoading: boolean;
   onLoad: () => void;
   loaded: number;
-  total: number;
+  /**
+   * المجموع إن كان معروفاً.
+   *
+   * بعض القوائم لا تعرفه رخيصاً: عدّ الكيانات المميَّزة تحت الفلاتر يمرّ
+   * على جدول الربط كلّه ليُرجع رقماً يُقرأ ولا يُستعمل. فيُترك فارغاً
+   * ويُعرض ما عُرض وحده — وهو أصدق من رقمٍ يُختلق ليملأ الفراغ.
+   */
+  total?: number;
   label?: string;
 }) {
   const ref = useRef<HTMLDivElement>(null);
@@ -74,7 +81,9 @@ export function InfiniteSentinel({
             أقرأ عُشر النتائج أم تسعة أعشارها، ولا متى يتوقّف.
           */}
           <p className="num text-2xs text-subtle-foreground" aria-live="polite">
-            {formatNumber(loaded)} من {formatNumber(total)} {label}
+            {total === undefined
+              ? `عُرض ${formatNumber(loaded)} ${label}`
+              : `${formatNumber(loaded)} من ${formatNumber(total)} ${label}`}
           </p>
         </>
       ) : (

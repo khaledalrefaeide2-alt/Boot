@@ -128,6 +128,6 @@ STANCE_METRIC.caveat   // التحفّظ الذي يرافق كل عرض موس�
 [`docs/ai-analysis.md`](./ai-analysis.md).
 
 ```bash
-npm run verify:analysis   # ٨٠ فحصاً — منها بنود السياسة ومطابقة الدليل
+npm run verify:analysis   # ١٨٩ فحصاً — منها بنود السياسة ومطابقة الدليل
 npm run verify:learning   # ٩ فحوص — حصانة النقد السياسي
 ```

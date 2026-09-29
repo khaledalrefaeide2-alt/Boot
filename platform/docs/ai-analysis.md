@@ -232,7 +232,7 @@
 ## الأوامر
 
 ```bash
-npm run verify:analysis   # ١٠٤ فحوص — لا يحتاج قاعدة ولا مفتاحاً
+npm run verify:analysis   # ١٨٩ فحصاً — لا يحتاج قاعدة ولا مفتاحاً
 npm run analyze:posts     # التحليل من سطر الأوامر (لا يزال يعمل)
 ```
 
@@ -249,6 +249,7 @@ npm run analyze:posts     # التحليل من سطر الأوامر (لا يز
 | `src/lib/analysis/run.ts` | إنشاء الجولة وتنفيذها وإلغاؤها |
 | `src/lib/analysis/auto.ts` | المكنسة — السقف اليومي وحدود الدفعة |
 | `src/lib/analysis/capture.ts` | الالتقاط والحفظ المعطَّل |
+| `src/lib/analysis/entities.ts` | استخراج الكيانات وتنقيتها وربطها — انظر [`entities.md`](entities.md) |
 | `src/lib/analysis/directive.ts` | تمييز الأمر من السؤال وتوحيد نصّه — نقيّ، بلا قاعدة ولا مزوّد |
 | `src/lib/queue.ts` | طابور `analysis` — محاولة واحدة لا ثلاث |
 | `src/worker/index.ts` | عامل التحليل — جولة واحدة مهما بلغ `WORKER_CONCURRENCY` |

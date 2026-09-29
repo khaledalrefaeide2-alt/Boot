@@ -2,6 +2,8 @@ import 'server-only';
 import { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/db';
 import { intersectScope, type AccountScope } from '@/lib/auth/account-scope';
+import { entityKey } from '@/lib/analysis/entities';
+import { rankEntities } from '@/lib/queries/entities';
 
 /*
  * أدوات المساعد — استعلاماته الخاصة على القاعدة.
@@ -241,6 +243,7 @@ async function searchPosts(
     accountIds?: string[];
     platformCode?: string;
     sentiment?: string;
+    entityId?: string;
     sortBy?: 'recent' | 'engagement';
     limit?: number;
   },
@@ -248,6 +251,8 @@ async function searchPosts(
   const where: Prisma.PostWhereInput = {
     ...baseWhere(ctx, args),
     ...(args.sentiment ? { sentiment: args.sentiment as never } : {}),
+    // معرّف الكيان يأتي من top_entities — وهو أدقّ من البحث عن اسمه نصّاً
+    ...(args.entityId ? { postEntities: { some: { entityId: args.entityId } } } : {}),
     ...(args.query
       ? {
           OR: [
@@ -325,6 +330,10 @@ async function getPost(ctx: ToolContext, args: { postId: string }) {
       account: { select: { name: true } },
       platform: { select: { name: true } },
       topic: { select: { name: true } },
+      postEntities: {
+        select: { mention: true, entity: { select: { id: true, name: true, type: true } } },
+        take: 10,
+      },
       analysis: {
         select: {
           target: true,
@@ -343,13 +352,85 @@ async function getPost(ctx: ToolContext, args: { postId: string }) {
   // المنشور خارج النطاق يُعامَل كغير موجود، فلا يفرّق الردّ بين ممنوع ومفقود
   if (!post) return { found: false };
 
+  const { postEntities, ...rest } = post;
+
   return {
     found: true,
     post: {
-      ...post,
+      ...rest,
       publishedAt: post.publishedAt?.toISOString() ?? null,
       text: (post.text ?? '').slice(0, 4000),
+      entities: postEntities.map((link) => ({
+        id: link.entity.id,
+        name: link.entity.name,
+        type: link.entity.type,
+        // الصورة التي ورد بها في هذا المنشور — قد تخالف الاسم المعروض
+        mention: link.mention,
+      })),
     },
+  };
+}
+
+/**
+ * أكثر الأشخاص والمؤسسات والأماكن ذكراً.
+ *
+ * ★ تجيب عمّا لا يجيب عنه البحث النصّي.
+ *
+ *   «من أكثر المسؤولين ذكراً هذا الشهر» لا جواب له في `search_posts`:
+ *   البحث يحتاج اسماً يُبحث عنه، والسؤال هو عن الاسم نفسه. والكيانات
+ *   مستخرَجة عند التحليل ومجموعة على مفتاح موحَّد، فالجواب عدٌّ جاهز.
+ *
+ *   وهي تغني عن حيلةٍ كان النموذج يلجأ إليها: جلبُ خمسين منشوراً وقراءةُ
+ *   نصوصها ليستخرج منها الأسماء بنفسه — وهو عدٌّ على عيّنة يُقدَّم جواباً
+ *   عن المجموع.
+ */
+async function topEntities(
+  ctx: ToolContext,
+  args: {
+    from?: string;
+    to?: string;
+    accountIds?: string[];
+    platformCode?: string;
+    type?: 'PERSON' | 'ORGANIZATION' | 'PLACE' | 'OTHER';
+    name?: string;
+    sortBy?: 'mentions' | 'negative';
+    limit?: number;
+  },
+) {
+  const postWhere = baseWhere(ctx, args);
+  const take = Math.min(Math.max(Number(args.limit) || 20, 1), MAX_ROWS);
+
+  const { entities } = await rankEntities({
+    postWhere,
+    rankWhere:
+      args.sortBy === 'negative'
+        ? { AND: [postWhere, { sentiment: 'NEGATIVE' }] }
+        : postWhere,
+    entityWhere: {
+      ...(args.type ? { type: args.type } : {}),
+      ...(args.name ? { key: { contains: entityKey(args.name) } } : {}),
+    },
+    take,
+  });
+
+  return {
+    count: entities.length,
+    /*
+     * التذييل يُقرأ في الجواب لا في هذا الملفّ.
+     *
+     * النموذج يميل إلى تقديم العدّ بوصفه «ذِكراً في الإعلام»، والعدّ هنا
+     * عددُ منشورات الحسابات المرصودة في نطاق القارئ وحدها. فيُقال له ذلك
+     * مع الأرقام ليقوله بدوره.
+     */
+    note: 'العدد من المنشورات المرصودة في نطاق القارئ والمدى المطلوب، لا من الإعلام كلّه. والكيانات مستخرَجة بالتحليل الذكي من نصّ المنشور.',
+    entities: entities.map((entity) => ({
+      id: entity.id,
+      name: entity.name,
+      type: entity.type,
+      posts: entity.posts,
+      negative: entity.negative,
+      positive: entity.positive,
+    })),
   };
 }
 
@@ -458,6 +539,10 @@ export const ASSISTANT_TOOLS = [
         accountIds: { type: 'array', items: { type: 'string' } },
         platformCode: { type: 'string' },
         sentiment: { type: 'string', enum: ['POSITIVE', 'NEGATIVE', 'NEUTRAL', 'UNKNOWN'] },
+        entityId: {
+          type: 'string',
+          description: 'معرّف كيان من top_entities — يقصر النتائج على ما ذُكر فيه',
+        },
         sortBy: { type: 'string', enum: ['recent', 'engagement'] },
         limit: { type: 'integer', description: 'حتى ٥٠' },
       },
@@ -472,6 +557,30 @@ export const ASSISTANT_TOOLS = [
       additionalProperties: false,
       properties: { postId: { type: 'string' } },
       required: ['postId'],
+    },
+  },
+  {
+    type: 'function' as const,
+    name: 'top_entities',
+    description:
+      'أكثر الأشخاص والمؤسسات والأماكن ذكراً في المنشورات، مع عدد ما ذُكر فيه سلبياً وإيجابياً. استعملها لكل سؤال عن «من» — من أكثر المسؤولين ذكراً، أيّ الوزارات أكثر انتقاداً، أيّ المناطق أكثر وروداً — ولا تستخرج الأسماء بنفسك من نصوص المنشورات. ومعرّف الكيان الذي تُعيده يصلح لـsearch_posts.',
+    parameters: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        from: { type: 'string', description: DATE_DESC },
+        to: { type: 'string', description: DATE_DESC },
+        accountIds: { type: 'array', items: { type: 'string' } },
+        platformCode: { type: 'string' },
+        type: { type: 'string', enum: ['PERSON', 'ORGANIZATION', 'PLACE', 'OTHER'] },
+        name: { type: 'string', description: 'جزء من اسم الكيان — يتجاوز فروق الهمزة والتشكيل' },
+        sortBy: {
+          type: 'string',
+          enum: ['mentions', 'negative'],
+          description: 'mentions الأكثر ذكراً، negative الأكثر ذكراً في منشورات سلبية',
+        },
+        limit: { type: 'integer', description: 'حتى ٥٠' },
+      },
     },
   },
   {
@@ -516,6 +625,8 @@ export async function runTool(
         return await searchPosts(ctx, args as Parameters<typeof searchPosts>[1]);
       case 'get_post':
         return await getPost(ctx, args as { postId: string });
+      case 'top_entities':
+        return await topEntities(ctx, args as Parameters<typeof topEntities>[1]);
       case 'compare_accounts':
         return await compareAccounts(ctx, args as Parameters<typeof compareAccounts>[1]);
       default:
