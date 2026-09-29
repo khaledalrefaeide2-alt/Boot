@@ -184,3 +184,8 @@ npm run verify:analysis   # يشمل فحوص الكيانات — لا يحتا
 | `src/app/api/entities/` | القائمة والملخّص |
 | `src/app/(app)/entities/` | الشاشتان |
 | `src/lib/assistant/tools.ts` | أداة `top_entities` و`entityId` في `search_posts` |
+
+---
+
+ومحورٌ ثالث إلى جانب هذا: [تجميع الأحداث](stories.md) — «ماذا جرى» بدل
+«من ذُكر».

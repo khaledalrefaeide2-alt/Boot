@@ -151,6 +151,42 @@ export async function getIndexSettings(): Promise<{
 }
 
 /**
+ * إعدادات تجميع الأحداث.
+ *
+ * التجميع يقرأ المتّجهات ولا يُنشئ غيرها، فلا سقف يومي له: ليس فيه نداءٌ
+ * على المزوّد يُحسب. والحدّ الوحيد حجم الدفعة — وهو حدّ ذاكرةٍ وزمنِ
+ * دورة لا حدّ كلفة.
+ *
+ * والعتبة تُقصّ إلى مداها هنا وفي المكنسة معاً: قيمةٌ خاطئة في الإعدادات
+ * — صفرٌ مثلاً — تجعل كلّ منشورٍ عضواً في أوّل عنقود يُقارَن به.
+ */
+export async function getStorySettings(): Promise<{
+  auto: boolean;
+  batch: number;
+  threshold: number;
+  windowDays: number;
+}> {
+  const settings = await getAllSettings();
+
+  const rawAuto = settings['stories.auto'];
+  const auto =
+    rawAuto === undefined ? true : rawAuto !== false && rawAuto !== 'false' && rawAuto !== 0;
+
+  const batch = Number(settings['stories.batch'] ?? 200);
+  const threshold = Number(settings['stories.threshold'] ?? 0.72);
+  const windowDays = Number(settings['stories.windowDays'] ?? 3);
+
+  return {
+    auto,
+    batch: Number.isFinite(batch) ? Math.min(1000, Math.max(10, Math.floor(batch))) : 200,
+    threshold: Number.isFinite(threshold) ? Math.min(0.95, Math.max(0.5, threshold)) : 0.72,
+    windowDays: Number.isFinite(windowDays)
+      ? Math.min(30, Math.max(1, Math.floor(windowDays)))
+      : 3,
+  };
+}
+
+/**
  * هل يبحث المساعد في الويب؟
  *
  * يُمرَّر إلى OpenAI أداةَ بحثٍ مدمجة، فيصير المساعد قادراً على جلب ما

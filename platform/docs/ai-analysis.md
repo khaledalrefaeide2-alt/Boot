@@ -250,6 +250,7 @@ npm run analyze:posts     # التحليل من سطر الأوامر (لا يز
 | `src/lib/analysis/auto.ts` | المكنسة — السقف اليومي وحدود الدفعة |
 | `src/lib/analysis/capture.ts` | الالتقاط والحفظ المعطَّل |
 | `src/lib/analysis/entities.ts` | استخراج الكيانات وتنقيتها وربطها — انظر [`entities.md`](entities.md) |
+| `src/lib/analysis/stories.ts` | تجميع المنشورات المتقاربة في أحداث — انظر [`stories.md`](stories.md) |
 | `src/lib/analysis/directive.ts` | تمييز الأمر من السؤال وتوحيد نصّه — نقيّ، بلا قاعدة ولا مزوّد |
 | `src/lib/queue.ts` | طابور `analysis` — محاولة واحدة لا ثلاث |
 | `src/worker/index.ts` | عامل التحليل — جولة واحدة مهما بلغ `WORKER_CONCURRENCY` |

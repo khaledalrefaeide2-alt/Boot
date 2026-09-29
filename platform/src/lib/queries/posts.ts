@@ -52,6 +52,8 @@ export function buildPostWhere(
      * وقع على مفتاح موحَّد لا على صورة الكلمة.
      */
     ...(filters.entityId ? { postEntities: { some: { entityId: filters.entityId } } } : {}),
+    // الحدث حقلٌ على المنشور نفسه — الإسناد وقع مرّةً عند التجميع
+    ...(filters.storyId ? { storyId: filters.storyId } : {}),
     /*
      * فلتر المجموعة يمرّ عبر الحساب لا عبر المنشور.
      *

@@ -4,6 +4,7 @@ import { prisma } from '@/lib/db';
 import { intersectScope, type AccountScope } from '@/lib/auth/account-scope';
 import { entityKey } from '@/lib/analysis/entities';
 import { rankEntities } from '@/lib/queries/entities';
+import { rankStories } from '@/lib/queries/stories';
 
 /*
  * أدوات المساعد — استعلاماته الخاصة على القاعدة.
@@ -244,6 +245,7 @@ async function searchPosts(
     platformCode?: string;
     sentiment?: string;
     entityId?: string;
+    storyId?: string;
     sortBy?: 'recent' | 'engagement';
     limit?: number;
   },
@@ -253,6 +255,8 @@ async function searchPosts(
     ...(args.sentiment ? { sentiment: args.sentiment as never } : {}),
     // معرّف الكيان يأتي من top_entities — وهو أدقّ من البحث عن اسمه نصّاً
     ...(args.entityId ? { postEntities: { some: { entityId: args.entityId } } } : {}),
+    // معرّف الحدث يأتي من top_stories — لقراءة ما قيل فيه كلّه
+    ...(args.storyId ? { storyId: args.storyId } : {}),
     ...(args.query
       ? {
           OR: [
@@ -434,6 +438,53 @@ async function topEntities(
   };
 }
 
+/**
+ * أبرز الأحداث — عناقيد المنشورات المتقاربة.
+ *
+ * ★ تُجيب عن «ماذا جرى» بدل أن تعدّ البطاقات.
+ *
+ *   سؤالُ «ما أبرز ما جرى هذا الأسبوع» كان يُجاب عنه بجلب أعلى عشرين
+ *   منشوراً تفاعلاً — فتخرج القائمة وفيها الخبر نفسه سبع مرّات من سبعة
+ *   حسابات، ويبدو أنّ سبعة أشياء جرت. والتجميع يقول: حدثٌ واحد، تناولته
+ *   سبعة حسابات.
+ */
+async function topStories(
+  ctx: ToolContext,
+  args: {
+    from?: string;
+    to?: string;
+    accountIds?: string[];
+    platformCode?: string;
+    sortBy?: 'posts' | 'engagement' | 'negative';
+    limit?: number;
+  },
+) {
+  const take = Math.min(Math.max(Number(args.limit) || 10, 1), 25);
+
+  const { stories } = await rankStories({
+    postWhere: baseWhere(ctx, args),
+    sort: args.sortBy ?? 'posts',
+    take,
+  });
+
+  return {
+    count: stories.length,
+    note: 'الحدث عنقودٌ من منشورين فأكثر متقاربَي النصّ داخل نافذة زمنية. والعنوان نصُّ أعلى منشوراته تفاعلاً ممّا يراه القارئ، لا عنوانٌ صاغه أحد.',
+    stories: stories.map((story) => ({
+      id: story.id,
+      headline: story.headline.replace(/\s+/g, ' ').trim().slice(0, MAX_TEXT),
+      headlinePostId: story.headlinePostId,
+      posts: story.posts,
+      accounts: story.accounts,
+      engagement: story.engagement,
+      negative: story.negative,
+      positive: story.positive,
+      from: story.firstPostAt?.toISOString().slice(0, 10) ?? null,
+      to: story.lastPostAt?.toISOString().slice(0, 10) ?? null,
+    })),
+  };
+}
+
 async function compareAccounts(
   ctx: ToolContext,
   args: { accountIds: string[]; from?: string; to?: string },
@@ -543,6 +594,10 @@ export const ASSISTANT_TOOLS = [
           type: 'string',
           description: 'معرّف كيان من top_entities — يقصر النتائج على ما ذُكر فيه',
         },
+        storyId: {
+          type: 'string',
+          description: 'معرّف حدث من top_stories — يقصر النتائج على منشوراته',
+        },
         sortBy: { type: 'string', enum: ['recent', 'engagement'] },
         limit: { type: 'integer', description: 'حتى ٥٠' },
       },
@@ -580,6 +635,28 @@ export const ASSISTANT_TOOLS = [
           description: 'mentions الأكثر ذكراً، negative الأكثر ذكراً في منشورات سلبية',
         },
         limit: { type: 'integer', description: 'حتى ٥٠' },
+      },
+    },
+  },
+  {
+    type: 'function' as const,
+    name: 'top_stories',
+    description:
+      'أبرز الأحداث في مدى زمني: عناقيد المنشورات المتقاربة نصّاً، لكلٍّ منها عدد منشوراته وعدد الحسابات التي تناولته وتوزيع موقفه. استعملها لكل سؤال عن «ماذا جرى» أو «أبرز الأحداث» أو «ملخّص الأسبوع» — بدل جلب أعلى المنشورات تفاعلاً، فتلك تُعيد الخبر الواحد سبع مرّات. ومعرّف الحدث يصلح لـsearch_posts.',
+    parameters: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        from: { type: 'string', description: DATE_DESC },
+        to: { type: 'string', description: DATE_DESC },
+        accountIds: { type: 'array', items: { type: 'string' } },
+        platformCode: { type: 'string' },
+        sortBy: {
+          type: 'string',
+          enum: ['posts', 'engagement', 'negative'],
+          description: 'posts الأكثر تناولاً، engagement الأعلى تفاعلاً، negative الأكثر نقداً',
+        },
+        limit: { type: 'integer', description: 'حتى ٢٥' },
       },
     },
   },
@@ -627,6 +704,8 @@ export async function runTool(
         return await getPost(ctx, args as { postId: string });
       case 'top_entities':
         return await topEntities(ctx, args as Parameters<typeof topEntities>[1]);
+      case 'top_stories':
+        return await topStories(ctx, args as Parameters<typeof topStories>[1]);
       case 'compare_accounts':
         return await compareAccounts(ctx, args as Parameters<typeof compareAccounts>[1]);
       default:

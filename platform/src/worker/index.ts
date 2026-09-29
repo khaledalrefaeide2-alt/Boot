@@ -11,7 +11,8 @@ import { executeExtractionRun } from '@/lib/extraction/service';
 import { executeAnalysisRun } from '@/lib/analysis/run';
 import { SWEEP_INTERVAL_MS, sweepAutoAnalysis } from '@/lib/analysis/auto';
 import { INDEX_SWEEP_INTERVAL_MS, sweepIndexing } from '@/lib/assistant/indexer';
-import { getIndexSettings } from '@/lib/settings';
+import { STORY_SWEEP_INTERVAL_MS, sweepStories } from '@/lib/analysis/stories';
+import { getIndexSettings, getStorySettings } from '@/lib/settings';
 import { purgeExpiredSessions } from '@/lib/auth/session';
 import { rebuildAllDailyStats } from '@/lib/stats';
 import { pruneStore } from '@/lib/media/prune';
@@ -152,6 +153,33 @@ const indexTimer = setInterval(() => {
     .catch(() => undefined);
 }, INDEX_SWEEP_INTERVAL_MS);
 
+/*
+ * مكنسة تجميع الأحداث.
+ *
+ * تقرأ المتّجهات التي بنتها مكنسة الفهرسة ولا تُنشئ غيرها — فلا نداء على
+ * المزوّد ولا كلفة فوق ما دُفع. ودورتها بعد دورة الفهرسة في الطول لأنها
+ * تعمل على ما فهرسته: أسرعُ منها لا يجد جديداً.
+ */
+const storyTimer = setInterval(() => {
+  void getStorySettings()
+    .then((settings) => {
+      if (!settings.auto) return null;
+      return sweepStories({
+        batch: settings.batch,
+        threshold: settings.threshold,
+        windowDays: settings.windowDays,
+      });
+    })
+    .then((outcome) => {
+      if (outcome?.swept) {
+        console.log(
+          `[worker] تجميع الأحداث: أُسند ${outcome.assigned} منشوراً وفُتح ${outcome.created} حدثاً — بقي ${outcome.remaining}`,
+        );
+      }
+    })
+    .catch(() => undefined);
+}, STORY_SWEEP_INTERVAL_MS);
+
 const SESSION_PURGE_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const purgeTimer = setInterval(() => {
   void purgeExpiredSessions().catch(() => undefined);
@@ -183,6 +211,7 @@ console.log(`  📥 طابور الاستخراج — تزامن ${CONCURRENCY}`
 console.log('  🧠 طابور التحليل — جولة واحدة في الوقت الواحد');
 console.log(`  🤖 مكنسة التصنيف التلقائي كل ${SWEEP_INTERVAL_MS / 60000} دقائق`);
 console.log(`  🔎 مكنسة الفهرسة الدلالية كل ${INDEX_SWEEP_INTERVAL_MS / 60000} دقائق`);
+console.log(`  🧩 مكنسة تجميع الأحداث كل ${STORY_SWEEP_INTERVAL_MS / 60000} دقائق`);
 console.log('  🕒 فحص الجدولة كل دقيقة');
 console.log('');
 
@@ -191,6 +220,7 @@ async function shutdown(signal: string): Promise<void> {
   clearInterval(schedulerTimer);
   clearInterval(sweepTimer);
   clearInterval(indexTimer);
+  clearInterval(storyTimer);
   clearInterval(purgeTimer);
   clearInterval(mediaTimer);
   await Promise.allSettled([

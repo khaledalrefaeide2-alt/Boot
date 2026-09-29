@@ -581,6 +581,9 @@ model Post {
   topicId     String?
   topicSource AnalysisSource?
 
+  /// الحدث الذي يقع فيه — يُسنَد بتجميع المتّجهات، وnull قبل التجميع
+  storyId String?
+
   /// كلمات مفتاحية مكتشفة (نسخة مسطحة للبحث السريع)
   detectedKeywords String[] @default([])
   hashtags         String[] @default([])
@@ -623,6 +626,7 @@ model Post {
 
   corrections  AnalysisCorrection[]
   postEntities PostEntity[]
+  story        Story?               @relation(fields: [storyId], references: [id], onDelete: SetNull)
 
   @@unique([accountId, dedupeKey])
   @@index([publishedAt(sort: Desc)])
@@ -634,6 +638,7 @@ model Post {
   @@index([language])
   @@index([country])
   @@index([topicId])
+  @@index([storyId])
   @@index([isHidden, publishedAt(sort: Desc)])
   @@index([extractionRunId])
   @@index([mediaKey])
@@ -1205,6 +1210,47 @@ model PostEntity {
   @@id([postId, entityId])
   @@index([entityId])
   @@map("post_entities")
+}
+
+// ═══════════════ تجميع الأحداث ═══════════════
+
+/**
+ * حدثٌ واحد تناولته منشورات كثيرة.
+ * ★ مرساةٌ للعنقود لا سجلٌّ يُعرض.
+ * لا عنوان فيه ولا عدّاد. العنوان يُشتقّ عند العرض من أعلى منشورات
+ * الحدث تفاعلاً **ضمن ما يراه القارئ**، والعدد يُحسب كذلك — فمن نطاقه
+ * ثلاثة حسابات لا يُعرض له عنوانٌ من منشورٍ لا يملك فتحه، ولا عددٌ
+ * يقول إنّ للحدث صدىً لا يراه.
+ * والمخزَّن هنا ما لا يُعرض أصلاً: مركزُ العنقود الذي يُقارَن به
+ * المنشور الجديد، ونافذتُه الزمنية التي تُنتقى بها العناقيد المرشّحة.
+ */
+model Story {
+  id String @id @default(cuid())
+
+  /**
+   * مركز العنقود — متوسّط متّجهات أعضائه، مُعاد التوحيد.
+   * والنموذج والبُعد معه: متّجهٌ ولّده نموذج آخر لا يُقارَن بهذا، ومقارنته
+   * تعطي رقماً بلا معنى لا رقماً أقلّ دقّة.
+   */
+  centroid Float[]
+  model    String
+  dims     Int
+
+  /**
+   * نافذة الحدث — للترشيح لا للعرض.
+   * «انقطاع الكهرباء في حلب» يتكرّر كلّ شهر بنصٍّ متقارب، فبلا نافذةٍ
+   * زمنية تصير عشرةُ أحداث حدثاً واحداً يمتدّ سنة.
+   */
+  firstPostAt DateTime
+  lastPostAt  DateTime
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  posts Post[]
+
+  @@index([lastPostAt(sort: Desc)])
+  @@map("stories")
 }
 
 // ═══════════════ جولات التحليل ═══════════════

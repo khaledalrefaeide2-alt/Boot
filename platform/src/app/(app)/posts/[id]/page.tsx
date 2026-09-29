@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { ExternalLink, Play } from 'lucide-react';
+import { ExternalLink, Layers, Play } from 'lucide-react';
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
 import { can, PERMISSIONS } from '@/lib/auth/rbac';
@@ -52,6 +52,7 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
         include: { entity: { select: { id: true, name: true, type: true } } },
         take: 12,
       },
+      story: { select: { id: true, _count: { select: { posts: true } } } },
       extractionRun: { select: { id: true, createdAt: true } },
       reviewedBy: { select: { name: true } },
       analysis: true,
@@ -181,6 +182,26 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
               النوع. ومن يرى «وزارة الكهرباء» تحت منشورٍ لا يذكرها يحتاج
               أن يعرف من قالها ليصحّحه.
             */}
+            {/*
+              الحدث يُعرض حين يكون فيه غير هذا المنشور.
+
+              التجميع يفتح عنقوداً لكلّ منشورٍ لا يجد له نظيراً، فرابطٌ
+              إلى حدثٍ عضوه الوحيد هو هذا المنشور يعد بشيء ثم يعيد القارئ
+              إلى حيث كان.
+            */}
+            {post.story && post.story._count.posts > 1 && (
+              <div className="mt-3 flex flex-wrap items-center gap-1.5">
+                <span className="text-xs text-muted-foreground">جزء من حدث:</span>
+                <Link href={`/stories/${post.story.id}`}>
+                  <Badge tone="primary">
+                    <Layers className="h-3 w-3" aria-hidden />
+                    <span className="num">{formatNumber(post.story._count.posts)}</span> منشوراً
+                    متقارباً
+                  </Badge>
+                </Link>
+              </div>
+            )}
+
             {post.postEntities.length > 0 && (
               <div className="mt-3 flex flex-wrap items-center gap-1.5">
                 <span className="text-xs text-muted-foreground">كيانات مستخرجة:</span>

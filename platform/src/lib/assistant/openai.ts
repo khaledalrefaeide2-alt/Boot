@@ -282,6 +282,7 @@ const TOOL_STATUS: Record<string, string> = {
   search_posts: 'يبحث في منشوراتك…',
   get_post: 'يقرأ منشوراً كاملاً…',
   top_entities: 'يعدّ من ذُكر في منشوراتك…',
+  top_stories: 'يجمع المنشورات في أحداث…',
   compare_accounts: 'يقارن الحسابات…',
 };
 
