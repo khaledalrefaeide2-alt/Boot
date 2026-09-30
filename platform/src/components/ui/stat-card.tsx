@@ -102,6 +102,21 @@ const CHIPS = {
 export type StatTint = keyof typeof TINTS;
 
 /**
+ * لون كلّ أيقونة — تُبنى مرّةً عند التحميل من خريطتَي الأيقونات والألوان.
+ *
+ * ★ هذه هي التي جعلت الألوان تصل إلى الشاشات كلّها.
+ *
+ *   كان اللون يُمرَّر في موضع الاستدعاء، فلوّنت النظرة العامة وحدها —
+ *   لأنها الشاشة التي كُتبت فيها الألوان — وبقيت ثلاث وستّون بطاقة في
+ *   بقيّة الشاشات على اللون الافتراضي وحده. وهو عيبٌ لا يُصلَح بالمرور
+ *   على المواضع: من يضيف بطاقةً غداً سينساه كما نُسي أمس.
+ *
+ *   والأيقونة تعرف مقياسها أصلاً، فتُشتقّ منها. ومن أراد غير ذلك مرّر
+ *   `tint` صراحةً.
+ */
+const ICON_TINT = new Map<LucideIcon, StatTint>();
+
+/**
  * لون كلّ مقياس، معرّفاً مرّة واحدة — كالأيقونات تماماً.
  *
  * الغرض ثباتُ الارتباط لا التنويع: «الإعجابات» تحمل اللون نفسه في كل
@@ -134,6 +149,15 @@ export const METRIC_TINTS: Partial<Record<keyof typeof METRIC_ICONS, StatTint>> 
   skipped: 'amber',
   failed: 'rose',
 };
+
+for (const [metric, icon] of Object.entries(METRIC_ICONS) as [
+  keyof typeof METRIC_ICONS,
+  LucideIcon,
+][]) {
+  const assigned = METRIC_TINTS[metric];
+  // أوّل مقياس يفوز بأيقونته: `Users` مشتركة بين المتابعين والحسابات
+  if (assigned && !ICON_TINT.has(icon)) ICON_TINT.set(icon, assigned);
+}
 
 /*
  * الأسماء القديمة تبقى تعمل.
@@ -317,7 +341,15 @@ export function StatCard({
   progress?: number;
   className?: string;
 }) {
-  const key: StatTint = tint ?? TONES[tone];
+  /*
+   * الأولوية: ما كُتب صراحةً، ثمّ ما تقوله الأيقونة، ثمّ الافتراضي.
+   *
+   * و`tone` يتقدّم على الأيقونة حين يُكتب غيرَ الافتراضي: من كتب
+   * `tone="danger"` على بطاقة «متعثّرة» قصد الأحمر ولم يقصد لون أيقونتها.
+   */
+  const key: StatTint =
+    tint ?? (tone !== 'default' ? TONES[tone] : undefined) ?? (Icon && ICON_TINT.get(Icon)) ??
+    TONES.default;
 
   const display =
     typeof value === 'number' ? (compact ? formatCompactNumber(value) : formatNumber(value)) : value;
@@ -437,23 +469,26 @@ export function StatCard({
 /*
  * شبكة المقاييس.
  *
- * قاعدتان تحكمانها:
+ * ★ أعمدةٌ متساوية العرض، ولا بطاقة تُمدّ لتملأ فراغاً.
  *
- * ١) خمسةُ أعمدة سقفاً. عشرُ بطاقات في صفٍّ واحد تُعطي كلَّ بطاقة نحو
- *    190 بكسل، وهو عرضٌ يقصّ الاسم العربي والرقم معاً — «معدل التف…» و
- *    «4.3 ن…». والصفّ الواحد ليس غايةً في نفسه: غايته أن يُقرأ، وصفّان
- *    يُقرآن خيرٌ من صفٍّ لا يُقرأ.
+ *   كانت البطاقة الأخيرة تُمدّ حين لا ينقسم العدد على الأعمدة، فلا يبقى
+ *   في آخر الصفّ فراغ. والثمن أنّ بطاقةً واحدة تصير ضعف جاراتها بلا سبب
+ *   في بياناتها — فتُقرأ أهمَّ منها، وهي ليست كذلك. والصفّ الأخير الناقص
+ *   شكلٌ مألوف في كلّ لوحة، أمّا البطاقة الشاذّة العرض فتُربك الترتيب
+ *   كلّه.
  *
- * ٢) لا فجوة في آخر صفّ. الأعمدة تقسم العدد بلا باقٍ، وحين يتعذّر —
- *    والسبعةُ لا تنقسم على شيء — تمتدّ البطاقة الأخيرة لتملأ ما بقي.
+ *   والسقف خمسة أعمدة: ما فوقها يُعطي البطاقة نحو 190 بكسل، وهو عرضٌ
+ *   يقصّ الاسم العربي والرقم معاً.
  */
 const COLUMNS: Record<number, string> = {
+  3: 'grid-cols-1 sm:grid-cols-3',
   4: 'grid-cols-2 lg:grid-cols-4',
-  5: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 [&>*:last-child]:col-span-2 lg:[&>*:last-child]:col-span-1',
-  6: 'grid-cols-2 lg:grid-cols-3',
-  7: 'grid-cols-2 sm:grid-cols-4 [&>*:last-child]:col-span-2',
+  5: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5',
+  6: 'grid-cols-2 sm:grid-cols-3',
+  7: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4',
   8: 'grid-cols-2 lg:grid-cols-4',
-  10: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 sm:[&>*:last-child]:col-span-3 lg:[&>*:last-child]:col-span-1',
+  9: 'grid-cols-2 sm:grid-cols-3',
+  10: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5',
 };
 
 export function StatGrid({

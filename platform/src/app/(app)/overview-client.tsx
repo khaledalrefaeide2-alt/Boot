@@ -152,16 +152,19 @@ export function OverviewClient() {
       ) : stats ? (
         <>
           {/*
-            شبكة Bento — أعمدة اثنا عشر بمساحات غير متساوية.
-            المساحة تتبع الأهمية لا الترتيب: إجمالي المنشورات أوسع بطاقة
-            لأنه الرقم الذي يُفتح النظام من أجله، وعدد المنصات أضيقها لأنه
-            ثابت لا يتغيّر. شبكة متساوية تقول إن الستة سواء، وهي ليست كذلك.
+            بطاقاتٌ متساوية، لا شبكة Bento.
 
-            وعند دون lg تعود عمودين متساويين: الترتيب الهرمي يُقرأ عرضاً،
-            وعلى شاشة ضيّقة لا عرض أصلاً فيصير تفاوت المساحات ضجيجاً.
+            كانت المساحة تتبع الأهمية: «إجمالي المنشورات» أوسع من «عدد
+            المنصات» لأنه الرقم الذي يُفتح النظام من أجله. وهي فكرةٌ صحيحة
+            على الورق، وعلى الشاشة تُنتج صفّاً غير مستقيم تقفز فيه أحجام
+            البطاقات بلا قاعدة تُقرأ.
+
+            والتساوي يقول ما هو أصدق: هذه ستّة مقاييس من عائلة واحدة،
+            وأهميتها تختلف باختلاف من ينظر ومتى — لا بقرارٍ مثبّت في
+            التخطيط.
           */}
-          <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-12">
-            <Reveal index={0} className="h-full lg:col-span-5">
+          <div className="mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            <Reveal index={0} className="h-full">
             <StatCard
               label="إجمالي المنشورات"
               value={stats.totalPosts}
@@ -173,7 +176,7 @@ export function OverviewClient() {
               trend={halfOverHalfChange(postsSeries)}
             />
             </Reveal>
-            <Reveal index={1} className="h-full lg:col-span-4">
+            <Reveal index={1} className="h-full">
             <StatCard
               label="عدد الحسابات"
               value={stats.accountsCount}
@@ -183,7 +186,7 @@ export function OverviewClient() {
               tint="mint"
             />
             </Reveal>
-            <Reveal index={2} className="h-full lg:col-span-3">
+            <Reveal index={2} className="h-full">
             <StatCard
               label="عدد المنصات"
               value={stats.platformsCount}
@@ -198,7 +201,7 @@ export function OverviewClient() {
               }
             />
             </Reveal>
-            <Reveal index={3} className="h-full lg:col-span-3">
+            <Reveal index={3} className="h-full">
             <StatCard
               label="إجمالي التفاعل"
               value={stats.totalEngagement}
@@ -210,7 +213,7 @@ export function OverviewClient() {
               trend={halfOverHalfChange(engagementSeries)}
             />
             </Reveal>
-            <Reveal index={4} className="h-full lg:col-span-5">
+            <Reveal index={4} className="h-full sm:col-span-2">
             <HighlightCard
               label="أكثر منشور تفاعلاً"
               title={
@@ -226,7 +229,7 @@ export function OverviewClient() {
               href={stats.topPost ? `/posts/${stats.topPost.id}` : undefined}
             />
             </Reveal>
-            <Reveal index={5} className="h-full lg:col-span-4">
+            <Reveal index={5} className="h-full sm:col-span-2">
             <HighlightCard
               label="أكثر منصة نشاطاً"
               title={stats.topPlatform?.name ?? 'لا يوجد بعد'}

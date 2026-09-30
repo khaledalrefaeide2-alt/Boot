@@ -40,11 +40,15 @@ const entries = [...columnsBlock.matchAll(/(\d+):\s*'([^']+)'/g)];
 check('جدول الأعمدة موجود', entries.length > 0, `${entries.length} مدخلاً`);
 
 /*
- * لا فجوة في آخر صفّ — عند كل نقطة توقّف لا عند الأوسع وحدها.
+ * بطاقاتٌ متساوية العرض — وهذه قاعدةٌ حلّت محلّ سابقتها بطلبٍ صريح.
  *
- * الحساب: (العدد − 1 + امتداد الأخيرة) يقبل القسمة على الأعمدة. فالبطاقة
- * الأخيرة تُمدّ لتملأ ما بقي حين لا ينقسم العدد — والسبعةُ لا تنقسم على
- * شيء، فلا سبيل غيره.
+ * كانت القاعدة «لا فجوة في آخر صفّ»، وتُنفَّذ بمدّ البطاقة الأخيرة لتملأ
+ * ما بقي حين لا ينقسم العدد على الأعمدة. وثمنُها أنّ بطاقةً واحدة تصير
+ * ضعف جاراتها بلا سبب في بياناتها — فتُقرأ أهمَّ منها وهي ليست كذلك،
+ * ويخرج الصفّ عن الاستقامة.
+ *
+ * فصار المحروس أن لا تُمدّ بطاقةٌ أصلاً: الصفّ الأخير الناقص شكلٌ مألوف
+ * في كلّ لوحة، والبطاقة الشاذّة العرض تُربك الترتيب كلّه.
  *
  * ونقاط التوقّف تتوارث: ما لم يُعلَن عند نقطةٍ يبقى على قيمته من أصغرها.
  */
@@ -68,20 +72,13 @@ for (const [, countRaw, classesRaw] of entries) {
   const count = Number(countRaw);
   const classes = classesRaw ?? '';
   const columns = valueAt(classes, /grid-cols-(\d+)/, 1);
-  const spans = valueAt(classes, /\[&>\*\:last-child\]\:col-span-(\d+)/, 1);
-
-  const broken: string[] = [];
-  for (const bp of BREAKPOINTS) {
-    const cols = columns.get(bp) ?? 1;
-    const span = Math.min(spans.get(bp) ?? 1, cols);
-    if ((count - 1 + span) % cols !== 0) broken.push(`${bp}: ${cols} عمود`);
-  }
+  const stretched = /\[&>\*\:last-child\]\:col-span-/.test(classes);
 
   check(
-    `${count} بطاقة: لا فجوة في آخر صفّ عند أي عرض`,
-    broken.length === 0,
-    broken.length > 0
-      ? broken.join('، ')
+    `${count} بطاقة: أعمدة متساوية بلا بطاقة ممدودة`,
+    !stretched,
+    stretched
+      ? 'البطاقة الأخيرة تُمدّ فتصير أعرض من جاراتها'
       : [...new Set(BREAKPOINTS.map((bp) => columns.get(bp)))].join(' ← ') + ' عمود',
   );
 
