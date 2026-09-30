@@ -267,6 +267,44 @@ check(
   'الصفّ كاملاً لأربعٍ وعشرين بطاقة يحمل نصوصاً طويلة لا تُعرض',
 );
 
+// ══════════════ الترشيح ══════════════
+
+/*
+ * ★ فلتران على العلاقة نفسها يكتب أحدهما فوق الآخر إن كُتبا كائنين.
+ *
+ *   `analysis: { label }` ثمّ `analysis: { severity }` في الكائن نفسه:
+ *   الثاني يغلب، فمن طلب «كراهية بخطورة ٤» يحصل على «كلّ ما خطورته ٤».
+ *   نتيجةٌ أوسع ممّا طُلب، تبدو صحيحة ولا تُكتشف — لأن الصفوف الراجعة
+ *   كلّها صحيحة في ذاتها.
+ */
+const queries = read('src/lib/queries/posts.ts');
+const filterSchema = read('src/lib/validation/posts.ts');
+const bar = read('src/components/filters/filter-bar.tsx');
+
+check(
+  'الفلتران يجتمعان في شرطٍ واحد',
+  /const analysisWhere: Prisma\.PostAnalysisWhereInput/.test(queries) &&
+    (queries.match(/where\.analysis = /g) ?? []).length === 1,
+  'كائنان منفصلان يكتب الثاني فوق الأول صامتاً',
+);
+check(
+  'والشرط لا يُضاف إلا إن طُلب',
+  /Object\.keys\(analysisWhere\)\.length > 0/.test(queries),
+  'شرطٌ فارغ على العلاقة يستبعد كلّ منشور بلا تحليل بلا أن يطلب أحد',
+);
+check(
+  'والخطورة «أدنى» لا «يساوي»',
+  /severityLevel: \{ gte: filters\.minSeverity \}/.test(queries),
+  'فلترٌ يساوي يُخفي درجة ٥ عمّن طلب ٤ — وهو عكس ما يقصده',
+);
+check(
+  'ولا تُكرَّر قائمة الوسوم في مخطّط الفلتر',
+  /label: z\.string\(\)/.test(filterSchema) && !/HATE_SPEECH/.test(filterSchema),
+  'تكرارها نصّاً يجعل وسماً جديداً يُقبل في شاشةٍ ويُردّ في أخرى',
+);
+check('والفلتران يُعدّان في شارة العدد', /filters\.minSeverity\) count/.test(bar));
+check('وهما في شريط الفلاتر', /أدنى درجة خطورة/.test(bar) && /وسم المحتوى/.test(bar));
+
 console.log('\n>> فحص التصنيف التفصيلي\n');
 let failed = 0;
 for (const c of checks) {

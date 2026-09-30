@@ -11,7 +11,9 @@ import { cn } from '@/lib/utils';
 import {
   DATE_RANGES,
   POST_TYPE_LABELS,
+  CONTENT_LABELS,
   SENTIMENT_LABELS,
+  SEVERITY_LEVELS,
   LANGUAGE_LABELS,
   STANCE_METRIC,
 } from '@/lib/domain/constants';
@@ -26,6 +28,10 @@ export interface PostFilterState {
   accountId: string;
   postType: string;
   sentiment: string;
+  /** وسم محتوى بعينه */
+  label: string;
+  /** أدنى درجة خطورة — '' يعني بلا حصر */
+  minSeverity: string;
   language: string;
   topicId: string;
   hashtag: string;
@@ -43,6 +49,8 @@ export const EMPTY_FILTERS: PostFilterState = {
   accountId: '',
   postType: '',
   sentiment: '',
+  label: '',
+  minSeverity: '',
   language: '',
   topicId: '',
   hashtag: '',
@@ -74,6 +82,8 @@ export function activeFilterCount(filters: PostFilterState): number {
   if (filters.accountId) count += 1;
   if (filters.postType) count += 1;
   if (filters.sentiment) count += 1;
+  if (filters.label) count += 1;
+  if (filters.minSeverity) count += 1;
   if (filters.language) count += 1;
   if (filters.topicId) count += 1;
   if (filters.hashtag) count += 1;
@@ -357,6 +367,38 @@ export function FilterBar({
             {Object.entries(SENTIMENT_LABELS).map(([value, label]) => (
               <option key={value} value={value}>
                 {label}
+              </option>
+            ))}
+          </Select>
+
+          {/*
+            الخطورة قبل الوسم في الترتيب.
+
+            «أرني ما خطورته ٤ فأعلى» سؤالُ من يبحث عن خطرٍ لا يعرف شكله
+            بعد — وهو أوّل ما يُسأل. والوسم سؤالُ من يعرف ما يبحث عنه.
+          */}
+          <Select
+            label="أدنى درجة خطورة"
+            value={filters.minSeverity}
+            onChange={(event) => set('minSeverity', event.target.value)}
+          >
+            <option value="">كل الدرجات</option>
+            {[5, 4, 3, 2, 1].map((level) => (
+              <option key={level} value={String(level)}>
+                {SEVERITY_LEVELS[level]?.short} فأعلى — {SEVERITY_LEVELS[level]?.label}
+              </option>
+            ))}
+          </Select>
+
+          <Select
+            label="وسم المحتوى"
+            value={filters.label}
+            onChange={(event) => set('label', event.target.value)}
+          >
+            <option value="">كل الوسوم</option>
+            {Object.entries(CONTENT_LABELS).map(([value, meta]) => (
+              <option key={value} value={value}>
+                {meta.label}
               </option>
             ))}
           </Select>

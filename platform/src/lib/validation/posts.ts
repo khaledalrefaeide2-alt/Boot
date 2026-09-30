@@ -31,6 +31,21 @@ export const postFiltersSchema = z.object({
   language: z.string().trim().max(10).optional(),
   topicId: z.string().trim().max(64).optional(),
   sentiment: z.enum(['POSITIVE', 'NEUTRAL', 'NEGATIVE', 'MIXED', 'UNKNOWN']).optional(),
+  /**
+   * وسمُ محتوى بعينه — «أرني كلّ ما وُسم خطاب كراهية».
+   *
+   * ولا يُقيَّد بقائمةٍ هنا: القائمة في المخطّط (`ContentLabel`)، وتكرارها
+   * نصّاً في ثلاثة ملفّات يجعل وسماً جديداً يُقبل في شاشةٍ ويُردّ في
+   * أخرى. والقيمة المجهولة تُرجع فراغاً لا خطأً — وهو الصواب لفلتر.
+   */
+  label: z.string().trim().max(64).optional(),
+  /**
+   * أدنى درجة خطورة — «أرني كلّ ما خطورته ٤ فأعلى».
+   *
+   * و«أدنى» لا «يساوي»: من يبحث عن الخطر يريد ما فوقه أيضاً. وفلترٌ
+   * يساوي يُخفي درجة ٥ عمّن طلب ٤، وهو عكس ما يقصده.
+   */
+  minSeverity: z.coerce.number().int().min(1).max(5).optional(),
   country: z.string().trim().max(80).optional(),
   range: z.enum(RANGE_VALUES).default('30d'),
   from: z.string().trim().max(40).optional(),
@@ -48,6 +63,21 @@ export const listPostsSchema = postFiltersSchema.extend(paginationSchema.shape).
 export const updatePostSchema = z.object({
   topicId: z.string().trim().max(64).nullable().optional(),
   sentiment: z.enum(['POSITIVE', 'NEUTRAL', 'NEGATIVE', 'MIXED', 'UNKNOWN']).optional(),
+  /**
+   * وسمُ محتوى بعينه — «أرني كلّ ما وُسم خطاب كراهية».
+   *
+   * ولا يُقيَّد بقائمةٍ هنا: القائمة في المخطّط (`ContentLabel`)، وتكرارها
+   * نصّاً في ثلاثة ملفّات يجعل وسماً جديداً يُقبل في شاشةٍ ويُردّ في
+   * أخرى. والقيمة المجهولة تُرجع فراغاً لا خطأً — وهو الصواب لفلتر.
+   */
+  label: z.string().trim().max(64).optional(),
+  /**
+   * أدنى درجة خطورة — «أرني كلّ ما خطورته ٤ فأعلى».
+   *
+   * و«أدنى» لا «يساوي»: من يبحث عن الخطر يريد ما فوقه أيضاً. وفلترٌ
+   * يساوي يُخفي درجة ٥ عمّن طلب ٤، وهو عكس ما يقصده.
+   */
+  minSeverity: z.coerce.number().int().min(1).max(5).optional(),
   isHidden: z.boolean().optional(),
   reviewNote: z.string().trim().max(1000).nullable().optional(),
 });

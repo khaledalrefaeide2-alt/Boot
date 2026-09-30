@@ -68,6 +68,22 @@ export function buildPostWhere(
     ...(filters.groupId ? { account: { groupId: filters.groupId } } : {}),
   };
 
+  /*
+   * فلترا الوسم والخطورة يجتمعان في شرطٍ واحد على التحليل.
+   *
+   * ★ ولو كُتب كلٌّ منهما كائناً مستقلّاً (`analysis: {...}` مرّتين)
+   *   لكتب الثاني فوق الأول صامتاً: من طلب «كراهية بخطورة ٤» يحصل على
+   *   «كل ما خطورته ٤» — نتيجةٌ أوسع ممّا طلب، تبدو صحيحة ولا تُكتشف.
+   *
+   * والشرط على العلاقة يستبعد المنشور بلا تحليل ضمناً، وهو الصواب:
+   * غيرُ المصنَّف ليس «بلا خطورة» بل «لم يُنظر فيه».
+   */
+  const analysisWhere: Prisma.PostAnalysisWhereInput = {
+    ...(filters.label ? { labels: { has: filters.label as never } } : {}),
+    ...(filters.minSeverity ? { severityLevel: { gte: filters.minSeverity } } : {}),
+  };
+  if (Object.keys(analysisWhere).length > 0) where.analysis = { is: analysisWhere };
+
   if (from || to) {
     where.publishedAt = {
       ...(from ? { gte: from } : {}),
