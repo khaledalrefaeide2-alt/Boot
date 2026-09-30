@@ -1146,6 +1146,85 @@ enum PostStance {
   UNCLEAR
 }
 
+/// موقف الكاتب من الكلام الذي في منشوره.
+///
+/// ★ وهو غير `PostStance`، والخلط بينهما يُفقد الاثنين معناهما.
+///
+///   `PostStance` موقفُ المنشور من الجهات والخدمات الحكومية — وهو مقياس
+///   المنصة المعروض في كل شاشة. وهذا موقفُ الكاتب ممّا ينقل: أيتبنّاه،
+///   أم يسأل عن صحّته، أم ينقله خبراً، أم ينكره؟
+///
+///   و«لا تصدّقوا الشائعة التي تقول إنّ المصارف ستغلق» منشورٌ ينفي
+///   شائعةً لا يروّجها. فلو قُرئ ناقلاً لها لصار من يكافح الشائعات
+///   مُحصىً في صفّ من يبثّها.
+enum AuthorStance {
+  /// يتبنّى الكلام
+  SUPPORTIVE
+  /// ينكره أو يفنّده
+  OPPOSED
+  NEUTRAL
+  /// يسأل عن صحّته ولا يتبنّاه
+  QUESTIONING
+  /// ينقله خبراً أو تقريراً بلا موقف
+  REPORTING
+  UNCLEAR
+}
+
+/// حال الادّعاء غير الموثّق في المنشور.
+///
+/// ★ ثلاث درجات لا اثنتان، والفرق بينها هو الفرق بين الرصد والاتّهام.
+///
+///   «شائعة» بمعنى «كذبٌ مؤكَّد» حكمٌ لا يملكه نموذج: هو لا يعرف ما جرى،
+///   يعرف كيف صيغ الكلام. فيقول «ادّعاءٌ بلا مصدر» أو «صياغةٌ تُشبه
+///   الشائعة»، ولا يقول «كاذب» إلا حين يكون في السياق ما ينفيه.
+enum RumorStatus {
+  NONE
+  /// معلومة قابلة للتحقّق بلا مصدر واضح
+  UNVERIFIED_CLAIM
+  /// صياغة انتشارٍ: «وصلني»، «انشر قبل الحذف»، بلا مصدر
+  SUSPECTED_RUMOR
+  /// ثبت خطؤها بمصدرٍ في السياق — لا بانطباع النموذج
+  VERIFIED_MISINFORMATION
+}
+
+/// وسوم المحتوى — تصنيفٌ متعدّد لا واحد.
+///
+/// ★ ومنشورٌ واحد يحمل أكثر من وسم، وهذا هو المقصود.
+///
+///   «سلبي» وحدها لا تصف شيئاً: شكوى من خدمة وخطاب كراهية كلاهما سلبي،
+///   وبينهما ما بين الرصد والجريمة. والوسوم هي ما يفرّق.
+///
+/// ★ ولا تُكرَّر هنا قيم `Sentiment`.
+///
+///   إيجابي/سلبي/محايد حقلٌ قائم بذاته. وتكرارها وسماً يفتح باب التناقض:
+///   صفٌّ سلبيُّ المشاعر يحمل وسم «إيجابي»، ولا قاعدة تقول أيّهما يُقرأ.
+enum ContentLabel {
+  CONSTRUCTIVE_CRITICISM
+  DESTRUCTIVE_CRITICISM
+  UNVERIFIED_CLAIM
+  SUSPECTED_RUMOR
+  VERIFIED_MISINFORMATION
+  MISLEADING_CONTEXT
+  HATE_SPEECH
+  SECTARIAN_INCITEMENT
+  ETHNIC_INCITEMENT
+  REGIONAL_INCITEMENT
+  RELIGIOUS_INCITEMENT
+  VIOLENCE_INCITEMENT
+  COLLECTIVE_BLAME
+  PERSONAL_ATTACK
+  ABUSIVE_LANGUAGE
+  DEFAMATION_RISK
+  UNVERIFIED_ACCUSATION
+  FEARMONGERING
+  POLARIZATION
+  HARASSMENT
+  THREAT
+  SARCASM
+  SPAM
+  COORDINATED_CONTENT_SUSPECTED
+}
+
 /// إشارات محتوى ضارّ.
 ///
 /// وهي وصفٌ لما في النصّ لا حكمٌ قانوني عليه. الفرق جوهري: «فيه لفظ
@@ -1211,6 +1290,51 @@ model PostAnalysis {
 
   riskFlags    RiskFlag[]   @default([])
   riskSeverity RiskSeverity @default(NONE)
+
+  // ═══════════ التصنيف التفصيلي ═══════════
+
+  /// موقف الكاتب ممّا ينقل — غير `stance` الذي يقيس الموقف من الجهات
+  authorStance AuthorStance @default(UNCLEAR)
+
+  /// الوسوم — تصنيفٌ متعدّد يصف ما في النصّ
+  labels ContentLabel[] @default([])
+
+  /**
+   * درجة الخطورة من ٠ إلى ٥.
+   * و`riskSeverity` تبقى معها لا بدلاً عنها: شاشاتٌ وتنبيهاتٌ قائمة
+   * تقرؤها، وحذفها يكسرها. وهي تُشتقّ من هذه في الشيفرة فلا تتفرّقان.
+   * ٠ لا مشكلة · ١ سلبي بسيط · ٢ يحتاج مراقبة · ٣ مقلق · ٤ شديد
+   * الخطورة · ٥ عاجل.
+   */
+  severityLevel Int @default(0)
+
+  /// حال الادّعاء: بلا مصدر، أو صياغة شائعة، أو ثبت خطؤه
+  rumorStatus     RumorStatus @default(NONE)
+  /// ثقة النموذج في حكم الشائعة وحده — غير ثقته في التصنيف العام
+  rumorConfidence Float?
+
+  /// المجموعة المستهدفة بخطاب الكراهية، كما وردت في النصّ
+  hateTargetGroup String?
+
+  /**
+   * الألفاظ التي أثارت الفحص — أداة اكتشافٍ لا حكم.
+   * تُحفظ ليُراجَع الحكم: مراجعٌ يرى «كلهم» و«خونة» يفهم من أين جاء
+   * «تعميم» و«تخوين». ووجودُها وحده لا يصنّف شيئاً — السياق يصنّف.
+   */
+  matchedKeywords String[] @default([])
+
+  /// سخرية — تُوصَف ولا تُجرَّم، ثمّ يُنظر فيما تحتها
+  isSarcasm Boolean @default(false)
+  /// النصّ منقولٌ عن غيره أو بين علامتي اقتباس
+  isQuoted  Boolean @default(false)
+
+  /// نقدٌ مشروع: مشكلة محدّدة وطلب إصلاح بلا تحريض
+  isConstructive Boolean @default(false)
+  /// نقدٌ هدّام: شتم وتعميم واتّهامٌ بلا دليل
+  isDestructive  Boolean @default(false)
+
+  /// اشتباهٌ بمحتوى منسّق — لا جزم، فالجزم يحتاج بيانات حسابات أخرى
+  coordinatedSuspected Boolean @default(false)
 
   /**
    * هل يحتاج مراجعة بشرية؟

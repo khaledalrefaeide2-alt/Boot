@@ -46,7 +46,8 @@
     "media:cache": "tsx --conditions=react-server scripts/cache-media.ts",
     "cleanup:replies": "tsx --conditions=react-server scripts/delete-stored-replies.ts",
     "verify:settings": "tsx scripts/verify-settings.ts",
-    "verify:memory": "tsx scripts/verify-memory.ts"
+    "verify:memory": "tsx scripts/verify-memory.ts",
+    "verify:labels": "tsx --conditions=react-server scripts/verify-labels.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
