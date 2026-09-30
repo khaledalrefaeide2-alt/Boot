@@ -277,6 +277,30 @@ export function splitUnit(display: string): { amount: string; unit: string | nul
  * تكسر استواء السطح الملوّن فلا يبدو مستطيلاً مصمتاً. وهي `aria-hidden`
  * بلا استثناء ولا تحمل معنى: من أطفأ الألوان أو قرأ بالصوت لا يفقد شيئاً.
  */
+/**
+ * قشرة البطاقة — مكتوبةٌ مرّةً وتستعملها البطاقتان.
+ *
+ * بطاقة المقياس وبطاقة العنصر البارز تقفان جنباً إلى جنب في الصفّ نفسه،
+ * فأيّ فرق في نصف القطر أو الحشوة أو الظلّ يُقرأ خطأً لا تنويعاً. وكتابةُ
+ * الأصناف مرّتين تعني أن ينحرف أحدهما عن الآخر عند أوّل تعديل.
+ */
+const TILE_SHELL =
+  'group relative flex h-full flex-col justify-between gap-3 overflow-hidden rounded-[1.25rem] p-4 shadow-elev-1 print-avoid-break dark:border dark:border-border';
+
+/** السهم في دائرة — علامةٌ ثابتة تقول إنّ البطاقة تُفتح */
+function OpenChevron({ tint }: { tint: StatTint }) {
+  return (
+    <span
+      className={cn(
+        'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-current/25 opacity-50 transition-opacity group-hover:opacity-90',
+        TINTS[tint].split(' ')[1],
+      )}
+    >
+      <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
+    </span>
+  );
+}
+
 function TileWave() {
   return (
     <svg
@@ -369,7 +393,7 @@ export function StatCard({
          * خطٌّ ثالث بلا وظيفة. وفي الداكن يبقى شعرةً تفصل سطحين متقاربَي
          * العتمة.
          */
-        'group relative flex h-full flex-col justify-between gap-3 overflow-hidden rounded-[1.25rem] p-4 shadow-elev-1 print-avoid-break dark:border dark:border-border',
+        TILE_SHELL,
         TINTS[key],
         href && 'card-interactive',
         className,
@@ -423,16 +447,7 @@ export function StatCard({
           يعمل بلوحة المفاتيح أو على شاشة لمس لا يحوّم. والدائرة علامةٌ
           ثابتة تُقرأ زرّاً، وتخفت حتى لا تزاحم الرقم.
         */}
-        {href && (
-          <span
-            className={cn(
-              'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-current/25 opacity-50 transition-opacity group-hover:opacity-90',
-              TINTS[key].split(' ')[1],
-            )}
-          >
-            <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
-          </span>
-        )}
+        {href && <OpenChevron tint={key} />}
       </div>
 
       {/*
@@ -511,12 +526,15 @@ export function StatGrid({
 /**
  * بطاقة العنصر البارز — منشورٌ أو منصةٌ تتصدّر الفترة.
  *
- * ★ بيضاء بين الملوّنات، وهذا مقصود.
+ * ★ من عائلة بطاقات المقاييس نفسها، بالقشرة ذاتها.
  *
- *   بطاقات المقاييس أرقامٌ متجاورة يفرّق بينها اللون. وهذه ليست رقماً بل
- *   عنصراً مسمّى — نصُّ منشور، أو اسمُ منصة — وسطحٌ ملوّن خلف نصٍّ عربي
- *   طويل يُنقص تباينه ويُقحمه في صفّ الأرقام. فتبقى بيضاء، ويأتي اللون
- *   من رقاقة الأيقونة وحدها: فتُقرأ «من عائلة واحدة» بلا أن تُقرأ مقياساً.
+ *   كانت بيضاء بين الملوّنات بحجّة أنّ نصّاً عربياً طويلاً على سطحٍ ملوّن
+ *   يُنقص تباينه. والتباين مقيسٌ فعلاً: `verify:contrast` تقيس نصّ
+ *   البطاقة على كلّ سطحٍ ملوّن ولا تمرّ تحت 4.5:1. فبقي من الحجّة الذوقُ
+ *   وحده، وهو لا يقوم أمام صفٍّ فيه بطاقتان شاذّتان عن جاراتهما.
+ *
+ *   والقشرة مشتركة (`TILE_SHELL`) لا منسوخة، فلا تنحرف إحداهما عن الأخرى
+ *   عند أوّل تعديل.
  */
 export function HighlightCard({
   label,
@@ -553,87 +571,67 @@ export function HighlightCard({
   className?: string;
 }) {
   const percent = share === undefined ? null : Math.min(100, Math.max(0, share));
+  const { amount, unit } = splitUnit(value === undefined ? '' : formatCompactNumber(value));
 
   const content = (
-    <div
-      className={cn(
-        'group relative flex h-full flex-col justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-elev-1 print-avoid-break',
-        href && 'card-interactive',
-        className,
-      )}
-    >
-      <div className="flex items-start gap-2.5">
-        {(thumbnail || thumbnailKey) && (
+    <div className={cn(TILE_SHELL, TINTS[tint], href && 'card-interactive', className)}>
+      <TileWave />
+
+      <div className="relative flex items-start gap-3">
+        {thumbnail || thumbnailKey ? (
           <RemoteMedia
             src={thumbnail ?? ''}
             mediaKey={thumbnailKey}
-            className="h-12 w-12 shrink-0 rounded-xl"
+            className="h-11 w-11 shrink-0 rounded-2xl"
             fallback="hide"
           />
+        ) : (
+          Icon && (
+            <span
+              className={cn(
+                'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
+                CHIPS[tint],
+              )}
+            >
+              <Icon className="h-5 w-5" aria-hidden />
+            </span>
+          )
         )}
 
-        {!thumbnail && !thumbnailKey && Icon && (
-          <span
-            className={cn(
-              'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
-              CHIPS[tint],
-            )}
-          >
-            <Icon className="h-4.5 w-4.5" aria-hidden />
-          </span>
-        )}
-
-        <div className="min-w-0 flex-1 space-y-1">
+        <div className="min-w-0 flex-1 text-end">
           <p className="eyebrow">{label}</p>
           {/*
             العنوان يلتفّ سطرين ولا يُقصّ بنقاط في منتصف كلمة.
             نصُّ المنشور مقصوصٌ أصلاً في الخادم إلى طولٍ معقول.
           */}
-          <p className="line-clamp-2 text-sm font-medium leading-relaxed text-foreground">
-            {title}
-          </p>
+          <p className="line-clamp-2 text-sm font-medium leading-snug text-foreground">{title}</p>
         </div>
 
-        {href && (
-          <ChevronLeft
-            className="h-4 w-4 shrink-0 opacity-40 transition-opacity group-hover:opacity-80"
-            aria-hidden
-          />
-        )}
+        {href && <OpenChevron tint={tint} />}
       </div>
 
-      <div className="space-y-1.5">
+      <div className="relative flex items-end justify-between gap-2">
+        {meta && <p className="min-w-0 flex-1 truncate text-2xs text-muted-foreground">{meta}</p>}
+
         {percent !== null && (
-          <div className="space-y-1">
-            {/*
-              الشريط زخرفةٌ للرقم لا بديلٌ عنه: النسبة مكتوبة بجانبه،
-              وقارئ الشاشة يقرأها ولا يرى الشريط.
-            */}
-            <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2" aria-hidden>
-              <div
-                className={cn('h-full rounded-full', CHIPS[tint].split(' ')[0])}
-                style={{ width: `${percent}%` }}
-              />
-            </div>
+          <div className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-current/15" aria-hidden>
+            <div className="h-full rounded-full bg-current" style={{ width: `${percent}%` }} />
           </div>
         )}
 
-        <div className="flex items-end justify-between gap-2">
-          {meta && <p className="truncate text-xs text-subtle-foreground">{meta}</p>}
-          {value !== undefined && (
-            <p className="shrink-0 text-end">
-              <span className="num text-lg font-bold text-foreground">
-                {formatCompactNumber(value)}
-              </span>
-              {valueLabel && <span className="ms-1 text-xs text-muted-foreground">{valueLabel}</span>}
-              {percent !== null && (
-                <span className="num ms-1.5 text-2xs text-muted-foreground">
-                  ({formatPercent(percent, 0)})
-                </span>
-              )}
-            </p>
-          )}
-        </div>
+        {value !== undefined && (
+          <p className="shrink-0 whitespace-nowrap text-end">
+            {/*
+              الرقم بالمقاس نفسه الذي في بطاقة المقياس — هو ما يجعل الصفّ
+              يُقرأ صفّاً واحداً لا صفّين متجاورين.
+            */}
+            <span className="num text-2xl font-bold leading-tight tracking-[-0.02em] tabular-nums text-foreground">
+              {amount}
+            </span>
+            {unit && <span className="num ms-1 text-base font-semibold">{unit}</span>}
+            {valueLabel && <span className="ms-1 text-2xs text-muted-foreground">{valueLabel}</span>}
+          </p>
+        )}
       </div>
     </div>
   );

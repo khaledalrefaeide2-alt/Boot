@@ -42,6 +42,8 @@ interface OverviewResponse {
     engagementTotal: number;
     accountName: string;
     platformName: string;
+    mediaKey: string | null;
+    thumbnailUrl: string | null;
   } | null;
   topPlatform: { id: string; name: string; postsCount: number } | null;
 }
@@ -227,6 +229,10 @@ export function OverviewClient() {
               value={stats.topPost?.engagementTotal}
               valueLabel="تفاعل"
               href={stats.topPost ? `/posts/${stats.topPost.id}` : undefined}
+              tint="amber"
+              icon={METRIC_ICONS.engagement}
+              thumbnail={stats.topPost?.thumbnailUrl}
+              thumbnailKey={stats.topPost?.mediaKey}
             />
             </Reveal>
             <Reveal index={5} className="h-full sm:col-span-2">
@@ -237,6 +243,19 @@ export function OverviewClient() {
               value={stats.topPlatform?.postsCount}
               valueLabel="منشور"
               href={stats.topPlatform ? `/platforms/${stats.topPlatform.id}` : undefined}
+              tint="sky"
+              icon={METRIC_ICONS.platforms}
+              /*
+               * حصّة المنصة من منشورات الفترة — رقمٌ محسوب لا شريطٌ زخرفي.
+               * «٣٧ ألف منشور» لا تقول أكثيرٌ هي أم قليل حتى تُنسب إلى
+               * مجموعٍ، والنسبة مكتوبةٌ بجانب الشريط فلا يقع المعنى على
+               * طوله وحده.
+               */
+              share={
+                stats.totalPosts > 0 && stats.topPlatform
+                  ? (stats.topPlatform.postsCount / stats.totalPosts) * 100
+                  : undefined
+              }
             />
             </Reveal>
           </div>
