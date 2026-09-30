@@ -210,6 +210,7 @@ model User {
 
   analysisCorrections AnalysisCorrection[]
   analysisGuidance    AnalysisGuidance[]
+  memories            UserMemory[]
 
   @@index([status])
   @@index([role])
@@ -1004,6 +1005,7 @@ model AssistantConversation {
 
   user     User               @relation(fields: [userId], references: [id], onDelete: Cascade)
   messages AssistantMessage[]
+  memories UserMemory[]
 
   @@index([userId, updatedAt])
   @@map("assistant_conversations")
@@ -1026,6 +1028,78 @@ model AssistantMessage {
 
   @@index([conversationId, createdAt])
   @@map("assistant_messages")
+}
+
+/// نوع التعليمة المحفوظة — يُقرّر أين تُحقن ومتى تُستدعى
+enum MemoryKind {
+  /// تعليمات عمل عامة: أسلوب، أولويات، ما يُركَّز عليه
+  WORK
+  /// تفضيلات إعداد التقارير: طولها، ترتيبها، ما تتضمّنه
+  REPORTING
+  /// ملاحظات على التصنيف — تُقرأ في المحادثة ولا تدخل محرّك التصنيف
+  CLASSIFICATION
+  /// مصطلحات ومرادفات يستعملها صاحبها في أسئلته
+  GLOSSARY
+  GENERAL
+}
+
+/// مدى سريان التعليمة
+enum MemoryScope {
+  /// لصاحبها وحده
+  USER
+  /// للمنصة كلها — لا يُنشئها إلا من يملك taxonomy.manage
+  GLOBAL
+}
+
+enum MemoryStatus {
+  ACTIVE
+  /// معطّلة بقرار صاحبها — تبقى محفوظة ولا تُحقن
+  DISABLED
+  /// اقترحها المساعد وتنتظر إقرار صاحبها
+  PENDING
+}
+
+/// تعليمةٌ يحفظها المستخدم ليعمل بها المساعد.
+///
+/// ★ والفرق بينها وبين `AnalysisGuidance` ليس في الشكل بل في الأثر.
+///
+///   `AnalysisGuidance` تدخل محرّك التصنيف، فتُغيّر حكم كلّ منشور قادم في
+///   المنصة كلها — ولذلك لا يُفعّلها إلا من يملك `taxonomy.manage`، وما
+///   يلتقطه المساعد منها يُحفظ غير مفعّل.
+///
+///   وهذه تدخل محادثة صاحبها وحده: «اجعل تقاريري مختصرة»، «ركّز على قطاع
+///   المحروقات». لا تمسّ تصنيفاً ولا رقماً، فسقفها أوطأ وإذنها أوسع. ومن
+///   أرادها على المنصة كلها (`GLOBAL`) رجع إلى الإذن نفسه.
+///
+/// ولا تُحقن كلها في كل رسالة: تُنتقى المرتبطة بالسؤال وحدها. مستخدمٌ له
+/// أربعون تعليمة يدفع ثمنها في كل رسالة بلا فائدة، ويُغرق النموذج بما لا
+/// يخصّ السؤال فيقلّ التزامه بما يخصّه.
+model UserMemory {
+  id      String @id @default(cuid())
+  userId  String
+  /// عنوان قصير يُعرض في القائمة ويُبحث فيه
+  title   String
+  content String
+
+  kind   MemoryKind   @default(GENERAL)
+  scope  MemoryScope  @default(USER)
+  status MemoryStatus @default(ACTIVE)
+
+  /// الأعلى يُقدَّم حين يضيق سقف ما يُحقن — 0 هو الافتراضي
+  priority Int @default(0)
+
+  /// المحادثة التي وُلدت منها، إن وُلدت من اقتراح
+  sourceConversationId String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user               User                   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  sourceConversation AssistantConversation? @relation(fields: [sourceConversationId], references: [id], onDelete: SetNull)
+
+  @@index([userId, status, priority])
+  @@index([scope, status])
+  @@map("user_memories")
 }
 
 /// متّجه دلالي لمقطع من نصّ منشور.

@@ -15,6 +15,7 @@ import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { audit, AUDIT_ACTIONS } from '@/lib/audit';
 import { chatSchema } from '@/lib/validation/assistant';
 import { buildContext } from '@/lib/assistant/rag';
+import { memoriesForQuestion, renderMemoryBlock } from '@/lib/assistant/memory';
 import { captureGuidance } from '@/lib/analysis/capture';
 import {
   AssistantError,
@@ -126,13 +127,30 @@ export async function POST(request: NextRequest) {
     const conversation = await resolveConversation(actor.id, input.conversationId, input.message);
     const scope = await getAccountScope();
 
-    const [context, history] = await Promise.all([
+    const [context, history, memories] = await Promise.all([
       buildContext(input.message, scope, input.windowDays),
       recentTurns(conversation.id),
+      memoriesForQuestion(actor.id, input.message),
     ]);
 
+    /*
+     * ترتيب الحقن هو التسلسل الهرمي، لا مجرّد ترتيب نصّ.
+     *
+     * قواعد النظام أوّلاً، ثمّ تعليمات صاحب الحساب (وفيها المؤسسية
+     * مميَّزة)، ثمّ تاريخ المحادثة، ثمّ سؤاله وسياق بياناته. والنموذج
+     * يرجّح المتقدّم عند التعارض، وكتلة التعليمات تقول صراحةً إنّها دون
+     * قواعد النظام — فالحراسة في الموضع وفي النصّ معاً لا في أحدهما.
+     *
+     * والمنتقى وحده يُحقن: `memoriesForQuestion` تردّ ما يخصّ هذا السؤال
+     * وما رفعه صاحبه، لا الأربعين كلها.
+     */
+    const memoryBlock = renderMemoryBlock(memories);
+
     const messages: ChatMessage[] = [
-      { role: 'system', content: SYSTEM_PROMPT },
+      {
+        role: 'system',
+        content: memoryBlock ? `${SYSTEM_PROMPT}\n\n---\n\n${memoryBlock}` : SYSTEM_PROMPT,
+      },
       ...history,
       { role: 'user', content: buildUserPrompt(input.message, context) },
     ];
@@ -145,6 +163,8 @@ export async function POST(request: NextRequest) {
       totalPostsInWindow: context.snapshot.totalPosts,
       webSearch,
       agent,
+      // أيّ تعليمات سرت على هذا الجواب — بمعرّفاتها لا بمتنها، فلا يتضخّم الصفّ
+      memoryIds: memories.map((memory) => memory.id),
     };
 
     /*
@@ -184,6 +204,7 @@ export async function POST(request: NextRequest) {
         windowDays: input.windowDays,
         retrieved: context.posts.length,
         totalPostsInWindow: context.snapshot.totalPosts,
+        memories: memories.length,
       },
     });
 
@@ -213,7 +234,7 @@ export async function POST(request: NextRequest) {
               for await (const event of runAssistantAgent(messages, {
                 webSearch,
                 tools: ASSISTANT_TOOLS,
-                runTool: (name, args) => runTool(name, args, { scope }),
+                runTool: (name, args) => runTool(name, args, { scope, userId: actor.id }),
               })) {
                 if (event.kind === 'delta') {
                   full += event.text;

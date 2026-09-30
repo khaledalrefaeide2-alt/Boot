@@ -34,6 +34,9 @@ export const AUDIT_ACTIONS = {
   ACCOUNTS_LIMITS_CHANGED: 'account.limits_changed',
 
   ASSISTANT_ASKED: 'assistant.asked',
+  ASSISTANT_MEMORY_SAVED: 'assistant.memory.saved',
+  ASSISTANT_MEMORY_UPDATED: 'assistant.memory.updated',
+  ASSISTANT_MEMORY_DELETED: 'assistant.memory.deleted',
   POST_ANALYZED: 'post.analyzed',
   ANALYSIS_CORRECTED: 'analysis.corrected',
   ANALYSIS_GUIDANCE_CHANGED: 'analysis.guidance_changed',

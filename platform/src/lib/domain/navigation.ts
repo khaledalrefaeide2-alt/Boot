@@ -43,6 +43,14 @@ export const VIEWER_NAV: NavSection[] = [
       { href: '/entities', label: 'الكيانات', icon: 'AtSign', permission: PERMISSIONS.POSTS_VIEW },
       { href: '/ops', label: 'غرفة العمليات', icon: 'MonitorPlay', permission: PERMISSIONS.OPS_VIEW },
       { href: '/assistant', label: 'المساعد الذكي', icon: 'Sparkles', permission: PERMISSIONS.ASSISTANT_USE },
+      /*
+       * تعليمات المساعد تلي المساعد مباشرةً لا في شاشة الإعدادات.
+       *
+       * هي ملكُ صاحبها لا ضبطٌ للمنصة، ويعدّلها وهو في سياق المحادثة —
+       * فموضعها بجوار ما تؤثّر فيه. وشاشة الإعدادات يحرسها إذنٌ آخر لا
+       * يملكه أكثر من يستعمل المساعد.
+       */
+      { href: '/memories', label: 'تعليمات المساعد', icon: 'BookMarked', permission: PERMISSIONS.ASSISTANT_USE },
     ],
   },
   {

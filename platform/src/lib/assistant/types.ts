@@ -86,4 +86,6 @@ export interface AnswerMetadata {
   totalPostsInWindow: number;
   promptTokens?: number;
   completionTokens?: number;
+  /** معرّفات التعليمات المحفوظة التي سرت على هذا الجواب */
+  memoryIds?: string[];
 }

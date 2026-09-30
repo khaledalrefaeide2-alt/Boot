@@ -39,6 +39,14 @@ const MAX_TEXT = 700;
 
 export interface ToolContext {
   scope: AccountScope;
+  /**
+   * صاحب الجلسة — من الخادم لا من النموذج.
+   *
+   * تُستعمل لقراءة تعليماته المحفوظة وحدها. ولا تُقبل في معاملات أيّ
+   * أداة: لو أخذها النموذج معاملاً لأمكن لجملةٍ مدسوسة في منشور أن تطلب
+   * تعليمات مستخدمٍ آخر — تسريبٌ ينتظر صياغةً ذكيّة.
+   */
+  userId: string;
 }
 
 /** نطاق زمني من نصّين — والافتراض آخر ثلاثين يوماً */
@@ -687,6 +695,20 @@ export const ASSISTANT_TOOLS = [
       required: ['accountIds'],
     },
   },
+  {
+    type: 'function' as const,
+    name: 'search_memories',
+    description:
+      'التعليمات المحفوظة لصاحب الجلسة والتعليمات المؤسسية العامة. استعملها حين يسأل عن تعليماته المحفوظة أو عمّا يسري منها على جوابك. قراءة فقط — الحفظ والتعديل من شاشة التعليمات وحدها.',
+    parameters: {
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        search: { type: 'string', description: 'كلمة للترشيح في العنوان أو المتن' },
+        limit: { type: 'integer', description: 'حتى ٥٠' },
+      },
+    },
+  },
 ];
 
 export type ToolName = (typeof ASSISTANT_TOOLS)[number]['name'];
@@ -698,6 +720,48 @@ export type ToolName = (typeof ASSISTANT_TOOLS)[number]['name'];
  * معاملاته أو يقول للمستخدم ما تعذّر. ورميُه هنا يُسقط المحادثة كلها
  * لأجل نداءٍ واحد أخطأ في تاريخ.
  */
+/**
+ * تعليمات صاحب الجلسة المحفوظة.
+ *
+ * قراءةٌ فقط كبقيّة الأدوات: النموذج يقرأ ما حُفظ ولا يكتب شيئاً. وحفظ
+ * تعليمةٍ فعلٌ يقصده صاحبها من شاشتها — لا أثرٌ جانبيّ لجملةٍ في محادثة.
+ *
+ * وتُفيد في سؤالين: «ما التعليمات السارية عندي؟» و«لماذا أجبتَ هكذا؟».
+ * فالحقن التلقائي يضع ما يخصّ السؤال وحده، وهذه تفتح الباقي عند الطلب.
+ */
+async function searchMemories(ctx: ToolContext, args: { search?: string; limit?: number }) {
+  const search = typeof args.search === 'string' ? args.search.trim() : '';
+  const take = Math.min(Math.max(Number(args.limit) || 20, 1), MAX_ROWS);
+
+  /* النطاق شرطٌ ثابت من الجلسة، والبحث شرطٌ فوقه — لا بديلٌ عنه */
+  const owned: Prisma.UserMemoryWhereInput = {
+    OR: [{ userId: ctx.userId, scope: 'USER' }, { scope: 'GLOBAL' }],
+  };
+  const matching: Prisma.UserMemoryWhereInput | undefined = search
+    ? {
+        OR: [
+          { title: { contains: search, mode: 'insensitive' } },
+          { content: { contains: search, mode: 'insensitive' } },
+        ],
+      }
+    : undefined;
+
+  const rows = await prisma.userMemory.findMany({
+    where: { status: 'ACTIVE', AND: matching ? [owned, matching] : [owned] },
+    orderBy: [{ priority: 'desc' }, { updatedAt: 'desc' }],
+    take,
+    select: { id: true, title: true, content: true, kind: true, scope: true, priority: true },
+  });
+
+  return {
+    count: rows.length,
+    memories: rows.map((row) => ({
+      ...row,
+      content: row.content.length > MAX_TEXT ? `${row.content.slice(0, MAX_TEXT)}…` : row.content,
+    })),
+  };
+}
+
 export async function runTool(
   name: string,
   args: Record<string, unknown>,
@@ -719,6 +783,8 @@ export async function runTool(
         return await topStories(ctx, args as Parameters<typeof topStories>[1]);
       case 'compare_accounts':
         return await compareAccounts(ctx, args as Parameters<typeof compareAccounts>[1]);
+      case 'search_memories':
+        return await searchMemories(ctx, args as { search?: string; limit?: number });
       default:
         return { error: `أداة غير معروفة: ${name}` };
     }
