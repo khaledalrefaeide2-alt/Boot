@@ -390,6 +390,9 @@ export function AnalysisPanel({
                 stance: current.stance,
                 sentiment: current.sentiment,
                 riskFlags: current.riskFlags,
+                // تُملأ الخانات بما هو قائم، فيصحّح المراجع فرقاً لا يعيد كتابة كلّ شيء
+                labels: current.labels,
+                severityLevel: current.severityLevel,
               }
             : null
         }

@@ -34,6 +34,18 @@ import {
 const root = process.cwd();
 const read = (path: string) => readFileSync(join(root, path), 'utf8');
 
+/**
+ * قراءة الشيفرة بلا تعليقاتها.
+ *
+ * ملفّات هذا المشروع تشرح في تعليقاتها ما لا تفعله — «ولو كُتب
+ * `labels: input.labels ?? []` لقُرئ الصمتُ محواً». والفحص على النصّ
+ * الخام يقع على الجملة التي تنهى عن الفعل ويحسبها الفعل.
+ */
+const readCode = (path: string) =>
+  read(path)
+    .replace(/\/\*[\s\S]*?\*\//g, ' ')
+    .replace(/(^|[^:'"`\\])\/\/.*$/gm, '$1');
+
 const checks: { name: string; ok: boolean; detail?: string }[] = [];
 function check(name: string, ok: boolean, detail?: string) {
   checks.push({ name, ok, detail });
@@ -304,6 +316,82 @@ check(
 );
 check('والفلتران يُعدّان في شارة العدد', /filters\.minSeverity\) count/.test(bar));
 check('وهما في شريط الفلاتر', /أدنى درجة خطورة/.test(bar) && /وسم المحتوى/.test(bar));
+
+// ══════════════ حلقة التصحيح ══════════════
+
+/*
+ * ★ الفرق بين «لم يمسّها» و«محاها» هو كلّ شيء في هذا القسم.
+ *
+ *   نظام التعلّم يبني أمثلته من التصحيحات. ومراجعٌ صحّح المشاعر وحدها لا
+ *   يقصد نزع الوسوم — فلو قُرئ صمتُه محواً لصار كلّ تصحيحٍ درساً في شيء
+ *   لم يُقصد تعليمه: يتعلّم النموذج من مئة مثالٍ أنّ المراجعين ينزعون
+ *   الوسوم وأنّ كلّ ما راجعه إنسان بلا خطر.
+ *
+ *   ولا يظهر هذا في بناء ولا نوع: المصفوفة الفارغة مصفوفةٌ صالحة،
+ *   والصفر رقمٌ صالح. يظهر بعد أشهر في تصنيفٍ ينزلق تدريجياً.
+ */
+const correctionRoute = readCode('src/app/api/posts/[id]/analyze/correct/route.ts');
+const learning = readCode('src/lib/analysis/learning.ts');
+const learningPrompt = read('src/lib/analysis/learning-prompt.ts');
+const modal = readCode('src/components/analysis/correction-modal.tsx');
+const schema = read('prisma/schema.prisma');
+
+check(
+  'التصحيح يشمل الوسوم والخطورة',
+  /labels: input\.labels/.test(correctionRoute) && /severityLevel: input\.severityLevel/.test(correctionRoute),
+);
+check(
+  '★ والصمت لا يُقرأ محواً',
+  /labels: input\.labels \?\? null/.test(correctionRoute) &&
+    !/labels: input\.labels \?\? \[\]/.test(correctionRoute),
+  'مراجعٌ صحّح المشاعر وحدها لا يقصد إلغاء الوسوم',
+);
+check(
+  'والقاعدة تفرّق بينهما بعمود صريح',
+  /labelsTouched Boolean/.test(schema) && /labelsTouched: input\.labels !== null/.test(learning),
+  'المصفوفة الفارغة وحدها لا تقول أيّ المعنيين',
+);
+check(
+  'وnull في الخطورة ليست صفراً',
+  /severityLevel Int\?/.test(schema),
+  'الصفر حكمٌ («لا مشكلة») وnull غيابُ حكم («لم يُصحَّح»)',
+);
+check(
+  'والمثال لا يذكر الوسوم إلا إن مُسّت',
+  /if \(ex\.labelsTouched\)/.test(learningPrompt),
+);
+check(
+  'ويذكر الخطورة ٠ ويسكت عن null',
+  /typeof ex\.severityLevel === 'number'/.test(learningPrompt),
+  '٠ حكمٌ يُذكر، وnull غيابُ حكمٍ يُسكَت عنه',
+);
+check(
+  'والأمثلة تُجلب بالحقول الجديدة',
+  /c\."labels", c\."labelsTouched", c\."severityLevel"/.test(learning),
+);
+check(
+  'والصفوف القديمة لا تُقرأ أحكاماً',
+  /labelsTouched: row\.labelsTouched \?\? false/.test(learning),
+  'تصحيحاتٌ سابقة لا تحمل الحقول الجديدة — والغياب ليس حكماً',
+);
+check(
+  'والنافذة تعرض الوسوم والخطورة',
+  /وسوم المحتوى/.test(modal) && /درجة الخطورة الصحيحة/.test(modal),
+);
+check(
+  'وتفرّق «مسّها» عن قيمتها',
+  /touchedLabels/.test(modal) && /touchedLabels \? \{ labels \}/.test(modal),
+);
+check(
+  'والسلّم القديم يتبع الجديد بعد التصحيح',
+  /riskSeverity: deriveRiskSeverity\(input\.severityLevel\)/.test(correctionRoute),
+  'وإلا قال الصفّ الواحد شيئين بعد أن صحّحه إنسان',
+);
+check(
+  'والتصحيح يُبقي صلاحية المراجعة',
+  /requirePermission\(PERMISSIONS\.POSTS_REVIEW\)/.test(correctionRoute),
+  'من يصحّح يعلّم النظام — مسؤولية المراجع لا المشغّل',
+);
 
 console.log('\n>> فحص التصنيف التفصيلي\n');
 let failed = 0;

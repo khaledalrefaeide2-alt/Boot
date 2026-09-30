@@ -1568,14 +1568,30 @@ model AnalysisCorrection {
   excerpt String
 
   /// ما قاله النموذج — يُحفظ ليُقاس الانحراف لا للعرض وحده
-  aiStance    PostStance?
-  aiSentiment Sentiment?
-  aiRiskFlags RiskFlag[]  @default([])
+  aiStance        PostStance?
+  aiSentiment     Sentiment?
+  aiRiskFlags     RiskFlag[]     @default([])
+  /// وسوم المحتوى وخطورتها كما وضعها النموذج
+  aiLabels        ContentLabel[] @default([])
+  aiSeverityLevel Int?
 
   /// ما صحّحه المراجع
   stance    PostStance?
   sentiment Sentiment?
   riskFlags RiskFlag[]  @default([])
+
+  /**
+   * الوسوم والخطورة بعد التصحيح.
+   * ★ و`null` في `severityLevel` ليست صفراً.
+   * الصفر حكمٌ («لا مشكلة») وnull غيابُ حكم («لم يُصحَّح»). ولو خُلطا
+   * لصار كلّ تصحيحٍ لا يمسّ الخطورة يُقرأ تخفيضاً لها إلى صفر — فيتعلّم
+   * النموذج من مئات الأمثلة أنّ كلّ ما راجعه إنسان بلا خطر.
+   * و`labels` مصفوفةٌ فارغة تحتمل المعنيين، فيفرّق بينهما `labelsTouched`.
+   */
+  labels        ContentLabel[] @default([])
+  severityLevel Int?
+  /// هل مسّ المراجع الوسوم؟ — المصفوفة الفارغة وحدها لا تقول
+  labelsTouched Boolean        @default(false)
 
   /// تعليل المراجع — أنفع حقل في الجدول: المثال يقول «ماذا»، وهذا «لماذا»
   note String?

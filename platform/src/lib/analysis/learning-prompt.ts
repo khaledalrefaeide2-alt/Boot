@@ -12,6 +12,11 @@ export interface CorrectionExample {
   stance: string | null;
   sentiment: string | null;
   riskFlags: string[];
+  /** الوسوم بعد التصحيح — تُعرض حين مسّها المراجع وحدها */
+  labels?: string[];
+  labelsTouched?: boolean;
+  /** null يعني «لم يُصحَّح» — و٠ حكمٌ بأنّه بلا مشكلة */
+  severityLevel?: number | null;
   note: string | null;
   similarity: number;
 }
@@ -63,6 +68,25 @@ ${examples
     if (ex.stance) lines.push(`  الموقف الصحيح: ${STANCE_LABEL[ex.stance] ?? ex.stance}`);
     if (ex.riskFlags.length > 0) lines.push(`  إشارات: ${ex.riskFlags.join('، ')}`);
     else if (ex.stance) lines.push('  إشارات: لا شيء');
+    /*
+     * ★ الوسوم تُذكر حين مسّها المراجع وحدها.
+     *
+     *   والمصفوفة الفارغة تحتمل معنيين: «محاها المراجع» و«لم يمسّها».
+     *   ولو كُتبت «الوسوم الصحيحة: لا شيء» في الحالة الثانية لتعلّم
+     *   النموذج من كلّ تصحيحٍ للمشاعر أنّ المراجعين ينزعون الوسوم —
+     *   فيصير التصحيحُ الواحد درساً في شيء لم يُقصد تعليمه.
+     */
+    if (ex.labelsTouched) {
+      lines.push(
+        ex.labels && ex.labels.length > 0
+          ? `  الوسوم الصحيحة: ${ex.labels.join('، ')}`
+          : '  الوسوم الصحيحة: لا وسم',
+      );
+    }
+    // و٠ حكمٌ يُذكر، وnull غيابُ حكمٍ يُسكَت عنه
+    if (typeof ex.severityLevel === 'number') {
+      lines.push(`  درجة الخطورة الصحيحة: ${ex.severityLevel}`);
+    }
     if (ex.note) lines.push(`  تعليل المراجع: ${ex.note}`);
     return lines.join('\n');
   })

@@ -8,7 +8,7 @@ import { Select, Textarea } from '@/components/ui/field';
 import { Alert } from '@/components/ui/alert';
 import { useToast } from '@/components/ui/toast';
 import { api, ApiClientError } from '@/lib/api-client';
-import { STANCE_METRIC } from '@/lib/domain/constants';
+import { CONTENT_LABELS, SEVERITY_LEVELS, sortLabels, STANCE_METRIC } from '@/lib/domain/constants';
 
 const STANCE = [
   { value: 'SUPPORTIVE', label: 'مؤيّد لسياسات الدولة' },
@@ -56,7 +56,13 @@ export function CorrectionModal({
 }: {
   postId: string;
   open: boolean;
-  current: { stance: string; sentiment: string; riskFlags: string[] } | null;
+  current: {
+    stance: string;
+    sentiment: string;
+    riskFlags: string[];
+    labels?: string[];
+    severityLevel?: number;
+  } | null;
   onClose: () => void;
   onSaved: () => void;
 }) {
@@ -65,6 +71,16 @@ export function CorrectionModal({
   const [sentiment, setSentiment] = useState('');
   const [flags, setFlags] = useState<string[]>([]);
   const [touchedFlags, setTouchedFlags] = useState(false);
+  const [labels, setLabels] = useState<string[]>([]);
+  /*
+   * ★ «هل مسّها؟» حالةٌ مستقلّة عن قيمتها.
+   *
+   *   المصفوفة الفارغة تحتمل معنيين: «محا المراجع الوسوم» و«لم يفتح
+   *   القسم أصلاً». ولو أُرسلت الفارغةُ في الحالة الثانية لتعلّم النموذج
+   *   من كلّ تصحيحٍ للمشاعر أنّ المراجعين ينزعون الوسوم.
+   */
+  const [touchedLabels, setTouchedLabels] = useState(false);
+  const [severity, setSeverity] = useState('');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -74,6 +90,9 @@ export function CorrectionModal({
     setSentiment('');
     setFlags(current?.riskFlags ?? []);
     setTouchedFlags(false);
+    setLabels(current?.labels ?? []);
+    setTouchedLabels(false);
+    setSeverity('');
     setNote('');
   }, [open, current]);
 
@@ -84,6 +103,8 @@ export function CorrectionModal({
         ...(stance ? { stance } : {}),
         ...(sentiment ? { sentiment } : {}),
         ...(touchedFlags ? { riskFlags: flags } : {}),
+        ...(touchedLabels ? { labels } : {}),
+        ...(severity !== '' ? { severityLevel: Number(severity) } : {}),
         note: note.trim(),
       });
       toast.success('حُفظ التصحيح', 'سيُستعمل مثالاً في التحليلات المشابهة');
@@ -96,7 +117,7 @@ export function CorrectionModal({
     }
   }
 
-  const changed = Boolean(stance || sentiment || touchedFlags);
+  const changed = Boolean(stance || sentiment || touchedFlags || touchedLabels || severity !== '');
   const canSubmit = changed && note.trim().length >= 10;
 
   return (
@@ -151,9 +172,56 @@ export function CorrectionModal({
           ))}
         </Select>
 
+        {/*
+          الخطورة قبل الوسوم: هي أوّل ما يُراجَع، وكثيراً ما يكون الخطأ
+          فيها وحدها — وسمٌ صحيح بدرجةٍ مبالغٍ فيها أو مُهوَّنة.
+        */}
+        <Select
+          label="درجة الخطورة الصحيحة"
+          value={severity}
+          onChange={(event) => setSeverity(event.target.value)}
+          hint="اتركها فارغةً إن كانت الدرجة صحيحة — و«٠» حكمٌ بأنّه بلا مشكلة"
+        >
+          <option value="">— بلا تغيير —</option>
+          {[0, 1, 2, 3, 4, 5].map((level) => (
+            <option key={level} value={String(level)}>
+              {SEVERITY_LEVELS[level]?.short} — {SEVERITY_LEVELS[level]?.label}
+            </option>
+          ))}
+        </Select>
+
         <fieldset>
           <legend className="mb-2 text-xs font-medium text-muted-foreground">
-            إشارات المحتوى الضارّ
+            وسوم المحتوى
+          </legend>
+          <div className="grid max-h-56 grid-cols-1 gap-1.5 overflow-y-auto rounded-md border border-border p-2 sm:grid-cols-2">
+            {sortLabels(Object.keys(CONTENT_LABELS)).map((value) => (
+              <label key={value} className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  className="h-4 w-4 shrink-0 cursor-pointer accent-[var(--primary)]"
+                  checked={labels.includes(value)}
+                  onChange={(event) => {
+                    setTouchedLabels(true);
+                    setLabels((prev) =>
+                      event.target.checked
+                        ? [...prev, value]
+                        : prev.filter((label) => label !== value),
+                    );
+                  }}
+                />
+                <span className="text-sm text-foreground">{CONTENT_LABELS[value]?.label}</span>
+              </label>
+            ))}
+          </div>
+          <p className="mt-1.5 text-2xs text-muted-foreground">
+            ما لم تفتحه يبقى كما هو. ونزعُ الوسوم كلها حكمٌ يُتعلَّم منه كغيره.
+          </p>
+        </fieldset>
+
+        <fieldset>
+          <legend className="mb-2 text-xs font-medium text-muted-foreground">
+            إشارات المحتوى الضارّ (تُشتقّ من الوسوم — تبقى للشاشات القديمة)
           </legend>
           <div className="space-y-1.5">
             {RISK.map((item) => (

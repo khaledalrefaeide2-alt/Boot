@@ -42,6 +42,9 @@ interface Row {
   stance: string | null;
   sentiment: string | null;
   riskFlags: string[];
+  labels: string[];
+  labelsTouched: boolean;
+  severityLevel: number | null;
   note: string | null;
   similarity: number;
 }
@@ -62,7 +65,8 @@ export async function findSimilarCorrections(text: string): Promise<CorrectionEx
 
   const rows = await prisma.$queryRaw<Row[]>(Prisma.sql`
     WITH candidates AS (
-      SELECT c."excerpt", c."stance", c."sentiment", c."riskFlags", c."note", c."embedding"
+      SELECT c."excerpt", c."stance", c."sentiment", c."riskFlags",
+             c."labels", c."labelsTouched", c."severityLevel", c."note", c."embedding"
       FROM "analysis_corrections" c
       WHERE c."model" = ${config.embedModel}
         ${dimsFilter}
@@ -70,7 +74,8 @@ export async function findSimilarCorrections(text: string): Promise<CorrectionEx
       LIMIT ${CANDIDATE_CAP}
     )
     SELECT
-      c."excerpt", c."stance", c."sentiment", c."riskFlags", c."note",
+      c."excerpt", c."stance", c."sentiment", c."riskFlags",
+      c."labels", c."labelsTouched", c."severityLevel", c."note",
       COALESCE((
         SELECT SUM(a * b)
         FROM unnest(c."embedding", ${literal}::double precision[]) AS t(a, b)
@@ -88,7 +93,14 @@ export async function findSimilarCorrections(text: string): Promise<CorrectionEx
    * بعيد أسوأ من لا مثال: الأول يضلّل والثاني يترك الدليل يعمل وحده.
    */
   return rows
-    .map((row) => ({ ...row, similarity: Number(row.similarity) }))
+    .map((row) => ({
+      ...row,
+      similarity: Number(row.similarity),
+      // الصفوف القديمة لا تحمل الحقول الجديدة — والغياب ليس حكماً
+      labels: row.labels ?? [],
+      labelsTouched: row.labelsTouched ?? false,
+      severityLevel: row.severityLevel ?? null,
+    }))
     .filter((row) => row.similarity >= 0.55);
 }
 
@@ -109,9 +121,15 @@ export async function saveCorrection(input: {
   aiStance: string | null;
   aiSentiment: string | null;
   aiRiskFlags: string[];
+  aiLabels: string[];
+  aiSeverityLevel: number | null;
   stance: string | null;
   sentiment: string | null;
   riskFlags: string[];
+  /** null يعني «لم يمسّها المراجع» — والمصفوفة الفارغة حكمٌ بلا وسوم */
+  labels: string[] | null;
+  /** null يعني «لم يُصحَّح» — و٠ حكمٌ بأنّه بلا مشكلة */
+  severityLevel: number | null;
   note: string | null;
   correctedById: string;
 }) {
@@ -129,6 +147,11 @@ export async function saveCorrection(input: {
       stance: input.stance as never,
       sentiment: input.sentiment as never,
       riskFlags: input.riskFlags as never,
+      aiLabels: input.aiLabels as never,
+      aiSeverityLevel: input.aiSeverityLevel,
+      labels: (input.labels ?? []) as never,
+      labelsTouched: input.labels !== null,
+      severityLevel: input.severityLevel,
       note: input.note,
       correctedById: input.correctedById,
       embedding: vector,

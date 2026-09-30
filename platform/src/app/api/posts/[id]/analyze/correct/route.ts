@@ -16,6 +16,7 @@ import { audit, AUDIT_ACTIONS } from '@/lib/audit';
 import { isAssistantConfigured, MISSING_KEY_MESSAGE } from '@/lib/assistant/config';
 import { AssistantError } from '@/lib/assistant/openai';
 import { saveCorrection } from '@/lib/analysis/learning';
+import { deriveRiskSeverity } from '@/lib/analysis/ai-analyzer';
 import { correctionSchema } from '@/lib/validation/analysis';
 
 type Params = { params: Promise<{ id: string }> };
@@ -45,7 +46,13 @@ export async function POST(request: NextRequest, { params }: Params) {
         text: true,
         accountId: true,
         analysis: {
-          select: { stance: true, sentiment: true, riskFlags: true },
+          select: {
+            stance: true,
+            sentiment: true,
+            riskFlags: true,
+            labels: true,
+            severityLevel: true,
+          },
         },
       },
     });
@@ -63,9 +70,19 @@ export async function POST(request: NextRequest, { params }: Params) {
       aiStance: post.analysis?.stance ?? null,
       aiSentiment: post.analysis?.sentiment ?? null,
       aiRiskFlags: post.analysis?.riskFlags ?? [],
+      aiLabels: post.analysis?.labels ?? [],
+      aiSeverityLevel: post.analysis?.severityLevel ?? null,
       stance: input.stance ?? null,
       sentiment: input.sentiment ?? null,
       riskFlags: input.riskFlags ?? [],
+      /*
+       * `?? null` لا `?? []`: الفرق بين «لم يمسّها» و«محاها».
+       *
+       * مراجعٌ صحّح المشاعر وحدها لا يقصد إلغاء الوسوم. ولو قُرئ صمتُه
+       * محواً لتعلّم النموذج من كلّ تصحيحٍ أنّ المراجعين ينزعون الوسوم.
+       */
+      labels: input.labels ?? null,
+      severityLevel: input.severityLevel ?? null,
       note: input.note,
       correctedById: actor.id,
     });
@@ -84,6 +101,14 @@ export async function POST(request: NextRequest, { params }: Params) {
           ...(input.stance ? { stance: input.stance } : {}),
           ...(input.sentiment ? { sentiment: input.sentiment } : {}),
           ...(input.riskFlags ? { riskFlags: input.riskFlags } : {}),
+          ...(input.labels ? { labels: input.labels as never } : {}),
+          ...(input.severityLevel !== undefined
+            ? {
+                severityLevel: input.severityLevel,
+                // السلّم القديم يتبع الجديد، فلا تتفرّق القراءتان بعد التصحيح
+                riskSeverity: deriveRiskSeverity(input.severityLevel),
+              }
+            : {}),
           needsReview: false,
         },
       });
@@ -105,8 +130,15 @@ export async function POST(request: NextRequest, { params }: Params) {
         was: {
           stance: post.analysis?.stance ?? null,
           riskFlags: post.analysis?.riskFlags ?? [],
+          labels: post.analysis?.labels ?? [],
+          severityLevel: post.analysis?.severityLevel ?? null,
         },
-        now: { stance: input.stance ?? null, riskFlags: input.riskFlags ?? [] },
+        now: {
+          stance: input.stance ?? null,
+          riskFlags: input.riskFlags ?? [],
+          labels: input.labels ?? null,
+          severityLevel: input.severityLevel ?? null,
+        },
         note: input.note,
       },
     });

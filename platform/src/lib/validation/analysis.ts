@@ -34,13 +34,23 @@ export const correctionSchema = z
     stance: stance.optional(),
     sentiment: sentiment.optional(),
     riskFlags: z.array(riskFlag).max(5).optional(),
+    /*
+     * الوسوم لا تُقيَّد بقائمةٍ هنا: القائمة في `ContentLabel`، وتكرارها
+     * نصّاً يجعل وسماً جديداً يُقبل في شاشةٍ ويُردّ في أخرى. والتحقّق من
+     * صحّتها يقع في القاعدة — العمود من نوع enum فيرفض ما ليس منه.
+     */
+    labels: z.array(z.string().trim().max(64)).max(24).optional(),
+    /** ٠ حكمٌ صحيح («لا مشكلة») فالمدى يبدأ منه لا من ١ */
+    severityLevel: z.coerce.number().int().min(0).max(5).optional(),
     note: z.string().trim().min(10, 'اكتب تعليلاً يشرح سبب التصحيح').max(600),
   })
   .refine(
     (value) =>
       value.stance !== undefined ||
       value.sentiment !== undefined ||
-      value.riskFlags !== undefined,
+      value.riskFlags !== undefined ||
+      value.labels !== undefined ||
+      value.severityLevel !== undefined,
     { message: 'حدّد ما تريد تصحيحه على الأقل' },
   );
 
