@@ -6,9 +6,19 @@
  *
  * التشغيل:
  *     npm run owner:reset
- *     npm run owner:reset -- "كلمة-المرور-الجديدة"
+ *
+ * وتُطلب الكلمة في سؤالٍ مخفيّ: لا تظهر وأنت تكتبها، ولا تبقى في سجلّ
+ * الأوامر، ولا تُطبع بعد النجاح.
+ *
+ * ★ ولا تُمرَّر في سطر الأوامر إلا للأتمتة (حيث لا طرفية تسأل).
+ *
+ *   ما يُكتب في السطر يبقى في `~/.bash_history`، ويُقرأ في `ps` لحظة
+ *   التنفيذ، ويظهر في لقطة الشاشة التي تُرسَل لطلب المساعدة. وأسوأ من
+ *   ذلك أنّ من ينسخ أمراً من دليلٍ ينسخه بنصّه: فتصير كلمة مرور المالك
+ *   هي العبارة المكتوبة في الدليل نفسه.
  */
 import 'dotenv/config';
+import { stdin, stdout } from 'node:process';
 import { PrismaPg } from '@prisma/adapter-pg';
 import Redis from 'ioredis';
 import bcrypt from 'bcryptjs';
@@ -23,9 +33,78 @@ if (!connectionString) {
 
 const prisma = new PrismaClient({ adapter: new PrismaPg(prismaPgOptions(connectionString)) });
 
+/**
+ * سؤالٌ لا يُظهر ما يُكتب.
+ *
+ * بلا حزمة خارجية: الطرفية تُوضع في الوضع الخامّ فيصل كلّ حرف إلينا ولا
+ * يُصدى إلى الشاشة. والمسح للخلف يعمل، وCtrl+C يخرج كما يتوقّع من ضغطه.
+ */
+function promptHidden(question: string): Promise<string> {
+  return new Promise((resolve) => {
+    stdout.write(question);
+    stdin.setRawMode(true);
+    stdin.resume();
+    stdin.setEncoding('utf8');
+
+    let value = '';
+    const onData = (chunk: string): void => {
+      for (const char of chunk) {
+        if (char === '\r' || char === '\n' || char === '\u0004') {
+          stdin.setRawMode(false);
+          stdin.pause();
+          stdin.removeListener('data', onData);
+          stdout.write('\n');
+          resolve(value);
+          return;
+        }
+        if (char === '\u0003') {
+          stdin.setRawMode(false);
+          stdout.write('\n>> Cancelled / أُلغيت العملية\n');
+          process.exit(130);
+        }
+        // مسحٌ للخلف: Backspace أو Delete
+        if (char === '\u007f' || char === '\b') value = value.slice(0, -1);
+        else value += char;
+      }
+    };
+
+    stdin.on('data', onData);
+  });
+}
+
+/**
+ * العبارات النائبة تُردّ.
+ *
+ * ★ هذه ليست حيطةً نظرية: وقعت.
+ *
+ *   نُسخ الأمر من رسالةٍ فيها `"كلمة_المرور_الجديدة"` موضعاً للكلمة،
+ *   ولُصق بنصّه — فصارت كلمة مرور المالك هي العبارة المكتوبة في الرسالة
+ *   نفسها، وهي منشورةٌ في محادثة وفي لقطة شاشة.
+ *
+ *   والسؤال المخفيّ يمنع تكرارها، وهذه القائمة تحرس من يُصرّ على
+ *   التمرير في السطر.
+ */
+const PLACEHOLDERS = new Set(
+  [
+    'كلمة_المرور_الجديدة',
+    'كلمة-المرور-الجديدة',
+    'كلمة المرور الجديدة',
+    'كلمة_مرور_جديدة',
+    'كلمة-مرور-جديدة',
+    'كلمة مرور جديدة',
+    'MyNewPassword123',
+    'password',
+    'changeme',
+  ].map((entry) => entry.toLowerCase()),
+);
+
+function placeholderRejected(value: string): boolean {
+  return PLACEHOLDERS.has(value.trim().toLowerCase());
+}
+
 async function main(): Promise<void> {
   const email = process.env.SEED_OWNER_EMAIL?.trim().toLowerCase();
-  const newPassword = process.argv[2] ?? process.env.SEED_OWNER_PASSWORD;
+  const fromArgv = process.argv[2];
 
   // كل رسالة حاسمة تُسبق بسطر لاتيني: طرفية ويندوز لا تشكّل العربية ولا
   // ترتّبها، فيصعب على المستخدم قراءة الخطوة التالية بالعربية وحدها.
@@ -55,11 +134,41 @@ async function main(): Promise<void> {
     console.error('   المتغير SEED_OWNER_EMAIL غير معرّف في ملف .env');
     process.exit(1);
   }
+  /*
+   * الترتيب: ما مُرّر في السطر، ثم سؤالٌ مخفيّ إن كانت هناك طرفية، ثم
+   * ملفّ البيئة. والبيئة أخيراً عمداً — كانت أوّلاً بعد السطر، فمن شغّل
+   * الأمر بلا وسيط ظنّاً أنّه يعرض الحسابات وحدها أعاد الضبط صامتاً إلى
+   * كلمةٍ مرّت في ملفّ نصّي.
+   */
+  let newPassword = fromArgv;
+  if (!newPassword && stdin.isTTY) {
+    console.log('\n>> Enter the new password (hidden). Min 10 characters.');
+    console.log('   اكتب كلمة المرور الجديدة — لن تظهر وأنت تكتبها. عشرة محارف فأكثر.');
+    const first = await promptHidden('   كلمة المرور / Password: ');
+    // تُطلب مرّتين: ما لا يُرى يُخطأ في كتابته، والخطأ هنا قفلٌ ثانٍ
+    const again = await promptHidden('   أعِد كتابتها / Repeat:   ');
+    if (first !== again) {
+      console.error('\n>> The two entries do not match');
+      console.error('   الكلمتان غير متطابقتين — أعد المحاولة.');
+      process.exit(1);
+    }
+    newPassword = first;
+  }
+  newPassword ??= process.env.SEED_OWNER_PASSWORD;
+
   if (!newPassword || newPassword.length < 10) {
     console.error('\n>> Password must be at least 10 characters');
     console.error('   كلمة المرور يجب ألا تقل عن 10 محارف');
-    console.error('   مرّرها في الأمر التالي وحده:');
-    console.error('       npm run owner:reset -- "MyNewPassword123"');
+    console.error('   شغّل الأمر التالي وحده، وستُسأل عنها في سؤال مخفيّ:');
+    console.error('       npm run owner:reset');
+    process.exit(1);
+  }
+
+  if (placeholderRejected(newPassword)) {
+    console.error('\n>> That is the placeholder from the docs, not a password');
+    console.error('   هذه العبارةُ النائبة في الدليل لا كلمةُ مرور — وهي معروفة لكل من قرأه.');
+    console.error('   شغّل الأمر بلا وسيط وستُسأل عنها في سؤال مخفيّ:');
+    console.error('       npm run owner:reset');
     process.exit(1);
   }
 
@@ -92,12 +201,25 @@ async function main(): Promise<void> {
   // لا يكفي، فحدّ المحاولات المتكررة يُحفظ في Redis ويستمر رغم إعادة التعيين
   await clearRateLimits(email);
 
+  /*
+   * ★ ولا تُطبع الكلمة.
+   *
+   *   كانت تُطبع «للتأكيد»، فتبقى في سجلّ الطرفية وتظهر في لقطة الشاشة
+   *   التي تُرسَل لطلب المساعدة — وقد حدث. ومن كتبها يعرفها، ومن لم
+   *   يكتبها لا ينبغي أن يقرأها من شاشة.
+   */
   console.log('\n>> Password reset OK. You can sign in now.');
   console.log(`   أُعيد تعيين كلمة مرور ${target.name}`);
   console.log(`   البريد: ${email}`);
-  console.log(`   كلمة المرور: ${newPassword}`);
   console.log('   الحساب مفعّل، وأُزيل القفل وعدّاد المحاولات الفاشلة.');
-  console.log('   يمكنك تسجيل الدخول فوراً دون انتظار.\n');
+  console.log('   وأُبطلت الجلسات القائمة — امسح كوكيز الموقع قبل تسجيل الدخول.');
+
+  if (fromArgv) {
+    console.log('\n>> The password you passed is now in your shell history. Clear it:');
+    console.log('   الكلمة التي مرّرتها باقيةٌ في سجلّ الأوامر. امسح السطر:');
+    console.log('       history -d $(history 1)');
+  }
+  console.log('');
 }
 
 /** إزالة عدّادات محاولات الدخول من Redis حتى لا يبقى الحجب سارياً */
