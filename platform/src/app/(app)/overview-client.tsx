@@ -19,7 +19,7 @@ import { TopPostsSection } from '@/components/sections/top-posts-section';
 import { TopAccountsSection } from '@/components/sections/top-accounts-section';
 import { ComparisonBars, DonutChart, SentimentChart } from '@/components/charts/distribution-charts';
 import { api, ApiClientError, buildQuery } from '@/lib/api-client';
-import { formatNumber, truncate } from '@/lib/utils';
+import { formatNumber, truncate, halfOverHalfChange } from '@/lib/utils';
 import { POST_TYPE_LABELS, SENTIMENT_LABELS } from '@/lib/domain/constants';
 
 interface OverviewResponse {
@@ -74,12 +74,32 @@ export function OverviewClient() {
     queryFn: () => api.get<BreakdownsResponse>(buildQuery('/api/stats/breakdowns', params)),
   });
 
+  /*
+
+   * الأعمدة الصغيرة والاتجاه من السلسلة المعروضة نفسها.
+
+   *
+
+   * ولا يُطلب استعلامٌ ثانٍ لفترةٍ سابقة: الشارة تقول صراحةً إنّها
+
+   * تقارن نصفَي النافذة المفتوحة، فيبقى ما يُعرض مطابقاً لما حُسب.
+
+   */
+
+  const series = timeseries.data?.series ?? [];
+
+  const postsSeries = series.map((point) => point.posts);
+
+  const engagementSeries = series.map((point) => point.engagement);
+
+
   const stats = overview.data;
   const isEmpty = stats && stats.totalPosts === 0;
 
   return (
     <>
       <PageHeader
+        hero
         eyebrow="لوحة التشغيل"
         title="النظرة العامة"
         description="ملخص نشاط المنصات المرصودة خلال الفترة المحددة"
@@ -137,6 +157,9 @@ export function OverviewClient() {
               hint={`${formatNumber(stats.postsToday)} اليوم · ${formatNumber(stats.postsThisWeek)} هذا الأسبوع`}
               icon={METRIC_ICONS.posts}
               href="/posts"
+              tint="amber"
+              spark={postsSeries}
+              trend={halfOverHalfChange(postsSeries)}
             />
             </Reveal>
             <Reveal index={1} className="h-full lg:col-span-4">
@@ -146,6 +169,7 @@ export function OverviewClient() {
               hint="الحسابات المرصودة النشطة"
               icon={METRIC_ICONS.accounts}
               href="/accounts"
+              tint="mint"
             />
             </Reveal>
             <Reveal index={2} className="h-full lg:col-span-3">
@@ -155,6 +179,7 @@ export function OverviewClient() {
               hint="المنصات المفعّلة"
               icon={METRIC_ICONS.platforms}
               href="/platforms"
+              tint="sky"
             />
             </Reveal>
             <Reveal index={3} className="h-full lg:col-span-3">
@@ -164,7 +189,9 @@ export function OverviewClient() {
               hint={`معدل ${formatNumber(stats.engagementRate)} لكل منشور`}
               icon={METRIC_ICONS.engagement}
               compact
-              tone="primary"
+              tint="teal"
+              spark={engagementSeries}
+              trend={halfOverHalfChange(engagementSeries)}
             />
             </Reveal>
             <Reveal index={4} className="h-full lg:col-span-5">
@@ -199,24 +226,28 @@ export function OverviewClient() {
           <StatGrid count={4} className="mb-4">
             <StatCard
               label="الإعجابات"
+              tint="mint"
               value={stats.totalLikes}
               icon={METRIC_ICONS.likes}
               compact
             />
             <StatCard
               label="التعليقات"
+              tint="violet"
               value={stats.totalComments}
               icon={METRIC_ICONS.comments}
               compact
             />
             <StatCard
               label="المشاركات"
+              tint="sky"
               value={stats.totalShares}
               icon={METRIC_ICONS.shares}
               compact
             />
             <StatCard
               label="المشاهدات"
+              tint="rose"
               value={stats.totalViews}
               icon={METRIC_ICONS.views}
               compact

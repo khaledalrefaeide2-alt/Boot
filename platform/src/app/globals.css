@@ -121,6 +121,52 @@
   --glass-blur: 16px;
   --tilt-max: 6deg;
 
+  /* =========================== أسطح المقاييس ===========================
+   *
+   * سطحٌ ملوّن خفيف لكل مقياس، مع رقاقة أغمق للأيقونة ولونِ حبرٍ عليها.
+   *
+   * ★ اللون هنا تسريعٌ للتعرّف لا حاملٌ للمعنى.
+   *
+   *   «لا تنقل المعلومة باللون وحده» قاعدةٌ تُخالَف في كلّ لوحة مقاييس
+   *   ملوّنة. وهي محفوظة هنا لأنّ البطاقة تحمل أيقونتها واسمها ورقمها
+   *   كاملةً — فمن لا يميّز الأزرق من الأخضر يقرأ «عدد الحسابات ٣٧٢»
+   *   كما يقرأها غيره، ويخسر التسريعَ وحده.
+   *
+   * ★ والدرجات مشتقّة من اللوحة المقيسة لا مخترَعة.
+   *
+   *   كلّ حبر هنا لونٌ سبق قياسه في هذا الملف (info · success · warning ·
+   *   danger · chart-4 · chart-3 · olive-700)، والسطح تفتيحٌ له. فلا يدخل
+   *   النظامَ لونٌ سابع لم يمرّ بفحص التباين — والأزواج كلّها مُدرَجة في
+   *   `verify:contrast` فتُقاس ولا تُفترض.
+   */
+  --tint-sky-surface: #eef4fd;
+  --tint-sky-chip: #dbe8fb;
+  --tint-sky-ink: #1d4ed8;
+
+  --tint-mint-surface: #eaf6ef;
+  --tint-mint-chip: #d6ecdf;
+  --tint-mint-ink: #166534;
+
+  --tint-amber-surface: #fdf4e7;
+  --tint-amber-chip: #f9e7cb;
+  --tint-amber-ink: #854d0e;
+
+  --tint-rose-surface: #fdeeed;
+  --tint-rose-chip: #f9dcda;
+  --tint-rose-ink: #b91c1c;
+
+  --tint-violet-surface: #f2effc;
+  --tint-violet-chip: #e3ddf8;
+  --tint-violet-ink: #4c1d95;
+
+  --tint-teal-surface: #e9f5f4;
+  --tint-teal-chip: #d4eae7;
+  --tint-teal-ink: #065f46;
+
+  --tint-olive-surface: #f4f6ea;
+  --tint-olive-chip: #eaeeda;
+  --tint-olive-ink: #46501b;
+
   --radius: 0.5rem;
 
   /*
@@ -243,6 +289,42 @@
   --info: #93c5fd;
   --info-soft: #122240;
 
+    /*
+   * الأسطح الملوّنة في الداكن تفتيحٌ للأرضية لا تعتيمٌ للفاتح.
+   *
+   * تفتيح اللون الباستيلي على شبه الأسود يعطي لطخةً رمادية بلا هوية.
+   * فالسطح هنا أرضيةٌ صُبغت بأثرٍ من اللون، والحبر هو الدرجة المضيئة
+   * المقيسة أصلاً في هذه السمة — فيبقى اللون يُقرأ وتبقى الأرضية داكنة.
+   */
+  --tint-sky-surface: #101a2b;
+  --tint-sky-chip: #16233a;
+  --tint-sky-ink: #93c5fd;
+
+  --tint-mint-surface: #0f2119;
+  --tint-mint-chip: #142c22;
+  --tint-mint-ink: #4ade80;
+
+  --tint-amber-surface: #241d10;
+  --tint-amber-chip: #2f2616;
+  --tint-amber-ink: #fbbf24;
+
+  --tint-rose-surface: #261414;
+  --tint-rose-chip: #331b1b;
+  --tint-rose-ink: #f87171;
+
+  --tint-violet-surface: #1b1630;
+  --tint-violet-chip: #241d40;
+  --tint-violet-ink: #c4b5fd;
+
+  --tint-teal-surface: #0e211f;
+  --tint-teal-chip: #142e2a;
+  --tint-teal-ink: #5eead4;
+
+  --tint-olive-surface: #171a0e;
+  --tint-olive-chip: #1d2112;
+  --tint-olive-ink: #c8d87f;
+
+
   --ring: var(--olive-500);
 
   /*
@@ -342,6 +424,29 @@
   --color-info-soft: var(--info-soft);
 
   --color-ring: var(--ring);
+
+  /* أصناف الأسطح الملوّنة: bg-tint-sky-surface · text-tint-sky-ink … */
+  --color-tint-sky-surface: var(--tint-sky-surface);
+  --color-tint-sky-chip: var(--tint-sky-chip);
+  --color-tint-sky-ink: var(--tint-sky-ink);
+  --color-tint-mint-surface: var(--tint-mint-surface);
+  --color-tint-mint-chip: var(--tint-mint-chip);
+  --color-tint-mint-ink: var(--tint-mint-ink);
+  --color-tint-amber-surface: var(--tint-amber-surface);
+  --color-tint-amber-chip: var(--tint-amber-chip);
+  --color-tint-amber-ink: var(--tint-amber-ink);
+  --color-tint-rose-surface: var(--tint-rose-surface);
+  --color-tint-rose-chip: var(--tint-rose-chip);
+  --color-tint-rose-ink: var(--tint-rose-ink);
+  --color-tint-violet-surface: var(--tint-violet-surface);
+  --color-tint-violet-chip: var(--tint-violet-chip);
+  --color-tint-violet-ink: var(--tint-violet-ink);
+  --color-tint-teal-surface: var(--tint-teal-surface);
+  --color-tint-teal-chip: var(--tint-teal-chip);
+  --color-tint-teal-ink: var(--tint-teal-ink);
+  --color-tint-olive-surface: var(--tint-olive-surface);
+  --color-tint-olive-chip: var(--tint-olive-chip);
+  --color-tint-olive-ink: var(--tint-olive-ink);
 
   /*
    * أصناف الارتفاع الصريحة: shadow-elev-0 … shadow-elev-4.

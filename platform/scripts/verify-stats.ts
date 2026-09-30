@@ -164,17 +164,29 @@ check(`كل بطاقة تحمل أيقونة (${cards} بطاقة)`, iconless.le
 check('الأيقونات معرّفة في خريطة واحدة', SOURCE.includes('export const METRIC_ICONS'));
 check('الرقم بخانات متساوية العرض', SOURCE.includes('tabular-nums'));
 check('البطاقة أفقية مضغوطة', /items-center gap-2\.5[^']*px-3\.5 py-3/.test(SOURCE));
-check('الاسم بالحدّ الأدنى للعربية (12px)', SOURCE.includes('className="eyebrow line-clamp-2"'));
+/*
+ * الفحوص الثلاثة التالية تُطابق المعنى لا نصّ الصنف حرفاً بحرف.
+ *
+ * كانت تُطابق السلسلة كاملةً، فكسرها أوّل صنف تخطيط يُضاف إلى السطر نفسه
+ * — وهو كسرٌ كاذب: القصّ لم يعد، وإنما طال السطر. والفحص الذي يرسب على
+ * تغييرٍ سليم يُعلَّم تجاهله، فيصمت يوم يقع الخطأ حقاً.
+ */
+const LABEL_CLASS = /className="eyebrow[^"]*line-clamp-2[^"]*"/;
+check('الاسم بالحدّ الأدنى للعربية (12px)', LABEL_CLASS.test(SOURCE));
 /*
  * فحصان على القصّ، وهما سبب هذه المراجعة كلها.
  *
  * «معدل التف…» و«4.3 ن…» كانتا على الشاشة فعلاً: الاسم يُقصّ فيصير لغزاً،
  * والرقم يُقصّ فيصير كذباً.
  */
-check('الاسم يلتفّ ولا يُقصّ', /className="eyebrow line-clamp-2" title=\{label\}/.test(SOURCE));
+check(
+  'الاسم يلتفّ ولا يُقصّ',
+  /className="eyebrow[^"]*line-clamp-2[^"]*"\s*\n?\s*title=\{label\}/.test(SOURCE) &&
+    !/eyebrow[^"]*truncate/.test(SOURCE),
+);
 check(
   'الرقم لا يُقصّ أبداً',
-  SOURCE.includes("'num whitespace-nowrap text-lg") && !/num truncate/.test(SOURCE),
+  /num whitespace-nowrap text-lg/.test(SOURCE) && !/num[^"']*truncate/.test(SOURCE),
 );
 
 console.log('\n>> فحص شريط المقاييس\n');

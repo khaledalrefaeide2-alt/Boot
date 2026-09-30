@@ -140,6 +140,34 @@ export function addDays(date: Date, days: number): Date {
  * العدد نفسه يبقى على المستدعي ليضعه في عنصر مستقل، لأن الأرقام تُعرض
  * يساراً داخل نص يمينيّ فتحتاج عزلاً باتجاهها.
  */
+/**
+ * تغيّر النصف الثاني من الفترة عن نصفها الأول، نسبةً مئوية.
+ *
+ * ★ رقمٌ محسوب من المعروض لا مُستدعىً من مكان آخر.
+ *
+ *   شارة «+٢٨٪» في لوحة مقاييس تُقرأ «مقارنةً بالفترة السابقة» عادةً —
+ *   وتلك تحتاج استعلاماً ثانياً على نافذةٍ سابقة. وما لم يُجلب فعلاً لا
+ *   يجوز أن يُعرض: رقمٌ مختلَق بجانب رقمٍ صحيح يُفسد الاثنين.
+ *
+ *   فهذه تقارن نصفَي النافذة المعروضة نفسها — بيانٌ في اليد، ومعناه
+ *   مكتوبٌ لقارئ الشاشة صراحةً حتى لا يُقرأ غير ما هو.
+ *
+ * وتُعيد `undefined` حين لا يصحّ الحساب: نصفٌ فارغ، أو أساسٌ صفر — والقسمة
+ * على صفر تعطي ∞ تُطبع «Infinity٪» في البطاقة.
+ */
+export function halfOverHalfChange(values: number[]): number | undefined {
+  if (values.length < 4) return undefined;
+
+  const middle = Math.floor(values.length / 2);
+  const sum = (list: number[]) => list.reduce((total, value) => total + (value || 0), 0);
+
+  const first = sum(values.slice(0, middle));
+  const second = sum(values.slice(middle));
+  if (first <= 0) return undefined;
+
+  return ((second - first) / first) * 100;
+}
+
 export function arabicPlural(
   count: number,
   forms: { one: string; two: string; few: string; many: string },

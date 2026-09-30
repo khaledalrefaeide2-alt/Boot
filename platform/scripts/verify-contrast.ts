@@ -105,6 +105,47 @@ const TEXT_ON: Array<[string, string[]]> = [
   ['--olive-900', ['--olive-100', '--olive-200', '--olive-300']],
   ['--danger-foreground', ['--danger', '--danger-hover', '--danger-active']],
   ['--disabled-text', ['--disabled-bg', '--surface', '--background']],
+
+  /*
+   * أسطح المقاييس الملوّنة.
+   *
+   * لوحة مقاييس ملوّنة هي أكثر ما يسقط في التباين: السطح يُختار لأنه
+   * «هادئ» والحبر لأنه «يطابق اللون»، ولا يُقاس الزوج قطّ. فكل حبر هنا
+   * مقيسٌ على سطحه وعلى رقاقته، ويُقاس نصُّ البطاقة العادي عليها كذلك —
+   * الاسم والتلميح يقعان على السطح الملوّن لا على الأبيض.
+   */
+  ['--tint-sky-ink', ['--tint-sky-surface', '--tint-sky-chip']],
+  ['--tint-mint-ink', ['--tint-mint-surface', '--tint-mint-chip']],
+  ['--tint-amber-ink', ['--tint-amber-surface', '--tint-amber-chip']],
+  ['--tint-rose-ink', ['--tint-rose-surface', '--tint-rose-chip']],
+  ['--tint-violet-ink', ['--tint-violet-surface', '--tint-violet-chip']],
+  ['--tint-teal-ink', ['--tint-teal-surface', '--tint-teal-chip']],
+  ['--tint-olive-ink', ['--tint-olive-surface', '--tint-olive-chip']],
+
+  [
+    '--foreground',
+    [
+      '--tint-sky-surface',
+      '--tint-mint-surface',
+      '--tint-amber-surface',
+      '--tint-rose-surface',
+      '--tint-violet-surface',
+      '--tint-teal-surface',
+      '--tint-olive-surface',
+    ],
+  ],
+  [
+    '--muted-foreground',
+    [
+      '--tint-sky-surface',
+      '--tint-mint-surface',
+      '--tint-amber-surface',
+      '--tint-rose-surface',
+      '--tint-violet-surface',
+      '--tint-teal-surface',
+      '--tint-olive-surface',
+    ],
+  ],
 ];
 
 const GRAPHIC_ON: Array<[string, string[]]> = [
