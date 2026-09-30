@@ -20,6 +20,7 @@ import {
   AnalysisRunError,
   countAnalysisTargets,
   createAnalysisRun,
+  requiresExistingAnalysis,
   reapStaleRuns,
 } from '@/lib/analysis/run';
 import { analyzedToday, pendingCount } from '@/lib/analysis/auto';
@@ -54,9 +55,25 @@ export async function GET(request: NextRequest) {
     if (url.searchParams.get('preview') === '1') {
       const filters = parseQuery(request, postFiltersSchema);
       const scope = await getAccountScope();
+      /*
+       * حدّ «صُنّف قبل» يدخل التقدير كما يدخل الجولة.
+       *
+       * ولو غاب عنه لقال الزرّ «سيُعاد تصنيف ٥٥ ألفاً» ثمّ صنّفت الجولة
+       * ثلاثمئة — والرقم المعروض قبل الضغط هو حاجز الكلفة الوحيد.
+       */
+      const rawBefore = url.searchParams.get('analyzedBefore');
+      const before =
+        rawBefore && Number.isFinite(Date.parse(rawBefore)) ? new Date(rawBefore) : null;
+
       const [pending, matching] = await Promise.all([
-        countAnalysisTargets(filters, scope, false),
-        countAnalysisTargets(filters, scope, true),
+        /*
+         * «غير المصنَّف» لا معنى له مع فلترٍ على التحليل، فيُعاد صفراً
+         * صريحاً بدل استعلامٍ يعرف جوابَه سلفاً.
+         */
+        requiresExistingAnalysis(filters) || before
+          ? Promise.resolve(0)
+          : countAnalysisTargets(filters, scope, false),
+        countAnalysisTargets(filters, scope, true, null, before),
       ]);
       return jsonOk({ preview: { pending, matching } });
     }
@@ -137,7 +154,7 @@ export async function POST(request: NextRequest) {
       throw new ApiError(503, MISSING_KEY_MESSAGE);
     }
 
-    const { reanalyze, limit, ...filters } = input;
+    const { reanalyze, limit, analyzedBefore, ...filters } = input;
     const scope = await getAccountScope();
 
     let result;
@@ -148,6 +165,7 @@ export async function POST(request: NextRequest) {
         reanalyze,
         limit,
         requestedById: actor.id,
+        analyzedBefore: analyzedBefore ? new Date(analyzedBefore) : null,
       });
     } catch (error) {
       // رسائل الطبقة مكتوبة للمستخدم أصلاً — تُمرَّر كما هي بحالها الصحيح
@@ -159,8 +177,10 @@ export async function POST(request: NextRequest) {
       action: AUDIT_ACTIONS.ANALYSIS_RUN_STARTED,
       entityType: 'analysis_run',
       entityId: result.run.id,
-      summary: `بدء جولة تحليل لـ${result.run.total} منشوراً${reanalyze ? ' (إعادة تحليل)' : ''}`,
-      metadata: { total: result.run.total, reanalyze, filters },
+      summary: `بدء جولة تحليل لـ${result.run.total} منشوراً${reanalyze ? ' (إعادة تحليل)' : ''}${
+        analyzedBefore ? ` — ما صُنّف قبل ${analyzedBefore}` : ''
+      }`,
+      metadata: { total: result.run.total, reanalyze, analyzedBefore: analyzedBefore ?? null, filters },
     });
 
     return jsonOk(result, { status: 201 });

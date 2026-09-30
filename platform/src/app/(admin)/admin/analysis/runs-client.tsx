@@ -133,11 +133,16 @@ export function RunsClient() {
   const [filters, setFilters] = useState<PostFilterState>(EMPTY_FILTERS);
   const [reanalyze, setReanalyze] = useState(false);
   const [limit, setLimit] = useState('500');
+  /** «أعد تصنيف ما صُنّف قبل» — فارغٌ يعني بلا حدّ */
+  const [analyzedBefore, setAnalyzedBefore] = useState('');
   const [confirming, setConfirming] = useState(false);
   const [cancelTarget, setCancelTarget] = useState<AnalysisRun | null>(null);
 
   const optionsQuery = useFilterOptions();
-  const params = filtersToParams(filters);
+  const params = {
+    ...filtersToParams(filters),
+    ...(analyzedBefore ? { analyzedBefore } : {}),
+  };
 
   /*
    * التقدير يُطلب مع كل تغيّر في الفلاتر.
@@ -190,6 +195,7 @@ export function RunsClient() {
         ...params,
         reanalyze,
         limit: Number(limit) || 500,
+        ...(analyzedBefore ? { analyzedBefore } : {}),
       }),
     onSuccess: () => {
       toast.success('بدأت الجولة', 'تعمل في الخلفية — يمكنك مغادرة الشاشة');
@@ -308,8 +314,32 @@ export function RunsClient() {
                 label="أعد تحليل المنشورات المحلَّلة سابقاً"
                 description="بدونها تُحلَّل المنشورات التي لا تحليل لها وحدها — وهو الأوفر."
                 checked={reanalyze}
-                onChange={(event) => setReanalyze(event.target.checked)}
+                onChange={(event) => {
+                  setReanalyze(event.target.checked);
+                  // إطفاء الإعادة يُفرغ الحدّ: الخادم يرفض اجتماعهما، والحقل المخفيّ يُرسَل ويُربك
+                  if (!event.target.checked) setAnalyzedBefore('');
+                }}
               />
+
+              {/*
+                حدُّ «صُنّف قبل» — لِما تغيّرت قواعده.
+
+                بعد تعديل السياسة أو إضافة وسوم تبقى آلافُ الصفوف على حكمٍ
+                وُضع بمحرّكٍ لا يعرفها، وتُقرأ في اللوحات كأنّها حكمُ اليوم.
+                وهذا هو المسار الوحيد إليها.
+
+                ويلزمه «إعادة التحليل» بداهةً — فيُفعَّل معه ولا يُترك
+                للمستخدم أن يصطدم برفضٍ يفهمه بعد المحاولة.
+              */}
+              {reanalyze && (
+                <Input
+                  label="أعد تصنيف ما صُنّف قبل"
+                  type="date"
+                  value={analyzedBefore}
+                  onChange={(event) => setAnalyzedBefore(event.target.value)}
+                  hint="اتركه فارغاً لإعادة تصنيف كل ما تطابقه الفلاتر. وهو الطريق إلى ما صُنّف بقواعد قديمة."
+                />
+              )}
 
               {preview && (
                 <p className="text-xs leading-relaxed text-muted-foreground">

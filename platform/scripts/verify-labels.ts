@@ -393,6 +393,75 @@ check(
   'من يصحّح يعلّم النظام — مسؤولية المراجع لا المشغّل',
 );
 
+// ══════════════ إعادة التصنيف المحصورة ══════════════
+
+const runSource = readCode('src/lib/analysis/run.ts');
+const runsRoute = readCode('src/app/api/admin/analysis/runs/route.ts');
+const runsClient = readCode('src/app/(admin)/admin/analysis/runs-client.tsx');
+
+/*
+ * ★ ثلاثة شروط على علاقةٍ واحدة — وأخطرها أن تُكتب فوق بعضها.
+ *
+ *   الفلاتر (وسمٌ أو خطورة)، وحدّ «صُنّف قبل»، وشرطُ «بلا تحليل».
+ *   وكتابةُ كلٍّ منها كائناً مستقلّاً تجعل الأخير يغلب صامتاً: من طلب
+ *   «أعد تصنيف ما خطورته ٤ فأعلى» يحصل على «صنّف كلّ ما لم يُصنَّف» —
+ *   جولةٌ أوسع بكثير ممّا طُلب، تُنفق على آلافٍ لم يقصدها، ولا شيء في
+ *   النتيجة يقول إنّ الفلتر سقط.
+ */
+check(
+  'شروط التحليل تُدمَج في موضعٍ واحد',
+  /function analysisCondition/.test(runSource) &&
+    (runSource.match(/analysis: \{ is:/g) ?? []).length <= 2,
+  'كائنان منفصلان يجعل الأخير يغلب صامتاً',
+);
+check(
+  'وحدّ «صُنّف قبل» يُقاس بـ`updatedAt`',
+  /updatedAt: \{ lt: new Date\(stored\.analyzedBefore\) \}/.test(runSource),
+  'لو قِيس بالإنشاء لعاد المنشور نفسه في كل جولةٍ بعدها إلى الأبد',
+);
+check(
+  'والحدّ يُجمَّد في صفّ الجولة',
+  /analyzedBefore: string \| null/.test(runSource) &&
+    /analyzedBefore: readDate\(raw\.analyzedBefore\)/.test(runSource),
+);
+
+/*
+ * ★ والتناقض يُردّ صريحاً لا يُترك يُرجع صفراً.
+ *
+ *   منشورٌ له وسمٌ له تحليلٌ بالضرورة، فالجمع بين «بلا تحليل» وفلترِ
+ *   الوسم يُرجع صفراً دائماً — ويُقرأ «لا منشورات تطابق» فيظنّ صاحبه أن
+ *   لا شيء بهذه المواصفات، وفي القاعدة آلاف.
+ */
+check(
+  'التناقض يُردّ برسالةٍ تقول ما يُفعل',
+  /requiresExistingAnalysis/.test(runSource) &&
+    /فعّل «إعادة تحليل المحلَّل سابقاً»/.test(read('src/lib/analysis/run.ts')),
+  '«لا منشورات تطابق» تُقرأ خبراً عن البيانات وهي خبرٌ عن الطلب',
+);
+check(
+  'وإعادةُ التصنيف بتاريخٍ تقتضي تفعيل الإعادة',
+  /options\.analyzedBefore && !options\.reanalyze/.test(runSource),
+);
+check(
+  'والتقدير يعرف الحدّ كما تعرفه الجولة',
+  /countAnalysisTargets\(filters, scope, true, null, before\)/.test(runsRoute),
+  'الرقم المعروض قبل الضغط هو حاجز الكلفة الوحيد',
+);
+check(
+  'والواجهة تُظهر الحقل مع الإعادة وحدها',
+  /\{reanalyze && \(/.test(runsClient) && /أعد تصنيف ما صُنّف قبل/.test(runsClient),
+  'حقلٌ يُرسَل ويُرفَض يُعلِّم المستخدم أن يجرّب بدل أن يفهم',
+);
+check(
+  'وإطفاء الإعادة يُفرغ الحدّ',
+  /if \(!event\.target\.checked\) setAnalyzedBefore\(''\)/.test(runsClient),
+);
+check(
+  'والجولة تُسجَّل بحدّها في التدقيق',
+  /analyzedBefore: analyzedBefore \?\? null/.test(runsRoute),
+  'جولةٌ أعادت تصنيف خمسين ألفاً يجب أن يُعرف لماذا',
+);
+
 console.log('\n>> فحص التصنيف التفصيلي\n');
 let failed = 0;
 for (const c of checks) {

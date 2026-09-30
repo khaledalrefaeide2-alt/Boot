@@ -95,6 +95,17 @@ interface StoredFilters {
    * مرّة، فهو «وارد اليوم» بكل معنى وإن كان تاريخه قديماً.
    */
   createdSince: string | null;
+  /**
+   * أعِد تصنيف ما صُنّف قبل هذه اللحظة — ISO، وnull بلا حدّ.
+   *
+   * وهو المسار الوحيد إلى «أعد تصنيف كلّ ما صُنّف بالقواعد القديمة»: بعد
+   * تغيير السياسة أو إضافة وسوم، تبقى آلافُ الصفوف على حكمٍ وُضع بمحرّكٍ
+   * لا يعرفها — وهي تُقرأ في اللوحات كأنّها حكمُ اليوم.
+   *
+   * والقياس `updatedAt` لا `createdAt`: الصفّ يُحدَّث عند إعادة التصنيف،
+   * فلو قِيس بالإنشاء لعاد المنشور نفسه في كل جولةٍ بعدها إلى الأبد.
+   */
+  analyzedBefore: string | null;
 }
 
 /**
@@ -108,13 +119,24 @@ export function storedFilters(
   filters: PostFilters,
   scope: AccountScope,
   createdSince: Date | null = null,
+  analyzedBefore: Date | null = null,
 ): StoredFilters {
-  return { filters, scope, createdSince: createdSince ? createdSince.toISOString() : null };
+  return {
+    filters,
+    scope,
+    createdSince: createdSince ? createdSince.toISOString() : null,
+    analyzedBefore: analyzedBefore ? analyzedBefore.toISOString() : null,
+  };
 }
 
 /** إعادة قراءة ما خُزّن — بتحقّق كامل، فالعمود JSON حرّ الشكل */
 function readStored(value: Prisma.JsonValue | null): StoredFilters {
-  const raw = (value ?? {}) as { filters?: unknown; scope?: unknown; createdSince?: unknown };
+  const raw = (value ?? {}) as {
+    filters?: unknown;
+    scope?: unknown;
+    createdSince?: unknown;
+    analyzedBefore?: unknown;
+  };
   const filters = postFiltersSchema.parse(raw.filters ?? {});
   const scope = Array.isArray(raw.scope) ? (raw.scope as string[]) : null;
 
@@ -126,16 +148,65 @@ function readStored(value: Prisma.JsonValue | null): StoredFilters {
    * شرطاً لا يطابق شيئاً فتنتهي الجولة «بنجاح» بلا منشور واحد. والسقوط
    * إلى «بلا حدّ» يُصنِّف أكثر ممّا طُلب، وهو أهون من الصمت.
    */
-  const raw2 = typeof raw.createdSince === 'string' ? raw.createdSince : null;
-  const createdSince = raw2 && Number.isFinite(Date.parse(raw2)) ? raw2 : null;
+  const readDate = (value: unknown): string | null => {
+    if (typeof value !== 'string') return null;
+    return Number.isFinite(Date.parse(value)) ? value : null;
+  };
 
-  return { filters, scope, createdSince };
+  return {
+    filters,
+    scope,
+    createdSince: readDate(raw.createdSince),
+    analyzedBefore: readDate(raw.analyzedBefore),
+  };
 }
 
 /** شرط المنشورات المشمولة بالجولة */
+/**
+ * ★ ثلاثة شروط تقع كلّها على علاقة `analysis`، فتُدمَج ولا تُكتب فوق بعضها.
+ *
+ *   الفلاتر (وسمٌ أو خطورة)، وحدّ «صُنّف قبل»، وشرطُ «بلا تحليل» حين لا
+ *   تُطلب الإعادة. وكتابةُ كلٍّ منها كائناً مستقلّاً تجعل الأخير يغلب
+ *   صامتاً — ومن طلب «أعد تصنيف ما خطورته ٤ فأعلى» يحصل على «صنّف كلّ ما
+ *   لم يُصنَّف»: جولةٌ أوسع بكثير ممّا طُلب، تُنفق على آلافٍ لم يقصدها،
+ *   ولا شيء في النتيجة يقول إنّ الفلتر سقط.
+ *
+ * ★ و«بلا تحليل» يناقض الفلترَ بالوسم أو الخطورة.
+ *
+ *   منشورٌ له وسمٌ له تحليلٌ بالضرورة. فالجمع بينهما يُرجع صفراً دائماً —
+ *   ويُقرأ «لا منشورات تطابق» فيظنّ صاحبه أن لا شيء بهذه المواصفات، وفي
+ *   القاعدة آلاف. فيُردّ الطلب صراحةً في `createAnalysisRun` بدل أن يمرّ.
+ */
+function analysisCondition(
+  base: Prisma.PostWhereInput,
+  stored: StoredFilters,
+  reanalyze: boolean,
+): Prisma.PostWhereInput {
+  const fromFilters =
+    base.analysis && typeof base.analysis === 'object' && 'is' in base.analysis
+      ? (base.analysis.is as Prisma.PostAnalysisWhereInput | null)
+      : null;
+
+  const before = stored.analyzedBefore
+    ? { updatedAt: { lt: new Date(stored.analyzedBefore) } }
+    : null;
+
+  if (fromFilters || before) {
+    return { analysis: { is: { ...(fromFilters ?? {}), ...(before ?? {}) } } };
+  }
+  // ما لم تُطلب الإعادة، تُتخطّى المنشورات التي لها تحليل سابق
+  return reanalyze ? {} : { analysis: { is: null } };
+}
+
+/** هل تحصر الفلاتر الجولةَ في منشوراتٍ لها تحليل؟ */
+export function requiresExistingAnalysis(filters: PostFilters): boolean {
+  return Boolean(filters.label || filters.minSeverity);
+}
+
 function targetWhere(stored: StoredFilters, reanalyze: boolean): Prisma.PostWhereInput {
+  const base = buildPostWhere(stored.filters, stored.scope);
   return {
-    ...buildPostWhere(stored.filters, stored.scope),
+    ...base,
     /*
      * حدّ الاستخراج — يُجمَّد لحظة الطلب كالنطاق.
      *
@@ -156,8 +227,7 @@ function targetWhere(stored: StoredFilters, reanalyze: boolean): Prisma.PostWher
      * وهو شرطُ أن يبلغ عدّاد «ما ينتظر التصنيف» صفراً يوماً ما: منشورٌ
      * لا يُصنَّف ولا يُوسَم يُقرأ في كل دورة إلى الأبد.
      */
-    // ما لم تُطلب الإعادة، تُتخطّى المنشورات التي لها تحليل سابق
-    ...(reanalyze ? {} : { analysis: { is: null } }),
+    ...analysisCondition(base, stored, reanalyze),
   };
 }
 
@@ -167,9 +237,10 @@ export async function countAnalysisTargets(
   scope: AccountScope,
   reanalyze: boolean,
   createdSince: Date | null = null,
+  analyzedBefore: Date | null = null,
 ): Promise<number> {
   return prisma.post.count({
-    where: targetWhere(storedFilters(filters, scope, createdSince), reanalyze),
+    where: targetWhere(storedFilters(filters, scope, createdSince, analyzedBefore), reanalyze),
   });
 }
 
@@ -218,6 +289,8 @@ export interface CreateAnalysisRunOptions {
    * على الأتمتة، ومن يفتح الشاشة ويطلب جولةً بقصدٍ يريد ما يختاره بفلاتره.
    */
   createdSince?: Date | null;
+  /** أعِد تصنيف ما صُنّف قبل هذه اللحظة — للقواعد التي تغيّرت */
+  analyzedBefore?: Date | null;
 }
 
 export interface CreateAnalysisRunResult {
@@ -264,7 +337,31 @@ export async function createAnalysisRun(
     }
   }
 
-  const stored = storedFilters(options.filters, options.scope, options.createdSince ?? null);
+  /*
+   * التناقض يُردّ قبل أن يُنشأ صفّ.
+   *
+   * «بلا تحليل» + فلترٌ على التحليل يُرجع صفراً دائماً، ورسالةُ «لا
+   * منشورات تطابق» تُقرأ خبراً عن البيانات وهي خبرٌ عن الطلب.
+   */
+  if (!options.reanalyze && requiresExistingAnalysis(options.filters)) {
+    throw new AnalysisRunError(
+      400,
+      'الترشيح بالوسم أو بدرجة الخطورة يخصّ منشوراتٍ صُنّفت من قبل — فعّل «إعادة تحليل المحلَّل سابقاً»',
+    );
+  }
+  if (options.analyzedBefore && !options.reanalyze) {
+    throw new AnalysisRunError(
+      400,
+      'إعادة تصنيف ما صُنّف قبل تاريخٍ ما تقتضي تفعيل «إعادة تحليل المحلَّل سابقاً»',
+    );
+  }
+
+  const stored = storedFilters(
+    options.filters,
+    options.scope,
+    options.createdSince ?? null,
+    options.analyzedBefore ?? null,
+  );
   const matching = await prisma.post.count({ where: targetWhere(stored, options.reanalyze) });
   const total = Math.min(matching, options.limit);
 

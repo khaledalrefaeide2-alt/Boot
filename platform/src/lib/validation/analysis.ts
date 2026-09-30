@@ -84,6 +84,19 @@ export const analysisRunSchema = postFiltersSchema.extend({
   reanalyze: z
     .union([z.boolean(), z.enum(['true', 'false']).transform((value) => value === 'true')])
     .default(false),
+  /**
+   * أعِد تصنيف ما صُنّف قبل هذا التاريخ.
+   *
+   * لِما يُصنَّف بقواعد تغيّرت بعده: تبقى آلافُ الصفوف على حكمٍ وُضع
+   * بمحرّكٍ لا يعرف الوسوم، وتُقرأ في اللوحات كأنّها حكمُ اليوم.
+   * الصيغة: YYYY-MM-DD أو ISO كامل.
+   */
+  analyzedBefore: z
+    .string()
+    .trim()
+    .max(40)
+    .refine((value) => Number.isFinite(Date.parse(value)), 'تاريخ غير صالح')
+    .optional(),
   /*
    * السقف إلزاميّ بقيمة افتراضية متحفّظة.
    *
