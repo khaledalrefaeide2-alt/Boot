@@ -10,11 +10,15 @@ import { PERMISSIONS } from '@/lib/auth/rbac';
 import { PostThumb } from '@/components/posts/post-thumb';
 import { TD, TH, THead, TR } from '@/components/ui/table';
 import {
+  CONTENT_LABELS,
   POST_TYPE_LABELS,
   SENTIMENT_LABELS,
   SENTIMENT_TONE,
   STANCE_METRIC,
   languageLabel,
+  SEVERITY_LEVELS,
+  SEVERITY_VISIBLE_FROM,
+  sortLabels,
 } from '@/lib/domain/constants';
 import { formatCompactNumber, formatDateTime, formatNumber, truncate } from '@/lib/utils';
 
@@ -45,6 +49,8 @@ export interface PostListItemView {
   account: { id: string; name: string; avatarUrl: string | null };
   platform: { id: string; name: string; code: string };
   topic: { id: string; name: string } | null;
+  /** حقلان من التحليل التفصيلي — الباقي في صفحة المنشور */
+  analysis?: { severityLevel: number; labels: string[] } | null;
 }
 
 function sentimentTone(sentiment: string): BadgeTone {
@@ -120,6 +126,12 @@ export function PostCard({
   onDelete?: (post: PostListItemView) => void;
 }) {
   const hasMedia = Boolean(post.thumbnailUrl || post.imageUrl);
+
+  const level = post.analysis?.severityLevel ?? 0;
+  const severity = level >= SEVERITY_VISIBLE_FROM ? SEVERITY_LEVELS[level] : undefined;
+  /* أخطر وسمٍ وحده — القائمة كاملةً في صفحة المنشور */
+  const topLabelKey = sortLabels(post.analysis?.labels ?? [])[0];
+  const topLabel = topLabelKey ? CONTENT_LABELS[topLabelKey] : undefined;
 
   return (
     /*
@@ -229,8 +241,26 @@ export function PostCard({
           <span className="sr-only">{STANCE_METRIC.compact}: </span>
           {SENTIMENT_LABELS[post.sentiment as keyof typeof SENTIMENT_LABELS] ?? post.sentiment}
         </Badge>
+        {/*
+          ★ الخطورة تسبق الموضوع في البطاقة الضيّقة.
+
+            من يمسح لوحةً من أربعٍ وعشرين بطاقة يبحث عن الخطر لا عن
+            التصنيف الموضوعي. ودرجةٌ ٢ فما فوق («يحتاج مراقبة») هي أوّل
+            ما يستحقّ أن يُرى قبل فتح المنشور — وما دونها ضجيجٌ في شبكة.
+        */}
+        {severity && (
+          <Badge tone={severity.tone} size="sm" title={`درجة الخطورة: ${severity.label}`}>
+            <span className="sr-only">خطورة </span>
+            {severity.label}
+          </Badge>
+        )}
+        {topLabel && (
+          <Badge tone={topLabel.tone} size="sm" className="hidden @[17rem]:inline-flex">
+            {topLabel.label}
+          </Badge>
+        )}
         {post.topic && (
-          <Badge tone="info" size="sm" className="hidden @[17rem]:inline-flex">
+          <Badge tone="info" size="sm" className="hidden @[20rem]:inline-flex">
             {post.topic.name}
           </Badge>
         )}

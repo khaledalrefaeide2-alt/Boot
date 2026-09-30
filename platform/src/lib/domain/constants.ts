@@ -229,3 +229,101 @@ export function languageLabel(code: string | null | undefined): string {
   if (!code) return 'غير محددة';
   return LANGUAGE_LABELS[code] ?? code;
 }
+
+/*
+ * ═══════════ التصنيف التفصيلي ═══════════
+ *
+ * تسمياتٌ عربية لما يكتبه محرّك التصنيف. وموضعها هنا لا في المكوّن:
+ * البطاقة وصفحة المنشور وشاشة المراجعة تعرضها كلّها، ونسخُها ثلاث مرّات
+ * يجعل الوسم الواحد يُسمّى باسمين في شاشتين.
+ */
+
+/** درجات الخطورة الستّ — والنبرة تتدرّج معها فلا يُقرأ الخطر هدوءاً */
+export const SEVERITY_LEVELS: Record<
+  number,
+  { label: string; short: string; tone: 'neutral' | 'warning' | 'danger' }
+> = {
+  0: { label: 'لا مشكلة', short: '٠', tone: 'neutral' },
+  1: { label: 'سلبي بسيط', short: '١', tone: 'neutral' },
+  2: { label: 'يحتاج مراقبة', short: '٢', tone: 'warning' },
+  3: { label: 'مقلق', short: '٣', tone: 'warning' },
+  4: { label: 'شديد الخطورة', short: '٤', tone: 'danger' },
+  5: { label: 'عاجل', short: '٥', tone: 'danger' },
+};
+
+/** الدرجة التي تبدأ عندها الخطورة بالظهور في البطاقة المصغّرة */
+export const SEVERITY_VISIBLE_FROM = 2;
+
+export type LabelTone = 'danger' | 'warning' | 'info' | 'neutral';
+
+/**
+ * وسوم المحتوى بالعربية ونبرتها.
+ *
+ * ★ والنبرة ليست زينة: هي ما يفرّق «نقد مشروع» عن «خطاب كراهية» في
+ *   لمحة. ولو عُرضا بلونٍ واحد لصار المراجع يقرأ أربعة وعشرين وسماً
+ *   متساويةً في الوزن، فيضيع الخطر بين الملاحظات.
+ */
+export const CONTENT_LABELS: Record<string, { label: string; tone: LabelTone }> = {
+  CONSTRUCTIVE_CRITICISM: { label: 'نقد مشروع', tone: 'info' },
+  DESTRUCTIVE_CRITICISM: { label: 'نقد هدّام', tone: 'warning' },
+
+  UNVERIFIED_CLAIM: { label: 'ادّعاء غير موثّق', tone: 'warning' },
+  SUSPECTED_RUMOR: { label: 'صياغة شائعة', tone: 'warning' },
+  VERIFIED_MISINFORMATION: { label: 'تضليل مثبت', tone: 'danger' },
+  MISLEADING_CONTEXT: { label: 'سياق مضلّل', tone: 'warning' },
+
+  HATE_SPEECH: { label: 'خطاب كراهية', tone: 'danger' },
+  SECTARIAN_INCITEMENT: { label: 'تحريض طائفي', tone: 'danger' },
+  ETHNIC_INCITEMENT: { label: 'تحريض عرقي', tone: 'danger' },
+  REGIONAL_INCITEMENT: { label: 'تحريض مناطقي', tone: 'danger' },
+  RELIGIOUS_INCITEMENT: { label: 'تحريض ديني', tone: 'danger' },
+  VIOLENCE_INCITEMENT: { label: 'تحريض على العنف', tone: 'danger' },
+  COLLECTIVE_BLAME: { label: 'تعميم اللوم', tone: 'warning' },
+
+  PERSONAL_ATTACK: { label: 'هجوم شخصي', tone: 'warning' },
+  ABUSIVE_LANGUAGE: { label: 'ألفاظ مسيئة', tone: 'warning' },
+  DEFAMATION_RISK: { label: 'خطر تشهير', tone: 'danger' },
+  UNVERIFIED_ACCUSATION: { label: 'اتّهام بلا دليل', tone: 'danger' },
+  HARASSMENT: { label: 'تحرّش أو ملاحقة', tone: 'danger' },
+  THREAT: { label: 'تهديد', tone: 'danger' },
+
+  FEARMONGERING: { label: 'تهويل', tone: 'warning' },
+  POLARIZATION: { label: 'استقطاب', tone: 'warning' },
+  SARCASM: { label: 'سخرية', tone: 'neutral' },
+  SPAM: { label: 'محتوى مكرّر', tone: 'neutral' },
+  COORDINATED_CONTENT_SUSPECTED: { label: 'اشتباه تنسيق', tone: 'warning' },
+};
+
+/** ترتيب العرض: الأخطر أوّلاً، فما يُرى أوّلاً هو ما يُتصرَّف فيه */
+const TONE_ORDER: Record<LabelTone, number> = { danger: 0, warning: 1, info: 2, neutral: 3 };
+
+export function sortLabels(labels: string[]): string[] {
+  return [...labels].sort(
+    (a, b) =>
+      TONE_ORDER[CONTENT_LABELS[a]?.tone ?? 'neutral'] -
+      TONE_ORDER[CONTENT_LABELS[b]?.tone ?? 'neutral'],
+  );
+}
+
+/**
+ * حال الادّعاء.
+ *
+ * و«تضليل مثبت» لا يكتبها المحرّك من نفسه — يُنزلها إلى «صياغة شائعة»
+ * ويُحيل. فوجودها هنا لِما يُقرّه مراجعٌ بعد تحقّق.
+ */
+export const RUMOR_STATUS: Record<string, { label: string; tone: LabelTone }> = {
+  NONE: { label: 'لا ادّعاء', tone: 'neutral' },
+  UNVERIFIED_CLAIM: { label: 'ادّعاء غير موثّق', tone: 'warning' },
+  SUSPECTED_RUMOR: { label: 'صياغة شائعة', tone: 'warning' },
+  VERIFIED_MISINFORMATION: { label: 'تضليل مثبت', tone: 'danger' },
+};
+
+/** موقف الكاتب ممّا ينقل — غير موقف المنشور من الجهات */
+export const AUTHOR_STANCE: Record<string, string> = {
+  SUPPORTIVE: 'يتبنّى ما ينقل',
+  OPPOSED: 'ينكره أو يفنّده',
+  NEUTRAL: 'لا موقف',
+  QUESTIONING: 'يسأل عن صحّته',
+  REPORTING: 'ينقله خبراً',
+  UNCLEAR: 'غير واضح',
+};

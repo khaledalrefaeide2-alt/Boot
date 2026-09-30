@@ -172,6 +172,14 @@ export const POST_LIST_SELECT = {
   account: { select: { id: true, name: true, url: true, avatarUrl: true } },
   platform: { select: { id: true, name: true, code: true, color: true } },
   topic: { select: { id: true, name: true, color: true } },
+  /*
+   * حقلان من التحليل لا التحليل كله.
+   *
+   * البطاقة تحتاج أن تقول «هذا خطر» في لمحة، ولا تحتاج التعليل ولا
+   * الدليل ولا الألفاظ — تلك في صفحة المنشور. وجلبُ الصفّ كاملاً لأربعٍ
+   * وعشرين بطاقة يحمل نصوصاً طويلة لا تُعرض.
+   */
+  analysis: { select: { severityLevel: true, labels: true } },
 } satisfies Prisma.PostSelect;
 
 export type PostListItem = Prisma.PostGetPayload<{ select: typeof POST_LIST_SELECT }>;

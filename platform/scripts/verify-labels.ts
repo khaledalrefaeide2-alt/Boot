@@ -195,6 +195,78 @@ check(
   /result\.severityLevel >= 3/.test(analyzer),
 );
 
+// ══════════════ العرض ══════════════
+
+/*
+ * ★ وسمٌ بلا تسميةٍ عربية يُعرض بمفتاحه الإنجليزي في شاشةٍ عربية.
+ *
+ *   وهذا الصنف وقع في المنصة مرّتين قبلُ: أقسامُ الإعدادات، ومجموعاتُ
+ *   الحسابات. والسقوط إلى المفتاح لا يُعطب شيئاً فلا ينتبه إليه أحد —
+ *   يقرأ المراجع «HATE_SPEECH» ويمضي.
+ */
+const constants = read('src/lib/domain/constants.ts');
+const uiLabels = new Set(
+  [...(constants.match(/export const CONTENT_LABELS[\s\S]*?\n\};/)?.[0] ?? '').matchAll(
+    /^\s{2}([A-Z_]+):/gm,
+  )].map((m) => m[1] as string),
+);
+
+const unnamed = CONTENT_LABELS.filter((label) => !uiLabels.has(label));
+check(
+  `كل وسم له تسمية عربية (${CONTENT_LABELS.length} وسماً)`,
+  unnamed.length === 0,
+  unnamed.length > 0 ? `بلا تسمية: ${unnamed.join('، ')}` : undefined,
+);
+
+const severityBlock = constants.match(/export const SEVERITY_LEVELS[\s\S]*?\n\};/)?.[0] ?? '';
+const levels = [...severityBlock.matchAll(/^\s{2}(\d):/gm)].map((m) => Number(m[1]));
+check(
+  'ودرجات الخطورة الستّ كلها مسمّاة',
+  [0, 1, 2, 3, 4, 5].every((level) => levels.includes(level)),
+  levels.join('، '),
+);
+check(
+  'والنبرة تتدرّج مع الدرجة',
+  /4: \{[^}]*tone: 'danger'/.test(severityBlock) && /5: \{[^}]*tone: 'danger'/.test(severityBlock),
+  'لو عُرض الخطر بنبرة الهدوء لضاع بين الملاحظات',
+);
+check(
+  'والأخطر يُعرض أوّلاً',
+  /export function sortLabels/.test(constants) && /danger: 0/.test(constants),
+  'ما يُرى أوّلاً هو ما يُتصرَّف فيه',
+);
+
+const card = read('src/components/posts/post-card.tsx');
+const panel = read('src/components/analysis/analysis-panel.tsx');
+
+check(
+  'البطاقة تُظهر الخطورة من درجة المراقبة فصاعداً',
+  /level >= SEVERITY_VISIBLE_FROM/.test(card),
+  'ما دونها ضجيجٌ في شبكةٍ من أربعٍ وعشرين بطاقة',
+);
+check('واللوحة تعرض الوسوم كلها', /sortLabels\(current\.labels/.test(panel));
+check(
+  'وتعرض المجموعة المستهدفة مع وسم الكراهية',
+  /hateTargetGroup/.test(panel),
+  '«خطاب كراهية» بلا محكومٍ عليه لا يملك المراجع ما يراجعه',
+);
+check(
+  'وتقول إنّ الألفاظ لا تصنّف',
+  /وجودها لا يصنّف\s*\n?\s*شيئاً/.test(panel) || /لا يصنّف/.test(panel),
+);
+check(
+  '★ ولا تُعرض درجتا الخطورة في موضعٍ واحد',
+  /levelBadge/.test(panel),
+  'القديمة مشتقّةٌ من الجديدة، فعرضُهما معاً يقول الشيء مرّتين بمقياسين',
+);
+check(
+  'والبطاقة تجلب حقلين من التحليل لا الصفّ كله',
+  /analysis: \{ select: \{ severityLevel: true, labels: true \} \}/.test(
+    read('src/lib/queries/posts.ts'),
+  ),
+  'الصفّ كاملاً لأربعٍ وعشرين بطاقة يحمل نصوصاً طويلة لا تُعرض',
+);
+
 console.log('\n>> فحص التصنيف التفصيلي\n');
 let failed = 0;
 for (const c of checks) {

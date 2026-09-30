@@ -7,7 +7,16 @@ import { Button } from '@/components/ui/button';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { useToast } from '@/components/ui/toast';
 import { api, ApiClientError } from '@/lib/api-client';
-import { SENTIMENT_LABELS, SENTIMENT_TONE, STANCE_METRIC } from '@/lib/domain/constants';
+import {
+  AUTHOR_STANCE,
+  CONTENT_LABELS,
+  RUMOR_STATUS,
+  SENTIMENT_LABELS,
+  SENTIMENT_TONE,
+  SEVERITY_LEVELS,
+  sortLabels,
+  STANCE_METRIC,
+} from '@/lib/domain/constants';
 import { CorrectionModal } from './correction-modal';
 
 export interface PostAnalysisView {
@@ -27,6 +36,20 @@ export interface PostAnalysisView {
   needsReview: boolean;
   model: string;
   createdAt: string;
+
+  // ═══ التصنيف التفصيلي — اختيارية، فالتحليلات السابقة لا تحملها
+  labels?: string[];
+  severityLevel?: number;
+  authorStance?: string;
+  rumorStatus?: string;
+  rumorConfidence?: number | null;
+  hateTargetGroup?: string | null;
+  matchedKeywords?: string[];
+  isSarcasm?: boolean;
+  isQuoted?: boolean;
+  isConstructive?: boolean;
+  isDestructive?: boolean;
+  coordinatedSuspected?: boolean;
 }
 
 const STANCE: Record<string, { label: string; tone: 'success' | 'danger' | 'neutral' | 'warning' }> = {
@@ -98,6 +121,17 @@ export function AnalysisPanel({
 
   const stance = current ? (STANCE[current.stance] ?? STANCE.UNCLEAR!) : null;
   const severity = current ? (SEVERITY[current.riskSeverity] ?? SEVERITY.NONE!) : null;
+  /*
+   * درجةُ الخطورة الجديدة مستقلّةٌ عن القديمة في العرض.
+   *
+   * القديمة (NONE/LOW/MEDIUM/HIGH) مشتقّةٌ من الجديدة، فعرضُهما معاً في
+   * موضعٍ واحد يقول الشيء مرّتين بمقياسين. فتُعرض الجديدة مع الوسوم —
+   * حيث معناها — وتبقى القديمة في ترويسة اللوحة للشاشات التي تعرفها.
+   */
+  const levelBadge =
+    current && typeof current.severityLevel === 'number'
+      ? (SEVERITY_LEVELS[current.severityLevel] ?? SEVERITY_LEVELS[0]!)
+      : null;
 
   return (
     <Card>
@@ -183,6 +217,88 @@ export function AnalysisPanel({
                 <AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" aria-hidden />
                 {current.reviewReason}
               </p>
+            )}
+
+            {/*
+              الوسوم ودرجة الخطورة — قبل الإشارات القديمة لا بعدها.
+
+              هي التصنيف الحقيقي اليوم، والإشارات الخمس مشتقّةٌ منها
+              للشاشات القائمة. فتُعرض الأصل أوّلاً ويبقى المشتقّ تحته.
+            */}
+            {(current.labels?.length ?? 0) > 0 && (
+              <div className="space-y-2 rounded-md border border-border bg-surface-2 px-3 py-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <p className="text-xs font-semibold text-foreground">تصنيف المحتوى</p>
+                  {levelBadge && (
+                    <Badge tone={levelBadge.tone} size="sm">
+                      خطورة {levelBadge.short} — {levelBadge.label}
+                    </Badge>
+                  )}
+                </div>
+                <ul className="flex flex-wrap gap-1.5">
+                  {sortLabels(current.labels ?? []).map((label) => {
+                    const meta = CONTENT_LABELS[label];
+                    return (
+                      <li key={label}>
+                        <Badge tone={meta?.tone ?? 'neutral'} size="sm">
+                          {meta?.label ?? label}
+                        </Badge>
+                      </li>
+                    );
+                  })}
+                </ul>
+
+                {/*
+                  ★ ولا يُعرض الوسم وحده حين يكون تحته تفصيل.
+
+                    «خطاب كراهية» بلا ذكر المجموعة المستهدفة حكمٌ بلا
+                    محكومٍ عليه، ومراجعٌ يقرؤه لا يملك ما يراجعه.
+                */}
+                <dl className="grid gap-x-4 gap-y-1 text-xs sm:grid-cols-[auto_1fr]">
+                  {current.hateTargetGroup && (
+                    <>
+                      <dt className="font-medium text-muted-foreground">المجموعة المستهدفة</dt>
+                      <dd className="text-foreground">{current.hateTargetGroup}</dd>
+                    </>
+                  )}
+                  {current.rumorStatus && current.rumorStatus !== 'NONE' && (
+                    <>
+                      <dt className="font-medium text-muted-foreground">حال الادّعاء</dt>
+                      <dd className="text-foreground">
+                        {RUMOR_STATUS[current.rumorStatus]?.label ?? current.rumorStatus}
+                        {typeof current.rumorConfidence === 'number' && (
+                          <span className="num text-muted-foreground">
+                            {' '}
+                            (ثقة {Math.round(current.rumorConfidence * 100)}%)
+                          </span>
+                        )}
+                      </dd>
+                    </>
+                  )}
+                  {current.authorStance && current.authorStance !== 'UNCLEAR' && (
+                    <>
+                      <dt className="font-medium text-muted-foreground">موقف الكاتب ممّا ينقل</dt>
+                      <dd className="text-foreground">
+                        {AUTHOR_STANCE[current.authorStance] ?? current.authorStance}
+                        {current.isQuoted ? ' · نصّ منقول' : ''}
+                      </dd>
+                    </>
+                  )}
+                </dl>
+
+                {/*
+                  الألفاظ التي استدعت الفحص — ليُراجَع الحكم لا ليُصدَّق.
+
+                  مراجعٌ يرى «كلهم» و«خونة» يفهم من أين جاء «تعميم»
+                  و«تخوين»، فيستطيع أن يخالف. ووجودها لا يصنّف شيئاً.
+                */}
+                {(current.matchedKeywords?.length ?? 0) > 0 && (
+                  <p className="text-2xs leading-relaxed text-muted-foreground">
+                    ألفاظ استدعت الفحص: {current.matchedKeywords?.join('، ')} — وجودها لا يصنّف
+                    شيئاً، والسياق هو الذي صنّف.
+                  </p>
+                )}
+              </div>
             )}
 
             {current.riskFlags.length > 0 && (
