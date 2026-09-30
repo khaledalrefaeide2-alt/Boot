@@ -16,7 +16,7 @@ import { refreshStatsAfterImport } from '@/lib/stats';
 import { cacheRunThumbnails } from '@/lib/media/cache-posts';
 import { notifyOperators } from '@/lib/notifications';
 import { auditSystem, AUDIT_ACTIONS } from '@/lib/audit';
-import { getExcludeReplies, getOperationalSettings } from '@/lib/settings';
+import { getExcludeReplies, getMediaSettings, getOperationalSettings } from '@/lib/settings';
 import { enqueueExtraction, removeExtractionJob } from '@/lib/queue';
 import { classifyRunOutcome } from './outcome';
 import type { ExtractionTrigger } from '@/generated/prisma';
@@ -330,9 +330,20 @@ export async function executeExtractionRun(runId: string): Promise<void> {
      *
      * وهي بأفضل جهد: فشلُ صورة — أو المخزن كلّه — لا يُفشل استخراجاً نجح.
      */
-    await cacheRunThumbnails(run.id).catch((error: unknown) => {
-      console.error('[media] تعذّر حفظ المصغّرات:', error);
-    });
+    /*
+     * والمكنسة تلتقط ما فات هذه اللحظة.
+     *
+     * السقف هنا أربعمئة منشور في التشغيل، وتشغيلٌ أكبر منه كان يترك
+     * الباقي بلا صورة إلى الأبد. وصارت مكنسة الوسائط تعود إليه كلّ أربع
+     * دقائق — فهذا الاستدعاء تعجيلٌ لا شرط.
+     */
+    await getMediaSettings()
+      .then((settings) =>
+        settings.auto ? cacheRunThumbnails(run.id, 400, settings.maxAttempts) : null,
+      )
+      .catch((error: unknown) => {
+        console.error('[media] تعذّر حفظ المصغّرات:', error);
+      });
 
     await refreshStatsAfterImport(run.accountId, run.platformId, imported.publishedDates);
 

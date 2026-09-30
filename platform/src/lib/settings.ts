@@ -151,6 +151,37 @@ export async function getIndexSettings(): Promise<{
 }
 
 /**
+ * إعدادات حفظ صور المنشورات.
+ *
+ * ولا سقف يوميّ لها: الصور تُجلب من شبكات توزيع المنصات لا من مزوّد
+ * مدفوع، فالحدّ الوحيد ألّا تبدو طلباتنا هجوماً — وهو ما يضبطه حجم الدفعة
+ * والتوازي الرباعي في طبقة الجلب.
+ *
+ * و`maxAttempts` أهمّها: بدونه تعود المكنسة في كلّ دورة إلى عشرات الآلاف
+ * من الروابط الميتة فلا تبلغ الحيّ منها أبداً.
+ */
+export async function getMediaSettings(): Promise<{
+  auto: boolean;
+  batch: number;
+  maxAttempts: number;
+}> {
+  const settings = await getAllSettings();
+
+  const rawAuto = settings['media.autoCache'];
+  const auto =
+    rawAuto === undefined ? true : rawAuto !== false && rawAuto !== 'false' && rawAuto !== 0;
+
+  const batch = Number(settings['media.batch'] ?? 120);
+  const attempts = Number(settings['media.maxAttempts'] ?? 4);
+
+  return {
+    auto,
+    batch: Number.isFinite(batch) ? Math.min(600, Math.max(10, Math.floor(batch))) : 120,
+    maxAttempts: Number.isFinite(attempts) ? Math.min(10, Math.max(1, Math.floor(attempts))) : 4,
+  };
+}
+
+/**
  * إعدادات تجميع الأحداث.
  *
  * التجميع يقرأ المتّجهات ولا يُنشئ غيرها، فلا سقف يومي له: ليس فيه نداءٌ

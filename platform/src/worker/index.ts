@@ -12,7 +12,8 @@ import { executeAnalysisRun } from '@/lib/analysis/run';
 import { SWEEP_INTERVAL_MS, sweepAutoAnalysis } from '@/lib/analysis/auto';
 import { INDEX_SWEEP_INTERVAL_MS, sweepIndexing } from '@/lib/assistant/indexer';
 import { STORY_SWEEP_INTERVAL_MS, sweepStories } from '@/lib/analysis/stories';
-import { getIndexSettings, getStorySettings } from '@/lib/settings';
+import { MEDIA_SWEEP_INTERVAL_MS, sweepMedia } from '@/lib/media/sweep';
+import { getIndexSettings, getMediaSettings, getStorySettings } from '@/lib/settings';
 import { purgeExpiredSessions } from '@/lib/auth/session';
 import { rebuildAllDailyStats } from '@/lib/stats';
 import { pruneStore } from '@/lib/media/prune';
@@ -180,6 +181,29 @@ const storyTimer = setInterval(() => {
     .catch(() => undefined);
 }, STORY_SWEEP_INTERVAL_MS);
 
+/*
+ * مكنسة حفظ الصور.
+ *
+ * أقصر المكانس دورةً لأنّ ما تلاحقه يموت: رابط الصورة على المنصات موقَّع
+ * ويعيش ساعات، فالمنشور الذي يُستورد الآن تُنقذ صورته الآن أو لا تُنقذ
+ * أبداً. وبقيّة المكانس تعمل على نصٍّ مخزَّن عندنا لا يذهب.
+ */
+const mediaCacheTimer = setInterval(() => {
+  void getMediaSettings()
+    .then((settings) => {
+      if (!settings.auto) return null;
+      return sweepMedia({ batch: settings.batch, maxAttempts: settings.maxAttempts });
+    })
+    .then((outcome) => {
+      if (outcome?.swept) {
+        console.log(
+          `[worker] حفظ الصور: ${outcome.stored} مصغّرة · ${outcome.gone} رابطاً ميتاً · ${outcome.retry} تُعاد — بقي ${outcome.remaining}`,
+        );
+      }
+    })
+    .catch(() => undefined);
+}, MEDIA_SWEEP_INTERVAL_MS);
+
 const SESSION_PURGE_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const purgeTimer = setInterval(() => {
   void purgeExpiredSessions().catch(() => undefined);
@@ -196,10 +220,24 @@ const purgeTimer = setInterval(() => {
 const MEDIA_PRUNE_INTERVAL_MS = 6 * 60 * 60 * 1000;
 const mediaCapBytes = Number(process.env.MEDIA_MAX_MB ?? '2048') * 1024 * 1024;
 const mediaTimer = setInterval(() => {
-  void pruneStore(mediaCapBytes)
-    .then(({ removed, bytes }) => {
-      if (removed > 0) {
-        console.log(`[worker] نُظّف المخزن: حُذف ${removed} ملفاً، وبقي ${Math.round(bytes / 1048576)} ميجابايت`);
+  void getMediaSettings()
+    .then((settings) => pruneStore(mediaCapBytes, settings.maxAttempts))
+    .then(({ orphans, evicted, bytes }) => {
+      const size = Math.round(bytes / 1048576);
+      if (orphans > 0) {
+        console.log(`[worker] نُظّف المخزن: حُذف ${orphans} ملفاً يتيماً، وبقي ${size} ميجابايت`);
+      }
+      /*
+       * إخراج الحيّ يُعلَن تحذيراً لا سطراً عادياً.
+       *
+       * حذفُ اليتيم تنظيف، وحذفُ المستعمَل فقدٌ في الأرشيف: صورة كانت
+       * تُعرض أمس صارت «تعذّر عرض الوسائط» اليوم. والعلاج رفع MEDIA_MAX_MB
+       * لا الاعتياد على السطر.
+       */
+      if (evicted > 0) {
+        console.warn(
+          `[worker] ⚠ بلغ مخزن الصور سقفه (${Math.round(mediaCapBytes / 1048576)} ميجابايت): أُخرجت ${evicted} مصغّرة مستعمَلة. ارفع MEDIA_MAX_MB وإلا فقد الأرشيف صوره تدريجياً.`,
+        );
       }
     })
     .catch(() => undefined);
@@ -212,6 +250,7 @@ console.log('  🧠 طابور التحليل — جولة واحدة في ال�
 console.log(`  🤖 مكنسة التصنيف التلقائي كل ${SWEEP_INTERVAL_MS / 60000} دقائق`);
 console.log(`  🔎 مكنسة الفهرسة الدلالية كل ${INDEX_SWEEP_INTERVAL_MS / 60000} دقائق`);
 console.log(`  🧩 مكنسة تجميع الأحداث كل ${STORY_SWEEP_INTERVAL_MS / 60000} دقائق`);
+console.log(`  🖼️  مكنسة حفظ الصور كل ${MEDIA_SWEEP_INTERVAL_MS / 60000} دقائق`);
 console.log('  🕒 فحص الجدولة كل دقيقة');
 console.log('');
 
@@ -221,6 +260,7 @@ async function shutdown(signal: string): Promise<void> {
   clearInterval(sweepTimer);
   clearInterval(indexTimer);
   clearInterval(storyTimer);
+  clearInterval(mediaCacheTimer);
   clearInterval(purgeTimer);
   clearInterval(mediaTimer);
   await Promise.allSettled([

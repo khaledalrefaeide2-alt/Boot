@@ -598,6 +598,17 @@ model Post {
    */
   mediaKey String?
 
+  /**
+   * كم مرّة حاول النظام جلب مصغّرتها، ومتى آخر محاولة.
+   * ★ بلا عدّاد لا توجد إعادة محاولة أصلاً.
+   * المكنسة التي تلتقط «ما لا مصغّرة له» تلتقط في كل دورة المنشورات
+   * نفسها التي ماتت روابطها — عشرات الآلاف منها — فتدور على الميّت أبداً
+   * ولا تبلغ الحيّ. والعدّاد يُخرج الميّت من المجموعة بعد محاولات
+   * معدودة، فتضيق المجموعة حتى تفرغ.
+   */
+  mediaAttempts  Int       @default(0)
+  mediaCheckedAt DateTime?
+
   /// البيانات الخام من Apify للرجوع إليها عند الحاجة
   rawData Json?
 
@@ -641,7 +652,11 @@ model Post {
   @@index([storyId])
   @@index([isHidden, publishedAt(sort: Desc)])
   @@index([extractionRunId])
-  @@index([mediaKey])
+  /**
+   * الفهرس المركّب يخدم مكنسة الوسائط: «بلا مفتاح، ومحاولاته دون الحدّ،
+   * والأحدث أوّلاً». و`mediaKey` أوّله، فيخدم البحث بالمفتاح وحده كما كان.
+   */
+  @@index([mediaKey, mediaAttempts, publishedAt(sort: Desc)])
   @@index([text(ops: raw("gin_trgm_ops"))], type: Gin)
   @@index([hashtags], type: Gin)
   @@index([detectedKeywords], type: Gin)

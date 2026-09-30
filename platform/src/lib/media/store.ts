@@ -39,9 +39,45 @@ export function mediaRoot(): string {
   return process.env.MEDIA_DIR?.trim() || '/app/media';
 }
 
-/** مفتاح الصورة بصمةُ رابطها — فالصورة المشتركة بين منشورات تُحفظ مرة */
+/*
+ * معاملات التوقيع — تتغيّر مع كلّ استخراج ولا تغيّر الصورة.
+ *
+ * ★ بدون إسقاطها يتضاعف المخزن بلا أن يزيد فيه شيء.
+ *
+ *   رابط فيسبوك للصورة الواحدة يحمل توقيعاً ينتهي (`oh`/`oe`) ومعرّفات
+ *   جلسة (`_nc_ohc` وأخواتها). فإعادة استخراج المنشور نفسه غداً تعطي
+ *   رابطاً مختلف الحروف لصورةٍ واحدة — ومفتاحاً مختلفاً، وملفاً ثانياً
+ *   على القرص لا يشير إليه أحد. وبعد أشهر يمتلئ المخزن بنُسَخٍ يتيمة،
+ *   فيُقلَّم — فتُحذف مصغّرات حيّة لتبقى نُسَخ ميتة.
+ *
+ *   ولا يُسقَط `stp` ولا `name` ولا `format`: تلك تحدّد المقاس والصيغة،
+ *   وإسقاطها يجمع الصورة المصغّرة والكاملة تحت مفتاح واحد فتُحفظ أصغرهما
+ *   وتُعرض مكان الأخرى.
+ */
+const SIGNATURE_PARAM =
+  /^(oh|oe|_nc_(ohc|oc|sid|ht|cat|gid|zt|tp|eui2|ad|rid|rml)|ccb|efg|edm|__cft__.*|__tn__|expires|signature|key-pair-id|x-amz-.*|sig|token)$/i;
+
+/**
+ * صورة الرابط التي يُشتقّ منها المفتاح.
+ *
+ * دالّة خالصة — تُفحص وحدها.
+ */
+export function canonicalMediaUrl(url: string): string {
+  try {
+    const parsed = new URL(url);
+    for (const name of [...parsed.searchParams.keys()]) {
+      if (SIGNATURE_PARAM.test(name)) parsed.searchParams.delete(name);
+    }
+    parsed.hash = '';
+    return parsed.toString();
+  } catch {
+    return url;
+  }
+}
+
+/** مفتاح الصورة بصمةُ رابطها المجرَّد — فالصورة الواحدة تُحفظ مرة */
 export function mediaKeyFor(url: string): string {
-  return createHash('sha256').update(url).digest('hex').slice(0, 40);
+  return createHash('sha256').update(canonicalMediaUrl(url)).digest('hex').slice(0, 40);
 }
 
 function filePath(key: string): string {
@@ -83,31 +119,80 @@ export async function readThumbnail(key: string): Promise<Buffer | null> {
 }
 
 /**
+ * نتيجة محاولة الحفظ.
+ *
+ * ★ الفشل نوعان لا نوع واحد، والخلط بينهما يُفسد إعادة المحاولة كلّها.
+ *
+ *   رابطٌ ردّ بـ410 ميتٌ لن يحيا، وإعادةُ سؤاله كلّ أربع دقائق إلى الأبد
+ *   طلبٌ لا ينتهي على خوادم المنصة. وانقطاعُ شبكةٍ لحظي يُشفى بمحاولةٍ
+ *   بعد دقائق، وحسبانه نهائياً يُفقد صورةً كان يمكن إنقاذها.
+ *
+ *   فيُفصل النوعان هنا — عند المصدر — لا يُخمَّنان في المكنسة.
+ */
+export type StoreOutcome =
+  | { ok: true; key: string }
+  | { ok: false; permanent: boolean; reason: string };
+
+/**
+ * رموز الحالة التي لا تُعاد المحاولة بعدها.
+ *
+ * 403 و410 هما أكثرها وقوعاً: توقيعٌ انتهت صلاحيته، ومحتوىً حُذف من
+ * مصدره. و429 و5xx ليست منها — تلك «عد لاحقاً» لا «لا شيء هنا».
+ */
+const PERMANENT_STATUS = new Set([400, 401, 403, 404, 410, 451]);
+
+/**
  * جلب الصورة وحفظها مصغّرة.
  *
- * يُرجع المفتاح عند النجاح و`null` عند أي تعثّر — ولا يرمي أبداً: فشلُ صورةٍ
- * واحدة لا يجوز أن يُفشل استيراد دفعة.
+ * لا يرمي أبداً: فشلُ صورةٍ واحدة لا يجوز أن يُفشل استيراد دفعة.
  */
-export async function storeThumbnail(url: string): Promise<string | null> {
-  if (!isFetchableMedia(url)) return null;
+export async function storeThumbnail(url: string): Promise<StoreOutcome> {
+  // رابطٌ خارج المضيفات المسموحة لن يصير مسموحاً بمحاولةٍ ثانية
+  if (!isFetchableMedia(url)) {
+    return { ok: false, permanent: true, reason: 'رابط غير صالح أو مضيف غير مسموح' };
+  }
 
   const key = mediaKeyFor(url);
-  if (await hasThumbnail(key)) return key;
+  if (await hasThumbnail(key)) return { ok: true, key };
 
+  let response: Response;
   try {
-    const response = await fetch(url, {
+    response = await fetch(url, {
       signal: AbortSignal.timeout(TIMEOUT_MS),
       // بلا مُحيل: لا يُسرَّب عنوان المنصة الداخلية إلى خوادم المنصات
       referrerPolicy: 'no-referrer',
       redirect: 'follow',
     });
-    if (!response.ok) return null;
+  } catch (error) {
+    // انقطاعٌ أو مهلة — يُعاد لاحقاً
+    return {
+      ok: false,
+      permanent: false,
+      reason: error instanceof Error ? error.name : 'تعذّر الاتصال',
+    };
+  }
 
+  if (!response.ok) {
+    return {
+      ok: false,
+      permanent: PERMANENT_STATUS.has(response.status),
+      reason: `HTTP ${response.status}`,
+    };
+  }
+
+  try {
     const length = Number(response.headers.get('content-length') ?? '0');
-    if (length > MAX_BYTES) return null;
+    if (length > MAX_BYTES) {
+      return { ok: false, permanent: true, reason: 'أكبر من الحدّ' };
+    }
 
     const buffer = Buffer.from(await response.arrayBuffer());
-    if (buffer.byteLength === 0 || buffer.byteLength > MAX_BYTES) return null;
+    if (buffer.byteLength === 0) {
+      return { ok: false, permanent: false, reason: 'ردّ فارغ' };
+    }
+    if (buffer.byteLength > MAX_BYTES) {
+      return { ok: false, permanent: true, reason: 'أكبر من الحدّ' };
+    }
 
     const thumbnail = await sharp(buffer, { failOn: 'none' })
       .rotate()
@@ -118,8 +203,19 @@ export async function storeThumbnail(url: string): Promise<string | null> {
     const target = filePath(key);
     await mkdir(path.dirname(target), { recursive: true });
     await writeFile(target, thumbnail);
-    return key;
-  } catch {
-    return null;
+    return { ok: true, key };
+  } catch (error) {
+    /*
+     * الوصول إلى هنا يعني بايتاتٍ لا تُقرأ صورةً، أو قرصاً لا يُكتب عليه.
+     *
+     * والأولى نهائية — البايتات نفسها ستعود غداً — والثانية عابرة. ولا
+     * سبيل إلى التفريق بيقين، فتُعدّ عابرة: إعادةُ محاولةٍ زائدة أرخص من
+     * أرشيفٍ فقد صوره لأن القرص امتلأ دقيقةً واحدة.
+     */
+    return {
+      ok: false,
+      permanent: false,
+      reason: error instanceof Error ? error.message.slice(0, 80) : 'تعذّرت المعالجة',
+    };
   }
 }
