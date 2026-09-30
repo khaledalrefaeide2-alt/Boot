@@ -15,7 +15,7 @@
  * ★ والقاعدة التي يحرسها هذا الملف: الإعداد الذي لا يُبذر في ترحيل لا
  *   وجود له في الإنتاج. البذور للتطوير، والترحيل هو ما يصل.
  */
-import { readFileSync, readdirSync } from 'node:fs';
+import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
 
 const root = process.cwd();
@@ -36,6 +36,16 @@ const MIGRATIONS = readdirSync(migrationsDir)
 const checks: { name: string; ok: boolean; detail?: string }[] = [];
 function check(name: string, ok: boolean, detail?: string) {
   checks.push({ name, ok, detail });
+}
+
+/** كل ملفّات المصدر — لفحص ما لا يجوز أن يُكتب في الشيفرة */
+function tsFiles(dir: string, out: string[] = []): string[] {
+  for (const entry of readdirSync(dir)) {
+    const full = path.join(dir, entry);
+    if (statSync(full).isDirectory()) tsFiles(full, out);
+    else if (entry.endsWith('.ts') || entry.endsWith('.tsx')) out.push(full);
+  }
+  return out;
 }
 
 // ══════════════ كل إعداد يصل الإنتاج ══════════════
@@ -127,6 +137,75 @@ check(
   `وكل قيمة ::jsonb تُحلَّل JSON صحيحاً (${jsonLiterals} قيمة)`,
   badJson.length === 0,
   badJson.length > 0 ? badJson.join(' · ') : undefined,
+);
+
+// ══════════════ مجموعات الحسابات ══════════════
+
+/*
+ * القاعدة نفسها، وقد وقعت هنا أيضاً.
+ *
+ * المجموعات السبع الأصلية لم يبذرها ترحيلٌ قطّ: ترحيلُ `account_groups`
+ * أنشأ الجدول فارغاً، وصفوفُه جاءت من تشغيلٍ يدويّ لـ`setup:db` عند
+ * التأسيس. فقاعدةٌ تُبنى من الترحيلات وحدها تقوم بلا مجموعةٍ واحدة —
+ * لا فلتر، ولا إسناد حساب، ولا قسمٌ في تقرير.
+ */
+const groupsBlock = SEED.match(/const ACCOUNT_GROUPS = \[([\s\S]*?)\n\];/)?.[1] ?? '';
+const groups = [...groupsBlock.matchAll(/code: '([^']+)', name: '([^']+)', sortOrder: (\d+)/g)].map(
+  (m) => ({ code: m[1] as string, name: m[2] as string, order: Number(m[3]) }),
+);
+
+check('كتالوج المجموعات مقروء', groups.length > 0, `${groups.length} مجموعة`);
+
+const groupMigrations = MIGRATIONS.filter((m) => /INSERT INTO "account_groups"/.test(m.sql));
+const missingGroups = groups.filter(
+  (group) => !groupMigrations.some((m) => m.sql.includes(`'${group.code}'`)),
+);
+check(
+  `كل مجموعة مبذورة في ترحيل (${groups.length} مجموعة)`,
+  missingGroups.length === 0,
+  missingGroups.length > 0
+    ? `لا تصل الإنتاج: ${missingGroups.map((g) => g.name).join('، ')}`
+    : groups.map((g) => g.name).join('، '),
+);
+check(
+  'وبذرُها لا يكتب فوق ما عُدّل',
+  groupMigrations.every((m) => /ON CONFLICT \("code"\) DO NOTHING/.test(m.sql)),
+  'من أعاد تسمية مجموعة من الإدارة لا يريد الاسم القديم يعود مع كل نشر',
+);
+
+/* الرمز مفتاحٌ فريد، والترتيب لا يتكرّر وإلا صار ترتيب المتساويَين عشوائياً */
+check(
+  'ولا رمز مكرّر',
+  new Set(groups.map((g) => g.code)).size === groups.length,
+);
+check(
+  'ولا ترتيب مكرّر',
+  new Set(groups.map((g) => g.order)).size === groups.length,
+  groups.map((g) => `${g.order}:${g.name}`).join(' · '),
+);
+
+/*
+ * ★ ولا رمز مجموعة مكتوب في شيفرة التطبيق.
+ *
+ *   هذا ما يجعل إضافة مجموعة صفَّاً في القاعدة لا نشرةَ برنامج: الفلاتر
+ *   وقائمة الإسناد والتقارير تقرأ الجدول كلّه. وأوّل `code === 'owned'`
+ *   يُكتب في مكوّن يكسر ذلك صامتاً — تُضاف المجموعة فلا تظهر حيث كُتب
+ *   الشرط، ولا شيء يقول لماذا.
+ */
+const appSources = tsFiles(path.join(root, 'src'));
+const hardcoded: string[] = [];
+for (const file of appSources) {
+  const text = readFileSync(file, 'utf8');
+  for (const group of groups) {
+    if (text.includes(`'${group.code}'`)) {
+      hardcoded.push(`${path.relative(root, file)} — ${group.code}`);
+    }
+  }
+}
+check(
+  'ولا رمز مجموعة مكتوب في الشيفرة',
+  hardcoded.length === 0,
+  hardcoded.length > 0 ? hardcoded.join(' · ') : 'المجموعات تُقرأ من القاعدة كلها',
 );
 
 // ══════════════ الشاشة ══════════════

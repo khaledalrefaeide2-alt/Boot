@@ -73,6 +73,7 @@ const ACCOUNT_GROUPS = [
   { code: 'partners', name: 'المنصات المتعاونة', sortOrder: 5 },
   { code: 'ministries', name: 'وزارات', sortOrder: 6 },
   { code: 'governorates', name: 'محافظات', sortOrder: 7 },
+  { code: 'activists', name: 'النشطاء', sortOrder: 8 },
 ];
 
 const SETTINGS = [
