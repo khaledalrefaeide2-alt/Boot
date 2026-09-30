@@ -1,8 +1,18 @@
-import type { Metadata } from 'next';
-import { OverviewClient } from './overview-client';
+import { redirect } from 'next/navigation';
 
-export const metadata: Metadata = { title: 'النظرة العامة' };
-
-export default function OverviewPage() {
-  return <OverviewClient />;
+/*
+ * الجذر يُحوَّل إلى الإحصائيات.
+ *
+ * كانت هنا «النظرة العامة»، وقد أُلغيت ودُمج محتواها في «الإحصائيات» —
+ * فالشاشتان كانتا تقرآن الاستعلامات نفسها وتعرضان أكثرها مرّتين.
+ *
+ * ★ والمسار يبقى ولا يُحذف.
+ *
+ *   ثلاثة مواضع تُرسل إليه ولا تعرف بالدمج: الوسيط بعد تسجيل الدخول،
+ *   والقشرة المحميّة حين تُردّ صلاحية، ورابطٌ في لوحة الإدارة. وحذفُ
+ *   الملفّ يجعل كلّاً منها يقع على 404 — والتحويل يُبقيها تعمل بلا أن
+ *   تُعدَّل.
+ */
+export default function RootPage() {
+  redirect('/analytics');
 }

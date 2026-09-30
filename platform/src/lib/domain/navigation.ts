@@ -22,9 +22,23 @@ export const VIEWER_NAV: NavSection[] = [
   {
     title: 'الرصد',
     items: [
-      { href: '/', label: 'النظرة العامة', icon: 'LayoutDashboard', exact: true },
+      /*
+       * «النظرة العامة» أُلغيت ودُمجت في «الإحصائيات».
+       *
+       * كانت الشاشتان تقرآن الاستعلامات نفسها وتعرضان أكثرها مرّتين —
+       * المقاييس، ورسما الزمن، وتوزيع المنصة والموقف، وأبرز المنشورات.
+       * فكان الموظّف يفتح الأولى ثم الثانية ليجد ما رآه للتوّ.
+       *
+       * والمسار `/` يبقى محوِّلاً إلى `/analytics` ولا يُحذف: الوسيط
+       * يرسل إليه بعد تسجيل الدخول.
+       */
+      {
+        href: '/analytics',
+        label: 'الإحصائيات',
+        icon: 'BarChart3',
+        permission: PERMISSIONS.POSTS_VIEW,
+      },
       { href: '/posts', label: 'المنشورات', icon: 'Newspaper', permission: PERMISSIONS.POSTS_VIEW },
-      { href: '/analytics', label: 'الإحصائيات', icon: 'BarChart3', permission: PERMISSIONS.POSTS_VIEW },
       { href: '/stories', label: 'الأحداث', icon: 'Layers', permission: PERMISSIONS.POSTS_VIEW },
       { href: '/entities', label: 'الكيانات', icon: 'AtSign', permission: PERMISSIONS.POSTS_VIEW },
       { href: '/ops', label: 'غرفة العمليات', icon: 'MonitorPlay', permission: PERMISSIONS.OPS_VIEW },

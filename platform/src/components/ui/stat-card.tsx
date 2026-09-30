@@ -504,6 +504,7 @@ const COLUMNS: Record<number, string> = {
   8: 'grid-cols-2 lg:grid-cols-4',
   9: 'grid-cols-2 sm:grid-cols-3',
   10: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5',
+  12: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4',
 };
 
 export function StatGrid({

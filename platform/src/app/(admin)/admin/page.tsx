@@ -77,7 +77,7 @@ export default async function AdminHomePage() {
         title="لوحة تحكم الإدارة"
         description="حالة النظام والعمليات الجارية"
         action={
-          <Link href="/">
+          <Link href="/analytics">
             <Button variant="secondary">لوحة العرض</Button>
           </Link>
         }
