@@ -21,15 +21,20 @@ import { AnalysisRunError, activeRun, createAnalysisRun, reapStaleRuns } from '.
  *   وحده، فلا تُعيد تصنيف شيء ولا تكتب فوق تصحيح مراجع. وإعادة التصنيف
  *   قرارٌ يُطلب من الشاشة بقصد.
  *
- * ★ ولا تلمس ما استُخرج قبل اليوم (`analysis.todayOnly`، وهو الافتراضي).
+ * ★ ولا تلمس ما استُخرج قبل تاريخ البدء (`analysis.startDate`).
  *
  *   كانت تلتقط المتراكم القديم أيضاً، فصارت دفعاتُ اليوم تُصرف على أرشيفٍ
  *   من عشرات الآلاف: المنشور الوارد قبل ساعة يقف في آخر صفٍّ طوله أيام،
  *   واللوحةُ التي يُفتح عليها الصباح تعرض نسباً محسوبةً على ما صُنّف من
- *   الأمس. والحصر يقلب الترتيب: الوارد اليوم يُصنَّف اليوم.
+ *   الأمس. والحدّ يقلب الترتيب: الوارد اليوم يُصنَّف اليوم.
  *
- *   والقياس `createdAt` لا `publishedAt` — «المستخرج اليوم» لا «المنشور
- *   اليوم». ومنشورٌ نُشر قبل سنة ودخل قاعدتنا هذا الصباح يدخل الجولة.
+ *   وهو تاريخٌ ثابت لا نافذةٌ متحرّكة. النافذة المتحرّكة («ما استُخرج
+ *   اليوم») تُخلّف وراءها كلّ ليلة ما لم تبلغه — لانقطاع العامل أو لبلوغ
+ *   السقف — فيبقى «غير محسوم» إلى الأبد ولا شيء يقول كم. والتاريخ الثابت
+ *   يمنع الأرشيف القديم ولا يترك وراءه شيئاً.
+ *
+ *   والقياس `createdAt` لا `publishedAt` — «المستخرج بعد التاريخ» لا
+ *   «المنشور بعده». ومنشورٌ نُشر قبل سنة ودخل قاعدتنا هذا الصباح يدخل.
  */
 
 /** كل كم تعمل المكنسة — دقائق لا ثوانٍ: التصنيف ليس عاجلاً */
@@ -38,19 +43,6 @@ export const SWEEP_INTERVAL_MS = 5 * 60 * 1000;
 export type SweepOutcome =
   | { swept: false; reason: string }
   | { swept: true; runId: string; total: number; pending: number };
-
-/**
- * بداية اليوم بتوقيت الخادم — أو null إن كان الحصر مُطفأً.
- *
- * تُحسب مرّةً في الدورة ثم تُمرَّر إلى العدّ وإلى الجولة معاً، فلا
- * يختلف ما عُدّ عمّا صُنّف.
- */
-export function autoAnalysisSince(todayOnly: boolean): Date | null {
-  if (!todayOnly) return null;
-  const date = new Date();
-  date.setHours(0, 0, 0, 0);
-  return date;
-}
 
 /**
  * المنشورات التي تنتظر تصنيفاً الآن.
@@ -110,14 +102,18 @@ export async function sweepAutoAnalysis(): Promise<SweepOutcome> {
     const running = await activeRun();
     if (running) return { swept: false, reason: 'جولة قائمة' };
 
-    const since = autoAnalysisSince(settings.todayOnly);
+    /*
+     * التاريخ يُقرأ مرّةً في الدورة ثمّ يُمرَّر إلى العدّ وإلى الجولة
+     * معاً — فلا يختلف ما عُدّ عمّا صُنّف.
+     */
+    const since = settings.startDate;
 
     const pending = await pendingCount(since);
     if (pending === 0) {
       return {
         swept: false,
-        reason: settings.todayOnly
-          ? 'لا منشورات مستخرجة اليوم تنتظر التصنيف'
+        reason: since
+          ? `لا منشورات مستخرجة بعد ${since.toISOString().slice(0, 10)} تنتظر التصنيف`
           : 'لا منشورات تنتظر التصنيف',
       };
     }

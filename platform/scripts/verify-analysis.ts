@@ -393,8 +393,9 @@ const runSource = readCode('src/lib/analysis/run.ts');
 const settingsSource = readCode('src/lib/settings.ts');
 
 check(
-  'المكنسة محصورة في ما استُخرج اليوم',
-  /createdSince: since/.test(auto) && /autoAnalysisSince\(settings\.todayOnly\)/.test(auto),
+  'المكنسة محصورة بتاريخ بدءٍ ثابت',
+  /createdSince: since/.test(auto) && /const since = settings\.startDate/.test(auto),
+  'تاريخٌ ثابت لا نافذةٌ متحرّكة — المتحرّكة تُخلّف كلّ ليلة ما لم تبلغه',
 );
 check(
   'والقياس لحظة الاستيراد لا تاريخ النشر',
@@ -414,10 +415,10 @@ check(
 );
 check(
   'والعدّ المعروض يستعمل الحدّ نفسه',
-  /pendingCount\(autoAnalysisSince\(settings\.todayOnly\)\)/.test(
+  /pendingCount\(settings\.startDate\)/.test(
     readCode('src/app/api/admin/analysis/runs/route.ts'),
   ),
-  'عدٌّ لا يعرف الحصر يُظهر أرشيفاً كاملاً «بانتظار» جولةٍ لن تأتي',
+  'عدٌّ لا يعرف الحدّ يُظهر أرشيفاً كاملاً «بانتظار» جولةٍ لن تأتي',
 );
 check(
   'و`pendingCount` بلا قيمة افتراضية تُنسى',
@@ -425,8 +426,25 @@ check(
   'الافتراضي «بلا حدّ» يعني أنّ نسيانه في موضعٍ واحد يكذب على الشاشة بصمت',
 );
 check(
-  'والحصر يُطفأ من الإعدادات',
-  /analysis\.todayOnly/.test(settingsSource) && /todayOnly: boolean/.test(settingsSource),
+  'والتاريخ يُضبط من الإعدادات',
+  /analysis\.startDate/.test(settingsSource) && /startDate: Date \| null/.test(settingsSource),
+);
+/*
+ * ★ والتاريخ المشوَّه يُقرأ «بلا حدّ» لا `Invalid Date`.
+ *
+ *   `new Date('غداً')` لا يرمي، و`gte: Invalid Date` إمّا يرفضه Postgres
+ *   وإمّا — أسوأ — يُقرأ شرطاً لا يطابق شيئاً فتتوقّف المكنسة عن التصنيف
+ *   كلّه بصمت. والسقوط إلى «بلا حدّ» يُصنّف أكثر ممّا طُلب، وهو أهون.
+ */
+check(
+  'والتاريخ المشوَّه لا يوقف التصنيف صامتاً',
+  /function parseStartDate/.test(settingsSource) &&
+    /Number\.isFinite\(parsed\.getTime\(\)\)/.test(settingsSource),
+);
+check(
+  'ويُثبَّت على بداية اليوم',
+  /parsed\.setHours\(0, 0, 0, 0\)/.test(settingsSource),
+  'من كتب تاريخاً يقصد يومه كلّه لا لحظة منتصف ليله',
 );
 /*
  * الإعداد يُبذر في ترحيل لا في ملفّ البذور وحده — الإنتاج يشغّل
@@ -436,10 +454,28 @@ check(
 const todayOnlyMigration = read(
   'prisma/migrations/20260930120000_analysis_today_only/migration.sql',
 );
+const startDateMigration = read(
+  'prisma/migrations/20260930210000_analysis_start_date/migration.sql',
+);
 check(
   'والإعداد مبذور في ترحيل يُطبَّق على الإنتاج',
-  /'analysis\.todayOnly'/.test(todayOnlyMigration) &&
-    /ON CONFLICT \("key"\) DO NOTHING/.test(todayOnlyMigration),
+  /'analysis\.startDate'/.test(startDateMigration) &&
+    /ON CONFLICT \("key"\) DO NOTHING/.test(startDateMigration),
+);
+/*
+ * والمتقاعد يُحذف لا يُترك.
+ *
+ * `analysis.todayOnly` لم تعد تُقرأ في الشيفرة. وتركُ صفّها يُبقيه في
+ * شاشة الإعدادات حقلاً يُعدَّل ولا يفعل شيئاً — وهو كذبٌ في واجهة.
+ */
+check(
+  'والإعداد المتقاعد يُحذف من القاعدة',
+  /DELETE FROM "settings" WHERE "key" = 'analysis\.todayOnly'/.test(startDateMigration),
+  'حقلٌ يُعدَّل ولا يفعل شيئاً كذبٌ في واجهة',
+);
+check(
+  'ولا أثر له في الشيفرة',
+  !/todayOnly/.test(auto) && !/todayOnly/.test(settingsSource),
 );
 check(
   'والجولة التلقائية القائمة تُلغى عند الترحيل',

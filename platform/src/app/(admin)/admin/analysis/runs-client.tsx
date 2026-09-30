@@ -57,8 +57,8 @@ const STATUS_TONE: Record<AnalysisRun['status'], BadgeTone> = {
 
 interface AutoStatus {
   enabled: boolean;
-  /** المكنسة محصورة في ما استُخرج اليوم */
-  todayOnly: boolean;
+  /** تاريخ بدء التصنيف التلقائي (YYYY-MM-DD) — null يعني بلا حدّ */
+  startDate: string | null;
   pending: number;
   today: number;
   dailyCap: number;
@@ -241,17 +241,17 @@ export function RunsClient() {
                 صحيح، والقراءة خاطئة، والعطب في الصياغة لا في العدّ.
               */}
               يصنّف الذكاء الاصطناعي{' '}
-              {auto.todayOnly ? 'المنشورات المستخرجة اليوم' : 'كل منشور بلا تصنيف'} من تلقاء
+              {auto.startDate ? `المنشورات المستخرجة منذ ${auto.startDate}` : 'كل منشور بلا تصنيف'} من تلقاء
               نفسه، بدفعات من{' '}
               <span className="num font-semibold">{formatNumber(auto.batch)}</span> كل خمس دقائق.{' '}
               {auto.pending > 0 ? (
                 <>
                   بانتظار التصنيف الآن
-                  {auto.todayOnly ? ' من مستخرجات اليوم' : ''}:{' '}
+                  {auto.startDate ? ' ممّا استُخرج بعد تاريخ البدء' : ''}:{' '}
                   <span className="num font-semibold">{formatNumber(auto.pending)}</span> منشوراً.
                 </>
-              ) : auto.todayOnly ? (
-                'لا منشورات مستخرجة اليوم تنتظر التصنيف.'
+              ) : auto.startDate ? (
+                `لا منشورات مستخرجة منذ ${auto.startDate} تنتظر التصنيف.`
               ) : (
                 'لا منشورات تنتظر التصنيف.'
               )}{' '}
@@ -265,11 +265,11 @@ export function RunsClient() {
               ) : (
                 ' (بلا سقف يومي).'
               )}
-              {auto.todayOnly && (
+              {auto.startDate && (
                 <>
                   {' '}
-                  والمستخرج قبل اليوم لا تدخله المكنسة — يُصنَّف بجولةٍ يدوية من هنا إن
-                  احتجته، أو بإطفاء الحصر من شاشة الإعدادات.
+                  والمستخرج قبل {auto.startDate} لا تدخله المكنسة — يُصنَّف بجولةٍ يدوية من هنا
+                  إن احتجته، أو بتغيير تاريخ البدء من شاشة الإعدادات.
                 </>
               )}
             </>
@@ -281,7 +281,7 @@ export function RunsClient() {
                 <>
                   ينتظر التصنيف الآن{' '}
                   <span className="num font-semibold">{formatNumber(auto.pending)}</span> منشوراً
-                  {auto.todayOnly ? ' من مستخرجات اليوم' : ''}.
+                  {auto.startDate ? ' ممّا استُخرج بعد تاريخ البدء' : ''}.
                 </>
               )}
             </>

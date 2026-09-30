@@ -22,7 +22,7 @@ import {
   createAnalysisRun,
   reapStaleRuns,
 } from '@/lib/analysis/run';
-import { analyzedToday, autoAnalysisSince, pendingCount } from '@/lib/analysis/auto';
+import { analyzedToday, pendingCount } from '@/lib/analysis/auto';
 import { getAnalysisSettings } from '@/lib/settings';
 
 /*
@@ -94,12 +94,12 @@ export async function GET(request: NextRequest) {
      * الإعدادات أوّلاً ثم العدّ — لا الثلاثة معاً.
      *
      * «بانتظار التصنيف» يجب أن يعدّ ما ستلمسه المكنسة فعلاً، والحصر
-     * (`todayOnly`) هو ما يحدّد ذلك. فعدٌّ يسبق قراءة الإعداد يُظهر
+     * (`startDate`) هو ما يحدّد ذلك. فعدٌّ يسبق قراءة الإعداد يُظهر
      * أرشيفاً كاملاً بانتظار جولةٍ لن تأتي.
      */
     const settings = await getAnalysisSettings();
     const [pending, today] = await Promise.all([
-      pendingCount(autoAnalysisSince(settings.todayOnly)),
+      pendingCount(settings.startDate),
       analyzedToday(),
     ]);
 
@@ -107,7 +107,7 @@ export async function GET(request: NextRequest) {
       runs,
       auto: {
         enabled: settings.auto,
-        todayOnly: settings.todayOnly,
+        startDate: settings.startDate ? settings.startDate.toISOString().slice(0, 10) : null,
         pending,
         today,
         dailyCap: settings.dailyCap,

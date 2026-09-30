@@ -79,21 +79,42 @@ check(
  *
  * أثره معكوس وأخفى: يعمل في الإنتاج ولا وجود له في التطوير، فيُبنى عليه
  * منطقٌ لا يُختبر محلياً أبداً — ويبقى ملفّ البذور ناقصاً ككتالوج.
+ *
+ * ★ والمفتاح المتقاعد ليس شارداً.
+ *
+ *   إعدادٌ بُذر ثمّ حذفه ترحيلٌ لاحق (`DELETE FROM "settings"`) لا وجود
+ *   له في القاعدة بعد تطبيق الترحيلات كلها، فغيابه عن البذور هو الصواب
+ *   لا النقص. وبدون هذا الاستثناء يصير الفحص عائقاً أمام التقاعد نفسه:
+ *   يرسب على التنظيف الصحيح، فيُعلَّم تجاهله — ويصمت يوم يقع الشرود
+ *   الحقيقي.
  */
+const retiredKeys = new Set<string>();
+for (const migration of MIGRATIONS) {
+  for (const m of migration.sql.matchAll(
+    /DELETE FROM "settings"[\s\S]*?"key"\s*=\s*'([^']+)'/g,
+  )) {
+    retiredKeys.add(m[1] as string);
+  }
+}
+
 const strayKeys: string[] = [];
 for (const migration of settingMigrations) {
   const inserts = [...migration.sql.matchAll(/INSERT INTO "settings"[\s\S]*?ON CONFLICT/g)];
   for (const insert of inserts) {
     for (const m of insert[0].matchAll(/\(\s*\n?\s*'([a-z]+\.[A-Za-z]+)',/g)) {
       const key = m[1] as string;
-      if (!seedKeys.includes(key)) strayKeys.push(`${migration.name}: ${key}`);
+      if (!seedKeys.includes(key) && !retiredKeys.has(key)) {
+        strayKeys.push(`${migration.name}: ${key}`);
+      }
     }
   }
 }
 check(
   'ولا مفتاح في ترحيل غائب عن البذور',
   strayKeys.length === 0,
-  strayKeys.length > 0 ? strayKeys.join(' · ') : 'الكتالوجان متطابقان',
+  strayKeys.length > 0
+    ? strayKeys.join(' · ')
+    : `الكتالوجان متطابقان${retiredKeys.size > 0 ? ` (و${retiredKeys.size} مفتاحاً متقاعداً)` : ''}`,
 );
 
 /*

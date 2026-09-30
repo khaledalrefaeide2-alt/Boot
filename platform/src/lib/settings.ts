@@ -98,39 +98,73 @@ export async function getExcludeReplies(): Promise<boolean> {
  * لا أحد طلبها. والسقف يوقف المكنسة ولا يوقف التشغيل اليدوي، فيبقى
  * لصاحب المنصة أن يتجاوزه بقصد.
  *
- * و`todayOnly` يحصر المكنسة في ما استُخرج اليوم.
+ * و`startDate` تاريخُ بدءٍ ثابت: لا تُصنَّف المكنسةُ ما استُخرج قبله.
  *
  * كانت تلتقط كلّ منشور بلا تصنيف — الوارد اليوم والمتراكم من قبل معاً —
  * فتُصرف دفعاتُ اليوم كلها على أرشيفٍ قديم لا ينظر إليه أحد، ويبقى ما
- * وصل قبل ساعة في آخر الصفّ. والقياس هو `createdAt` (لحظة الاستيراد) لا
- * `publishedAt` (لحظة النشر في المنصة): المنشور الذي نُشر قبل شهر
- * واستُخرج اليوم يدخل، وهذا هو المقصود بـ«المستخرج اليوم».
+ * وصل قبل ساعة في آخر الصفّ.
  *
- * ★ وثمنُه مذكور: ما استُخرج أمس ولم تبلغه المكنسة — لانقطاع العامل، أو
- *   لبلوغ السقف — يسقط من حسابها عند منتصف الليل ولا تعود إليه. يبقى
- *   تصنيفه بجولةٍ يدوية من شاشة التحليل الذكي، وهي بلا هذا الحصر.
+ * ★ وتاريخُ بدءٍ ثابت لا نافذةٌ متحرّكة، والفرق جوهريّ.
+ *
+ *   كان الحصر «ما استُخرج اليوم» يُعاد حسابه كلّ يوم. وثمنُه أنّ ما وصل
+ *   أمس ولم تبلغه المكنسة — لانقطاع العامل، أو لبلوغ السقف اليومي —
+ *   يسقط من حسابها عند منتصف الليل ولا تعود إليه أبداً. فكلّ ليلة تُخلّف
+ *   وراءها منشوراتٍ «غير محسومة» إلى الأبد، ولا شيء يقول كم.
+ *
+ *   والتاريخ الثابت يفعل ما أُريد بالحصر — لا أرشيف قديم — ولا يترك
+ *   وراءه شيئاً: ما استُخرج بعده يبقى مؤهّلاً حتى يُصنَّف، ولو بعد يومين.
+ *
+ * والقياس `createdAt` (لحظة الاستيراد) لا `publishedAt` (لحظة النشر في
+ * المنصة): المنشور الذي نُشر قبل شهر واستُخرج اليوم يدخل — وهو المقصود
+ * بـ«المستخرج بعد هذا التاريخ».
+ *
+ * وقيمةٌ فارغة تعني بلا حدّ: المكنسة تصفّي الأرشيف كلّه.
  */
+/**
+ * قراءة تاريخ البدء من الإعدادات.
+ *
+ * ★ والمشوَّه يُقرأ «بلا حدّ» لا `Invalid Date`.
+ *
+ *   `new Date('غداً')` لا يرمي، و`createdAt: { gte: Invalid Date }` يمرّ
+ *   إلى Postgres فيرفضه، أو — أسوأ — يُقرأ شرطاً لا يطابق شيئاً فتتوقّف
+ *   المكنسة عن التصنيف كلّه بصمت. والسقوط إلى «بلا حدّ» يُصنّف أكثر
+ *   ممّا طُلب، وهو أهون من التوقّف الصامت.
+ *
+ * ويُثبَّت على بداية اليوم: من كتب `2026-09-30` يقصد يومه كلّه لا لحظة
+ * منتصف ليله، وما استُخرج ذلك اليوم قبل أن يكتبه يجب أن يدخل.
+ */
+function parseStartDate(raw: unknown): Date | null {
+  if (typeof raw !== 'string') return null;
+  const text = raw.trim();
+  if (text === '') return null;
+
+  const parsed = new Date(text);
+  if (!Number.isFinite(parsed.getTime())) return null;
+
+  parsed.setHours(0, 0, 0, 0);
+  return parsed;
+}
+
 export async function getAnalysisSettings(): Promise<{
   auto: boolean;
   autoBatch: number;
   dailyCap: number;
-  todayOnly: boolean;
+  /** أقدم لحظة استيراد تدخل التصنيف التلقائي — null تعني بلا حدّ */
+  startDate: Date | null;
 }> {
   const settings = await getAllSettings();
 
   const rawAuto = settings['analysis.auto'];
   const auto = rawAuto === undefined ? true : rawAuto !== false && rawAuto !== 'false' && rawAuto !== 0;
 
-  const rawToday = settings['analysis.todayOnly'];
-  const todayOnly =
-    rawToday === undefined ? true : rawToday !== false && rawToday !== 'false' && rawToday !== 0;
+  const startDate = parseStartDate(settings['analysis.startDate']);
 
   const batch = Number(settings['analysis.autoBatch'] ?? 200);
   const cap = Number(settings['analysis.dailyCap'] ?? 3000);
 
   return {
     auto,
-    todayOnly,
+    startDate,
     // حدّان صلبان حول ما يُقرأ من القاعدة: قيمةٌ مشوَّهة لا توقف العمل ولا تُطلقه
     autoBatch: Number.isFinite(batch) ? Math.min(2000, Math.max(1, Math.floor(batch))) : 200,
     dailyCap: Number.isFinite(cap) && cap > 0 ? Math.floor(cap) : 0,
