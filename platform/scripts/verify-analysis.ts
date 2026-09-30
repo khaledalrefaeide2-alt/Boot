@@ -379,6 +379,114 @@ check('ولا تعمل بلا مفتاح', /isAssistantConfigured\(\)/.test(auto
 check('وتُطفأ من الإعدادات', /settings\.auto/.test(auto));
 
 /*
+ * ══════════ الحصر في مستخرجات اليوم ══════════
+ *
+ * كانت المكنسة تلتقط كلّ منشور بلا تصنيف، فتُصرف دفعاتُ اليوم كلها على
+ * أرشيفٍ من عشرات الآلاف: الوارد قبل ساعة يقف في آخر صفٍّ طوله أيام.
+ *
+ * وأخطر ما في هذا الحصر ليس غيابه بل انزلاقه إلى `publishedAt`: الشرط
+ * يبدو صحيحاً ويمرّ كل فحصٍ منطقي، وأثرُه أنّ منشوراً نُشر قبل سنة
+ * واستُخرج هذا الصباح يسقط من الجولة — وهو بالضبط ما جاء الحصرُ ليُصنّفه
+ * أوّلاً. فيُفحص العمود بعينه لا وجود الشرط.
+ */
+const runSource = readCode('src/lib/analysis/run.ts');
+const settingsSource = readCode('src/lib/settings.ts');
+
+check(
+  'المكنسة محصورة في ما استُخرج اليوم',
+  /createdSince: since/.test(auto) && /autoAnalysisSince\(settings\.todayOnly\)/.test(auto),
+);
+check(
+  'والقياس لحظة الاستيراد لا تاريخ النشر',
+  /createdAt: \{ gte: new Date\(stored\.createdSince\) \}/.test(runSource) &&
+    !/publishedAt[^\n]{0,40}createdSince/.test(runSource),
+  'منشورٌ نُشر قبل سنة واستُخرج اليوم هو أوّل ما يُنتظر تصنيفه',
+);
+check(
+  'والحدّ يُجمَّد في صفّ الجولة لا يُقرأ عند التنفيذ',
+  /createdSince: string \| null/.test(runSource) && /createdSince: createdSince \?/.test(runSource),
+  'جولةٌ أُنشئت ١١:٥٩ مساءً وبدأ بها العامل بعد دقيقتين تجد مجموعةً أخرى: تُعدّ ألفاً وتصنّف عشرة',
+);
+check(
+  'وتاريخٌ مشوَّه في العمود يُقرأ «بلا حدّ» لا Invalid Date',
+  /Number\.isFinite\(Date\.parse\(/.test(runSource),
+  '`gte: Invalid Date` يمرّ إلى Postgres فيرفضه في منتصف الجولة، أو يُقرأ شرطاً لا يطابق شيئاً فتنتهي «بنجاح» بلا منشور',
+);
+check(
+  'والعدّ المعروض يستعمل الحدّ نفسه',
+  /pendingCount\(autoAnalysisSince\(settings\.todayOnly\)\)/.test(
+    readCode('src/app/api/admin/analysis/runs/route.ts'),
+  ),
+  'عدٌّ لا يعرف الحصر يُظهر أرشيفاً كاملاً «بانتظار» جولةٍ لن تأتي',
+);
+check(
+  'و`pendingCount` بلا قيمة افتراضية تُنسى',
+  /export async function pendingCount\(since: Date \| null\)/.test(auto),
+  'الافتراضي «بلا حدّ» يعني أنّ نسيانه في موضعٍ واحد يكذب على الشاشة بصمت',
+);
+check(
+  'والحصر يُطفأ من الإعدادات',
+  /analysis\.todayOnly/.test(settingsSource) && /todayOnly: boolean/.test(settingsSource),
+);
+/*
+ * الإعداد يُبذر في ترحيل لا في ملفّ البذور وحده — الإنتاج يشغّل
+ * `prisma migrate deploy` ولا يشغّل البذور، فإعدادٌ موجود في `seed.ts`
+ * وحده لا يظهر في شاشة الإعدادات هناك أبداً.
+ */
+const todayOnlyMigration = read(
+  'prisma/migrations/20260930120000_analysis_today_only/migration.sql',
+);
+check(
+  'والإعداد مبذور في ترحيل يُطبَّق على الإنتاج',
+  /'analysis\.todayOnly'/.test(todayOnlyMigration) &&
+    /ON CONFLICT \("key"\) DO NOTHING/.test(todayOnlyMigration),
+);
+check(
+  'والجولة التلقائية القائمة تُلغى عند الترحيل',
+  /UPDATE "analysis_runs"[\s\S]{0,400}?"trigger" = 'AUTO'/.test(todayOnlyMigration) &&
+    /'CANCELLED'/.test(todayOnlyMigration),
+  'الإعداد يحكم ما يأتي بعده، والجولة التي سلّمت مئتَي منشور من الأرشيف تُكملها كأنّ شيئاً لم يكن',
+);
+check(
+  'واليدويّة لا يمسّها الترحيل',
+  !/"trigger" = 'MANUAL'/.test(todayOnlyMigration),
+  'طلبها إنسانٌ بقصد، ولا يصحّ أن يُلغي ترحيلٌ ما طلبه',
+);
+/*
+ * والجولة اليدوية تبقى بلا حصر: هي الباب الوحيد إلى ما استُخرج قبل
+ * اليوم. ولو ورثت الحصر لصار الأرشيف غير قابل للتصنيف من الموقع أصلاً.
+ */
+check(
+  'والتشغيل اليدوي بلا حصر',
+  !/createdSince/.test(readCode('src/app/api/admin/analysis/runs/route.ts')),
+  'الجولة اليدوية هي الباب الوحيد إلى ما استُخرج قبل اليوم',
+);
+
+/*
+ * ══════════ نتيجة التحليل على البطاقة ══════════
+ *
+ * كلمةٌ واحدة وفق معايير سياسة التصنيف. وكان صفّ الشارات كله
+ * `hidden @[15rem]:flex`، فالبطاقة في عمودٍ ضيّق تُعرض بلا نتيجة أصلاً —
+ * وهي أوّل ما يُبحث عنه في لوحة المراجعة.
+ */
+const cardSource = read('src/components/posts/post-card.tsx');
+check(
+  'نتيجة التحليل تظهر على البطاقة في كل عرض',
+  /<div className="flex flex-wrap items-center gap-1\.5">/.test(cardSource) &&
+    !/hidden flex-wrap items-center gap-1\.5/.test(cardSource),
+  'الموضوع يُخفى في البطاقة الضيّقة، والموقف كلمةٌ واحدة تتّسع في كل عرض',
+);
+check(
+  'وهي كلمة واحدة من قاموس السياسة',
+  /SENTIMENT_LABELS\[post\.sentiment as keyof typeof SENTIMENT_LABELS\]/.test(cardSource),
+);
+check(
+  'ولقارئ الشاشة اسمُ المقياس معها',
+  /sr-only">\{STANCE_METRIC\.compact\}/.test(cardSource),
+  '«سلبي» بلا سياق كلمةٌ معلّقة لمن لا يرى الشارة الملوّنة في موضعها',
+);
+
+/*
  * السقف اليومي هو ما يجعل الأتمتة آمنة.
  *
  * حسابٌ واحد يُضاف بخطأ وينشر ألفاً في اليوم يصير فاتورةً لا أحد طلبها،

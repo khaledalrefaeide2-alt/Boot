@@ -12,14 +12,24 @@ import { AnalysisRunError, activeRun, createAnalysisRun, reapStaleRuns } from '.
  * يبقى «غير محسوم» إلى أن ينتبه أحد. ولوحةٌ نصفُ منشوراتها بلا تصنيف لا
  * تُقرأ: النِّسب فيها محسوبة على ما صُنّف وحده، وهي تبدو نسباً كاملة.
  *
- * وهذه تعمل في العامل الخلفي كل بضع دقائق، وتلتقط كلّ منشور بلا تصنيف —
- * الجديد الوارد، والمتراكم القديم، وما أخفق في جولة سابقة. مكنسةٌ واحدة
- * تكفي عن مسارين: لا حاجة إلى تعليقها بنهاية الاستخراج، ولا إلى مسارٍ
- * ثانٍ يُصلح ما فات الأول — ما يفوتها الآن تلتقطه بعد دقائق.
+ * وهذه تعمل في العامل الخلفي كل بضع دقائق، وتلتقط ما وصل بلا تصنيف —
+ * الوارد الجديد وما أخفق في جولة سابقة. مكنسةٌ واحدة تكفي عن مسارين: لا
+ * حاجة إلى تعليقها بنهاية الاستخراج، ولا إلى مسارٍ ثانٍ يُصلح ما فات
+ * الأول — ما يفوتها الآن تلتقطه بعد دقائق.
  *
  * ★ ولا تلمس ما صُنّف. الشرط `analysis IS NULL` يُبقيها على غير المصنَّف
  *   وحده، فلا تُعيد تصنيف شيء ولا تكتب فوق تصحيح مراجع. وإعادة التصنيف
  *   قرارٌ يُطلب من الشاشة بقصد.
+ *
+ * ★ ولا تلمس ما استُخرج قبل اليوم (`analysis.todayOnly`، وهو الافتراضي).
+ *
+ *   كانت تلتقط المتراكم القديم أيضاً، فصارت دفعاتُ اليوم تُصرف على أرشيفٍ
+ *   من عشرات الآلاف: المنشور الوارد قبل ساعة يقف في آخر صفٍّ طوله أيام،
+ *   واللوحةُ التي يُفتح عليها الصباح تعرض نسباً محسوبةً على ما صُنّف من
+ *   الأمس. والحصر يقلب الترتيب: الوارد اليوم يُصنَّف اليوم.
+ *
+ *   والقياس `createdAt` لا `publishedAt` — «المستخرج اليوم» لا «المنشور
+ *   اليوم». ومنشورٌ نُشر قبل سنة ودخل قاعدتنا هذا الصباح يدخل الجولة.
  */
 
 /** كل كم تعمل المكنسة — دقائق لا ثوانٍ: التصنيف ليس عاجلاً */
@@ -29,11 +39,34 @@ export type SweepOutcome =
   | { swept: false; reason: string }
   | { swept: true; runId: string; total: number; pending: number };
 
-/** المنشورات التي تنتظر تصنيفاً الآن */
-export async function pendingCount(): Promise<number> {
+/**
+ * بداية اليوم بتوقيت الخادم — أو null إن كان الحصر مُطفأً.
+ *
+ * تُحسب مرّةً في الدورة ثم تُمرَّر إلى العدّ وإلى الجولة معاً، فلا
+ * يختلف ما عُدّ عمّا صُنّف.
+ */
+export function autoAnalysisSince(todayOnly: boolean): Date | null {
+  if (!todayOnly) return null;
+  const date = new Date();
+  date.setHours(0, 0, 0, 0);
+  return date;
+}
+
+/**
+ * المنشورات التي تنتظر تصنيفاً الآن.
+ *
+ * `since` إلزامي لا اختياري: القيمة الافتراضية «بلا حدّ» تعني أنّ نسيانها
+ * في موضعٍ واحد يُظهر على الشاشة عدّاً لعشرات الآلاف لن تلمسها المكنسة —
+ * رقمٌ صحيحٌ عن سؤالٍ لم يُسأل. فيُصرَّح به في كل نداء.
+ */
+export async function pendingCount(since: Date | null): Promise<number> {
   return prisma.post.count({
     // بلا شرط النصّ: المنشور المصوَّر يُصنَّف من صورته، وما لا مادّة فيه تُسجَّل إحالته
-    where: { isHidden: false, analysis: { is: null } },
+    where: {
+      isHidden: false,
+      analysis: { is: null },
+      ...(since ? { createdAt: { gte: since } } : {}),
+    },
   });
 }
 
@@ -77,8 +110,17 @@ export async function sweepAutoAnalysis(): Promise<SweepOutcome> {
     const running = await activeRun();
     if (running) return { swept: false, reason: 'جولة قائمة' };
 
-    const pending = await pendingCount();
-    if (pending === 0) return { swept: false, reason: 'لا منشورات تنتظر التصنيف' };
+    const since = autoAnalysisSince(settings.todayOnly);
+
+    const pending = await pendingCount(since);
+    if (pending === 0) {
+      return {
+        swept: false,
+        reason: settings.todayOnly
+          ? 'لا منشورات مستخرجة اليوم تنتظر التصنيف'
+          : 'لا منشورات تنتظر التصنيف',
+      };
+    }
 
     if (settings.dailyCap > 0) {
       const used = await analyzedToday();
@@ -97,8 +139,9 @@ export async function sweepAutoAnalysis(): Promise<SweepOutcome> {
      * وحصرُها بنطاقٍ ما يترك حسابات بلا تصنيف إلى الأبد — لا أحد سيمرّ
      * عليها، لأن المرور هو ما ألغيناه.
      *
-     * و`range: 'all'` لأن المتراكم القديم يحتاج تصفيةً هو أيضاً، لا
-     * الوارد الجديد وحده.
+     * و`range: 'all'` لأن الحصر الزمني ليس من شأن `PostFilters`: تلك
+     * تُرشِّح بتاريخ النشر في المنصة، والمطلوب هنا تاريخ الاستيراد عندنا.
+     * فيُمرَّر `createdSince` مستقلّاً، وتبقى الفلاتر مفتوحة.
      */
     const result = await createAnalysisRun({
       filters: postFiltersSchema.parse({ range: 'all' }),
@@ -107,6 +150,7 @@ export async function sweepAutoAnalysis(): Promise<SweepOutcome> {
       limit: settings.autoBatch,
       requestedById: null,
       trigger: 'AUTO',
+      createdSince: since,
     });
 
     return { swept: true, runId: result.run.id, total: result.run.total, pending };

@@ -97,22 +97,40 @@ export async function getExcludeReplies(): Promise<boolean> {
  * استدعاءٌ مدفوع، وحسابٌ واحد يُضاف بخطأ وينشر ألفاً في اليوم يصير فاتورةً
  * لا أحد طلبها. والسقف يوقف المكنسة ولا يوقف التشغيل اليدوي، فيبقى
  * لصاحب المنصة أن يتجاوزه بقصد.
+ *
+ * و`todayOnly` يحصر المكنسة في ما استُخرج اليوم.
+ *
+ * كانت تلتقط كلّ منشور بلا تصنيف — الوارد اليوم والمتراكم من قبل معاً —
+ * فتُصرف دفعاتُ اليوم كلها على أرشيفٍ قديم لا ينظر إليه أحد، ويبقى ما
+ * وصل قبل ساعة في آخر الصفّ. والقياس هو `createdAt` (لحظة الاستيراد) لا
+ * `publishedAt` (لحظة النشر في المنصة): المنشور الذي نُشر قبل شهر
+ * واستُخرج اليوم يدخل، وهذا هو المقصود بـ«المستخرج اليوم».
+ *
+ * ★ وثمنُه مذكور: ما استُخرج أمس ولم تبلغه المكنسة — لانقطاع العامل، أو
+ *   لبلوغ السقف — يسقط من حسابها عند منتصف الليل ولا تعود إليه. يبقى
+ *   تصنيفه بجولةٍ يدوية من شاشة التحليل الذكي، وهي بلا هذا الحصر.
  */
 export async function getAnalysisSettings(): Promise<{
   auto: boolean;
   autoBatch: number;
   dailyCap: number;
+  todayOnly: boolean;
 }> {
   const settings = await getAllSettings();
 
   const rawAuto = settings['analysis.auto'];
   const auto = rawAuto === undefined ? true : rawAuto !== false && rawAuto !== 'false' && rawAuto !== 0;
 
+  const rawToday = settings['analysis.todayOnly'];
+  const todayOnly =
+    rawToday === undefined ? true : rawToday !== false && rawToday !== 'false' && rawToday !== 0;
+
   const batch = Number(settings['analysis.autoBatch'] ?? 200);
   const cap = Number(settings['analysis.dailyCap'] ?? 3000);
 
   return {
     auto,
+    todayOnly,
     // حدّان صلبان حول ما يُقرأ من القاعدة: قيمةٌ مشوَّهة لا توقف العمل ولا تُطلقه
     autoBatch: Number.isFinite(batch) ? Math.min(2000, Math.max(1, Math.floor(batch))) : 200,
     dailyCap: Number.isFinite(cap) && cap > 0 ? Math.floor(cap) : 0,

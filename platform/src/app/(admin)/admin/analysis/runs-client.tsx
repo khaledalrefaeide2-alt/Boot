@@ -57,6 +57,8 @@ const STATUS_TONE: Record<AnalysisRun['status'], BadgeTone> = {
 
 interface AutoStatus {
   enabled: boolean;
+  /** المكنسة محصورة في ما استُخرج اليوم */
+  todayOnly: boolean;
   pending: number;
   today: number;
   dailyCap: number;
@@ -231,13 +233,25 @@ export function RunsClient() {
         >
           {auto.enabled ? (
             <>
-              يصنّف الذكاء الاصطناعي كل منشور جديد من تلقاء نفسه، بدفعات من{' '}
+              {/*
+                نطاق المكنسة يُقال صريحاً لا يُترك للتخمين.
+
+                «بانتظار التصنيف: ٣٠» بلا ذكر الحصر يُقرأ «بقي ثلاثون في
+                القاعدة كلها» — وفي القاعدة عشرات الآلاف لن تلمسها. والرقم
+                صحيح، والقراءة خاطئة، والعطب في الصياغة لا في العدّ.
+              */}
+              يصنّف الذكاء الاصطناعي{' '}
+              {auto.todayOnly ? 'المنشورات المستخرجة اليوم' : 'كل منشور بلا تصنيف'} من تلقاء
+              نفسه، بدفعات من{' '}
               <span className="num font-semibold">{formatNumber(auto.batch)}</span> كل خمس دقائق.{' '}
               {auto.pending > 0 ? (
                 <>
-                  بانتظار التصنيف الآن:{' '}
+                  بانتظار التصنيف الآن
+                  {auto.todayOnly ? ' من مستخرجات اليوم' : ''}:{' '}
                   <span className="num font-semibold">{formatNumber(auto.pending)}</span> منشوراً.
                 </>
+              ) : auto.todayOnly ? (
+                'لا منشورات مستخرجة اليوم تنتظر التصنيف.'
               ) : (
                 'لا منشورات تنتظر التصنيف.'
               )}{' '}
@@ -251,6 +265,13 @@ export function RunsClient() {
               ) : (
                 ' (بلا سقف يومي).'
               )}
+              {auto.todayOnly && (
+                <>
+                  {' '}
+                  والمستخرج قبل اليوم لا تدخله المكنسة — يُصنَّف بجولةٍ يدوية من هنا إن
+                  احتجته، أو بإطفاء الحصر من شاشة الإعدادات.
+                </>
+              )}
             </>
           ) : (
             <>
@@ -259,7 +280,8 @@ export function RunsClient() {
               {auto.pending > 0 && (
                 <>
                   ينتظر التصنيف الآن{' '}
-                  <span className="num font-semibold">{formatNumber(auto.pending)}</span> منشوراً.
+                  <span className="num font-semibold">{formatNumber(auto.pending)}</span> منشوراً
+                  {auto.todayOnly ? ' من مستخرجات اليوم' : ''}.
                 </>
               )}
             </>

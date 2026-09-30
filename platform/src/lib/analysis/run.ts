@@ -82,10 +82,19 @@ const STALE_AFTER_MS = 20 * 60 * 1000;
 export const MAX_RUN_LIMIT = 20_000;
 export const DEFAULT_RUN_LIMIT = 500;
 
-/** ما يُحفظ في عمود `filters` — الفلاتر ونطاق طالبها معاً */
+/** ما يُحفظ في عمود `filters` — الفلاتر ونطاق طالبها وحدُّ الاستخراج معاً */
 interface StoredFilters {
   filters: PostFilters;
   scope: string[] | null;
+  /**
+   * أقدم لحظة استيراد تدخل الجولة — ISO، وnull تعني بلا حدّ.
+   *
+   * ولا يُعبَّر عنه بـ`PostFilters`: تلك تُرشِّح بـ`publishedAt` (لحظة
+   * النشر في المنصة)، وهذا يُرشِّح بـ`createdAt` (لحظة دخوله قاعدتنا).
+   * والفرق جوهري في منصة رصد: منشورٌ نُشر قبل سنة يُستخرج اليوم أوّل
+   * مرّة، فهو «وارد اليوم» بكل معنى وإن كان تاريخه قديماً.
+   */
+  createdSince: string | null;
 }
 
 /**
@@ -95,22 +104,47 @@ interface StoredFilters {
  * قرأ النطاق عند التنفيذ لتغيّر الجواب لو عُدّل إسناد الحسابات بين
  * الطلب والتنفيذ — فتُحلَّل حسابات لم يكن للطالب حقّ فيها حين طلب.
  */
-export function storedFilters(filters: PostFilters, scope: AccountScope): StoredFilters {
-  return { filters, scope };
+export function storedFilters(
+  filters: PostFilters,
+  scope: AccountScope,
+  createdSince: Date | null = null,
+): StoredFilters {
+  return { filters, scope, createdSince: createdSince ? createdSince.toISOString() : null };
 }
 
 /** إعادة قراءة ما خُزّن — بتحقّق كامل، فالعمود JSON حرّ الشكل */
 function readStored(value: Prisma.JsonValue | null): StoredFilters {
-  const raw = (value ?? {}) as { filters?: unknown; scope?: unknown };
+  const raw = (value ?? {}) as { filters?: unknown; scope?: unknown; createdSince?: unknown };
   const filters = postFiltersSchema.parse(raw.filters ?? {});
   const scope = Array.isArray(raw.scope) ? (raw.scope as string[]) : null;
-  return { filters, scope };
+
+  /*
+   * التاريخ المشوَّه يُقرأ «بلا حدّ» لا `Invalid Date`.
+   *
+   * `new Date('abc')` لا يرمي، و`createdAt: { gte: Invalid Date }` يمرّ
+   * إلى Postgres فيرفضه بخطأ غامض في منتصف الجولة — أو أسوأ: يُقرأ
+   * شرطاً لا يطابق شيئاً فتنتهي الجولة «بنجاح» بلا منشور واحد. والسقوط
+   * إلى «بلا حدّ» يُصنِّف أكثر ممّا طُلب، وهو أهون من الصمت.
+   */
+  const raw2 = typeof raw.createdSince === 'string' ? raw.createdSince : null;
+  const createdSince = raw2 && Number.isFinite(Date.parse(raw2)) ? raw2 : null;
+
+  return { filters, scope, createdSince };
 }
 
 /** شرط المنشورات المشمولة بالجولة */
 function targetWhere(stored: StoredFilters, reanalyze: boolean): Prisma.PostWhereInput {
   return {
     ...buildPostWhere(stored.filters, stored.scope),
+    /*
+     * حدّ الاستخراج — يُجمَّد لحظة الطلب كالنطاق.
+     *
+     * لو قُرئ «بداية اليوم» عند التنفيذ لاختلف الجواب عن لحظة الطلب:
+     * جولةٌ أُنشئت الساعة ١١:٥٩ مساءً وبدأ العامل بها بعد دقيقتين تجد
+     * نفسها أمام مجموعةٍ أخرى — تُعدّ ألفاً وتصنّف عشرة. فالقيمة تُحسب
+     * مرّةً وتُحفظ، والعدّ والتنفيذ يقرآن المحفوظ نفسه.
+     */
+    ...(stored.createdSince ? { createdAt: { gte: new Date(stored.createdSince) } } : {}),
     /*
      * المنشور بلا نصّ يدخل الجولة.
      *
@@ -132,8 +166,11 @@ export async function countAnalysisTargets(
   filters: PostFilters,
   scope: AccountScope,
   reanalyze: boolean,
+  createdSince: Date | null = null,
 ): Promise<number> {
-  return prisma.post.count({ where: targetWhere(storedFilters(filters, scope), reanalyze) });
+  return prisma.post.count({
+    where: targetWhere(storedFilters(filters, scope, createdSince), reanalyze),
+  });
 }
 
 /**
@@ -174,6 +211,13 @@ export interface CreateAnalysisRunOptions {
   /** null للجولة التلقائية — لا إنسان طلبها */
   requestedById: string | null;
   trigger?: 'MANUAL' | 'AUTO';
+  /**
+   * أقدم لحظة استيراد تدخل الجولة — null تعني بلا حدّ.
+   *
+   * المكنسة تمرّره (بداية اليوم) والتشغيل اليدوي لا يمرّره: الحصر قاعدةٌ
+   * على الأتمتة، ومن يفتح الشاشة ويطلب جولةً بقصدٍ يريد ما يختاره بفلاتره.
+   */
+  createdSince?: Date | null;
 }
 
 export interface CreateAnalysisRunResult {
@@ -220,7 +264,7 @@ export async function createAnalysisRun(
     }
   }
 
-  const stored = storedFilters(options.filters, options.scope);
+  const stored = storedFilters(options.filters, options.scope, options.createdSince ?? null);
   const matching = await prisma.post.count({ where: targetWhere(stored, options.reanalyze) });
   const total = Math.min(matching, options.limit);
 
