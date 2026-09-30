@@ -44,7 +44,8 @@
     "stories:rebuild": "tsx --conditions=react-server scripts/rebuild-stories.ts",
     "avatars:backfill": "tsx --conditions=react-server scripts/backfill-avatars.ts",
     "media:cache": "tsx --conditions=react-server scripts/cache-media.ts",
-    "cleanup:replies": "tsx --conditions=react-server scripts/delete-stored-replies.ts"
+    "cleanup:replies": "tsx --conditions=react-server scripts/delete-stored-replies.ts",
+    "verify:settings": "tsx scripts/verify-settings.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
