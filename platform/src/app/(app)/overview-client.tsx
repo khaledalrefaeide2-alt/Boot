@@ -29,6 +29,7 @@ interface OverviewResponse {
   postsThisMonth: number;
   accountsCount: number;
   platformsCount: number;
+  platformsTotal: number;
   totalLikes: number;
   totalComments: number;
   totalShares: number;
@@ -64,7 +65,17 @@ export function OverviewClient() {
   const timeseries = useQuery({
     queryKey: ['timeseries', params],
     queryFn: () =>
-      api.get<{ series: { date: string; posts: number; engagement: number }[] }>(
+      api.get<{
+        series: {
+          date: string;
+          posts: number;
+          engagement: number;
+          likes: number;
+          comments: number;
+          shares: number;
+          views: number;
+        }[];
+      }>(
         buildQuery('/api/stats/timeseries', params),
       ),
   });
@@ -75,23 +86,23 @@ export function OverviewClient() {
   });
 
   /*
-
    * الأعمدة الصغيرة والاتجاه من السلسلة المعروضة نفسها.
-
    *
-
-   * ولا يُطلب استعلامٌ ثانٍ لفترةٍ سابقة: الشارة تقول صراحةً إنّها
-
-   * تقارن نصفَي النافذة المفتوحة، فيبقى ما يُعرض مطابقاً لما حُسب.
-
+   * ولا يُطلب استعلامٌ ثانٍ لفترةٍ سابقة: الشارة تقول صراحةً إنّها تقارن
+   * نصفَي النافذة المفتوحة، فيبقى ما يُعرض مطابقاً لما حُسب.
+   *
+   * والسلسلة تحمل المقاييس الستّة كلّها — فلا بطاقة تحمل أعمدةً مستعارة
+   * من مقياسٍ آخر لأن مقياسها لم يُطلب.
    */
-
   const series = timeseries.data?.series ?? [];
+  const seriesOf = (pick: (point: (typeof series)[number]) => number) => series.map(pick);
 
-  const postsSeries = series.map((point) => point.posts);
-
-  const engagementSeries = series.map((point) => point.engagement);
-
+  const postsSeries = seriesOf((point) => point.posts);
+  const engagementSeries = seriesOf((point) => point.engagement);
+  const likesSeries = seriesOf((point) => point.likes);
+  const commentsSeries = seriesOf((point) => point.comments);
+  const sharesSeries = seriesOf((point) => point.shares);
+  const viewsSeries = seriesOf((point) => point.views);
 
   const stats = overview.data;
   const isEmpty = stats && stats.totalPosts === 0;
@@ -180,6 +191,11 @@ export function OverviewClient() {
               icon={METRIC_ICONS.platforms}
               href="/platforms"
               tint="sky"
+              progress={
+                stats.platformsTotal > 0
+                  ? (stats.platformsCount / stats.platformsTotal) * 100
+                  : undefined
+              }
             />
             </Reveal>
             <Reveal index={3} className="h-full lg:col-span-3">
@@ -230,6 +246,8 @@ export function OverviewClient() {
               value={stats.totalLikes}
               icon={METRIC_ICONS.likes}
               compact
+              spark={likesSeries}
+              trend={halfOverHalfChange(likesSeries)}
             />
             <StatCard
               label="التعليقات"
@@ -237,6 +255,8 @@ export function OverviewClient() {
               value={stats.totalComments}
               icon={METRIC_ICONS.comments}
               compact
+              spark={commentsSeries}
+              trend={halfOverHalfChange(commentsSeries)}
             />
             <StatCard
               label="المشاركات"
@@ -244,6 +264,8 @@ export function OverviewClient() {
               value={stats.totalShares}
               icon={METRIC_ICONS.shares}
               compact
+              spark={sharesSeries}
+              trend={halfOverHalfChange(sharesSeries)}
             />
             <StatCard
               label="المشاهدات"
@@ -251,6 +273,8 @@ export function OverviewClient() {
               value={stats.totalViews}
               icon={METRIC_ICONS.views}
               compact
+              spark={viewsSeries}
+              trend={halfOverHalfChange(viewsSeries)}
             />
           </StatGrid>
         </>

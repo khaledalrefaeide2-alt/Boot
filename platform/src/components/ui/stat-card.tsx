@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { RemoteMedia } from '@/components/posts/remote-media';
 import { cn, formatCompactNumber, formatNumber, formatPercent } from '@/lib/utils';
 import {
   ArrowDownRight,
@@ -152,34 +153,41 @@ const TONES = {
 /**
  * خطّ اتجاهٍ مصغَّر — أعمدةٌ لا خطّ.
  *
- * الأعمدة تُقرأ على عرض أربعين بكسلاً حيث يصير الخطّ خربشة. وهو مخفيٌّ عن
+ * الأعمدة تُقرأ على عرض ستّين بكسلاً حيث يصير الخطّ خربشة. وهو مخفيٌّ عن
  * قارئ الشاشة عمداً: البيانات كلّها في الرقم فوقه وفي نسبة التغيّر
  * بجانبه، ورسمٌ بلا محور ولا مقياس لا يُقرأ صوتاً بشيء نافع.
+ *
+ * ★ والأعمدة تتدرّج شفافيةً من الأقدم إلى الأحدث.
+ *
+ *   فيُقرأ اتجاه الزمن من الشكل نفسه بلا محور: الباهت ماضٍ والصريح
+ *   حاضر. ولولاه لبدت الأعمدة صفّاً بلا أوّل ولا آخر — وهو ما يجعل
+ *   القارئ يخمّن أيّ الطرفين اليوم.
  */
 function Spark({ values }: { values: number[] }) {
-  const series = values.slice(-16);
+  const series = values.slice(-14);
   if (series.length < 2) return null;
   const max = Math.max(...series, 1);
 
   return (
     <svg
-      viewBox={`0 0 ${series.length * 3 - 1} 20`}
+      viewBox={`0 0 ${series.length * 4 - 1} 24`}
       preserveAspectRatio="none"
-      className="h-6 w-14 shrink-0 opacity-70"
+      className="h-6 w-[4.5rem] shrink-0"
       aria-hidden
     >
       {series.map((value, index) => {
-        // أدنى ارتفاع 1.5 ليبقى العمود الصفري مرئياً عموداً لا فراغاً
-        const height = Math.max(1.5, (Math.max(0, value) / max) * 20);
+        // أدنى ارتفاع 2 ليبقى العمود الصفري مرئياً عموداً لا فراغاً
+        const height = Math.max(2, (Math.max(0, value) / max) * 24);
         return (
           <rect
             key={index}
-            x={index * 3}
-            y={20 - height}
-            width={2}
+            x={index * 4}
+            y={24 - height}
+            width={2.6}
             height={height}
-            rx={0.75}
+            rx={1.3}
             fill="currentColor"
+            opacity={0.45 + (index / (series.length - 1)) * 0.55}
           />
         );
       })}
@@ -201,7 +209,7 @@ function Trend({ value }: { value: number }) {
   return (
     <span
       className={cn(
-        'inline-flex shrink-0 items-center gap-0.5 rounded-full px-1.5 py-0.5 text-2xs font-semibold',
+        'inline-flex shrink-0 items-center gap-1 rounded-full px-2 py-1 text-2xs font-semibold',
         up ? 'bg-success-soft text-success' : 'bg-danger-soft text-danger',
       )}
     >
@@ -222,20 +230,60 @@ function Trend({ value }: { value: number }) {
 }
 
 /**
+ * فصل الرقم عن وحدته.
+ *
+ * `formatCompactNumber` تعيد «11.7 مليون» سلسلةً واحدة، والتصميم يطلب
+ * الرقم ضخماً والوحدة أصغر بجانبه. والفصل على آخر مسافة لا على أوّلها:
+ * «60,470» بلا وحدة تبقى كما هي، و«11.7 مليون» تنقسم اثنتين.
+ *
+ * دالّة خالصة — تُفحص وحدها.
+ */
+export function splitUnit(display: string): { amount: string; unit: string | null } {
+  const at = display.lastIndexOf(' ');
+  if (at < 0) return { amount: display, unit: null };
+  const unit = display.slice(at + 1);
+  // ما بعد المسافة وحدةٌ إن كان حروفاً — لا جزءاً من رقم مفصول بمسافة
+  if (!/^\p{L}+$/u.test(unit)) return { amount: display, unit: null };
+  return { amount: display.slice(0, at), unit };
+}
+
+/**
+ * موجةٌ زخرفية أسفل البطاقة.
+ *
+ * تكسر استواء السطح الملوّن فلا يبدو مستطيلاً مصمتاً. وهي `aria-hidden`
+ * بلا استثناء ولا تحمل معنى: من أطفأ الألوان أو قرأ بالصوت لا يفقد شيئاً.
+ */
+function TileWave() {
+  return (
+    <svg
+      className="pointer-events-none absolute inset-x-0 bottom-0 h-16 w-full opacity-[0.07]"
+      viewBox="0 0 400 64"
+      preserveAspectRatio="none"
+      aria-hidden
+    >
+      <path
+        d="M0 34c58-26 104 14 168 8s96-34 160-22c30 6 54 18 72 24v20H0z"
+        fill="currentColor"
+      />
+    </svg>
+  );
+}
+
+/**
  * بطاقة إحصاء — رقم واحد مع سياقه.
  *
- * ★ سطحٌ ملوّن لكلّ مقياس بدل بطاقةٍ بيضاء برقاقة ملوّنة.
+ * ★ الرقم هو البطاقة، وكلّ ما عداه يخدمه.
  *
- *   لوحةٌ من ثماني بطاقات بيضاء متطابقة تُقرأ كتلةً واحدة: العين تمسح
- *   الصفّ كلّه بحثاً عن «عدد المنشورات» فتقرأ الأسماء واحداً واحداً.
- *   والسطح الملوّن يجعل كلّ بطاقة معلَماً — يُعرف موضعه قبل قراءته.
+ *   الاسم فوقه صغيراً، والأيقونة بجانبه رقاقةً ملوّنة، والاتجاه تحته
+ *   أعمدةً وحبّة نسبة. وهذا ترتيبٌ مقصود: العين تقع على الرقم أوّلاً لأنه
+ *   أكبر ما في البطاقة، ثم تصعد للاسم لتعرف ماذا يعني، ثم تنزل للاتجاه
+ *   لتعرف إلى أين يمضي. ثلاث وقفات لا تحتاج قراءةً متتابعة.
  *
- *   واللون لا يحمل المعنى وحده: الأيقونة والاسم والرقم كاملةٌ في كلّ
- *   بطاقة، فمن لا يميّز الألوان لا يفقد شيئاً غير التسريع.
+ * ★ والسطح ملوّن لكلّ مقياس.
  *
- * أفقيّة ومضغوطة: أيقونةٌ ثم الاسم فوق الرقم. وكانت رأسيّةً برقمٍ بحجم
- * 30px وحشوة 16px، فبلغ ارتفاعها مئة بكسل — وعشرةُ مقاييس بهذا الارتفاع
- * تحتلّ ثلاثة سطور وتملأ الشاشة قبل أن يظهر أوّل رسم بياني.
+ *   ثماني بطاقات بيضاء متطابقة تُقرأ كتلةً واحدة، فتُمسح الأسماء واحداً
+ *   واحداً بحثاً عن المطلوب. واللون يجعل كلّ بطاقة معلَماً يُعرف موضعه
+ *   قبل قراءته — ولا يحمل معنىً وحده: الأيقونة والاسم والرقم كاملةٌ فيها.
  */
 export function StatCard({
   label,
@@ -248,6 +296,7 @@ export function StatCard({
   tint,
   trend,
   spark,
+  progress,
   className,
 }: {
   label: string;
@@ -260,91 +309,118 @@ export function StatCard({
   tone?: keyof typeof TONES;
   /** السطح الملوّن صراحةً — يتقدّم على `tone` */
   tint?: StatTint;
-  /** نسبة التغيّر عن الفترة السابقة، موجبةً أو سالبة */
+  /** نسبة التغيّر بين نصفَي الفترة، موجبةً أو سالبة */
   trend?: number;
   /** سلسلة صغيرة تُرسم أعمدةً — زينةٌ مساعدة، والرقم هو البيان */
   spark?: number[];
+  /** حصّة بين صفر ومئة تُرسم شريطاً — بديلُ الأعمدة حين لا سلسلة زمنية */
+  progress?: number;
   className?: string;
 }) {
   const key: StatTint = tint ?? TONES[tone];
 
   const display =
     typeof value === 'number' ? (compact ? formatCompactNumber(value) : formatNumber(value)) : value;
+  const { amount, unit } = splitUnit(display);
+
+  const hasSpark = Boolean(spark && spark.length > 1);
+  const hasTrend = trend !== undefined && Number.isFinite(trend);
+  const hasProgress = progress !== undefined && Number.isFinite(progress);
 
   const content = (
     <div
       className={cn(
         /*
-         * نصف قطر أوسع (١٦px) وبلا حدّ.
+         * نصف قطر ٢٠px وبلا حدّ في الفاتح.
          *
          * السطح الملوّن يفصل البطاقة عن أرضية الصفحة بنفسه، والحدّ فوقه
-         * خطٌّ ثالث بلا وظيفة. وفي السمة الداكنة يبقى الحدّ شعرةً خفيفة
-         * تفصل السطحين المتقاربَي العتمة.
+         * خطٌّ ثالث بلا وظيفة. وفي الداكن يبقى شعرةً تفصل سطحين متقاربَي
+         * العتمة.
          */
-        'group relative flex h-full items-center gap-2.5 rounded-2xl px-3.5 py-3 shadow-elev-1 print-avoid-break dark:border dark:border-border',
+        'group relative flex h-full flex-col justify-between gap-3 overflow-hidden rounded-[1.25rem] p-4 shadow-elev-1 print-avoid-break dark:border dark:border-border',
         TINTS[key],
         href && 'card-interactive',
         className,
       )}
     >
-      {Icon && (
-        <span
-          className={cn(
-            'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
-            CHIPS[key],
-          )}
-        >
-          <Icon className="h-4.5 w-4.5" aria-hidden />
-        </span>
-      )}
+      <TileWave />
 
-      <div className="min-w-0 flex-1">
-        <div className="flex items-start gap-1.5">
+      {/*
+        الصفّ الأعلى: الأيقونة في حافّة البداية، والنصّ يليها، والسهم في
+        حافّة النهاية. والترتيب منطقيّ لا فيزيائي — يصحّ في الاتجاهين.
+      */}
+      <div className="relative flex items-start gap-3">
+        {Icon && (
+          <span
+            className={cn(
+              'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
+              CHIPS[key],
+            )}
+          >
+            <Icon className="h-5 w-5" aria-hidden />
+          </span>
+        )}
+
+        <div className="min-w-0 flex-1 text-end">
           {/*
             الاسم يلتفّ سطرين ولا يُقصّ.
 
-            «معدل التف…» ليست تسميةً بل لغزاً: العربية لا تُقرأ ببدايتها كما
-            تُقرأ اللاتينية، والقصُّ فيها يُتلف الكلمة. والالتفاف لا يُغيّر
-            ارتفاع البطاقة لأن الشبكة تُسوّي صفّها كلَّه على أطولها.
+            «معدل التف…» ليست تسميةً بل لغزاً: العربية لا تُقرأ ببدايتها
+            كما تُقرأ اللاتينية، والقصُّ فيها يُتلف الكلمة.
           */}
-          <p className="eyebrow line-clamp-2 flex-1" title={label}>
+          <p className="eyebrow line-clamp-2" title={label}>
             {label}
           </p>
-          {trend !== undefined && Number.isFinite(trend) && <Trend value={trend} />}
-        </div>
-
-        <div className="flex items-end justify-between gap-2">
           {/*
             الرقم لا يُقصّ أبداً.
 
-            كان يُقصّ مع الاسم، فصارت «4.3 مليون» تُعرض «4.3 ن…» — والرقم هو
-            كلّ ما في البطاقة. فإن ضاق المكان فليضِق الاسمُ لا هو.
-
-            والتتبّع السالب آمن عليه بلا تحفّظ — الأرقام لاتينية منفصلة لا
-            حروفاً عربية متصلة. و tabular-nums يُبقي الخانات على عرض واحد،
-            فلا يرقص الرقم بين تحديثين.
+            كان يُقصّ مع الاسم فصارت «4.3 مليون» تُعرض «4.3 ن…» — والرقم
+            هو كلّ ما في البطاقة. فإن ضاق المكان فليضِق الاسمُ لا هو.
+            والوحدة أصغر منه: «مليون» كلمةٌ تُعرف بشكلها ولا تحتاج حجمه.
           */}
-          <p className="num whitespace-nowrap text-lg font-bold leading-tight tracking-[-0.02em] tabular-nums text-foreground">
-            {display}
+          <p className="num whitespace-nowrap text-2xl font-bold leading-tight tracking-[-0.02em] tabular-nums text-foreground">
+            {amount}
+            {unit && <span className="ms-1 text-base font-semibold">{unit}</span>}
           </p>
-          {spark && spark.length > 1 && <Spark values={spark} />}
         </div>
 
-        {hint && <p className="truncate text-2xs text-muted-foreground">{hint}</p>}
+        {/*
+          السهم في دائرة لا عارياً.
+
+          البطاقة القابلة للنقر لا تفترق عن غيرها إلا عند التحويم — ومن
+          يعمل بلوحة المفاتيح أو على شاشة لمس لا يحوّم. والدائرة علامةٌ
+          ثابتة تُقرأ زرّاً، وتخفت حتى لا تزاحم الرقم.
+        */}
+        {href && (
+          <span
+            className={cn(
+              'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-current/25 opacity-50 transition-opacity group-hover:opacity-90',
+              TINTS[key].split(' ')[1],
+            )}
+          >
+            <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
+          </span>
+        )}
       </div>
 
       {/*
-        سهمٌ يقول إنّ البطاقة تُفتح.
-
-        البطاقة القابلة للنقر لا تفترق عن غيرها بشيء إلا عند التحويم —
-        ومن يعمل بلوحة المفاتيح أو على شاشة لمس لا يحوّم. والسهم علامةٌ
-        ثابتة، ويخفت لونه حتى لا يزاحم الرقم.
+        الصفّ الأسفل: الاتجاه ثم الأعمدة، مدفوعةً إلى حافّة النهاية.
+        الترتيب في الشيفرة يعكس ما يُرى: الأعمدة في الطرف والحبّة تليها.
       */}
-      {href && (
-        <ChevronLeft
-          className="h-4 w-4 shrink-0 opacity-40 transition-opacity group-hover:opacity-80 rtl:rotate-0"
-          aria-hidden
-        />
+      {(hasSpark || hasTrend || hasProgress || hint) && (
+        <div className="relative flex items-center justify-end gap-2">
+          {hint && <p className="me-auto truncate text-2xs text-muted-foreground">{hint}</p>}
+          {hasProgress && !hasSpark && (
+            <div className="me-auto h-1.5 w-20 overflow-hidden rounded-full bg-current/15" aria-hidden>
+              <div
+                className="h-full rounded-full bg-current"
+                style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+              />
+            </div>
+          )}
+          {hasTrend && <Trend value={trend} />}
+          {hasSpark && <Spark values={spark!} />}
+        </div>
       )}
     </div>
   );
@@ -397,7 +473,16 @@ export function StatGrid({
   );
 }
 
-/** بطاقة نصية لعرض عنصر بارز مثل أكثر منشور تفاعلاً */
+/**
+ * بطاقة العنصر البارز — منشورٌ أو منصةٌ تتصدّر الفترة.
+ *
+ * ★ بيضاء بين الملوّنات، وهذا مقصود.
+ *
+ *   بطاقات المقاييس أرقامٌ متجاورة يفرّق بينها اللون. وهذه ليست رقماً بل
+ *   عنصراً مسمّى — نصُّ منشور، أو اسمُ منصة — وسطحٌ ملوّن خلف نصٍّ عربي
+ *   طويل يُنقص تباينه ويُقحمه في صفّ الأرقام. فتبقى بيضاء، ويأتي اللون
+ *   من رقاقة الأيقونة وحدها: فتُقرأ «من عائلة واحدة» بلا أن تُقرأ مقياساً.
+ */
 export function HighlightCard({
   label,
   title,
@@ -405,6 +490,18 @@ export function HighlightCard({
   value,
   valueLabel,
   href,
+  icon: Icon,
+  tint = 'olive',
+  /** صورة المنشور — تُقرأ من مخزننا أوّلاً ثم من المصدر */
+  thumbnail,
+  thumbnailKey,
+  /**
+   * حصّة العنصر من المجموع، بين صفر ومئة.
+   *
+   * الرقم وحده («٣٧ ألف منشور») لا يقول أكثيرٌ هو أم قليل. والشريط يقوله
+   * في لمحة، ومعه النسبة نصّاً — فلا يقع المعنى على طول شريطٍ وحده.
+   */
+  share,
   className,
 }: {
   label: string;
@@ -413,28 +510,95 @@ export function HighlightCard({
   value?: number;
   valueLabel?: string;
   href?: string;
+  icon?: LucideIcon;
+  tint?: StatTint;
+  thumbnail?: string | null;
+  thumbnailKey?: string | null;
+  share?: number;
   className?: string;
 }) {
+  const percent = share === undefined ? null : Math.min(100, Math.max(0, share));
+
   const content = (
     <div
       className={cn(
-        'flex h-full flex-col justify-between gap-2 rounded-lg border border-border bg-surface p-4 shadow-elev-1 print-avoid-break',
-        href && 'card-interactive hover:bg-surface-2/40',
+        'group relative flex h-full flex-col justify-between gap-3 rounded-2xl border border-border bg-surface p-4 shadow-elev-1 print-avoid-break',
+        href && 'card-interactive',
         className,
       )}
     >
-      <div className="space-y-1">
-        <p className="text-xs text-muted-foreground">{label}</p>
-        <p className="line-clamp-2 text-sm font-medium leading-relaxed text-foreground">{title}</p>
-      </div>
-      <div className="flex items-end justify-between gap-2">
-        {meta && <p className="truncate text-xs text-subtle-foreground">{meta}</p>}
-        {value !== undefined && (
-          <p className="shrink-0 text-end">
-            <span className="num text-lg font-bold text-primary">{formatCompactNumber(value)}</span>
-            {valueLabel && <span className="ms-1 text-xs text-muted-foreground">{valueLabel}</span>}
-          </p>
+      <div className="flex items-start gap-2.5">
+        {(thumbnail || thumbnailKey) && (
+          <RemoteMedia
+            src={thumbnail ?? ''}
+            mediaKey={thumbnailKey}
+            className="h-12 w-12 shrink-0 rounded-xl"
+            fallback="hide"
+          />
         )}
+
+        {!thumbnail && !thumbnailKey && Icon && (
+          <span
+            className={cn(
+              'flex h-9 w-9 shrink-0 items-center justify-center rounded-xl',
+              CHIPS[tint],
+            )}
+          >
+            <Icon className="h-4.5 w-4.5" aria-hidden />
+          </span>
+        )}
+
+        <div className="min-w-0 flex-1 space-y-1">
+          <p className="eyebrow">{label}</p>
+          {/*
+            العنوان يلتفّ سطرين ولا يُقصّ بنقاط في منتصف كلمة.
+            نصُّ المنشور مقصوصٌ أصلاً في الخادم إلى طولٍ معقول.
+          */}
+          <p className="line-clamp-2 text-sm font-medium leading-relaxed text-foreground">
+            {title}
+          </p>
+        </div>
+
+        {href && (
+          <ChevronLeft
+            className="h-4 w-4 shrink-0 opacity-40 transition-opacity group-hover:opacity-80"
+            aria-hidden
+          />
+        )}
+      </div>
+
+      <div className="space-y-1.5">
+        {percent !== null && (
+          <div className="space-y-1">
+            {/*
+              الشريط زخرفةٌ للرقم لا بديلٌ عنه: النسبة مكتوبة بجانبه،
+              وقارئ الشاشة يقرأها ولا يرى الشريط.
+            */}
+            <div className="h-1.5 w-full overflow-hidden rounded-full bg-surface-2" aria-hidden>
+              <div
+                className={cn('h-full rounded-full', CHIPS[tint].split(' ')[0])}
+                style={{ width: `${percent}%` }}
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-end justify-between gap-2">
+          {meta && <p className="truncate text-xs text-subtle-foreground">{meta}</p>}
+          {value !== undefined && (
+            <p className="shrink-0 text-end">
+              <span className="num text-lg font-bold text-foreground">
+                {formatCompactNumber(value)}
+              </span>
+              {valueLabel && <span className="ms-1 text-xs text-muted-foreground">{valueLabel}</span>}
+              {percent !== null && (
+                <span className="num ms-1.5 text-2xs text-muted-foreground">
+                  ({formatPercent(percent, 0)})
+                </span>
+              )}
+            </p>
+          )}
+        </div>
       </div>
     </div>
   );

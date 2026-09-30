@@ -19,6 +19,8 @@ export interface OverviewStats {
   postsThisMonth: number;
   accountsCount: number;
   platformsCount: number;
+  /** كلّ المنصات المعرّفة — منها تُحسب حصّة المفعّلة */
+  platformsTotal: number;
   totalLikes: number;
   totalComments: number;
   totalShares: number;
@@ -33,6 +35,9 @@ export interface OverviewStats {
     publishedAt: Date | null;
     accountName: string;
     platformName: string;
+    /* مفتاح المصغّرة المحفوظة عندنا، ورابط المصدر احتياطاً له */
+    mediaKey: string | null;
+    thumbnailUrl: string | null;
   } | null;
   topPlatform: { id: string; name: string; code: string; postsCount: number } | null;
 }
@@ -48,7 +53,7 @@ function startOfDay(offsetDays = 0): Date {
 export async function getOverviewStats(filters: PostFilters, scope: AccountScope): Promise<OverviewStats> {
   const where = buildPostWhere(filters, scope);
 
-  const [totals, today, week, month, accountsCount, platformsCount, topPost, byPlatform] =
+  const [totals, today, week, month, accountsCount, platformsCount, platformsTotal, topPost, byPlatform] =
     await Promise.all([
       prisma.post.aggregate({
         where,
@@ -69,6 +74,15 @@ export async function getOverviewStats(filters: PostFilters, scope: AccountScope
           ...(scope === null ? {} : { accounts: { some: { id: { in: scope } } } }),
         },
       }),
+      /*
+       * المجموع محصورٌ بالنطاق كالمفعّل.
+       *
+       * ولو عُدّ مطلقاً لظهر لصاحب النطاق المحدود «٢ من ٥» — والخمسة رقمٌ
+       * لا يخصّه، وحصّةٌ تُقاس على مقامٍ لا يراه ليست حصّته.
+       */
+      prisma.platform.count({
+        where: scope === null ? {} : { accounts: { some: { id: { in: scope } } } },
+      }),
       prisma.post.findFirst({
         where,
         orderBy: { engagementTotal: 'desc' },
@@ -78,6 +92,9 @@ export async function getOverviewStats(filters: PostFilters, scope: AccountScope
           url: true,
           engagementTotal: true,
           publishedAt: true,
+          mediaKey: true,
+          thumbnailUrl: true,
+          imageUrl: true,
           account: { select: { name: true } },
           platform: { select: { name: true } },
         },
@@ -110,6 +127,7 @@ export async function getOverviewStats(filters: PostFilters, scope: AccountScope
     postsThisMonth: month,
     accountsCount,
     platformsCount,
+    platformsTotal,
     totalLikes: totals._sum.likes ?? 0,
     totalComments: totals._sum.comments ?? 0,
     totalShares: totals._sum.shares ?? 0,
@@ -125,6 +143,8 @@ export async function getOverviewStats(filters: PostFilters, scope: AccountScope
           publishedAt: topPost.publishedAt,
           accountName: topPost.account.name,
           platformName: topPost.platform.name,
+          mediaKey: topPost.mediaKey,
+          thumbnailUrl: topPost.thumbnailUrl ?? topPost.imageUrl,
         }
       : null,
     topPlatform,
@@ -180,7 +200,15 @@ function bucketKey(date: Date, size: BucketSize): string {
 
 /** سلسلة زمنية للنشر والتفاعل — تُقرأ من الإحصاءات اليومية */
 export async function getTimeseries(filters: PostFilters, scope: AccountScope): Promise<
-  { date: string; posts: number; engagement: number; likes: number; comments: number; shares: number }[]
+  {
+    date: string;
+    posts: number;
+    engagement: number;
+    likes: number;
+    comments: number;
+    shares: number;
+    views: number;
+  }[]
 > {
   const { from, to } = resolveDateRange({ range: filters.range, from: filters.from, to: filters.to });
   const where = buildPostWhere(filters, scope);
@@ -188,7 +216,14 @@ export async function getTimeseries(filters: PostFilters, scope: AccountScope): 
   // نجمّع من جدول المنشورات بفهرس التاريخ لضمان احترام كل الفلاتر
   const posts = await prisma.post.findMany({
     where: { ...where, publishedAt: { not: null, ...(from ? { gte: from } : {}), ...(to ? { lte: to } : {}) } },
-    select: { publishedAt: true, engagementTotal: true, likes: true, comments: true, shares: true },
+    select: {
+      publishedAt: true,
+      engagementTotal: true,
+      likes: true,
+      comments: true,
+      shares: true,
+      views: true,
+    },
     orderBy: { publishedAt: 'asc' },
     take: TIMESERIES_ROW_CAP,
   });
@@ -207,18 +242,20 @@ export async function getTimeseries(filters: PostFilters, scope: AccountScope): 
 
   const buckets = new Map<
     string,
-    { posts: number; engagement: number; likes: number; comments: number; shares: number }
+    { posts: number; engagement: number; likes: number; comments: number; shares: number; views: number }
   >();
 
   for (const post of posts) {
     if (!post.publishedAt) continue;
     const key = bucketKey(post.publishedAt, bucketSize);
-    const bucket = buckets.get(key) ?? { posts: 0, engagement: 0, likes: 0, comments: 0, shares: 0 };
+    const bucket =
+      buckets.get(key) ?? { posts: 0, engagement: 0, likes: 0, comments: 0, shares: 0, views: 0 };
     bucket.posts += 1;
     bucket.engagement += post.engagementTotal;
     bucket.likes += post.likes;
     bucket.comments += post.comments;
     bucket.shares += post.shares;
+    bucket.views += post.views;
     buckets.set(key, bucket);
   }
 
