@@ -74,6 +74,7 @@ const ACCOUNT_GROUPS = [
   { code: 'ministries', name: 'وزارات', sortOrder: 6 },
   { code: 'governorates', name: 'محافظات', sortOrder: 7 },
   { code: 'activists', name: 'النشطاء', sortOrder: 8 },
+  { code: 'elite-partners', name: 'النخبة المتعاونة', sortOrder: 9 },
 ];
 
 const SETTINGS = [
