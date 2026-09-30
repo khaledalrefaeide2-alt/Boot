@@ -9,11 +9,20 @@ import { Input } from '@/components/ui/field';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
 import { api, ApiClientError } from '@/lib/api-client';
+import { SESSION_EXPIRED_PARAM } from '@/lib/auth/cookies';
 
 export function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const nextPath = searchParams.get('next');
+  /*
+   * «انتهت الجلسة» يُقال، ولا يُترك المستخدم يخمّن.
+   *
+   * من كان يعمل ثم وجد نفسه فجأةً أمام صفحة الدخول يظنّ الموقع تعطّل —
+   * أو يظنّ كلمته تغيّرت. والجملة الواحدة تحوّل العطب المُفترض إلى
+   * إجراءٍ مفهوم.
+   */
+  const expired = searchParams.get(SESSION_EXPIRED_PARAM) === '1';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -52,6 +61,9 @@ export function LoginForm() {
       <CardBody>
         <form onSubmit={onSubmit} className="space-y-4" noValidate>
           {error && <Alert tone="danger">{error}</Alert>}
+          {!error && expired && (
+            <Alert tone="info">انتهت جلستك، سجّل الدخول من جديد للمتابعة.</Alert>
+          )}
 
           <Input
             label="البريد الإلكتروني"

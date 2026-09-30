@@ -4,12 +4,16 @@ import { cookies, headers } from 'next/headers';
 import { timingSafeEqual } from 'node:crypto';
 import { prisma } from '@/lib/db';
 import { env, isProduction } from '@/lib/env';
+import { SESSION_COOKIE, CSRF_COOKIE } from './cookies';
 import { generateToken, hashToken } from './password';
 import { effectivePermissions, type Permission } from './rbac';
 import type { AccountAccess, Role, UserStatus } from '@/generated/prisma';
 
-export const SESSION_COOKIE = 'mm_session';
-export const CSRF_COOKIE = 'mm_csrf';
+/*
+ * الأسماء تُعاد من `cookies.ts` لا تُعرَّف هنا: الوسيط يحتاجها وهو لا
+ * يستطيع قراءة ملفّ فيه `server-only`، فمصدرها وحدةٌ محايدة بينهما.
+ */
+export { SESSION_COOKIE, CSRF_COOKIE, SESSION_EXPIRED_PARAM } from './cookies';
 export const CSRF_HEADER = 'x-csrf-token';
 
 export interface SessionUser {

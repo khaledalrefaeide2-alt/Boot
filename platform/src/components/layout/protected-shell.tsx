@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
 import { getSession } from '@/lib/auth/session';
+import { SESSION_EXPIRED_PARAM } from '@/lib/auth/cookies';
 import { can, PERMISSIONS } from '@/lib/auth/rbac';
 import { getAppName } from '@/lib/settings';
 import { ADMIN_NAV, VIEWER_NAV, filterNav } from '@/lib/domain/navigation';
@@ -32,7 +33,14 @@ export async function ProtectedShell({
   children: React.ReactNode;
 }) {
   const user = await getSession();
-  if (!user) redirect('/login');
+  /*
+   * العلامة ليست زينةً في الرابط: هي ما يمنع حلقة التحويل.
+   *
+   * الوسيط يرى الكوكي موجودةً فيُعيد كلّ قادمٍ من `/login` إلى `/`،
+   * وهنا نعرف أنّها ميّتة — فنقولها له صراحةً، فيمسحها ويفتح الصفحة
+   * بدل أن يردّنا. وبدونها يدور الاثنان إلى أن يقف المتصفّح.
+   */
+  if (!user) redirect(`/login?${SESSION_EXPIRED_PARAM}=1`);
 
   if (area === 'admin' && !can(user, PERMISSIONS.ADMIN_ACCESS)) {
     redirect('/');

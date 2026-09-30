@@ -1,12 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { CSRF_COOKIE, SESSION_COOKIE, SESSION_EXPIRED_PARAM } from '@/lib/auth/cookies';
 
 /**
  * الوسيط (proxy) يوجّه الزوار بسرعة فقط — التحقق الحقيقي من الجلسة والصلاحيات
  * يتم في مكوّنات الخادم وفي كل مسار API. لا يُعتمد عليه كحدّ أمني.
  */
 const PUBLIC_PATHS = ['/login', '/forgot-password', '/reset-password'];
-
-const SESSION_COOKIE = 'mm_session';
 
 export default function proxy(request: NextRequest) {
   const { pathname, search } = request.nextUrl;
@@ -20,6 +19,27 @@ export default function proxy(request: NextRequest) {
   }
 
   if (hasSessionCookie && isPublic) {
+    /*
+     * ★ الكوكي الميّتة لا تُعيد صاحبها إلى الداخل.
+     *
+     *   الوسيط يعرف أنّ الكوكي موجودة ولا يعرف أنّها صالحة — لا قاعدة
+     *   بيانات هنا. والخادم يعرف: `getSession()` يردّ null للجلسة
+     *   المنتهية أو المُبطَلة أو لمستخدمٍ عُطّل.
+     *
+     *   فكانا يتدافعان إلى الأبد: الخادم يُحوّل إلى `/login` لأن الجلسة
+     *   ميّتة، والوسيط يُعيده إلى `/` لأن الكوكي موجودة، والخادم يُحوّل…
+     *   حتى يقف المتصفّح عند ERR_TOO_MANY_REDIRECTS — والموقع كله
+     *   يسقط في وجه كلّ من انتهت جلسته، لا صفحةٌ منه.
+     *
+     *   والعلامة هي قول الخادم: «سألتُ القاعدة، وهذه ميّتة». فتُمسح
+     *   الكوكيان وتُعرض صفحة الدخول — وهو ما كان يجب أن يراه من البداية.
+     */
+    if (request.nextUrl.searchParams.get(SESSION_EXPIRED_PARAM) === '1') {
+      const response = NextResponse.next();
+      response.cookies.delete(SESSION_COOKIE);
+      response.cookies.delete(CSRF_COOKIE);
+      return response;
+    }
     return NextResponse.redirect(new URL('/', request.url));
   }
 
