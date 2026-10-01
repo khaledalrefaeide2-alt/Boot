@@ -572,7 +572,7 @@ function client(): OpenAI {
  *   فما هنا يُصلح ما يُصلَح، ويرفع إلى المراجعة ما لا يُصلَح. ولا يُسكِت
  *   شيئاً: كلّ تصحيح يترك أثره في `reviewReason`.
  */
-function normalizeAnalysis(parsed: RawAnalysis, text: string): PostAnalysisResult {
+export function normalizeAnalysis(parsed: RawAnalysis, text: string): PostAnalysisResult {
   // الثقة تُقصّ إلى المدى الصالح: نموذجٌ يعيد 1.4 لا يُصدَّق على علّاته
   parsed.confidence = clamp01(parsed.confidence);
   parsed.rumorConfidence =
