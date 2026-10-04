@@ -16,13 +16,12 @@ import {
   ENTITY_TYPE_LABELS,
   ENTITY_TYPE_TONE,
   POST_TYPE_LABELS,
-  SENTIMENT_LABELS,
-  SENTIMENT_TONE,
   STANCE_METRIC,
   languageLabel,
 } from '@/lib/domain/constants';
 import { formatDateTime, formatNumber } from '@/lib/utils';
 import { MediaGallery } from '@/components/posts/media-gallery';
+import { ClassificationBadge } from '@/components/posts/post-card';
 import { getAccountScope, scopeAllows } from '@/lib/auth/account-scope';
 
 export const metadata: Metadata = { title: 'تفاصيل المنشور' };
@@ -285,22 +284,41 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
             <DetailRow label="اللغة">{languageLabel(post.language)}</DetailRow>
             <DetailRow label="الدولة">{post.country ?? '—'}</DetailRow>
             <DetailRow label="الموقع">{post.location ?? '—'}</DetailRow>
+            {/*
+              الشارة من `ClassificationBadge` لا من `Badge` مباشرةً.
+
+              صفحةُ المنشور والبطاقةُ والجدول تقول ثلاثتُها الشيء نفسه عن
+              الحالة نفسها، ونسخةٌ رابعة هنا تعني أنّ إصلاح الخلط بين «لم
+              يُصنَّف» و«لم يُحسم» أُصلح في ثلاثة مواضع وبقي في الرابع.
+            */}
             <DetailRow label={STANCE_METRIC.compact}>
-              <Badge tone={SENTIMENT_TONE[post.sentiment]}>
-                {SENTIMENT_LABELS[post.sentiment]}
-              </Badge>
+              <ClassificationBadge
+                sentiment={post.sentiment}
+                analyzed={post.analysis !== null}
+                size="md"
+              />
               {post.sentimentScore !== null && (
                 <span className="num ms-2 text-xs text-muted-foreground">
                   {post.sentimentScore.toFixed(2)}
                 </span>
               )}
             </DetailRow>
+            {/*
+              ★ و«قواعد لغوية» كانت تُقال عن منشورٍ لم يمرّ على شيء.
+
+                الحقل `sentimentSource` فارغٌ في حالتين: منشورٌ صنّفته
+                قواعد قديمة، ومنشورٌ لم يُصنَّف قطّ. والسطر كان يقرأ
+                الفراغ «قواعد لغوية» في الحالين — فيخبر المراجع أنّ حكماً
+                صدر، ويدفعه إلى تصحيح حكمٍ لا وجود له.
+            */}
             <DetailRow label="مصدر التصنيف">
               {post.sentimentSource === 'MANUAL'
                 ? 'تعديل يدوي'
                 : post.sentimentSource === 'AI'
                   ? 'ذكاء اصطناعي'
-                  : 'قواعد لغوية'}
+                  : post.analysis === null
+                    ? 'لم يُصنَّف بعد'
+                    : 'قواعد لغوية'}
             </DetailRow>
             <DetailRow label="التصنيف">
               {post.topic ? (

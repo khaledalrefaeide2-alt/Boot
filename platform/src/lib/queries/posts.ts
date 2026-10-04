@@ -82,7 +82,28 @@ export function buildPostWhere(
     ...(filters.label ? { labels: { has: filters.label as never } } : {}),
     ...(filters.minSeverity ? { severityLevel: { gte: filters.minSeverity } } : {}),
   };
-  if (Object.keys(analysisWhere).length > 0) where.analysis = { is: analysisWhere };
+
+  /*
+   * وحالُ التصنيف يسبقهما: «بانتظار التصنيف» يعني لا صفّ تحليلٍ أصلاً.
+   *
+   * ★ واجتماعُه مع وسمٍ أو خطورة طلبٌ متناقض، وجوابُه الصادق فراغ —
+   *   ويُكتب الفراغُ صراحةً لا يُترك للصدفة.
+   *
+   *   وكان الشرطان يُكتب أحدهما على `where.analysis` فيغلب الثاني:
+   *   `analyzed=no&minSeverity=4` يُرجع كلّ ما لم يُصنَّف، أي أوسع ممّا
+   *   طُلب لا أضيق. وهو أسوأ أنواع الخطأ في فلتر: نتيجةٌ كلّ صفوفها
+   *   صحيحةٌ في ذاتها عن سؤالٍ لم يُسأل. وقد كشفه فحصٌ على قاعدة حقيقية
+   *   بعد أن مرّ على التوكيدات النصّية كلها.
+   *
+   *   والشاشة تمنع اجتماعهما أصلاً (انظر `setAnalyzed` في `filter-bar`)،
+   *   وهذا للرابط المكتوب باليد.
+   */
+  if (filters.analyzed === 'no') {
+    where.analysis = { is: null };
+    if (Object.keys(analysisWhere).length > 0) where.id = { in: [] };
+  } else if (filters.analyzed === 'yes' || Object.keys(analysisWhere).length > 0) {
+    where.analysis = { is: analysisWhere };
+  }
 
   if (from || to) {
     where.publishedAt = {

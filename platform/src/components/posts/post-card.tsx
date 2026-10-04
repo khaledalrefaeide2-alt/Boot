@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { Eye, ExternalLink, EyeOff, MessageSquare, Share2, ThumbsUp, Trash2 } from 'lucide-react';
+import { Clock, Eye, ExternalLink, EyeOff, MessageSquare, Share2, ThumbsUp, Trash2 } from 'lucide-react';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AccountAvatar } from '@/components/ui/avatar';
@@ -49,12 +49,85 @@ export interface PostListItemView {
   account: { id: string; name: string; avatarUrl: string | null };
   platform: { id: string; name: string; code: string };
   topic: { id: string; name: string } | null;
-  /** حقلان من التحليل التفصيلي — الباقي في صفحة المنشور */
-  analysis?: { severityLevel: number; labels: string[] } | null;
+  /**
+   * حقلان من التحليل التفصيلي — الباقي في صفحة المنشور.
+   *
+   * ★ وإلزاميّ لا اختياريّ، و`null` لا غياب.
+   *
+   *   البطاقة تقرأ من هذا الحقل الفرقَ بين «لم يُصنَّف بعد» و«صُنِّف ولم
+   *   يُحسم» — وهما حالتان كانتا تُعرضان بكلمةٍ واحدة. ولو كان اختيارياً
+   *   لصار نسيانُه في أيّ موضعِ بناءٍ جديد إعلاناً صامتاً بأنّ المنشور
+   *   بلا تصنيف، وهو خطأ لا يكشفه شيء. فإلزامُه يجعل النسيان خطأ تصريف.
+   */
+  analysis: { severityLevel: number; labels: string[] } | null;
 }
 
 function sentimentTone(sentiment: string): BadgeTone {
   return (SENTIMENT_TONE[sentiment as keyof typeof SENTIMENT_TONE] ?? 'neutral') as BadgeTone;
+}
+
+/*
+ * شارةُ حال التصنيف — ثلاثُ حالاتٍ لا حالتان.
+ *
+ * ★ هذه هي العلّة التي كانت تُقرأ «الموقع لا يصنّف».
+ *
+ *   كانت البطاقة تعرض حقل `sentiment` وحده. والحقل افتراضُه في القاعدة
+ *   `UNKNOWN`، فالمنشور الذي لم تبلغه المكنسة بعد يُعرض بالكلمة نفسها
+ *   التي تُعرض على منشورٍ صُنِّف وعجز النموذج عن حسمه: «غير محسوم».
+ *
+ *   والحالتان مختلفتان اختلافاً كاملاً. الأولى تقول «انتظر»، والثانية
+ *   تقول «نُظر فيه وأُحيل إلى المراجعة». ولوحةٌ تخلط بينهما تُقرأ عطلاً
+ *   في المنصة كلّها: من يرى أربعاً وعشرين بطاقة تقول «غير محسوم» يستنتج
+ *   أن التصنيف متوقّف، ولا شيء في الشاشة ينفي استنتاجه.
+ *
+ * والتفريق من وجود صفّ التحليل لا من قيمة الحقل: الصفّ يُكتب لكلّ منشور
+ * مرّ على التصنيف مهما كانت نتيجته — حتى المنشور الذي لا مادّة فيه تُسجَّل
+ * إحالته. فوجودُه جوابٌ قاطع عن «هل نُظر فيه؟».
+ */
+export function ClassificationBadge({
+  sentiment,
+  analyzed,
+  size = 'sm',
+}: {
+  sentiment: string;
+  analyzed: boolean;
+  /** `sm` في الشبكة والجدول، و`md` في صفحة المنشور حيث السطر أوسع */
+  size?: 'sm' | 'md';
+}) {
+  if (!analyzed) {
+    return (
+      <Badge
+        tone="neutral"
+        size={size}
+        title="لم يُصنَّف بعد — المكنسة تصنّف الأحدث أوّلاً، وتبلغه في دورتها القادمة"
+      >
+        {/*
+          الأيقونة ليست زينة.
+
+          «بانتظار التصنيف» و«غير محسوم» كلتاهما بلون محايد — وهو الصحيح،
+          فليست إحداهما خطراً — فلو تجاورتا في شبكةٍ من أربع وعشرين بطاقة
+          لفُرِّق بينهما بالقراءة وحدها. والساعةُ تُفرّقهما بلمحة.
+        */}
+        <Clock className="h-3 w-3" aria-hidden />
+        بانتظار التصنيف
+      </Badge>
+    );
+  }
+
+  return (
+    <Badge
+      tone={sentimentTone(sentiment)}
+      size={size}
+      title={
+        sentiment === 'UNKNOWN'
+          ? 'صُنِّف وأُحيل إلى المراجعة — لم يتبيّن موقفه من الجهات والخدمات، إمّا لأن معناه يتوقّف على صورة أو فيديو غير متاح، وإمّا لأنه لا يتناول هذه الجهات أصلاً'
+          : `${STANCE_METRIC.compact}: ${SENTIMENT_LABELS[sentiment as keyof typeof SENTIMENT_LABELS] ?? sentiment}`
+      }
+    >
+      <span className="sr-only">{STANCE_METRIC.compact}: </span>
+      {SENTIMENT_LABELS[sentiment as keyof typeof SENTIMENT_LABELS] ?? sentiment}
+    </Badge>
+  );
 }
 
 /** مقياس تفاعل مصغّر يظهر في البطاقة والجدول */
@@ -127,6 +200,7 @@ export function PostCard({
 }) {
   const hasMedia = Boolean(post.thumbnailUrl || post.imageUrl);
 
+  const analyzed = post.analysis !== null;
   const level = post.analysis?.severityLevel ?? 0;
   const severity = level >= SEVERITY_VISIBLE_FROM ? SEVERITY_LEVELS[level] : undefined;
   /* أخطر وسمٍ وحده — القائمة كاملةً في صفحة المنشور */
@@ -218,29 +292,15 @@ export function PostCard({
       <div className="flex flex-wrap items-center gap-1.5">
         {/*
           نتيجة التحليل — كلمةٌ واحدة وفق معايير سياسة التصنيف في الموقع:
-          إيجابي، أو محايد، أو سلبي، أو مختلط. وما لم يُصنَّف بعد يُقال
-          «غير محسوم» بصراحة، ولا تُخترع له نتيجة.
-
-          و«غير محسوم» وحدها تُقرأ عطلاً في المنصة، والسبب يُعرف: منشورٌ
-          بلا نصّ ولا صورة، أو لم تبلغه المكنسة بعد. فيُوضَع في `title` —
-          لا يشغل مساحة، ويجيب من سأل.
+          إيجابي، أو محايد، أو سلبي، أو مختلط. وما لم تبلغه المكنسة بعد
+          يُقال «بانتظار التصنيف» بصراحة، ولا تُخترع له نتيجة ولا يُخلط
+          بمن نُظر فيه ولم يُحسم — انظر `ClassificationBadge`.
 
           واسم المقياس لقارئ الشاشة وحده: «سلبي» بلا سياق كلمةٌ معلّقة،
           والعنوان المكتوب يأخذ سطراً في بطاقةٍ ضيّقة بلا حاجة — الشارة
           الملوّنة في موضعها الثابت تكفي من يرى.
         */}
-        <Badge
-          tone={sentimentTone(post.sentiment)}
-          size="sm"
-          title={
-            post.sentiment === 'UNKNOWN'
-              ? 'لم يُحسم بعد — إمّا أنّ المنشور بلا نصّ ولا صورة مخزَّنة، وإمّا أنّ التصنيف التلقائي لم يبلغه بعد'
-              : `${STANCE_METRIC.compact}: ${SENTIMENT_LABELS[post.sentiment as keyof typeof SENTIMENT_LABELS] ?? post.sentiment}`
-          }
-        >
-          <span className="sr-only">{STANCE_METRIC.compact}: </span>
-          {SENTIMENT_LABELS[post.sentiment as keyof typeof SENTIMENT_LABELS] ?? post.sentiment}
-        </Badge>
+        <ClassificationBadge sentiment={post.sentiment} analyzed={analyzed} />
         {/*
           ★ الخطورة تسبق الموضوع في البطاقة الضيّقة.
 
@@ -342,9 +402,8 @@ export function PostRow({ post }: { post: PostListItemView }) {
         {POST_TYPE_LABELS[post.postType as keyof typeof POST_TYPE_LABELS] ?? post.postType}
       </TD>
       <TD>
-        <Badge tone={sentimentTone(post.sentiment)} size="sm">
-          {SENTIMENT_LABELS[post.sentiment as keyof typeof SENTIMENT_LABELS] ?? post.sentiment}
-        </Badge>
+        {/* الجدول والبطاقة يقولان الشيء نفسه — ومن شارةٍ واحدة لا من نسختين */}
+        <ClassificationBadge sentiment={post.sentiment} analyzed={post.analysis !== null} />
       </TD>
       <TD className="whitespace-nowrap text-xs text-muted-foreground">
         {formatDateTime(post.publishedAt)}

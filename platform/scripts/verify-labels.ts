@@ -293,10 +293,25 @@ const queries = read('src/lib/queries/posts.ts');
 const filterSchema = read('src/lib/validation/posts.ts');
 const bar = read('src/components/filters/filter-bar.tsx');
 
+/*
+ * ★ وعدُّ مرّات الإسناد كان توكيداً خاطئاً.
+ *
+ *   كان الفحص يشترط إسناداً واحداً لـ`where.analysis`، فكسره فرعُ
+ *   «بانتظار التصنيف» — وهو فرعٌ يستبعد الآخر ولا يكتب فوقه. والمقصود
+ *   ليس عددَ الإسنادات بل ألّا يُكتب الوسم والخطورة مفتاحين منفصلين
+ *   داخل كائن `where` نفسه، فيغلب الثاني الأول صامتاً. وهذا ما يُفحص.
+ */
+const whereLiteral = queries.slice(
+  queries.indexOf('const where: Prisma.PostWhereInput = {'),
+  queries.indexOf('\n  };', queries.indexOf('const where: Prisma.PostWhereInput = {')),
+);
 check(
   'الفلتران يجتمعان في شرطٍ واحد',
   /const analysisWhere: Prisma\.PostAnalysisWhereInput/.test(queries) &&
-    (queries.match(/where\.analysis = /g) ?? []).length === 1,
+    /filters\.label \? \{ labels:/.test(queries) &&
+    /filters\.minSeverity \? \{ severityLevel:/.test(queries) &&
+    whereLiteral.length > 0 &&
+    !/analysis:/.test(whereLiteral),
   'كائنان منفصلان يكتب الثاني فوق الأول صامتاً',
 );
 check(

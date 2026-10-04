@@ -46,6 +46,14 @@ export const postFiltersSchema = z.object({
    * يساوي يُخفي درجة ٥ عمّن طلب ٤، وهو عكس ما يقصده.
    */
   minSeverity: z.coerce.number().int().min(1).max(5).optional(),
+  /**
+   * حال التصنيف — «أرني ما لم يُصنَّف بعد».
+   *
+   * فلترٌ تشغيليّ لا تحليليّ: هو كيف يرى صاحب المنصة المتراكم ينقص بعينه
+   * بدل أن يصدّق عدّاداً في شاشة الإدارة. وبلا طريقةٍ لعرضه يصير السؤال
+   * «هل المكنسة تعمل؟» سؤالاً لا جواب له في الواجهة.
+   */
+  analyzed: z.enum(['yes', 'no']).optional(),
   country: z.string().trim().max(80).optional(),
   range: z.enum(RANGE_VALUES).default('30d'),
   from: z.string().trim().max(40).optional(),

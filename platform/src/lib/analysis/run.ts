@@ -200,7 +200,8 @@ function analysisCondition(
 
 /** هل تحصر الفلاتر الجولةَ في منشوراتٍ لها تحليل؟ */
 export function requiresExistingAnalysis(filters: PostFilters): boolean {
-  return Boolean(filters.label || filters.minSeverity);
+  // و«المصنَّف» منها: جولةٌ بلا إعادة تصنيف على ما صُنِّف طلبٌ متناقض
+  return Boolean(filters.label || filters.minSeverity || filters.analyzed === 'yes');
 }
 
 function targetWhere(stored: StoredFilters, reanalyze: boolean): Prisma.PostWhereInput {

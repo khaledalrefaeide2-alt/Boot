@@ -540,9 +540,18 @@ check(
     !/hidden flex-wrap items-center gap-1\.5/.test(cardSource),
   'الموضوع يُخفى في البطاقة الضيّقة، والموقف كلمةٌ واحدة تتّسع في كل عرض',
 );
+/*
+ * ★ والتثبيت على `post.sentiment` كان في التوكيد لا في الشيفرة.
+ *
+ *   انتقلت الشارة إلى `ClassificationBadge` فصار الحقل وسيطاً اسمه
+ *   `sentiment`، ففشل فحصٌ يقرأ الاسم لا المعنى. والمقصود أنّ الكلمة
+ *   تُقرأ من قاموس السياسة لا تُكتب نصّاً في الشاشة — وهذا ما يُفحص.
+ */
 check(
   'وهي كلمة واحدة من قاموس السياسة',
-  /SENTIMENT_LABELS\[post\.sentiment as keyof typeof SENTIMENT_LABELS\]/.test(cardSource),
+  /SENTIMENT_LABELS\[\s*(?:post\.)?sentiment as keyof typeof SENTIMENT_LABELS\]/.test(
+    cardSource,
+  ),
 );
 check(
   'ولقارئ الشاشة اسمُ المقياس معها',
@@ -934,11 +943,22 @@ check(
   /لم يُطابَق آلياً/.test(persistSource),
   'مرجعُ المقتطف صورةٌ لا يملك الخادم مطابقتها، فلا يُقرأ موثّقاً كنظيره',
 );
+/*
+ * والبطاقة تشرح الحالتين كلتيهما — وهما حالتان لا واحدة.
+ *
+ * كان التوكيد يطلب شرحاً واحداً يجمعهما («إمّا… وإمّا…»)، وهو ما كان
+ * يُقرأ عطلاً: الجمعُ في جملةٍ واحدة إقرارٌ بأن الشاشة لا تعرف أيَّهما.
+ * فصارا شارتين لكلٍّ شرحُها.
+ */
+const cardText = read('src/components/posts/post-card.tsx');
 check(
-  'والبطاقة تشرح لماذا لم يُحسم',
-  /لم يُحسم بعد — إمّا أنّ المنشور بلا نصّ/.test(
-    read('src/components/posts/post-card.tsx'),
-  ),
+  'والبطاقة تشرح لماذا لم يُصنَّف بعد',
+  /لم يُصنَّف بعد — المكنسة تصنّف الأحدث أوّلاً/.test(cardText),
+  'شارةٌ بلا شرح تترك من رآها يظنّ التصنيف معطّلاً',
+);
+check(
+  'وتشرح لماذا لم يُحسم ما صُنِّف',
+  /صُنِّف وأُحيل إلى المراجعة/.test(cardText),
   '«غير محسوم» وحدها تُقرأ عطلاً في المنصة',
 );
 
@@ -1073,6 +1093,146 @@ check(
   'ويطبّق نطاق الحسابات',
   /getAccountScope\(\)/.test(entitiesRoute) &&
     /getAccountScope\(\)/.test(read('src/app/api/entities/[id]/route.ts')),
+);
+
+// ══════════════ التغطية: كلّ منشورٍ مستخرَج يُصنَّف ══════════════
+
+/*
+ * ثلاث طبقاتٍ تمنع عودة «غير محسوم» إلى اللوحة، وكلُّ واحدةٍ تُفحص وحدها:
+ * ترتيبُ الجولة (الأحدث أوّلاً)، وانفتاحُ الحدّ (بلا جدار تاريخ)، وتفريقُ
+ * الواجهة بين «لم يُصنَّف بعد» و«صُنِّف ولم يُحسم».
+ */
+
+const runCode = readCode('src/lib/analysis/run.ts');
+check(
+  'جولة التحليل تبدأ بالأحدث لا بالأقدم',
+  /orderBy:\s*\{\s*id:\s*'desc'\s*\}/.test(runCode),
+  "orderBy: { id: 'desc' } غير موجود في حلقة الدفعات — الترتيب التصاعدي يترك منشور اليوم آخر الصفّ",
+);
+check(
+  'ولا أثر لترتيبٍ تصاعديّ بالمعرّف',
+  !/orderBy:\s*\{\s*id:\s*'asc'\s*\}/.test(runCode),
+);
+
+const coverage = read(
+  'prisma/migrations/20261004120000_analysis_full_coverage/migration.sql',
+);
+check(
+  'الترحيل يفتح حدّ تاريخ البدء',
+  /UPDATE "settings"[\s\S]*?'""'::jsonb[\s\S]*?'analysis\.startDate'/.test(coverage),
+);
+check(
+  'ولا يكتب فوق قيمةٍ غيّرها صاحب المنصة',
+  /WHERE "key" = 'analysis\.startDate' AND "value" = '"2026-09-30"'::jsonb/.test(coverage),
+  'التحديث بلا شرطٍ على القيمة القديمة يمحو اختيار المستخدم صامتاً',
+);
+check(
+  'ورفعُ السقف اليومي مشروطٌ بالقيمة القديمة كذلك',
+  /WHERE "key" = 'analysis\.dailyCap' AND "value" = '3000'::jsonb/.test(coverage),
+);
+
+/*
+ * الافتراض في الشيفرة والبذرة والترحيل واحد.
+ *
+ * ثلاثةُ مواضع تقول العدد نفسه، واختلافُ أحدها يعني قاعدةً جديدة تبدأ
+ * بسقفٍ غير الذي تعمل به القاعدة القائمة — فرقٌ لا يظهر إلا بعد شهور.
+ */
+const settingsCode = readCode('src/lib/settings.ts');
+check(
+  'افتراض السقف اليومي في الشيفرة ١٠٠٠٠',
+  /analysis\.dailyCap'\]\s*\?\?\s*10_000/.test(settingsCode),
+);
+check('والبذرة تقول العدد نفسه', /value: 10_000/.test(read('prisma/seed.ts')));
+check(
+  'والترحيل كذلك',
+  /'10000'::jsonb/.test(coverage),
+);
+check(
+  'وتاريخ البدء في البذرة فارغ',
+  /key: 'analysis\.startDate',\s*\n\s*value: '',/.test(read('prisma/seed.ts')),
+);
+
+// ── الواجهة: الحالتان لا تُخلطان ──
+
+const cardCode = readCode('src/components/posts/post-card.tsx');
+check(
+  'البطاقة تفرّق «بانتظار التصنيف» عن «غير محسوم»',
+  /بانتظار التصنيف/.test(read('src/components/posts/post-card.tsx')),
+  'المنشور الذي لم تبلغه المكنسة يُعرض بكلمة «غير محسوم» نفسها، فتُقرأ اللوحة عطلاً',
+);
+check(
+  'والتفريق من وجود صفّ التحليل لا من قيمة الحقل',
+  /const analyzed = post\.analysis !== null;/.test(cardCode) &&
+    !/analyzed[\s\S]{0,40}sentiment [!=]==? 'UNKNOWN'/.test(cardCode),
+  'الاعتماد على sentiment === UNKNOWN يخلط الحالتين من جديد — وهو ما كان',
+);
+check(
+  'وحقلُ التحليل إلزاميّ في نوع البطاقة',
+  /analysis: \{ severityLevel: number; labels: string\[\] \} \| null;/.test(cardCode),
+  'الحقل الاختياريّ يجعل نسيانَه في موضع بناءٍ جديد إعلاناً صامتاً بأن المنشور بلا تصنيف',
+);
+check(
+  'وصفّ الجدول يستعمل الشارة نفسها لا نسخةً ثانية',
+  (cardCode.match(/<ClassificationBadge/g) ?? []).length === 2,
+);
+check(
+  'وصفحةُ المنشور كذلك',
+  /<ClassificationBadge/.test(readCode('src/app/(app)/posts/[id]/page.tsx')),
+  'نسخةٌ رابعة من الشارة تعني أنّ الإصلاح وقع في ثلاثة مواضع وبقي في الرابع',
+);
+check(
+  'و«مصدر التصنيف» لا يقول «قواعد لغوية» عمّا لم يُصنَّف',
+  /post\.analysis === null\s*\n?\s*\? 'لم يُصنَّف بعد'/.test(
+    readCode('src/app/(app)/posts/[id]/page.tsx'),
+  ),
+  'الحقل الفارغ يعني «قواعد قديمة» أو «لم يُصنَّف قطّ» — وقراءتُه حكماً تدفع المراجع إلى تصحيح ما لا وجود له',
+);
+
+// ── الفلاتر تصل الخادم فعلاً ──
+
+const barCode = readCode('src/components/filters/filter-bar.tsx');
+for (const key of ['label', 'minSeverity', 'analyzed'] as const) {
+  check(
+    `فلتر «${key}» يُرسَل في معاملات الطلب`,
+    new RegExp(`params\\.${key} = filters\\.${key}`).test(barCode),
+    'المربّع موجود في الشاشة ويُعدّ في الفلاتر المفعّلة ولا يصل الخادم — تغييرٌ لا أثر له',
+  );
+}
+check(
+  '«بانتظار التصنيف» يمسح الوسم والخطورة معه',
+  /analyzed: value, label: '', minSeverity: ''/.test(barCode),
+  'اجتماعهما طلبٌ متناقض جوابه صفر، ويُقرأ عطلاً',
+);
+
+const queryCode = readCode('src/lib/queries/posts.ts');
+check(
+  'و«بانتظار التصنيف» يُترجَم إلى غياب صفّ التحليل',
+  /filters\.analyzed === 'no'[\s\S]{0,120}analysis = \{ is: null \}/.test(queryCode),
+);
+check(
+  'و«المصنَّف وحده» لا يُسقط شرطَي الوسم والخطورة',
+  /filters\.analyzed === 'yes' \|\| Object\.keys\(analysisWhere\)\.length > 0/.test(queryCode),
+);
+/*
+ * ★ والطلب المتناقض يُرجع فراغاً صريحاً لا نتيجةً أوسع.
+ *
+ *   كُتب الشرطان على المفتاح نفسه أوّلَ مرّة، فصار
+ *   `analyzed=no&minSeverity=4` يُرجع كلّ ما لم يُصنَّف — أوسع ممّا طُلب
+ *   لا أضيق، وكلّ صفٍّ فيه صحيحٌ في ذاته. كشفه فحصٌ على قاعدة حقيقية بعد
+ *   أن مرّ على التوكيدات النصّية، فصار له توكيدٌ يحرسه.
+ */
+check(
+  'والطلب المتناقض يُرجع فراغاً صريحاً',
+  /if \(Object\.keys\(analysisWhere\)\.length > 0\) where\.id = \{ in: \[\] \};/.test(
+    queryCode,
+  ),
+  'إسقاط الوسم والخطورة عند «بانتظار التصنيف» يُرجع أوسع ممّا طُلب',
+);
+check(
+  'وجولةٌ على «المصنَّف» بلا إعادة تصنيف تُردّ',
+  /filters\.analyzed === 'yes'/.test(
+    readCode('src/lib/analysis/run.ts').match(/requiresExistingAnalysis[\s\S]{0,220}/)?.[0] ?? '',
+  ),
 );
 
 // ══════════════ الصلاحية ══════════════

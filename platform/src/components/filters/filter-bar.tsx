@@ -32,6 +32,8 @@ export interface PostFilterState {
   label: string;
   /** أدنى درجة خطورة — '' يعني بلا حصر */
   minSeverity: string;
+  /** حال التصنيف: '' الكل، 'yes' مصنَّف، 'no' بانتظار التصنيف */
+  analyzed: string;
   language: string;
   topicId: string;
   hashtag: string;
@@ -51,6 +53,7 @@ export const EMPTY_FILTERS: PostFilterState = {
   sentiment: '',
   label: '',
   minSeverity: '',
+  analyzed: '',
   language: '',
   topicId: '',
   hashtag: '',
@@ -84,6 +87,7 @@ export function activeFilterCount(filters: PostFilterState): number {
   if (filters.sentiment) count += 1;
   if (filters.label) count += 1;
   if (filters.minSeverity) count += 1;
+  if (filters.analyzed) count += 1;
   if (filters.language) count += 1;
   if (filters.topicId) count += 1;
   if (filters.hashtag) count += 1;
@@ -116,6 +120,21 @@ export function FilterBar({
 
   function set<K extends keyof PostFilterState>(key: K, value: PostFilterState[K]) {
     onChange({ ...filters, [key]: value });
+  }
+
+  /*
+   * «بانتظار التصنيف» يمسح الوسم والخطورة معه.
+   *
+   * غيرُ المصنَّف بلا وسمٍ ولا درجةٍ بالضرورة، فاجتماعُهما طلبٌ متناقض
+   * جوابُه الصادق صفر. وشاشةٌ تُرجع صفراً عن طلبٍ يبدو معقولاً تُقرأ
+   * عطلاً؛ فيُمسح المتناقض عند الاختيار بدل أن يُترك فخّاً.
+   */
+  function setAnalyzed(value: string) {
+    onChange(
+      value === 'no'
+        ? { ...filters, analyzed: value, label: '', minSeverity: '' }
+        : { ...filters, analyzed: value },
+    );
   }
 
   /*
@@ -372,6 +391,23 @@ export function FilterBar({
           </Select>
 
           {/*
+            حالُ التصنيف أوّلُ الثلاثة.
+
+            «أرني ما لم يُصنَّف بعد» سؤالُ من يشكّ أنّ التصنيف متوقّف —
+            وهو سؤالٌ عن المنصة لا عن المحتوى، فيسبق سؤالَي الخطورة
+            والوسم. وجوابُه عددٌ يراه ينقص بنفسه كلّ بضع دقائق.
+          */}
+          <Select
+            label="حال التصنيف"
+            value={filters.analyzed}
+            onChange={(event) => setAnalyzed(event.target.value)}
+          >
+            <option value="">المصنَّف وغيره</option>
+            <option value="yes">المصنَّف وحده</option>
+            <option value="no">بانتظار التصنيف</option>
+          </Select>
+
+          {/*
             الخطورة قبل الوسم في الترتيب.
 
             «أرني ما خطورته ٤ فأعلى» سؤالُ من يبحث عن خطرٍ لا يعرف شكله
@@ -458,6 +494,18 @@ export function filtersToParams(filters: PostFilterState): Record<string, string
   if (filters.accountId) params.accountId = filters.accountId;
   if (filters.postType) params.postType = filters.postType;
   if (filters.sentiment) params.sentiment = filters.sentiment;
+  /*
+   * ★ وهذه الثلاثة كانت تسقط هنا صامتةً.
+   *
+   *   الوسم والخطورة لهما مربّعان في الشريط، ويُعدّان في «الفلاتر
+   *   المفعّلة»، ويُفهمهما الخادم — ولم يكونا يُرسَلان. فالموظّف يختار
+   *   «خطورة ٤ فأعلى» فيرى الشاشة كما كانت، ويستنتج أن التصنيف لا يعمل.
+   *   وهو عطبٌ لا يظهر في سجلّ ولا في فحص: الطلب ينجح، والجواب صحيحٌ عن
+   *   سؤالٍ لم يُسأل.
+   */
+  if (filters.label) params.label = filters.label;
+  if (filters.minSeverity) params.minSeverity = filters.minSeverity;
+  if (filters.analyzed) params.analyzed = filters.analyzed;
   if (filters.language) params.language = filters.language;
   if (filters.topicId) params.topicId = filters.topicId;
   if (filters.hashtag) params.hashtag = filters.hashtag;
