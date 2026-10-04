@@ -204,6 +204,7 @@ model User {
   createdAccounts    Account[]            @relation("AccountCreatedBy")
   accountAssignments UserAccount[]
   createdKeywords    Keyword[]            @relation("KeywordCreatedBy")
+  searchTopics       SearchTopic[]        @relation("SearchTopicCreatedBy")
   updatedSettings    Setting[]            @relation("SettingUpdatedBy")
 
   assistantConversations AssistantConversation[]
@@ -615,6 +616,19 @@ model Post {
 
   extractionRunId String?
 
+  /// نصّ البحث: النصّ واسم الكاتب والهاشتاغات والكلمات المكتشفة، مطبَّعةً
+  ///
+  /// مكرَّرٌ عن `text`، والتكرار مقصود لسببين:
+  ///
+  ///   المطابقة في البحث كانت على النصّ الخام، والمطابقة عند الاستيراد
+  ///   على المطبَّع — فالكلمة التي ربطت المنشور بكلمةٍ مفتاحية لا يجدها
+  ///   من يكتبها في سطر البحث. و«وزاره» لا تجد «وزارة»، وهي صيغةٌ شائعة
+  ///   في الكتابة السريعة.
+  ///
+  ///   وأربعة حقول كانت تُطابَق بـ`OR` لكلّ حدّ، فمجموعةُ عشرة مرادفات
+  ///   تصير خمسين شرطاً. وجمعُها هنا يجعلها شرطاً واحداً.
+  searchText String?
+
   /// متى مرّ المنشور على التصنيف آخر مرّة — وnull يعني أنه في طابور الانتظار
   ///
   /// مكرَّرٌ عن وجود صفّ `analysis`، والتكرار مقصود: «ما ينتظر التصنيف»
@@ -676,6 +690,8 @@ model Post {
    */
   @@index([mediaKey, mediaAttempts, publishedAt(sort: Desc)])
   @@index([text(ops: raw("gin_trgm_ops"))], type: Gin)
+  /// فهرس ثلاثيّات على نصّ البحث — وهو ما يخدم `contains` فعلاً
+  @@index([searchText(ops: raw("gin_trgm_ops"))], type: Gin)
   @@index([hashtags], type: Gin)
   @@index([detectedKeywords], type: Gin)
   @@map("posts")
@@ -774,6 +790,45 @@ model PostHashtag {
   @@id([postId, hashtagId])
   @@index([hashtagId])
   @@map("post_hashtags")
+}
+
+/// موضوع بحثٍ محفوظ — سطرُ بحثٍ باسمٍ يُنادى به
+///
+/// ★ وهو سطرٌ محفوظ لا جدولُ ارتباط، والفرق جوهريّ.
+///
+///   الكلمةُ المفتاحية (`Keyword`) تُطابَق لحظةَ الاستيراد وتُربط
+///   بالمنشور. وثمنُها أنّ ما أُضيف اليوم لا يرى شيئاً ممّا استُورد
+///   أمس: الموضوع الجديد يبدأ من الصفر، ولا يُجيب عن «ماذا قيل في هذا
+///   الموضوع الشهر الماضي؟» — وهو أوّل سؤالٍ يُسأل في منصّة رصد.
+///
+///   والموضوع هنا استعلامٌ يُنفَّذ وقت السؤال: يُحرَّر فتتغيّر نتائجه
+///   على التاريخ كلّه في اللحظة نفسها، ولا يحتاج مكنسةً تُعيد الربط.
+model SearchTopic {
+  id String @id @default(cuid())
+
+  /// الاسم كما يُنادى به في الفلتر
+  name String @unique
+
+  /// سطر البحث — بقواعد الشاشة نفسها لا بقواعد أخرى
+  ///
+  /// مرادفاتٌ بـ`|`، وعبارةٌ بين علامتَي تنصيص، واستبعادٌ بـ`-`. وهو
+  /// النصّ الذي يُكتب في حقل البحث حين يُختار الموضوع، فيراه الموظّف
+  /// ويعدّله ويفهم لماذا جاءته هذه النتائج.
+  query String
+
+  description String?
+  color       String?
+  status      EntityStatus @default(ACTIVE)
+  sortOrder   Int          @default(0)
+
+  createdById String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  createdBy User? @relation("SearchTopicCreatedBy", fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([status, sortOrder])
+  @@map("search_topics")
 }
 
 model Topic {

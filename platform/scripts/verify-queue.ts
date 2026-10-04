@@ -20,10 +20,14 @@
  */
 import 'dotenv/config';
 import { PrismaPg } from '@prisma/adapter-pg';
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { PrismaClient, type Prisma } from '../src/generated/prisma';
 import { storedFilters, targetWhere } from '../src/lib/analysis/run';
 import { NEWEST_FIRST } from '../src/lib/queries/post-order';
 import { postFiltersSchema } from '../src/lib/validation/posts';
+import { buildPostWhere } from '../src/lib/queries/posts';
+import { buildSearchText } from '../src/lib/analysis/text';
 
 const url = process.env.VERIFY_DATABASE_URL;
 if (!url) {
@@ -82,6 +86,8 @@ async function main() {
               dedupeKey: row.key,
               // كلمةٌ مميّزة لكلٍّ: حدُّ البحث حرفان، والحرف الواحد يُسقَط فيتّسع الفلتر بلا أن يُقال
               text: `منشور ${row.word}`,
+              // كما في الإنتاج: كلّ منشورٍ يُكتب ومعه عمودُ بحثه
+              searchText: buildSearchText({ text: `منشور ${row.word}` }),
               publishedAt: row.publishedAt,
             },
           });
@@ -247,6 +253,147 @@ async function main() {
           'و«مرّ على التصنيف» يطابق وجود صفّ التحليل في القاعدة كلها',
           (stray[0]?.count ?? 0n) === 0n,
           `${stray[0]?.count ?? 0n} منشوراً يقول عمودُه شيئاً ويقول جدولُ التحاليل خلافه — وهو ما يُبقي منشوراً يُصنَّف كلّ دورة بثمنٍ كامل`,
+        );
+
+        // ══════════ البحث: التطبيع والمرادفات ══════════
+
+        /*
+         * ★ قاعدةُ التطبيع مكتوبةٌ في موضعين، فيُشغَّل الموضعُ الحقيقي.
+         *
+         *   الترحيل يملأ `searchText` لكلّ صفٍّ قائم بتعبير SQL، وما
+         *   يُكتب بعده يمرّ بـ`normalizeForSearch` في العُقدة. ولو
+         *   اختلفا لصار نصفُ الجدول مطبَّعاً بقاعدة ونصفُه بأخرى، والبحث
+         *   يجد في أحدهما ولا يجد في الآخر بلا سببٍ ظاهر.
+         *
+         *   ★ ولا يُنسَخ تعبيرُ الترحيل إلى هنا — بل يُقرأ من ملفّه
+         *     ويُشغَّل كما هو. نسخةٌ ثالثة من القاعدة تعني فحصاً يقارن
+         *     نسختين ويترك الثالثة — وهي التي تعمل على قاعدة الإنتاج.
+         *     وقد كُتب هذا الفحص بنسخةٍ أوّلَ مرّة، فأخطأ في `\\s` حيث
+         *     لا تعني في جافاسكربت ما تعنيه في SQL.
+         */
+        const SAMPLES = [
+          'وزارةُ الكهرباءِ تُعلن',
+          'مـــرحبا بالأصدقاء',
+          'المرسوم ١٩ لعام ٢٠٢٦',
+          'المرسوم ۱۹ لعام ۲۰۲۶',
+          'إعلان آخر عن أُسرة',
+          'مسافات    متعدّدة   هنا',
+          'ؤئ همزات مختلفة ى',
+        ];
+
+        for (const [index, sample] of SAMPLES.entries()) {
+          await tx.post.create({
+            data: {
+              id: `vq-n${index}`,
+              accountId: account.id,
+              platformId: platform.id,
+              dedupeKey: `N${index}`,
+              text: sample,
+            },
+          });
+        }
+
+        // جملةُ الملء من ملفّ الترحيل نفسه، لا نسخةً منها
+        const migrationSql = readFileSync(
+          join(process.cwd(), 'prisma/migrations/20261004190000_post_search_text/migration.sql'),
+          'utf8',
+        );
+        const fillStatement =
+          migrationSql.slice(migrationSql.indexOf('UPDATE "posts"')).split(';')[0] ?? '';
+        check(
+          'جملةُ ملء عمود البحث مقروءةٌ من الترحيل',
+          fillStatement.includes('searchText') && fillStatement.includes('translate'),
+          'لو لم تُقرأ لمرّ الفحص على نسخةٍ ثالثة من القاعدة ولم يفحص التي تعمل',
+        );
+        await tx.$executeRawUnsafe(`${fillStatement};`);
+
+        const filled = await tx.post.findMany({
+          where: { dedupeKey: { startsWith: 'N' } },
+          select: { dedupeKey: true, text: true, searchText: true },
+        });
+        const mismatches = filled.filter(
+          (row) => row.searchText !== buildSearchText({ text: row.text }),
+        );
+        check(
+          'وتطبيعُ الترحيل يطابق تطبيع العُقدة حرفاً بحرف',
+          mismatches.length === 0,
+          mismatches
+            .map((row) => `«${row.text}» → SQL «${row.searchText}» · العُقدة «${buildSearchText({ text: row.text })}»`)
+            .join(' | ') || undefined,
+        );
+
+        // ── منشوراتٌ تختبر الاسترجاع فعلاً ──
+
+        const SEARCH_ROWS = [
+          { key: 'E', text: 'انقطاع التيار الكهربائي في الحيّ منذ ساعتين' },
+          { key: 'F', text: 'وزاره الكهرباء تعلن تقنيناً جديداً' },
+          { key: 'G', text: 'المرسوم ١٩ لعام ٢٠٢٦ بشأن المياه' },
+          { key: 'H', text: 'حفلٌ فنّيّ في دار الأوبرا' },
+        ];
+        for (const [index, row] of SEARCH_ROWS.entries()) {
+          await tx.post.create({
+            data: {
+              id: `vq-s${index}`,
+              accountId: account.id,
+              platformId: platform.id,
+              dedupeKey: row.key,
+              text: row.text,
+              publishedAt: d('2026-10-01T09:00:00Z'),
+              searchText: buildSearchText({ text: row.text }),
+            },
+          });
+        }
+
+        const keys = SEARCH_ROWS.map((row) => row.key);
+        async function search(q: string, mode: 'all' | 'any' = 'all'): Promise<string> {
+          const filters = postFiltersSchema.parse({ range: 'all', q, qMode: mode });
+          const found = await tx.post.findMany({
+            where: {
+              AND: [buildPostWhere(filters, null), { dedupeKey: { in: keys } }],
+            },
+            select: { dedupeKey: true },
+            orderBy: { dedupeKey: 'asc' },
+          });
+          return found.map((row) => row.dedupeKey).join('');
+        }
+
+        check(
+          'والبحث يجد ما اختلفت همزتُه وتاؤه',
+          (await search('وزارة')) === 'F',
+          'المنشور كُتب «وزاره»، والمنصّة تطبّع عند الاستيراد — فالكلمة التي ربطته لا يجدها من كتبها',
+        );
+        check(
+          'ويجد الرقم بصوره الثلاث',
+          (await search('19')) === 'G' &&
+            (await search('١٩')) === 'G' &&
+            (await search('۱۹')) === 'G',
+          'لوحات المفاتيح تختلف، ومن بحث بصورةٍ يريد الصور كلّها',
+        );
+        check(
+          'والمرادفات تجمع ما تفرّق لفظه',
+          (await search('كهرباء|كهربائي')) === 'EF',
+          'هذا هو الموضوع: عائلةُ ألفاظٍ واحدة يكفي أحدها',
+        );
+        check(
+          'والشرطان يضيّقان لا يوسّعان',
+          (await search('كهرباء|كهربائي انقطاع|تقنين')) === 'EF',
+        );
+        check(
+          'ومجموعةٌ لا يحقّقها إلا واحد تُرجعه وحده',
+          (await search('كهرباء|كهربائي تقنين')) === 'F',
+        );
+        check(
+          'والاستبعاد يُخرج ما طُلب إخراجه',
+          (await search('كهرباء|كهربائي -تقنين')) === 'E',
+        );
+        check(
+          'و«أيٌّ منها» يُسطّح المجموعات',
+          (await search('كهرباء|كهربائي الأوبرا', 'any')) === 'EFH',
+          'حين يكفي أيٌّ منها يسقط الفرق بين مجموعةٍ ومجموعة',
+        );
+        check(
+          'والعبارة تُطابَق بمسافاتها',
+          (await search('"انقطاع التيار"')) === 'E' && (await search('"تقنين التيار"')) === '',
         );
 
         throw new Rollback();

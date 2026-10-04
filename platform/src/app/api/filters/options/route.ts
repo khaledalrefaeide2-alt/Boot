@@ -11,7 +11,7 @@ export async function GET() {
     // قوائم الفلاتر تكشف أسماء الحسابات، فتُحصر بنطاق المستخدم كذلك
     const scope = await getAccountScope();
 
-    const [platforms, accounts, groups, topics, keywords] = await Promise.all([
+    const [platforms, accounts, groups, topics, keywords, searchTopics] = await Promise.all([
       prisma.platform.findMany({
         // منصة بلا حساب واحد داخل النطاق لا معنى لظهورها في الفلتر،
         // ووجودها وحده يقول إن هناك رصداً عليها لا يراه المستخدم
@@ -50,9 +50,21 @@ export async function GET() {
         select: { id: true, term: true },
         take: 300,
       }),
+      /*
+       * مواضيع البحث لا تُحصر بنطاق المستخدم.
+       *
+       * الموضوع سطرُ بحثٍ لا بيانات: اسمُه وسطرُه لا يكشفان حساباً ولا
+       * منشوراً. والنطاق يُطبَّق على النتيجة لا على الأداة — فمن نطاقه
+       * ثلاثة حسابات يرى الموضوع نفسه ويرى منشورات الثلاثة وحدها.
+       */
+      prisma.searchTopic.findMany({
+        where: { status: 'ACTIVE' },
+        orderBy: [{ sortOrder: 'asc' }, { name: 'asc' }],
+        select: { id: true, name: true, query: true, color: true },
+      }),
     ]);
 
-    return jsonOk({ platforms, accounts, groups, topics, keywords });
+    return jsonOk({ platforms, accounts, groups, topics, keywords, searchTopics });
   } catch (error) {
     return jsonError(error);
   }

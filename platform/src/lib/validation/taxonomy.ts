@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { optionalString, paginationSchema, requiredString } from './common';
 import { entityStatusSchema } from './sources';
+import { parseSearchTerms } from '@/lib/domain/search-terms';
 
 export const createKeywordSchema = z.object({
   term: requiredString('الكلمة المفتاحية', 100),
@@ -27,6 +28,29 @@ export const createTopicSchema = z.object({
 });
 
 export const updateTopicSchema = createTopicSchema.partial().omit({ code: true });
+
+/*
+ * موضوع البحث المحفوظ.
+ *
+ * ★ والسطر يُفحص بالقارئ نفسه لا بطولٍ وحده.
+ *
+ *   سطرٌ كلُّ حدوده من حرفٍ واحد يمرّ فحصَ الطول ثمّ يُقرأ إلى لا شيء،
+ *   فيُحفظ موضوعٌ يُرجع كلّ منشورات المنصّة لمن اختاره. وهو خطأٌ لا
+ *   يظهر عند الحفظ بل بعد أسبوع، في تقريرٍ بناه عليه أحد.
+ */
+export const createSearchTopicSchema = z.object({
+  name: requiredString('اسم الموضوع', 80),
+  query: requiredString('سطر البحث', 500).refine(
+    (value) => parseSearchTerms(value).include.length > 0,
+    'السطر لا يحوي حدّ بحثٍ صالحاً — الحرف الواحد يُسقَط، والاستبعاد وحده لا يَبحث',
+  ),
+  description: optionalString(500),
+  color: optionalString(20),
+  status: entityStatusSchema.default('ACTIVE'),
+  sortOrder: z.coerce.number().int().min(0).max(999).default(0),
+});
+
+export const updateSearchTopicSchema = createSearchTopicSchema.partial();
 
 export const updateHashtagSchema = z.object({
   status: entityStatusSchema,

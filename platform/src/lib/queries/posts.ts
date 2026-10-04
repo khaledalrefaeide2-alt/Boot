@@ -4,6 +4,7 @@ import type { PostFilters } from '@/lib/validation/posts';
 import { resolveDateRange } from '@/lib/validation/common';
 import { intersectScope, type AccountScope } from '@/lib/auth/account-scope';
 import { parseSearchTerms } from '@/lib/domain/search-terms';
+import { normalizeForSearch } from '@/lib/analysis/text';
 
 /** تحويل قيمة قد تكون نصاً أو مصفوفة إلى مصفوفة نظيفة */
 function toArray(value: string | string[] | undefined): string[] {
@@ -122,32 +123,54 @@ export function buildPostWhere(
 }
 
 /**
- * الحقول التي يُطابَق فيها الحدّ الواحد.
+ * الحقل الذي يُطابَق فيه الحدّ الواحد — واحدٌ بعد أن كان خمسة.
  *
- * خمسة مواضع لأنّ الموظّف لا يعرف أين وردت كلمته: في نصّ المنشور، أو في
- * اسم كاتبه، أو في اسم الحساب، أو في هاشتاغ، أو في كلمةٍ اكتشفها النظام.
- * وسؤالُه «أين تبحث؟» قبل أن يبحث نقلٌ للعمل إليه.
+ * كانت: النصّ، واسم الكاتب، واسم الحساب، والهاشتاغ، والكلمة المكتشفة.
+ * وأربعةٌ منها تخصّ المنشور، فجُمعت في `searchText` — عمودٍ مطبَّع عليه
+ * فهرس ثلاثيّات.
  *
- * والمصفوفتان `hashtags` و`detectedKeywords` تُطابَقان بالتساوي التامّ
- * (`has`) لا بالاحتواء: عناصرهما كلماتٌ مفردة مخزّنة كما هي.
+ * ★ والمطابقة مطبَّعةٌ على مطبَّع.
+ *
+ *   كان الحدّ يُطابَق على النصّ الخام، فـ«وزاره» لا تجد «وزارة» —
+ *   والمنصّة نفسها تطبّع عند الاستيراد لتربط الكلمات المفتاحية. فالكلمة
+ *   التي ربطت المنشور لا يجدها من كتبها في الشاشة.
+ *
+ * ★ واسم الحساب خرج من البحث النصّي — وهذا قرارٌ مقيس لا تبسيط.
+ *
+ *   هو في جدولٍ آخر، فشرطُه يُجبر المخطِّط على مسح الجدول كلّه: بوّابةُ
+ *   `OR` بين عمودٍ مفهرس وجدولٍ آخر لا تُبنى بخريطة بتّات. والقياس على
+ *   خمسين ألف منشور — عدُّ نتائج بحثٍ بمرادفين:
+ *
+ *       بفرع اسم الحساب:  Seq Scan · ٣٥١٦ صفحة · ٣٦ مللي ثانية
+ *       بدونه:            Bitmap   ·  ١١٤ صفحة · ٠٫٧ مللي ثانية
+ *
+ *   وثمنُ إخراجه محدود: اسمُ الكاتب داخلٌ في العمود، وهو في صفحات
+ *   المنصّات اسمُ الصفحة نفسه. ومن أراد حساباً بعينه فله فلترُ الحساب —
+ *   والشاشة تقترحه عليه حين يكتب اسماً يطابق حساباً (انظر `filter-bar`)،
+ *   فلا يُترك أمام نتيجةٍ فارغة لا يفهم سببها.
  */
 function searchFields(term: string): Prisma.PostWhereInput[] {
-  return [
-    { text: { contains: term, mode: 'insensitive' } },
-    { authorName: { contains: term, mode: 'insensitive' } },
-    { account: { name: { contains: term, mode: 'insensitive' } } },
-    { hashtags: { has: term.replace(/^#/, '') } },
-    { detectedKeywords: { has: term } },
-  ];
+  return [{ searchText: { contains: normalizeForSearch(term) } }];
+}
+
+/** مجموعةُ مرادفاتٍ تتحقّق بأيّ عنصرٍ منها */
+function groupCondition(group: string[]): Prisma.PostWhereInput {
+  return { OR: group.flatMap(searchFields) };
 }
 
 /**
- * شرط البحث النصّي — حدٌّ واحد أو عدّة حدود.
+ * شرط البحث النصّي — مجموعاتُ مرادفاتٍ لا حدوداً مفردة.
  *
- * ★ الحدّ الواحد يبقى كما كان.
+ * ★ `AND` بين المجموعات و`OR` داخلها — وهذا ما يجعل البحث يبلغ موضوعاً.
  *
- *   `include` بحدٍّ واحد في نمط `all` يعطي `AND: [{ OR: [...] }]` — وهو
- *   عين ما كان يعطيه `OR: [...]`. فالبحث القديم لا يتغيّر سلوكه، ويُضاف
+ *   الموضوع عائلتان من الكلمات تجتمعان: («كهرباء» أو «تيار») مع
+ *   («انقطاع» أو «تقنين»). و«كلّها» تطلب الأربع مجتمعةً فلا تجد شيئاً،
+ *   و«أيّها» تقبل أيّةَ واحدة فتعيد كلّ ما فيه «قطع» من أيّ سياق.
+ *
+ * ★ والحدّ الواحد يبقى كما كان.
+ *
+ *   الكلمة المفردة مجموعةٌ من عنصرٍ واحد، فتعطي `AND: [{ OR: [...] }]` —
+ *   عين ما كان يعطيه البحث القديم. فلا يتغيّر سلوك سطرٍ قديم، ويُضاف
  *   التعدّد فوقه.
  *
  * ★ والاستبعاد نفيٌ لاجتماعها لا اجتماعُ نفيَيْها.
@@ -168,9 +191,10 @@ export function postSearchWhere(
 
   if (parsed.include.length > 0) {
     if (mode === 'any') {
-      where.OR = parsed.include.flatMap(searchFields);
+      // «أيٌّ منها» يُسطّح المجموعات: الفرق بين المجموعة والمجموعة يسقط حين يكفي أيٌّ منها
+      where.OR = parsed.include.flat().flatMap(searchFields);
     } else {
-      where.AND = parsed.include.map((term) => ({ OR: searchFields(term) }));
+      where.AND = parsed.include.map(groupCondition);
     }
   }
 

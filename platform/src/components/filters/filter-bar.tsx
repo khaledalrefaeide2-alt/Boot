@@ -6,7 +6,14 @@ import { Button } from '@/components/ui/button';
 import { Segmented } from '@/components/ui/button-group';
 import { Input, Select } from '@/components/ui/field';
 import { Badge } from '@/components/ui/badge';
-import { hasMultipleTerms, MAX_SEARCH_TERMS, parseSearchTerms } from '@/lib/domain/search-terms';
+import {
+  countTerms,
+  describeGroup,
+  hasMultipleTerms,
+  MAX_SEARCH_GROUPS,
+  MAX_SEARCH_TERMS,
+  parseSearchTerms,
+} from '@/lib/domain/search-terms';
 import { cn } from '@/lib/utils';
 import {
   DATE_RANGES,
@@ -68,6 +75,8 @@ export interface FilterOptions {
   accounts: { id: string; name: string; platformId: string; groupId: string | null }[];
   groups: { id: string; name: string }[];
   topics: { id: string; name: string }[];
+  /** مواضيع البحث المحفوظة — سطرُ بحثٍ باسم */
+  searchTopics: { id: string; name: string; query: string }[];
 }
 
 /** عدد الفلاتر المفعّلة — يُعرض للمستخدم ليعرف لماذا النتائج محدودة */
@@ -168,6 +177,25 @@ export function FilterBar({
   const parsed = parseSearchTerms(searchInput);
   const showTerms = hasMultipleTerms(parsed) || parsed.dropped.length > 0;
 
+  /*
+   * اسمُ حسابٍ كُتب في سطر البحث.
+   *
+   * ★ وهذا ما يحلّ محلّ البحث في اسم الحساب لا إلغاؤه.
+   *
+   *   كان الحدّ يُطابَق في اسم الحساب أيضاً. وهو جدولٌ آخر، فشرطُه يُجبر
+   *   القاعدة على مسح جدول المنشورات كلّه في كلّ بحث — ثلاثون ضعفاً
+   *   مقيسةً على خمسين ألف منشور. فخرج من الاستعلام.
+   *
+   *   وخروجُه صامتاً يترك من كتب «حلب اليوم» أمام نتيجةٍ لا يفهم سببها.
+   *   وقائمة الحسابات محمَّلةٌ في الشاشة أصلاً، فتُطابَق هنا بلا استعلام:
+   *   يُقال له إنّ هناك حساباً بهذا الاسم، ويُعطى زرّاً يُحوّله إلى فلتر
+   *   الحساب — وهو ما كان يريده فعلاً.
+   */
+  const accountHint =
+    searchInput.trim().length >= 2 && !filters.accountId
+      ? options.accounts.find((account) => account.name.includes(searchInput.trim()))
+      : undefined;
+
   /** الضغط يُثبّت الكلمات والنمط معاً — فلا يُطبَّق نمطٌ على كلماتٍ قديمة */
   function apply(mode: PostFilterState['qMode'] = filters.qMode) {
     onChange({ ...filters, q: searchInput.trim(), qMode: mode });
@@ -187,7 +215,7 @@ export function FilterBar({
             <Input
               wrapperClassName="flex-1"
               label="بحث"
-              placeholder="كلمة أو أكثر… «عبارة» بعلامتَي تنصيص، و-كلمة للاستبعاد"
+              placeholder="كلمة أو أكثر… كهرباء|تيار للمرادفات، «عبارة» بعلامتين، و-كلمة للاستبعاد"
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
             />
@@ -195,6 +223,43 @@ export function FilterBar({
               <Search className="h-4 w-4" aria-hidden />
             </Button>
           </form>
+        )}
+
+        {/*
+          الموضوع المحفوظ يكتب سطره في حقل البحث ولا يُطبَّق من خلفه.
+
+          ★ وهذا هو القرار الذي يستحقّ الشرح.
+
+            كان يمكن أن يُرسَل معرّفُ الموضوع إلى الخادم فيقرأ سطره هناك.
+            وثمنُه أنّ الموظّف يرى اسماً ونتائجَ ولا يرى ما بينهما: لا
+            يعرف بأيّ كلماتٍ بُحث، ولا لماذا ظهر منشورٌ لا يخصّ الموضوع،
+            ولا كيف يضيّق بحثه قليلاً دون أن يُحرّر الموضوع على كلّ من
+            يستعمله.
+
+            وكتابةُ السطر في الحقل تجعل الموضوع نقطةَ بداية لا صندوقاً
+            مغلقاً: يراه، ويعدّله لنفسه، ويقرأ من الشرائح ما فُهم منه.
+            ويبقى الرابط صالحاً للمشاركة لأنه يحمل السطر نفسه لا معرّفاً
+            يتغيّر معناه إن حرّره أحد غداً.
+        */}
+        {showSearch && options.searchTopics.length > 0 && (
+          <Select
+            wrapperClassName="w-44"
+            label="موضوع محفوظ"
+            value=""
+            onChange={(event) => {
+              const topic = options.searchTopics.find((item) => item.id === event.target.value);
+              if (!topic) return;
+              setSearchInput(topic.query);
+              onChange({ ...filters, q: topic.query, qMode: 'all' });
+            }}
+          >
+            <option value="">اختر موضوعاً…</option>
+            {options.searchTopics.map((topic) => (
+              <option key={topic.id} value={topic.id}>
+                {topic.name}
+              </option>
+            ))}
+          </Select>
         )}
 
         <Select
@@ -288,15 +353,41 @@ export function FilterBar({
         فالبحث بكلمةٍ واحدة — وهو أكثر ما يقع — يبقى كما كان بلا زيادة،
         ولا يُعرض خيار نمطٍ لا معنى له على كلمةٍ واحدة.
       */}
+      {showSearch && accountHint && (
+        <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-2 text-2xs">
+          <span className="text-muted-foreground">
+            «{accountHint.name}» اسمُ حسابٍ مرصود — والبحث النصّي يبحث في المنشورات لا في أسماء
+            الحسابات.
+          </span>
+          <button
+            type="button"
+            className="font-medium text-primary hover:underline"
+            onClick={() => {
+              setSearchInput('');
+              onChange({ ...filters, q: '', accountId: accountHint.id });
+            }}
+          >
+            اعرض منشورات هذا الحساب
+          </button>
+        </div>
+      )}
+
       {showSearch && showTerms && (
         <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border px-4 py-2.5">
           <span className="text-2xs text-muted-foreground">يُبحث عن:</span>
 
           <ul className="flex flex-wrap items-center gap-1.5">
-            {parsed.include.map((term) => (
-              <li key={`in-${term}`}>
+            {/*
+              المجموعة شريحةٌ واحدة تقول «كهرباء أو تيار».
+
+              لا شريحةً لكل مرادف: الشرائح المتجاورة تُقرأ شروطاً مجتمعة
+              — وهو عكس معنى المجموعة تماماً. والمرادفات داخل شريحةٍ
+              واحدة بـ«أو» بينها تقول ما تعنيه بلا سطر شرح.
+            */}
+            {parsed.include.map((group) => (
+              <li key={`in-${group.join('|')}`}>
                 <Badge tone="primary" size="sm">
-                  {term}
+                  {describeGroup(group)}
                 </Badge>
               </li>
             ))}
@@ -322,9 +413,14 @@ export function FilterBar({
             </span>
           )}
 
-          {parsed.include.length + parsed.exclude.length >= MAX_SEARCH_TERMS && (
+          {countTerms(parsed) >= MAX_SEARCH_TERMS && (
             <span className="num text-2xs text-warning">
-              الحدّ الأقصى {MAX_SEARCH_TERMS} كلمات
+              الحدّ الأقصى {MAX_SEARCH_TERMS} كلمة
+            </span>
+          )}
+          {parsed.include.length >= MAX_SEARCH_GROUPS && (
+            <span className="num text-2xs text-warning">
+              الحدّ الأقصى {MAX_SEARCH_GROUPS} شروط
             </span>
           )}
 

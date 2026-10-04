@@ -1,7 +1,7 @@
 import 'server-only';
 import { prisma } from '@/lib/db';
 import { classifyTopic, detectKeywords, parseTopicRules } from '@/lib/analysis/classify';
-import { normalizeArabic } from '@/lib/analysis/text';
+import { buildSearchText, normalizeArabic } from '@/lib/analysis/text';
 import type { MappedPost } from '@/lib/apify/mappers';
 
 export interface ImportResult {
@@ -180,6 +180,16 @@ export async function importPosts(
         extractionRunId: context.extractionRunId,
       };
 
+      /*
+       * نصّ البحث يُحسب هنا لا في مكنسةٍ بعدها.
+       *
+       * وهو مشتقٌّ من أربعة حقولٍ في `data` نفسه، فيُكتب معها في الكتابة
+       * الواحدة — إنشاءً كان أو تحديثاً. ولو حُسب في مسارٍ ثانٍ لوُجد
+       * منشورٌ نصُّه محدَّث وعمودُ بحثه قديم: يُعثر عليه بكلمةٍ حذفها
+       * صاحبه، ولا يُعثر عليه بكلمةٍ أضافها.
+       */
+      const searchText = buildSearchText(data);
+
       let postId: string;
 
       if (existing) {
@@ -195,7 +205,7 @@ export async function importPosts(
          */
         const updated = await prisma.post.update({
           where: { id: existing.id },
-          data,
+          data: { ...data, searchText },
           select: { id: true },
         });
         postId = updated.id;
@@ -204,6 +214,7 @@ export async function importPosts(
         const created = await prisma.post.create({
           data: {
             ...data,
+            searchText,
             accountId: context.accountId,
             platformId: context.platformId,
             dedupeKey: post.dedupeKey,
