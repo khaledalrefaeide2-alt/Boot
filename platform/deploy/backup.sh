@@ -13,7 +13,12 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 DC="./deploy/dc.sh"   # مصدر واحد لأمر compose — انظر dc.sh
-KEEP_DAYS="${BACKUP_KEEP_DAYS:-14}"
+# ★ سبعة أيام لا أربعة عشر.
+#
+#   النسخة بصيغة custom مضغوطةٌ أصلاً، ومع ذلك بلغت ٤٨٠ ميجابايت للواحدة
+#   على قاعدةٍ من ثلاثة جيجابايت. وأربع عشرة نسخة = ٦٫٧ جيجا — أكثر من
+#   ضعفَي ما تحرسه. وسبعةُ أيام تكفي لاكتشاف أيّ عطبٍ يستحقّ الرجوع.
+KEEP_DAYS="${BACKUP_KEEP_DAYS:-7}"
 STAMP="$(date +%Y%m%d-%H%M%S)"
 FILE="monitoring-${STAMP}.dump"
 

@@ -1,0 +1,17 @@
+{
+  "builder": {
+    "gc": {
+      "enabled": true,
+      "defaultKeepStorage": "4GB",
+      "policy": [
+        { "keepStorage": "1GB", "filter": ["unused-for=48h"] },
+        { "keepStorage": "4GB", "all": true }
+      ]
+    }
+  },
+  "log-driver": "json-file",
+  "log-opts": {
+    "max-size": "20m",
+    "max-file": "3"
+  }
+}
