@@ -75,7 +75,13 @@ async function main() {
     cursor = result.cursor;
 
     console.log(`   ${processed} منشوراً · ${inserted} مقطعاً`);
-    if (result.cursor === null) break;
+    /*
+     * المؤشّر شرطُ التقدّم في إعادة الفهرسة الكاملة وحدها.
+     *
+     * أمّا الطابور الناقص فمجموعةٌ تضيق بالعمل نفسه، فلا مؤشّر له —
+     * ووقوفُه عند `cursor === null` كان سيُنهي الحلقة بعد دفعةٍ واحدة.
+     */
+    if (all && result.cursor === null) break;
   }
 
   console.log(`\n✓ اكتمل: ${processed} منشوراً، ${inserted} مقطعاً، ${skipped} بلا نصّ\n`);

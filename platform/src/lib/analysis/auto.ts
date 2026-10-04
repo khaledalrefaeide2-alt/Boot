@@ -53,10 +53,18 @@ export type SweepOutcome =
  */
 export async function pendingCount(since: Date | null): Promise<number> {
   return prisma.post.count({
-    // بلا شرط النصّ: المنشور المصوَّر يُصنَّف من صورته، وما لا مادّة فيه تُسجَّل إحالته
+    /*
+     * بلا شرط النصّ: المنشور المصوَّر يُصنَّف من صورته، وما لا مادّة فيه
+     * تُسجَّل إحالته.
+     *
+     * و`analyzedAt: null` لا `analysis: { is: null }` — والفرق في الثمن
+     * لا في المعنى: الثاني ضمٌّ معاكس على جدول التحاليل يُقرأ كلّ خمس
+     * دقائق على جدولٍ من عشرات الآلاف، والأول بادئةُ فهرسٍ تضيق كلّما
+     * صُنّف منشور. والعمودان يُكتبان في معاملة واحدة فلا يفترقان.
+     */
     where: {
       isHidden: false,
-      analysis: { is: null },
+      analyzedAt: null,
       ...(since ? { createdAt: { gte: since } } : {}),
     },
   });

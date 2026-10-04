@@ -384,20 +384,21 @@ check(
 check('وتسم جولاتها AUTO', /trigger: 'AUTO'/.test(auto));
 
 /*
- * ★ الجولة تبدأ بالأحدث لا بالأقدم.
+ * ★ الجولة تبدأ بالأحدث لا بالأقدم — والترتيب مستورَد لا مكتوب.
  *
- *   معرّفات cuid مرتّبةٌ زمنياً، فـ`id: 'asc'` يعني «ابدأ بأقدم منشور في
- *   القاعدة». ومع متراكمٍ من عشرات الآلاف يقف منشور اليوم في آخر صفٍّ
- *   طوله أسابيع — والمكنسة تصنّف ٢٠٠ كلّ خمس دقائق بسقف ٣٠٠٠ يومياً.
+ *   كان هذا التوكيد يبحث عن `orderBy: { id: 'desc' }` نصّاً، وهو قياسُ
+ *   الحرف لا الأثر: يمرّ على شيفرةٍ ترتيبها عشوائيّ تماماً لو بُدّل
+ *   مولّد المعرّفات، ويفشل على شيفرةٍ صحيحة كتبت الترتيب بصيغةٍ أخرى.
  *
- *   ولا يظهر ذلك في فحص: الجولات تنجح والعدّادات تتقدّم والسجلّ نظيف.
- *   وإنّما تُفتح اللوحة فتُرى منشورات اليوم «غير محسومة» فيُظنّ التصنيف
- *   معطّلاً. وقد وقع فعلاً.
+ *   والأثر يُقاس في `verify:queue` على قاعدةٍ حقيقية بمعرّفاتٍ معكوسةٍ
+ *   عمداً عن تواريخ النشر. وما يُقاس هنا شيءٌ آخر: أنّ الترتيب واحدٌ
+ *   مستورَد لا جملةٌ تُكتب في كل مكنسة من جديد — فقد كُتب ثلاث مرّات
+ *   وانكسر ثلاث مرّات.
  */
 check(
-  'والجولة تبدأ بالأحدث',
-  /orderBy: \{ id: 'desc' \}/.test(run),
-  'cuid مرتّبة زمنياً — و`asc` يعني «ابدأ بأقدم منشور في القاعدة»',
+  'والجولة تبدأ بالأحدث من تعريفٍ واحد',
+  /NEWEST_FIRST/.test(run) && !/orderBy: \{ id: '(asc|desc)' \}/.test(run),
+  'ترتيبٌ مكتوبٌ في موضعه ينكسر وحده ولا يكشفه شيء',
 );
 check('ولا تنسبها إلى مستخدم', /requestedById: null/.test(auto));
 
@@ -1104,15 +1105,35 @@ check(
  */
 
 const runCode = readCode('src/lib/analysis/run.ts');
+const orderCode = readCode('src/lib/queries/post-order.ts');
+
+/*
+ * ترتيب الطابور يُعرَّف مرّةً ويُستورَد — وهذا ما يُفحص هنا.
+ *
+ * أمّا أنّه يعمل فعلاً فيُفحص في `verify:queue` على قاعدة حقيقية: هناك
+ * تُدخَل منشوراتٌ معرّفاتُها معكوسةٌ عن تواريخ نشرها، فيسقط الفحص إن
+ * اتّبع الترتيبُ المعرّفَ مهما قال نصّ الشيفرة.
+ */
 check(
-  'جولة التحليل تبدأ بالأحدث لا بالأقدم',
-  /orderBy:\s*\{\s*id:\s*'desc'\s*\}/.test(runCode),
-  "orderBy: { id: 'desc' } غير موجود في حلقة الدفعات — الترتيب التصاعدي يترك منشور اليوم آخر الصفّ",
+  'ترتيب الطابور يُقاس بوقت النشر لا بالمعرّف',
+  /\{ publishedAt: 'desc' \}/.test(orderCode),
+  'المعرّف يُرتَّب زمنياً بالصدفة لا بالتصميم — وcuid2 وuuid v4 غير مرتَّبين عمداً',
 );
 check(
-  'ولا أثر لترتيبٍ تصاعديّ بالمعرّف',
-  !/orderBy:\s*\{\s*id:\s*'asc'\s*\}/.test(runCode),
+  'وهو ترتيبٌ تامّ فلا يتأرجح صفّان متساويان',
+  /\{ createdAt: 'desc' \}/.test(orderCode) && /\{ id: 'desc' \}/.test(orderCode),
 );
+for (const [label, path] of [
+  ['جولة التحليل', 'src/lib/analysis/run.ts'],
+  ['مكنسة الفهرسة الدلالية', 'src/lib/assistant/indexer.ts'],
+  ['سكربت التصنيف', 'scripts/analyze-posts.ts'],
+] as const) {
+  check(
+    `و${label} تستورده ولا تكتب ترتيبها`,
+    /NEWEST_FIRST/.test(readCode(path)),
+    'الترتيب المكتوب في موضعه انكسر ثلاث مرّات في ثلاثة مواضع',
+  );
+}
 
 const coverage = read(
   'prisma/migrations/20261004120000_analysis_full_coverage/migration.sql',
@@ -1206,12 +1227,13 @@ check(
 
 const queryCode = readCode('src/lib/queries/posts.ts');
 check(
-  'و«بانتظار التصنيف» يُترجَم إلى غياب صفّ التحليل',
-  /filters\.analyzed === 'no'[\s\S]{0,120}analysis = \{ is: null \}/.test(queryCode),
+  'و«بانتظار التصنيف» يُترجَم إلى عمود الطابور',
+  /filters\.analyzed === 'no'[\s\S]{0,160}analyzedAt = null/.test(queryCode),
+  'الضمّ المعاكس على جدول التحاليل يقرأ الجدول كلّه — والشاشة تسأل سؤال المكنسة فتستحقّ فهرسها',
 );
 check(
   'و«المصنَّف وحده» لا يُسقط شرطَي الوسم والخطورة',
-  /filters\.analyzed === 'yes' \|\| Object\.keys\(analysisWhere\)\.length > 0/.test(queryCode),
+  /filters\.analyzed === 'yes'[\s\S]{0,200}analysis = \{ is: analysisWhere \}/.test(queryCode),
 );
 /*
  * ★ والطلب المتناقض يُرجع فراغاً صريحاً لا نتيجةً أوسع.
@@ -1233,6 +1255,73 @@ check(
   /filters\.analyzed === 'yes'/.test(
     readCode('src/lib/analysis/run.ts').match(/requiresExistingAnalysis[\s\S]{0,220}/)?.[0] ?? '',
   ),
+);
+
+// ══════════════ عمود الطابور ══════════════
+
+/*
+ * `analyzedAt` تكرارٌ مقصود عن وجود صفّ التحليل، وثمنُ كلّ تكرار أن
+ * يفترق الاثنان يوماً. فيُفحص موضع كتابته ومعاملتُه ومَلؤه من القديم.
+ */
+const persistCode = readCode('src/lib/analysis/persist.ts');
+check(
+  'خروج المنشور من الطابور يُكتب مع صفّ التحليل',
+  /analyzedAt: new Date\(\)/.test(persistCode),
+);
+check(
+  'وفي المعاملة نفسها لا بعدها',
+  /tx\.post\.update\(\{[\s\S]{0,160}analyzedAt: new Date\(\)/.test(persistCode),
+  'كتابةٌ خارج المعاملة تترك منشوراً له تحليلٌ وهو في الطابور — يُصنَّف كل دورة بثمنٍ كامل',
+);
+check(
+  'والخروج غير مشروط بخلاف كتابة الحكم',
+  /tx\.post\.update\(\{[\s\S]{0,200}analyzedAt[\s\S]{0,400}NOT: \{ sentimentSource: 'MANUAL' \}/.test(
+    persistCode,
+  ),
+  'لو جُمعا لبقي منشورٌ صحّحه إنسانٌ في الطابور إلى الأبد',
+);
+
+const queueMigration = read(
+  'prisma/migrations/20261004160000_analysis_queue/migration.sql',
+);
+check('الترحيل يضيف العمود', /ADD COLUMN "analyzedAt"/.test(queueMigration));
+check(
+  'ويملؤه من جدول التحاليل القائم',
+  /UPDATE "posts"[\s\S]{0,300}FROM "post_analyses"/.test(queueMigration),
+  'بلا ملءٍ يُقرأ كلّ منشورٍ مصنَّف كأنه منتظر، فيُصنَّف الأرشيف كلّه مرّةً ثانية بثمنٍ ثانٍ',
+);
+check(
+  'ويملؤه من `updatedAt` لا `createdAt`',
+  /= a\."updatedAt"/.test(queueMigration),
+  'العمود معناه «آخر مرّة مرّ فيها على التصنيف» — وعليه يقوم حدّ إعادة التصنيف',
+);
+check(
+  'والفهرس يحمل الطابور وترتيبَه معاً',
+  /CREATE INDEX[\s\S]{0,120}"analyzedAt", "publishedAt" DESC/.test(queueMigration),
+  'بادئةُ الطابور وحدها بلا ترتيبٍ داخلها تعني فرزاً لكلّ ما ينتظر في كل دورة',
+);
+check(
+  'والمخطّط يعرفه فلا يُسقطه ترحيلٌ لاحق',
+  /@@index\(\[analyzedAt, publishedAt\(sort: Desc\)\]\)/.test(read('prisma/schema.prisma')),
+  'فهرسٌ في SQL وحده يحذفه أوّل `prisma migrate dev` بلا أن ينتبه أحد',
+);
+
+// ── الحلقة تمشي بالطابور لا بمؤشّر ──
+
+check(
+  'حلقة الجولة بلا مؤشّر — الطابور يُفرِغ نفسه',
+  !/cursor: \{ id: cursor \}/.test(runCode),
+  'المؤشّر يفترض مجموعةً ثابتة، والطابور يتغيّر تحته: ما يُصنَّف يخرج وما يَرِد يدخل',
+);
+check(
+  'والمتعثّر يُستبعد فلا تدور الحلقة عليه',
+  /failedIds\.add\(post\.id\)/.test(runCode) && /notIn: \[\.\.\.failedIds\]/.test(runCode),
+  'المتعثّر لا يخرج من الطابور، فيعود في رأس الدفعة التالية بلا نهاية',
+);
+check(
+  'وشروط الجولة تُركَّب بـAND لا بنشر الكائنات',
+  /return \{ AND: conditions \};/.test(runCode),
+  'النشر يجعل مفتاحاً يمحو مفتاحاً مثله: شرطُ الإعادة و`OR` البحث النصّي كلاهما OR',
 );
 
 // ══════════════ الصلاحية ══════════════

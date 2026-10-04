@@ -3,6 +3,7 @@ import type { Prisma } from '@/generated/prisma';
 import { prisma } from '@/lib/db';
 import { buildPostWhere } from '@/lib/queries/posts';
 import { postFiltersSchema, type PostFilters } from '@/lib/validation/posts';
+import { NEWEST_FIRST } from '@/lib/queries/post-order';
 import type { AccountScope } from '@/lib/auth/account-scope';
 import { enqueueAnalysis, removeAnalysisJob } from '@/lib/queue';
 import { notifyOperators } from '@/lib/notifications';
@@ -83,7 +84,7 @@ export const MAX_RUN_LIMIT = 20_000;
 export const DEFAULT_RUN_LIMIT = 500;
 
 /** ما يُحفظ في عمود `filters` — الفلاتر ونطاق طالبها وحدُّ الاستخراج معاً */
-interface StoredFilters {
+export interface StoredFilters {
   filters: PostFilters;
   scope: string[] | null;
   /**
@@ -177,25 +178,33 @@ function readStored(value: Prisma.JsonValue | null): StoredFilters {
  *   ويُقرأ «لا منشورات تطابق» فيظنّ صاحبه أن لا شيء بهذه المواصفات، وفي
  *   القاعدة آلاف. فيُردّ الطلب صراحةً في `createAnalysisRun` بدل أن يمرّ.
  */
-function analysisCondition(
-  base: Prisma.PostWhereInput,
-  stored: StoredFilters,
-  reanalyze: boolean,
-): Prisma.PostWhereInput {
-  const fromFilters =
-    base.analysis && typeof base.analysis === 'object' && 'is' in base.analysis
-      ? (base.analysis.is as Prisma.PostAnalysisWhereInput | null)
-      : null;
+function analysisCondition(stored: StoredFilters, reanalyze: boolean): Prisma.PostWhereInput {
+  /*
+   * ★ حدُّ «صُنّف قبل» انتقل من صفّ التحليل إلى عمود المنشور.
+   *
+   *   كان `analysis.updatedAt < X` — شرطاً على جدولٍ آخر، لا فهرس يخدمه
+   *   ولا يجتمع مع ترتيب الطابور في مسحٍ واحد. وصار `analyzedAt` عموداً
+   *   على المنشور نفسه يحمله الفهرس الذي يحمل الطابور. ومعناه لم يتغيّر:
+   *   آخر مرّة مرّ فيها المنشور على التصنيف.
+   */
+  if (!reanalyze) return { analyzedAt: null };
 
-  const before = stored.analyzedBefore
-    ? { updatedAt: { lt: new Date(stored.analyzedBefore) } }
-    : null;
-
-  if (fromFilters || before) {
-    return { analysis: { is: { ...(fromFilters ?? {}), ...(before ?? {}) } } };
-  }
-  // ما لم تُطلب الإعادة، تُتخطّى المنشورات التي لها تحليل سابق
-  return reanalyze ? {} : { analysis: { is: null } };
+  /*
+   * ★ وجولةُ الإعادة تحمل حدّاً زمنياً دائماً — ولو لم يطلبه أحد.
+   *
+   *   هذا ما يجعل الطابور يُفرِغ نفسه بلا مؤشّر. المنشور الذي أُعيد
+   *   تصنيفه الآن صار `analyzedAt` عنده «الآن»، فخرج من شرط «ما صُنّف
+   *   قبل لحظة بدء الجولة» — أي خرج من الطابور بفعل العمل نفسه.
+   *
+   *   وبلا هذا الحدّ يبقى بعد معالجته، فتقرؤه الدفعة التالية من جديد:
+   *   جولةٌ على خمسين ألفاً تُعيد تصنيف الخمسة والعشرين الأُوَل مراراً
+   *   حتى يبلغ العدّاد سقفه. والمؤشّر كان يستر هذا، ويستر معه أنّ
+   *   الترتيب غير مضمون.
+   *
+   *   والمنتظرون يدخلون معهم: `null` لا يصمد أمام `<`، فيُذكرون صراحةً.
+   */
+  const before = new Date(stored.analyzedBefore ?? Date.now());
+  return { OR: [{ analyzedAt: null }, { analyzedAt: { lt: before } }] };
 }
 
 /** هل تحصر الفلاتر الجولةَ في منشوراتٍ لها تحليل؟ */
@@ -204,32 +213,51 @@ export function requiresExistingAnalysis(filters: PostFilters): boolean {
   return Boolean(filters.label || filters.minSeverity || filters.analyzed === 'yes');
 }
 
-function targetWhere(stored: StoredFilters, reanalyze: boolean): Prisma.PostWhereInput {
-  const base = buildPostWhere(stored.filters, stored.scope);
-  return {
-    ...base,
-    /*
-     * حدّ الاستخراج — يُجمَّد لحظة الطلب كالنطاق.
-     *
-     * لو قُرئ «بداية اليوم» عند التنفيذ لاختلف الجواب عن لحظة الطلب:
-     * جولةٌ أُنشئت الساعة ١١:٥٩ مساءً وبدأ العامل بها بعد دقيقتين تجد
-     * نفسها أمام مجموعةٍ أخرى — تُعدّ ألفاً وتصنّف عشرة. فالقيمة تُحسب
-     * مرّةً وتُحفظ، والعدّ والتنفيذ يقرآن المحفوظ نفسه.
-     */
-    ...(stored.createdSince ? { createdAt: { gte: new Date(stored.createdSince) } } : {}),
-    /*
-     * المنشور بلا نصّ يدخل الجولة.
-     *
-     * وكان يُستثنى بـ`text: { not: null }` — فصفحةٌ تنشر صورةً واحدة تحمل
-     * كلّ الكلام تبقى «غير محسومة» إلى الأبد، وهي أوضح ما في اللوحة.
-     * وطبقةُ الحفظ اليوم تقرأ صورته المخزَّنة وتصنّف منها، فإن لم تجد
-     * سجّلت إحالةً إلى المراجعة — ولا يبقى منشورٌ بلا صفّ مهما كان حاله.
-     *
-     * وهو شرطُ أن يبلغ عدّاد «ما ينتظر التصنيف» صفراً يوماً ما: منشورٌ
-     * لا يُصنَّف ولا يُوسَم يُقرأ في كل دورة إلى الأبد.
-     */
-    ...analysisCondition(base, stored, reanalyze),
-  };
+/**
+ * شرط المنشورات المشمولة بالجولة.
+ *
+ * ومُصدَّرٌ ليُفحص: ترتيب الطابور وحدوده هي ما انكسر ثلاث مرّات، وفحصُه
+ * على قاعدة حقيقية (`verify:queue`) لا يصحّ من خلف واجهةٍ تُخفيه.
+ */
+export function targetWhere(stored: StoredFilters, reanalyze: boolean): Prisma.PostWhereInput {
+  /*
+   * ★ التركيب بـ`AND` لا بنشر الكائنات.
+   *
+   *   كانت الشروط تُنشر في كائنٍ واحد (`{ ...base, ...cond }`)، وهو ما
+   *   يجعل مفتاحاً يكتب فوق مفتاحٍ مثله صامتاً. وقد وقع ذلك هنا مرّتين:
+   *   مرّةً حين كتب شرطُ التحليل فوق فلتر الوسم، ومرّةً كادت أن تقع حين
+   *   صار لشرط الإعادة `OR` — وللبحث النصّي `OR` أيضاً، فكان أحدهما
+   *   سيمحو الآخر: جولةٌ على «كلمةٍ بعينها» تصير جولةً على كلّ شيء، بلا
+   *   أن يقول شيءٌ إنّ الكلمة سقطت.
+   *
+   *   و`AND` لا يحتمل ذلك: كلّ شرطٍ قائمٌ بذاته، ولا يُلغي جارَه مهما
+   *   تشابهت مفاتيحهما.
+   */
+  const conditions: Prisma.PostWhereInput[] = [buildPostWhere(stored.filters, stored.scope)];
+
+  /*
+   * حدّ الاستخراج — يُجمَّد لحظة الطلب كالنطاق.
+   *
+   * لو قُرئ «بداية اليوم» عند التنفيذ لاختلف الجواب عن لحظة الطلب:
+   * جولةٌ أُنشئت الساعة ١١:٥٩ مساءً وبدأ العامل بها بعد دقيقتين تجد
+   * نفسها أمام مجموعةٍ أخرى — تُعدّ ألفاً وتصنّف عشرة. فالقيمة تُحسب
+   * مرّةً وتُحفظ، والعدّ والتنفيذ يقرآن المحفوظ نفسه.
+   */
+  if (stored.createdSince) {
+    conditions.push({ createdAt: { gte: new Date(stored.createdSince) } });
+  }
+
+  /*
+   * المنشور بلا نصّ يدخل الجولة.
+   *
+   * وكان يُستثنى بـ`text: { not: null }` — فصفحةٌ تنشر صورةً واحدة تحمل
+   * كلّ الكلام تبقى «غير محسومة» إلى الأبد، وهي أوضح ما في اللوحة.
+   * وطبقةُ الحفظ اليوم تقرأ صورته المخزَّنة وتصنّف منها، فإن لم تجد
+   * سجّلت إحالةً إلى المراجعة — ولا يبقى منشورٌ بلا صفّ مهما كان حاله.
+   */
+  conditions.push(analysisCondition(stored, reanalyze));
+
+  return { AND: conditions };
 }
 
 /** عدد المنشورات التي ستشملها جولة بهذه الفلاتر */
@@ -500,7 +528,18 @@ export async function executeAnalysisRun(runId: string): Promise<void> {
 
   const counters: Counters = { done: 0, failed: 0, negative: 0, review: 0, flagged: 0 };
   let consecutiveFailures = 0;
-  let cursor: string | undefined;
+  /*
+   * المتعثّرون يُستبعدون من القراءة التالية.
+   *
+   * الطابور يُفرِغ نفسه لأنّ المعالجة تُخرج المنشور منه. والمتعثّر لا
+   * تُخرجه: يبقى `analyzedAt` فارغاً، فيعود في رأس الدفعة التالية بلا
+   * نهاية — وتُنفق الجولة كلّها على منشورٍ واحدٍ لا ينجح.
+   *
+   * فيُحفظ معرّفه هنا ويُستبعد. والقائمة في الذاكرة لا في القاعدة: هي
+   * شأن هذه الجولة وحدها، والجولة التالية تستحقّ أن تحاول من جديد — فقد
+   * يكون التعثّر انقطاعاً عابراً عند المزوّد.
+   */
+  const failedIds = new Set<string>();
   let stopReason: string | null = null;
   let cancelled = false;
 
@@ -527,34 +566,35 @@ export async function executeAnalysisRun(runId: string): Promise<void> {
       }
 
       /*
-       * ★ الأحدث أوّلاً، لا الأقدم.
+       * ★ طابورٌ يُفرِغ نفسه — لا مؤشّرٌ يمشي على جدول.
        *
-       *   كان الترتيب `id: 'asc'`، ومعرّفات cuid مرتّبةٌ زمنياً — فكانت
-       *   الجولة تبدأ بأقدم منشور في القاعدة. ومع متراكمٍ من عشرات
-       *   الآلاف، يقف منشور اليوم في آخر صفٍّ طوله أسابيع: المكنسة تصنّف
-       *   ٢٠٠ كلّ خمس دقائق بسقف ٣٠٠٠ يومياً، فخمسون ألفاً تحتاج أكثر من
-       *   أسبوعين قبل أن تبلغ ما وصل اليوم.
+       *   كانت الحلقة تمشي بمؤشّر (`cursor`) على ترتيب المعرّف. وفي ذلك
+       *   عطبان اثنان، كلاهما صامت:
        *
-       *   ولا يظهر العطب في أيّ فحص: الجولات تنجح، والعدّادات تتقدّم،
-       *   والسجلّ نظيف. وإنّما يفتح صاحب المنصة لوحته فيجد منشورات اليوم
-       *   «غير محسومة» — وهي أوّل ما يُنظر فيه — فيظنّ التصنيف معطّلاً.
+       *   الأول أنّ الترتيب كان `id` — وهو يصلح لأنّ cuid يبدأ بطابع
+       *   زمني، وهي خاصّةٌ عَرَضية. فمن بدّل مولّد المعرّفات يوماً يحصل
+       *   على ترتيبٍ عشوائي ولا يفشل شيء ولا يقول شيءٌ ما جرى.
        *
-       *   وحدُّ `analysis.startDate` يحصر المرشّحين فيُخفّف الأثر، وهذا
-       *   يحسمه: ما وصل اليوم يُصنَّف اليوم، مهما كان خلفه.
+       *   والثاني أنّ المؤشّر يفترض مجموعةً ثابتة، والمجموعة هنا تتغيّر
+       *   تحت يده: ما يُصنَّف يخرج منها، وما يَرِد أثناء الجولة يدخلها.
+       *   فالمؤشّر يتخطّى الوارد الجديد إلى نهاية الجولة — وهو بالضبط ما
+       *   تقوم عليه المكنسة.
        *
-       * والمؤشّر يبقى على `id` فيثبت الترقيم: الترتيب بحقلٍ والمؤشّر
-       * بآخر يُكرّر صفوفاً ويُسقط أخرى.
+       *   والطابور اليوم شيءٌ قائم: `analyzedAt IS NULL` عمودٌ عليه
+       *   فهرس. والمعالجة تُخرج المنشور منه، فالقراءة التالية «أوّل
+       *   خمسةٍ وعشرين في الطابور» تجد ما بعدهم بلا مؤشّر — ويدخل معهم
+       *   ما وَرَد قبل لحظة، في موضعه الصحيح من الترتيب لا في آخر الصفّ.
+       *
+       * والترتيب مستورَد لا مكتوب هنا — انظر `NEWEST_FIRST`.
        */
       const posts = await prisma.post.findMany({
-        where,
+        where: failedIds.size > 0 ? { AND: [where, { id: { notIn: [...failedIds] } }] } : where,
         select: { id: true, text: true },
-        orderBy: { id: 'desc' },
+        orderBy: NEWEST_FIRST,
         take: Math.min(BATCH_SIZE, run.total - processed),
-        ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
       });
 
       if (posts.length === 0) break;
-      cursor = posts[posts.length - 1]!.id;
 
       for (const post of posts) {
         /*
@@ -574,6 +614,7 @@ export async function executeAnalysisRun(runId: string): Promise<void> {
         } catch (error) {
           counters.failed += 1;
           consecutiveFailures += 1;
+          failedIds.add(post.id);
           console.error(
             `[analysis] فشل تحليل ${post.id}:`,
             error instanceof Error ? error.message : error,

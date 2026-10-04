@@ -12,6 +12,7 @@
 import 'dotenv/config';
 import { prisma } from '../src/lib/db';
 import { analyzeAndSave } from '../src/lib/analysis/persist';
+import { NEWEST_FIRST } from '../src/lib/queries/post-order';
 import { MISSING_KEY_MESSAGE, getAssistantConfig } from '../src/lib/assistant/config';
 
 function arg(name: string): string | undefined {
@@ -49,16 +50,23 @@ async function main() {
       where: {
         text: { not: null },
         ...(since ? { publishedAt: { gte: since } } : {}),
-        ...(all ? {} : { analysis: { is: null } }),
+        ...(all ? {} : { analyzedAt: null }),
       },
       select: { id: true, text: true },
-      orderBy: { id: 'asc' },
+      /*
+       * الأحدث أوّلاً كسائر المكانس — انظر `NEWEST_FIRST`.
+       *
+       * والمؤشّر لإعادة التصنيف الكاملة وحدها: الطابور الناقص مجموعةٌ
+       * تضيق بالعمل، وترتيبٌ بحقلٍ ومؤشّرٌ بـ`id` يُكرّر صفوفاً ويُسقط
+       * أخرى.
+       */
+      orderBy: all ? [{ id: 'desc' }] : NEWEST_FIRST,
       take,
-      ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+      ...(all && cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     });
 
     if (posts.length === 0) break;
-    cursor = posts[posts.length - 1]!.id;
+    cursor = all ? posts[posts.length - 1]!.id : undefined;
 
     for (const post of posts) {
       const text = (post.text ?? '').trim();

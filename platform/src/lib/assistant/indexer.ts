@@ -2,6 +2,7 @@ import 'server-only';
 import { prisma } from '@/lib/db';
 import { generateEmbeddings } from './openai';
 import { embeddingDimensions, getAssistantConfig, isAssistantConfigured } from './config';
+import { NEWEST_FIRST } from '@/lib/queries/post-order';
 
 /*
  * الفهرسة الدلالية — بناء متّجهات المنشورات.
@@ -80,9 +81,38 @@ export async function indexBatch(options: {
       ...(options.all ? {} : { embeddings: { none: {} } }),
     },
     select: { id: true, text: true },
-    orderBy: { id: 'asc' },
+    /*
+     * ★ الأحدث أوّلاً — وكان الأقدم، وهي العلّة نفسها التي أصابت جولة
+     *   التحليل ومكنسة الأحداث قبلها.
+     *
+     *   الفهرسة الدلالية هي ما يقرأ به المساعد نصوص المنشورات. وبترتيبٍ
+     *   تصاعديّ يبدأ بأقدم منشورٍ في القاعدة، فيُسأل المساعد عن منشورات
+     *   اليوم ويجيب بأن لا بيانات — وهو يملك أرشيف السنة الماضية كاملاً.
+     *   ولا يقول شيءٌ ما جرى: المكنسة تعمل، والعدّاد يتقدّم.
+     */
+    /*
+     * ★ الأحدث أوّلاً — وكان الأقدم، وهي العلّة نفسها التي أصابت جولة
+     *   التحليل ومكنسة الأحداث قبلها.
+     *
+     *   الفهرسة الدلالية هي ما يقرأ به المساعد نصوص المنشورات. وبترتيبٍ
+     *   تصاعديّ تبدأ بأقدم منشورٍ في القاعدة، فيُسأل المساعد عن منشورات
+     *   اليوم فيجيب بأن لا بيانات — وهو يملك أرشيف السنة الماضية كاملاً.
+     *   ولا يقول شيءٌ ما جرى: المكنسة تعمل، والعدّاد يتقدّم.
+     *
+     * ★ وإعادةُ الفهرسة الكاملة وحدها تمشي بمؤشّر.
+     *
+     *   الفرق بين العملين جوهري: الطابور (`all: false`) مجموعةٌ تضيق —
+     *   ما يُفهرَس يخرج منها — فتكفيه قراءةُ أوّلها في كلّ دورة، ويدخل
+     *   الوارد الجديد في موضعه من الترتيب. وإعادة الفهرسة الكاملة
+     *   مجموعةٌ ثابتة لا تضيق، فتحتاج مؤشّراً يتقدّم عليها.
+     *
+     *   والمؤشّر على `id` يقتضي ترتيباً على `id`: ترتيبٌ بحقلٍ ومؤشّرٌ
+     *   بآخر يُكرّر صفوفاً ويُسقط أخرى صامتاً. ولا يضيرُ هنا — المطلوب
+     *   تغطيةُ الكلّ مرّةً واحدة لا ترتيبُها.
+     */
+    orderBy: options.all ? [{ id: 'desc' }] : NEWEST_FIRST,
     take: options.take,
-    ...(options.cursor ? { cursor: { id: options.cursor }, skip: 1 } : {}),
+    ...(options.all && options.cursor ? { cursor: { id: options.cursor }, skip: 1 } : {}),
   });
 
   if (posts.length === 0) return { processed: 0, inserted: 0, skipped: 0, cursor: null };
@@ -101,7 +131,8 @@ export async function indexBatch(options: {
     });
   }
 
-  const cursor = posts[posts.length - 1]!.id;
+  // ولا يُعاد المؤشّر إلا في الوضع الذي يستعمله، فلا يُغري غيره بترقيمٍ لا يصحّ
+  const cursor = options.all ? posts[posts.length - 1]!.id : null;
   if (jobs.length === 0) {
     return { processed: posts.length, inserted: 0, skipped, cursor };
   }

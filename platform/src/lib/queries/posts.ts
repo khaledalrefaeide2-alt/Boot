@@ -99,9 +99,13 @@ export function buildPostWhere(
    *   وهذا للرابط المكتوب باليد.
    */
   if (filters.analyzed === 'no') {
-    where.analysis = { is: null };
+    // العمود لا الضمّ المعاكس: الشاشة تسأل السؤال الذي تسأله المكنسة، فتُجيبه بالفهرس نفسه
+    where.analyzedAt = null;
     if (Object.keys(analysisWhere).length > 0) where.id = { in: [] };
-  } else if (filters.analyzed === 'yes' || Object.keys(analysisWhere).length > 0) {
+  } else if (filters.analyzed === 'yes') {
+    where.analyzedAt = { not: null };
+    if (Object.keys(analysisWhere).length > 0) where.analysis = { is: analysisWhere };
+  } else if (Object.keys(analysisWhere).length > 0) {
     where.analysis = { is: analysisWhere };
   }
 
