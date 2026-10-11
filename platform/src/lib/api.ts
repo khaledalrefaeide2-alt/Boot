@@ -1,7 +1,7 @@
 import 'server-only';
 import { NextResponse } from 'next/server';
 import { ZodError, type ZodType } from 'zod';
-import { getSession, verifyCsrf, type SessionUser } from '@/lib/auth/session';
+import { getSession, verifyCsrf, verifyRequestOrigin, type SessionUser } from '@/lib/auth/session';
 import { can, type Permission } from '@/lib/auth/rbac';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { requestMeta } from '@/lib/audit';
@@ -82,6 +82,17 @@ export async function requireAnyPermission(permissions: Permission[]): Promise<S
 /** التحقق من CSRF لكل طلب مغيّر — يُستدعى قبل أي كتابة */
 export async function requireCsrf(): Promise<void> {
   const problem = await verifyCsrf();
+  if (problem) throw new ApiError(403, problem);
+}
+
+/**
+ * فحصُ المصدر وحده — لمسارات ما قبل الجلسة (دخول، واستعادة كلمة مرور).
+ *
+ * لا رمزَ إرسالٍ مزدوج هناك لأنّ الجلسة لم تُنشأ بعد، ويبقى المصدر
+ * حاجزاً يمنع صفحةً خبيثة من إدخال الموظّف بحساب خصمه.
+ */
+export async function requireTrustedOrigin(): Promise<void> {
+  const problem = await verifyRequestOrigin();
   if (problem) throw new ApiError(403, problem);
 }
 

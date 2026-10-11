@@ -25,3 +25,30 @@ export const CSRF_COOKIE = 'mm_csrf';
  * وهذه الكوكي ميّتة، فلا تُعدني إلى الداخل».
  */
 export const SESSION_EXPIRED_PARAM = 'expired';
+
+/**
+ * وجهةٌ داخلية آمنة من معامل `next`.
+ *
+ * ★ `startsWith('/')` وحدها لا تكفي، وكان ذلك هو الفحص.
+ *
+ *   `//evil.com/x` يبدأ بشرطة مائلة، وهو عنوانٌ **كامل** بروتوكولُه
+ *   بروتوكولُ الصفحة. فمن فتح
+ *   `https://<المنصة>/login?next=//evil.com` رأى رابطاً صحيحاً يحمل
+ *   اسم مؤسّسته، وأدخل كلمة مروره في صفحة المنصة الحقيقية، ثمّ وجد
+ *   نفسه على موقع الخصم بعد نجاح الدخول — وهو أنفع ما يكون للتصيّد،
+ *   لأنّ الضحية دخل للتوّ ويتوقّع صفحةً تالية.
+ *
+ *   و`/\evil.com` كذلك: متصفّحات تقرأ الشرطة المائلة العكسية مائلةً.
+ *
+ * والشرط هنا: شرطةٌ واحدة، ثمّ ما ليس شرطةً ولا شرطةً عكسية.
+ *
+ * دالّة خالصة — تُفحص وحدها، وتُستعمل في الواجهة والخادم معاً.
+ */
+export function safeNextPath(value: string | null | undefined): string | null {
+  if (!value) return null;
+  if (!value.startsWith('/')) return null;
+  if (value.startsWith('//') || value.startsWith('/\\')) return null;
+  // «/..» تخرج من الجذر في بعض القراءات، ولا وجهة داخلية تحتاجها
+  if (value.includes('..')) return null;
+  return value;
+}

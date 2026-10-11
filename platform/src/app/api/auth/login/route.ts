@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
-import { ApiError, jsonError, jsonOk, parseBody, errors } from '@/lib/api';
+import { ApiError, errors, jsonError, jsonOk, parseBody, requireTrustedOrigin } from '@/lib/api';
 import { loginSchema } from '@/lib/validation/auth';
 import { verifyPassword } from '@/lib/auth/password';
 import { createSession } from '@/lib/auth/session';
@@ -19,6 +19,7 @@ const LOCK_MINUTES = 15;
 
 export async function POST(request: NextRequest) {
   try {
+    await requireTrustedOrigin();
     const meta = await requestMeta();
     const ipKey = `login:ip:${meta.ipAddress ?? 'unknown'}`;
 

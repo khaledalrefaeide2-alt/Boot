@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
-import { jsonError, jsonOk, parseBody, errors } from '@/lib/api';
+import { errors, jsonError, jsonOk, parseBody, requireTrustedOrigin } from '@/lib/api';
 import { resetPasswordSchema } from '@/lib/validation/auth';
 import { hashPassword, hashToken } from '@/lib/auth/password';
 import { revokeAllSessions } from '@/lib/auth/session';
@@ -9,6 +9,7 @@ import { audit, AUDIT_ACTIONS, requestMeta } from '@/lib/audit';
 
 export async function POST(request: NextRequest) {
   try {
+    await requireTrustedOrigin();
     const meta = await requestMeta();
     const limit = await rateLimit(
       `reset-submit:${meta.ipAddress ?? 'unknown'}`,

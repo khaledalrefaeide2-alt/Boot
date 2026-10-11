@@ -1,6 +1,7 @@
 import 'server-only';
 import { headers } from 'next/headers';
 import { prisma } from '@/lib/db';
+import { env } from '@/lib/env';
 import type { Role } from '@/generated/prisma';
 
 /** الأفعال الحساسة التي تُسجَّل في سجل التدقيق */
@@ -88,11 +89,62 @@ export interface AuditEntry {
 }
 
 /** استخراج عنوان الطلب ومعرّف المتصفح من ترويسات الطلب */
+/**
+ * عنوان العميل من ترويسة الوكلاء — بالعدّ من آخرها لا أوّلها.
+ *
+ * ★ وهذا أثرُه أمنيّ لا تجميليّ.
+ *
+ *   `X-Forwarded-For` قائمةٌ يُضيف إليها كلّ وكيل عنوانَ من خاطبه.
+ *   وأوّلُها هو ما أرسله العميل بنفسه — أي ما يكتبه المهاجم بيده. فمن
+ *   قرأ `split(',')[0]` قرأ قيمةً يملكها خصمه:
+ *
+ *     • حدُّ محاولات الدخول لكلّ عنوان يسقط كلّه — يبدّل المهاجم
+ *       الترويسة في كلّ طلب فلا يبلغ الحدّ أبداً، ويبقى حدُّ البريد
+ *       وقفلُ الحساب وحدهما أمام تخمينٍ يطرق آلاف الحسابات.
+ *
+ *     • وسجلُّ التدقيق يحفظ عنواناً من اختيار الخصم، فيضيع أثرُه
+ *       ويُحمَّل غيرُه ما لم يفعل.
+ *
+ *   والعدّ من الآخر يأخذ ما كتبه **وكيلُنا** لا ما كتبه الطالب: مع
+ *   وكيلٍ واحد (Caddy) آخرُ القائمة هو العنوان كما رآه الوكيل. ولا
+ *   يستطيع الطالب أن يزيد عناصرَ تُزيحه، لأنّ موضعه يُحسب من الذيل.
+ *
+ *   ويُضبط العدد بـ`TRUSTED_PROXY_HOPS`، وصفرٌ يُهمل الترويسة كلّها.
+ */
+export function clientIp(forwardedFor: string | null, directIp: string | null): string | null {
+  const hops = env.TRUSTED_PROXY_HOPS;
+  if (hops === 0) return directIp?.trim() || null;
+
+  const chain = (forwardedFor ?? '')
+    .split(',')
+    .map((part) => part.trim())
+    .filter(Boolean);
+  if (chain.length === 0) return directIp?.trim() || null;
+
+  /*
+   * أقصرُ من المتوقَّع يعني وكيلاً لم يُضف ترويسته — فيُؤخذ أوّلُها.
+   *
+   * ولا يُردّ الطلب: سلسلةٌ أقصر تعني خطأ إعداد عند المشغّل لا هجوماً،
+   * وإسقاطُ كلّ طلبٍ عندها يُسقط الموقع على خطأ حرفٍ في ملفّ بيئة.
+   */
+  const index = Math.max(0, chain.length - hops);
+  return chain[index] ?? chain[chain.length - 1] ?? null;
+}
+
 export async function requestMeta(): Promise<{ ipAddress: string | null; userAgent: string | null }> {
   try {
     const h = await headers();
-    const forwarded = h.get('x-forwarded-for');
-    const ipAddress = forwarded?.split(',')[0]?.trim() || h.get('x-real-ip') || null;
+    /*
+     * و`x-real-ip` لا تُقرأ إلا بلا وكيل.
+     *
+     * هي ترويسةٌ يكتبها الوكيل عادةً، ولكنّها — كغيرها — يستطيع العميل
+     * إرسالها. فمع وكيلٍ لا يكتبها تمرّ كما كتبها صاحبها، وتُبطل كلّ ما
+     * سبق. والوكيل في هذا النشر يكتب `x-forwarded-for`، فهي المصدر.
+     */
+    const ipAddress = clientIp(
+      h.get('x-forwarded-for'),
+      env.TRUSTED_PROXY_HOPS === 0 ? h.get('x-real-ip') : null,
+    );
     return { ipAddress, userAgent: h.get('user-agent')?.slice(0, 500) ?? null };
   } catch {
     return { ipAddress: null, userAgent: null };

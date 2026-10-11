@@ -141,6 +141,53 @@ export type StoreOutcome =
  */
 const PERMANENT_STATUS = new Set([400, 401, 403, 404, 410, 451]);
 
+/** أقصى عدد تحويلات تُتبَع — والمصادر الحقيقية لا تتجاوز اثنين */
+const MAX_REDIRECTS = 3;
+
+/**
+ * جلبٌ يتحقّق من المضيف عند **كلّ** قفزة لا عند الأولى وحدها.
+ *
+ * ★ وهذه كانت ثغرةً حقيقية في القائمة البيضاء.
+ *
+ *   كان `redirect: 'follow'` يترك المتابعة لـ`fetch`، والقائمة تُفحص
+ *   على العنوان الأول وحده. فمضيفٌ مسموح — أو مضيفٌ اختُرق، أو رابطٌ
+ *   ذو توقيع يردّ 302 — يستطيع أن يُحوّل الطلب إلى حيث شاء: شبكة Docker
+ *   الداخلية، أو `169.254.169.254` حيث تُقرأ أسرار المنصات السحابية.
+ *   والخادم يتبع طائعاً لأنّ أحداً لم يسأل عن الوجهة الثانية.
+ *
+ *   والقائمة البيضاء لا معنى لها إن فُحصت مرّةً واحدة على عنوانٍ لا
+ *   يُجلب منه شيء في النهاية.
+ *
+ * فتُتبَع التحويلات هنا يدوياً، ويُعاد الفحص على كلّ وجهة قبل طلبها.
+ */
+async function fetchAllowedOnly(initialUrl: string): Promise<Response> {
+  let target = initialUrl;
+
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop += 1) {
+    if (!isFetchableMedia(target)) {
+      throw new Error('RedirectBlocked');
+    }
+
+    const response = await fetch(target, {
+      signal: AbortSignal.timeout(TIMEOUT_MS),
+      // بلا مُحيل: لا يُسرَّب عنوان المنصة الداخلية إلى خوادم المنصات
+      referrerPolicy: 'no-referrer',
+      redirect: 'manual',
+    });
+
+    // 3xx بترويسة موضع — تُفحص وجهتها كما فُحص الأصل
+    const location = response.status >= 300 && response.status < 400
+      ? response.headers.get('location')
+      : null;
+    if (!location) return response;
+
+    // النسبيّ يُحلّ على العنوان الحالي، والمطلق يُقرأ كما هو
+    target = new URL(location, target).toString();
+  }
+
+  throw new Error('TooManyRedirects');
+}
+
 /**
  * جلب الصورة وحفظها مصغّرة.
  *
@@ -157,12 +204,7 @@ export async function storeThumbnail(url: string): Promise<StoreOutcome> {
 
   let response: Response;
   try {
-    response = await fetch(url, {
-      signal: AbortSignal.timeout(TIMEOUT_MS),
-      // بلا مُحيل: لا يُسرَّب عنوان المنصة الداخلية إلى خوادم المنصات
-      referrerPolicy: 'no-referrer',
-      redirect: 'follow',
-    });
+    response = await fetchAllowedOnly(url);
   } catch (error) {
     // انقطاعٌ أو مهلة — يُعاد لاحقاً
     return {

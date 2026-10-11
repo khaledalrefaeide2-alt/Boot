@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
 import { api, ApiClientError } from '@/lib/api-client';
 import { SESSION_EXPIRED_PARAM } from '@/lib/auth/cookies';
+import { safeNextPath } from '@/lib/auth/cookies';
 
 export function LoginForm() {
   const router = useRouter();
@@ -38,7 +39,7 @@ export function LoginForm() {
 
     try {
       const result = await api.post<{ redirectTo: string }>('/api/auth/login', { email, password });
-      const target = nextPath && nextPath.startsWith('/') ? nextPath : result.redirectTo;
+      const target = safeNextPath(nextPath) ?? result.redirectTo;
       router.replace(target);
       router.refresh();
     } catch (err) {

@@ -1,6 +1,6 @@
 import type { NextRequest } from 'next/server';
 import { prisma } from '@/lib/db';
-import { jsonError, jsonOk, parseBody, errors } from '@/lib/api';
+import { errors, jsonError, jsonOk, parseBody, requireTrustedOrigin } from '@/lib/api';
 import { forgotPasswordSchema } from '@/lib/validation/auth';
 import { generateToken, hashToken } from '@/lib/auth/password';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
@@ -16,6 +16,7 @@ const TOKEN_TTL_MINUTES = 60;
  */
 export async function POST(request: NextRequest) {
   try {
+    await requireTrustedOrigin();
     const meta = await requestMeta();
     const limit = await rateLimit(
       `reset:${meta.ipAddress ?? 'unknown'}`,
