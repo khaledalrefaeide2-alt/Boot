@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { Filter, Minus, RotateCcw, Search } from 'lucide-react';
+import { Filter, Minus, RotateCcw, Search, Sparkles } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Segmented } from '@/components/ui/button-group';
 import { Input, Select } from '@/components/ui/field';
@@ -15,6 +15,7 @@ import {
   parseSearchTerms,
 } from '@/lib/domain/search-terms';
 import { cn } from '@/lib/utils';
+import { api } from '@/lib/api-client';
 import {
   DATE_RANGES,
   POST_TYPE_LABELS,
@@ -197,8 +198,58 @@ export function FilterBar({
       : undefined;
 
   /** الضغط يُثبّت الكلمات والنمط معاً — فلا يُطبَّق نمطٌ على كلماتٍ قديمة */
-  function apply(mode: PostFilterState['qMode'] = filters.qMode) {
-    onChange({ ...filters, q: searchInput.trim(), qMode: mode });
+  function apply(mode: PostFilterState['qMode'] = filters.qMode, text = searchInput) {
+    onChange({ ...filters, q: text.trim(), qMode: mode });
+  }
+
+  /*
+   * التوسيع إلى الموضوع — من الكلمة إلى ما يلازمها.
+   *
+   * ★ ويُكتب الناتج في الحقل ولا يُطبَّق من خلفه.
+   *
+   *   الموظّف يرى «كهرباء أو تيار أو تقنين أو مولدة» في الشرائح، فيحذف
+   *   ما لا يعنيه ويضيف ما نقص قبل أن يبحث. أمّا توسيعٌ يجري في الخادم
+   *   ولا يُرى فيُرجع منشوراً لا يفهم القارئ لماذا ظهر — ومنصّةُ رصدٍ
+   *   تُبنى عليها تقارير لا تحتمل نتيجةً لا تُفسَّر.
+   *
+   * ★ وتعذّرُه لا يمنع البحث.
+   *
+   *   بلا مفتاح، أو بانقطاع، يُبحث بالكلمات كما كُتبت ويُقال إنّ
+   *   التوسيع لم يتمّ. وشاشةٌ تتعطّل لأنّ خدمةً خارجية تعثّرت أسوأ من
+   *   شاشةٍ لا توسّع.
+   */
+  const [expanding, setExpanding] = useState(false);
+  const [expandNote, setExpandNote] = useState<string | null>(null);
+
+  async function expandThenApply() {
+    const text = searchInput.trim();
+    if (text.length < 2) {
+      apply();
+      return;
+    }
+
+    setExpanding(true);
+    setExpandNote(null);
+    try {
+      const result = await api.post<{ query: string; added: string[][]; source: string }>(
+        '/api/posts/expand',
+        { q: text },
+      );
+      const count = result.added.reduce((sum, group) => sum + group.length, 0);
+      setSearchInput(result.query);
+      // النمط يصير «كلّها»: المجموعات تحمل «أو» داخلها، و«أيّها» يُسطّحها فيُبطل الشروط
+      apply('all', result.query);
+      setExpandNote(
+        count > 0
+          ? `أُضيفت ${count} كلمة مرتبطة — احذف ما لا يعنيك وأعد البحث`
+          : 'لم يُضَف شيء — البحث بكلماتك كما كتبتها',
+      );
+    } catch {
+      apply();
+      setExpandNote('تعذّر التوسيع — بُحث بكلماتك كما كتبتها');
+    } finally {
+      setExpanding(false);
+    }
   }
 
   return (
@@ -221,6 +272,24 @@ export function FilterBar({
             />
             <Button size="icon" type="submit" variant="secondary" aria-label="بحث">
               <Search className="h-4 w-4" aria-hidden />
+            </Button>
+            {/*
+              زرٌّ ثانٍ لا نمطٌ في قائمة.
+
+              التوسيع فعلٌ يُطلب مرّةً عند الحاجة، لا حالةٌ تبقى مفعّلة:
+              حالةٌ مفعّلة تعني استدعاءً مدفوعاً مع كلّ بحثٍ بعدها، وأكثر
+              عمليات البحث لا تحتاجه. والزرّ يجعل الكلفة مقرونةً بقرار.
+            */}
+            <Button
+              size="icon"
+              type="button"
+              variant="secondary"
+              onClick={() => void expandThenApply()}
+              loading={expanding}
+              aria-label="وسّع البحث إلى الكلمات المرتبطة"
+              title="وسّع البحث: يضيف ألفاظاً يُرجَّح ورودُها في منشورٍ عن الموضوع نفسه"
+            >
+              <Sparkles className="h-4 w-4" aria-hidden />
             </Button>
           </form>
         )}
@@ -353,6 +422,12 @@ export function FilterBar({
         فالبحث بكلمةٍ واحدة — وهو أكثر ما يقع — يبقى كما كان بلا زيادة،
         ولا يُعرض خيار نمطٍ لا معنى له على كلمةٍ واحدة.
       */}
+      {showSearch && expandNote && (
+        <div className="border-t border-border px-4 py-2 text-2xs text-muted-foreground">
+          {expandNote}
+        </div>
+      )}
+
       {showSearch && accountHint && (
         <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-2 text-2xs">
           <span className="text-muted-foreground">
