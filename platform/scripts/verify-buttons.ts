@@ -11,7 +11,20 @@ import path from 'node:path';
 import { readdirSync, statSync } from 'node:fs';
 
 const root = process.cwd();
-const BUTTON = readFileSync(path.join(root, 'src/components/ui/button.tsx'), 'utf8');
+/*
+ * الملفّان معاً: الأنواع في وحدةٍ محايدة والمكوّن في وحدة عميل.
+ *
+ * فُصلا لأنّ صفحة «غير موجود» مكوّنُ خادم يحتاج الأنواع، ووحدةٌ تبدأ
+ * بـ`use client` لا تُنادى دالّتها من الخادم. والفحص يقرأ الاثنين
+ * بوصفهما نظاماً واحداً — فما يهمّه أنّ النوع موجودٌ بحالاته، لا في
+ * أيّ ملفٍّ كُتب.
+ */
+const BUTTON = [
+  'src/components/ui/button-variants.ts',
+  'src/components/ui/button.tsx',
+]
+  .map((file) => readFileSync(path.join(root, file), 'utf8'))
+  .join('\n');
 
 const checks: { name: string; ok: boolean; detail?: string }[] = [];
 function check(name: string, ok: boolean, detail?: string) {

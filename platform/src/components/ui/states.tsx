@@ -80,6 +80,83 @@ export function ErrorState({
   );
 }
 
+/**
+ * رسالةٌ تملأ الصفحة — حيث لا بطاقةَ تحويها.
+ *
+ * ★ ولماذا لا تكفي `ErrorState` أعلاه؟
+ *
+ *   تلك تقع داخل بطاقةٍ في صفحةٍ قائمة: ما حولها يُخبر القارئ أين هو،
+ *   والقائمةُ الجانبية تُخبره إلى أين يذهب. وهذه تقع حين تسقط الصفحة
+ *   كلّها — فليس حولها شيء. فتحمل هي بنفسها: ما حدث، وما يفعله الآن.
+ *
+ * ★ ولا تذكر تفصيل الخطأ أبداً.
+ *
+ *   رسالةُ الخطأ قد تحمل جزءاً من استعلامٍ أو مساراً على الخادم أو اسم
+ *   عمود. وصفحةُ الخطأ تُعرض لمن لم يُصادَق عليه أصلاً (خطأٌ في شاشة
+ *   الدخول مثلاً)، فما يظهر فيها يظهر لكلّ من طرق الباب.
+ *
+ *   ويبقى «رقم الحادثة» — وهو بصمةٌ لا رسالة: يقولها الموظّف لمن
+ *   يُشغّل النظام فيجد بها السطر في السجلّ. فيُعرف الخطأ بلا كشفه.
+ */
+export function PageMessage({
+  icon: Icon = AlertTriangle,
+  tone = 'danger',
+  title,
+  description,
+  /** بصمةُ الحادثة في السجلّ — تُذكر للمشغّل ولا تكشف شيئاً */
+  digest,
+  children,
+}: {
+  icon?: LucideIcon;
+  tone?: 'danger' | 'neutral';
+  title: string;
+  description?: string;
+  digest?: string;
+  /** الأفعال المتاحة — زرّ إعادةٍ أو رابطُ عودة */
+  children?: React.ReactNode;
+}) {
+  return (
+    <div
+      className="flex min-h-[60dvh] flex-col items-center justify-center gap-5 px-4 py-14 text-center"
+      role={tone === 'danger' ? 'alert' : undefined}
+    >
+      <div
+        className={cn(
+          'flex h-14 w-14 items-center justify-center rounded-full',
+          tone === 'danger' ? 'bg-danger-soft' : 'bg-surface-2',
+        )}
+      >
+        <Icon
+          className={cn('h-6 w-6', tone === 'danger' ? 'text-danger' : 'text-subtle-foreground')}
+          aria-hidden
+        />
+      </div>
+
+      <div className="space-y-2">
+        <h1 className="text-lg font-semibold text-foreground">{title}</h1>
+        {description && (
+          <p className="mx-auto max-w-prose text-sm leading-[1.9] text-muted-foreground">
+            {description}
+          </p>
+        )}
+      </div>
+
+      {children && <div className="flex flex-wrap items-center justify-center gap-3">{children}</div>}
+
+      {/*
+        الرقم في آخر الصفحة وبخطٍّ لاتينيٍّ أحاديّ العرض: هو ليس رسالةً
+        تُقرأ بل رمزٌ يُنقل حرفاً بحرف، والخطّ الأحاديّ يمنع الخلط بين
+        المتشابهات عند النقل.
+      */}
+      {digest && (
+        <p className="text-xs text-subtle-foreground">
+          رقم الحادثة: <span className="num font-mono select-all">{digest}</span>
+        </p>
+      )}
+    </div>
+  );
+}
+
 /** هيكل تحميل بعدد أسطر */
 export function SkeletonRows({ rows = 5, className }: { rows?: number; className?: string }) {
   return (

@@ -17,20 +17,29 @@ import path from 'node:path';
 
 const CSS = readFileSync(path.join(process.cwd(), 'src/app/globals.css'), 'utf8');
 
+/*
+ * صفحةُ السقوط الأخير لها لوحةٌ ثانية داخلها.
+ *
+ * `global-error.tsx` تحلّ محلّ التخطيط الجذري، فلا تصلها ورقة الأنماط —
+ * وألوانها مكتوبةٌ في نصٍّ داخلها. ولوحةٌ لا يقيسها شيء هي لوحةٌ تُكتب
+ * مرّةً وتُنسى، فتُقاس هنا كما تُقاس الأولى، ويُفحص أنّها لم تفترق عنها.
+ */
+const FALLBACK = readFileSync(path.join(process.cwd(), 'src/app/global-error.tsx'), 'utf8');
+
 type RGB = [number, number, number];
 
 /** استخراج كتلة محدّد بعينه من الملف */
-function block(selector: string): Record<string, string> {
-  const start = CSS.indexOf(selector + ' {');
+function block(selector: string, source = CSS): Record<string, string> {
+  const start = source.indexOf(selector + ' {');
   if (start < 0) throw new Error(`لم يُعثر على الكتلة ${selector}`);
   let depth = 0;
-  let i = CSS.indexOf('{', start);
+  let i = source.indexOf('{', start);
   const from = i;
-  for (; i < CSS.length; i++) {
-    if (CSS[i] === '{') depth++;
-    else if (CSS[i] === '}' && --depth === 0) break;
+  for (; i < source.length; i++) {
+    if (source[i] === '{') depth++;
+    else if (source[i] === '}' && --depth === 0) break;
   }
-  const body = CSS.slice(from + 1, i);
+  const body = source.slice(from + 1, i);
   const out: Record<string, string> = {};
   for (const m of body.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) {
     const [, name, value] = m;
@@ -188,8 +197,14 @@ let failures = 0;
 let checked = 0;
 let worst = { label: '', value: Infinity };
 
-function run(theme: 'light' | 'dark', tokens: Record<string, string>): void {
-  console.log(`\n  ── ${theme === 'light' ? 'السمة الفاتحة' : 'السمة الداكنة'} ──────────────────────────────`);
+function run(
+  theme: string,
+  tokens: Record<string, string>,
+  textOn: Array<[string, string[]]> = TEXT_ON,
+  graphicOn: Array<[string, string[]]> = GRAPHIC_ON,
+  informational: Array<[string, string[]]> = INFORMATIONAL,
+): void {
+  console.log(`\n  ── ${theme} ──────────────────────────────`);
 
   /*
    * `var(--x)` تُتبَّع حتى قيمةٍ صريحة.
@@ -229,10 +244,10 @@ function run(theme: 'light' | 'dark', tokens: Record<string, string>): void {
     if (!ok) console.log(`    ✗ ${label.padEnd(46)} ${r.toFixed(2)}:1  (المطلوب ${min})`);
   };
 
-  for (const [fg, bgs] of TEXT_ON) for (const bg of bgs) check(fg, bg, TEXT_MIN);
-  for (const [fg, bgs] of GRAPHIC_ON) for (const bg of bgs) check(fg, bg, GRAPHIC_MIN);
+  for (const [fg, bgs] of textOn) for (const bg of bgs) check(fg, bg, TEXT_MIN);
+  for (const [fg, bgs] of graphicOn) for (const bg of bgs) check(fg, bg, GRAPHIC_MIN);
 
-  for (const [fg, bgs] of INFORMATIONAL) {
+  for (const [fg, bgs] of informational) {
     for (const bg of bgs) {
       const b = resolve(bg);
       if (!b) continue;
@@ -250,8 +265,76 @@ console.log('\n>> تباين اللوحة — WCAG 2.1 AA\n');
 const light = block(':root');
 const dark = { ...light, ...block('.dark') };
 
-run('light', light);
-run('dark', dark);
+run('السمة الفاتحة', light);
+run('السمة الداكنة', dark);
+
+// ══════════ لوحةُ صفحة السقوط الأخير ══════════
+
+/*
+ * ما يُقاس فيها هو ما يراه القارئ: نصُّها على سطحها، وحبرُ زرّها الأساسي
+ * على أرضيته، وحدُّ زرّها الثانوي (وهو الدليلُ الوحيد على أنّ هناك زرّاً،
+ * فخلفيّته خلفيّةُ البطاقة نفسها)، وأيقونةُ الخطر على رقاقتها.
+ */
+const FALLBACK_TEXT_ON: Array<[string, string[]]> = [
+  ['--text', ['--bg', '--surface']],
+  ['--muted', ['--surface']],
+  ['--primary-text', ['--primary', '--primary-hover']],
+  ['--danger', ['--danger-soft']],
+];
+const FALLBACK_GRAPHIC_ON: Array<[string, string[]]> = [['--btn-line', ['--surface']]];
+
+const darkAt = FALLBACK.indexOf('@media (prefers-color-scheme: dark)');
+if (darkAt < 0) throw new Error('صفحة السقوط بلا كتلة للسمة الداكنة');
+const fbLight = block(':root', FALLBACK);
+const fbDark = { ...fbLight, ...block(':root', FALLBACK.slice(darkAt)) };
+
+run('صفحة السقوط — فاتحة', fbLight, FALLBACK_TEXT_ON, FALLBACK_GRAPHIC_ON, []);
+run('صفحة السقوط — داكنة', fbDark, FALLBACK_TEXT_ON, FALLBACK_GRAPHIC_ON, []);
+
+/*
+ * ★ ولا تفترق اللوحتان.
+ *
+ *   القيمة مكتوبةٌ مرّتين بالضرورة: صفحةُ السقوط لا تصلها ورقة الأنماط.
+ *   والنسخةُ الثانية تبقى صحيحةً ما ذكّر بها شيء — فهذا ما يذكّر. ومن
+ *   غيّر الهوية في `globals.css` يسقط عنده هذا الفحص باسم الرمز الذي
+ *   نسيه، لا بعد أن يراه مستخدمٌ على شاشةٍ من هويّةٍ قديمة.
+ */
+const MIRROR: Array<[string, string]> = [
+  ['--bg', '--background'],
+  ['--surface', '--surface'],
+  ['--text', '--foreground'],
+  ['--muted', '--muted-foreground'],
+  ['--line', '--border'],
+  ['--btn-line', '--olive-400'],
+  ['--danger', '--danger'],
+  ['--danger-soft', '--danger-soft'],
+  ['--primary', '--olive-700'],
+  ['--primary-hover', '--olive-800'],
+  ['--primary-text', '--primary-foreground'],
+];
+
+console.log('\n  ── مطابقةُ لوحة السقوط للوحة الأصل ────────────');
+let drift = 0;
+for (const [theme, fb, real] of [
+  ['الفاتحة', fbLight, light],
+  ['الداكنة', fbDark, dark],
+] as const) {
+  for (const [fallbackToken, realToken] of MIRROR) {
+    const mine = fb[fallbackToken];
+    const theirs = real[realToken];
+    if (!mine || !theirs) {
+      drift += 1;
+      console.log(`    ✗ ${theme}: ${fallbackToken} أو ${realToken} غير موجود`);
+      continue;
+    }
+    if (mine.toLowerCase() !== theirs.toLowerCase()) {
+      drift += 1;
+      console.log(`    ✗ ${theme}: ${fallbackToken} = ${mine} و${realToken} = ${theirs}`);
+    }
+  }
+}
+failures += drift;
+if (drift === 0) console.log(`    ✓ ${MIRROR.length * 2} رمزاً مطابقاً في السمتين`);
 
 console.log(
   failures === 0
