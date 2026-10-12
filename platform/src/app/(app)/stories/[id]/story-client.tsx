@@ -259,7 +259,7 @@ export function StoryClient({ storyId, canReview }: { storyId: string; canReview
             <>
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5">
                 {posts.map((post) => (
-                  <PostCard key={post.id} post={post} canReview={canReview} />
+                  <PostCard key={post.id} post={post} canReview={canReview} query={filters.q} />
                 ))}
               </div>
               <InfiniteSentinel

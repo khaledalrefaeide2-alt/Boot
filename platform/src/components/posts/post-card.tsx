@@ -35,6 +35,8 @@ import {
   sortLabels,
 } from '@/lib/domain/constants';
 import { cn, formatCompactNumber, formatDateTime, formatNumber, truncate } from '@/lib/utils';
+import { parseSearchTerms } from '@/lib/domain/search-terms';
+import { highlightSegments } from '@/lib/domain/search-highlight';
 
 export interface PostListItemView {
   id: string;
@@ -257,6 +259,60 @@ function AnalysisSummary({ post }: { post: PostListItemView }) {
   );
 }
 
+/**
+ * مقتطفُ المنشور — حول موضع المطابقة لا من أوّله.
+ *
+ * ★ البطاقة كانت تعرض أوّل مئتي حرفٍ دائماً.
+ *
+ *   فمن بحث عن كلمةٍ وردت في السطر العاشر يرى بطاقةً لا أثر فيها لما
+ *   بحث عنه، فيسأل: لماذا ظهر هذا؟ ويفتح المنشور ليعرف، ثمّ يعود،
+ *   ثمّ يفتح الذي بعده. وقائمةٌ لا تُجيب عن نفسها تُفتح بطاقةً بطاقة.
+ *
+ *   والمقتطف حول المطابقة، والكلمة فيه مُبرَزة، يُجيب قبل أن يُسأل.
+ *
+ * ★ والإبراز على الكلمة المجذَّرة كما في القاعدة.
+ *
+ *   فحدّ «وزارة» يُبرز «الوزارة» في النصّ — وهي المطابقة التي جرت
+ *   فعلاً. ولو أُبرز بالمقارنة الحرفية لظهرت بطاقةٌ مطابِقةٌ بلا إبراز،
+ *   فيُظنّ الإبراز معطّلاً أو المطابقة خاطئة.
+ */
+function PostSnippet({
+  text,
+  query,
+  limit = 220,
+}: {
+  text: string;
+  query?: string;
+  /** حدُّ المعروض — البطاقة أربعة أسطر والجدول سطران */
+  limit?: number;
+}) {
+  const parsed = parseSearchTerms(query);
+  const { segments, clippedStart, clippedEnd } = highlightSegments(text, parsed, limit);
+
+  if (segments.length === 0) return <>{truncate(text, limit)}</>;
+
+  return (
+    <>
+      {clippedStart && '… '}
+      {segments.map((segment, index) =>
+        segment.match ? (
+          <mark
+            // eslint-disable-next-line react/no-array-index-key -- المقاطع مشتقّة من نصٍّ ثابت وترتيبها هو هويّتها
+            key={index}
+            className="rounded bg-warning-soft px-0.5 font-semibold text-warning"
+          >
+            {segment.text}
+          </mark>
+        ) : (
+          // eslint-disable-next-line react/no-array-index-key -- كما أعلاه
+          <span key={index}>{segment.text}</span>
+        ),
+      )}
+      {clippedEnd && ' …'}
+    </>
+  );
+}
+
 /** مقياس تفاعل مصغّر يظهر في البطاقة والجدول */
 function EngagementStat({
   icon: Icon,
@@ -319,9 +375,12 @@ export function PostCard({
   post,
   canReview,
   onDelete,
+  query,
 }: {
   post: PostListItemView;
   canReview?: boolean;
+  /** سطرُ البحث الجاري — يُبرَز موضعُه في المقتطف */
+  query?: string;
   /** يُمرَّر لمن يملك صلاحية الحذف وحده — وغيابه يُخفي الزرّ */
   onDelete?: (post: PostListItemView) => void;
 }) {
@@ -402,7 +461,7 @@ export function PostCard({
       <Link href={`/posts/${post.id}`} className="flex-1">
         <p className="line-clamp-4 text-sm leading-[2] text-foreground">
           {post.text ? (
-            truncate(post.text, 220)
+            <PostSnippet text={post.text} query={query} />
           ) : (
             <span className="text-subtle-foreground">منشور بلا نص</span>
           )}
@@ -521,13 +580,19 @@ export function PostTableHead() {
   );
 }
 
-/** صف منشور في عرض الجدول */
-export function PostRow({ post }: { post: PostListItemView }) {
+/**
+ * صف منشور في عرض الجدول.
+ *
+ * والإبراز فيه كالبطاقة: من بدّل الشكل لا يفقد ما يدلّه على موضع
+ * المطابقة — والجدول أضيق، فسطراه أحقّ بأن يحملا المطابقة لا أوّل
+ * الكلام.
+ */
+export function PostRow({ post, query }: { post: PostListItemView; query?: string }) {
   return (
     <TR>
       <TD className="max-w-80">
         <Link href={`/posts/${post.id}`} className="line-clamp-2 text-sm hover:text-primary">
-          {post.text ? truncate(post.text, 140) : 'منشور بلا نص'}
+          {post.text ? <PostSnippet text={post.text} query={query} limit={140} /> : 'منشور بلا نص'}
         </Link>
       </TD>
       <TD className="text-xs">

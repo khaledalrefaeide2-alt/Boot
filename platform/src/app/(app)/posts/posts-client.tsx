@@ -233,6 +233,7 @@ export function PostsClient({
                 key={post.id}
                 post={post}
                 canReview={canReview}
+                query={filters.q}
                 onDelete={canDelete ? setDeleteTarget : undefined}
               />
             ))}
@@ -253,7 +254,7 @@ export function PostsClient({
               <PostTableHead />
               <TBody>
                 {posts.map((post) => (
-                  <PostRow key={post.id} post={post} />
+                  <PostRow key={post.id} post={post} query={filters.q} />
                 ))}
               </TBody>
             </Table>

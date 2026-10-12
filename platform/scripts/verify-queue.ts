@@ -28,7 +28,7 @@ import { WRITABLE_SENTIMENT } from '../src/lib/analysis/persist';
 import { NEWEST_FIRST } from '../src/lib/queries/post-order';
 import { postFiltersSchema } from '../src/lib/validation/posts';
 import { buildPostWhere } from '../src/lib/queries/posts';
-import { buildSearchText } from '../src/lib/analysis/text';
+import { buildSearchText, normalizeForSearch } from '../src/lib/analysis/text';
 
 const url = process.env.VERIFY_DATABASE_URL;
 if (!url) {
@@ -312,14 +312,21 @@ async function main() {
           where: { dedupeKey: { startsWith: 'N' } },
           select: { dedupeKey: true, text: true, searchText: true },
         });
+        /*
+         * والمقارنة على التطبيع وحده لا على التجذير معه.
+         *
+         * ترحيلُ التطبيع يُنتج نصّاً مطبَّعاً، وترحيلُ التجذير يعمل عليه
+         * بعده. فمقارنةُ ناتجِ الأوّل بـ`buildSearchText` — وهي تطبّع
+         * وتُجذّر — تقيس خطوتين بخطوة.
+         */
         const mismatches = filled.filter(
-          (row) => row.searchText !== buildSearchText({ text: row.text }),
+          (row) => row.searchText !== normalizeForSearch(row.text ?? ''),
         );
         check(
           'وتطبيعُ الترحيل يطابق تطبيع العُقدة حرفاً بحرف',
           mismatches.length === 0,
           mismatches
-            .map((row) => `«${row.text}» → SQL «${row.searchText}» · العُقدة «${buildSearchText({ text: row.text })}»`)
+            .map((row) => `«${row.text}» → SQL «${row.searchText}» · العُقدة «${normalizeForSearch(row.text ?? '')}»`)
             .join(' | ') || undefined,
         );
 
@@ -395,6 +402,80 @@ async function main() {
         check(
           'والعبارة تُطابَق بمسافاتها',
           (await search('"انقطاع التيار"')) === 'E' && (await search('"تقنين التيار"')) === '',
+        );
+
+        // ══════════ التجذير: SQL والدالّة يقولان الشيء نفسه ══════════
+
+        /*
+         * ★ قاعدة التجذير مكتوبةٌ في موضعين، فيُشغَّل الموضعُ الحقيقي.
+         *
+         *   الترحيل يُجذّر عمود البحث لكلّ صفٍّ قائم بتعبير SQL، وما
+         *   يُكتب بعده يمرّ بـ`lightStem` في العُقدة. ولو اختلفا لصار
+         *   نصفُ الجدول مجذَّراً بقاعدة ونصفُه بأخرى — والبحث يجد في
+         *   أحدهما ولا يجد في الآخر بلا سببٍ ظاهر.
+         *
+         *   ★ ولا يُنسَخ التعبير إلى هنا: يُقرأ من ملفّ الترحيل
+         *     ويُشغَّل كما هو. وقد كشف هذا الفحصُ — أوّل مرّة — أنّ
+         *     المجذّر نفسه كان يأكل أوائل الكلمات («الوزارة» ← «زاره»).
+         */
+        const STEM_SAMPLES = [
+          'المعلم في المدرسه',
+          'سعر الدينار اليوم',
+          'اجتماع الوزاره',
+          'بالوزاره اجتماع قرار',
+          'وبالوزاره اجتماع',
+          'والكهرباء مقطوعه',
+          'منشورات كثيره',
+          'مستشفي الاطفال',
+          'حاله الطوارء',
+          'والد الطفل بالغ الف',
+          'اللاذقيه ودمشق',
+          'مسءولون في الوزارات',
+        ];
+
+        for (const [index, sample] of STEM_SAMPLES.entries()) {
+          await tx.post.create({
+            data: {
+              id: `vq-st${index}`,
+              accountId: account.id,
+              platformId: platform.id,
+              dedupeKey: `T${index}`,
+              text: sample,
+              searchText: normalizeForSearch(sample),
+            },
+          });
+        }
+
+        const stemSql = readFileSync(
+          join(process.cwd(), 'prisma/migrations/20261012140000_post_search_stems/migration.sql'),
+          'utf8',
+        );
+        const stemStatement =
+          stemSql.slice(stemSql.indexOf('UPDATE "posts"')).split(';')[0] ?? '';
+        check(
+          'جملةُ التجذير مقروءةٌ من الترحيل',
+          stemStatement.includes('regexp_replace') && stemStatement.includes('searchText'),
+          'بلا قراءتها يفحص الفحصُ نسخته لا الشيفرة التي تعمل على الإنتاج',
+        );
+        await tx.$executeRawUnsafe(`${stemStatement};`);
+
+        const stemmed = await tx.post.findMany({
+          where: { dedupeKey: { startsWith: 'T' }, accountId: account.id },
+          select: { dedupeKey: true, text: true, searchText: true },
+        });
+        const stemGaps = stemmed.filter((row) => {
+          const expected = buildSearchText({ text: row.text });
+          return row.searchText !== expected;
+        });
+        check(
+          'وتجذيرُ الترحيل يطابق تجذير الدالّة حرفاً بحرف',
+          stemGaps.length === 0,
+          stemGaps
+            .map(
+              (row) =>
+                `«${row.text}» → SQL «${row.searchText}» · العُقدة «${buildSearchText({ text: row.text })}»`,
+            )
+            .join(' | ') || undefined,
         );
 
         // ══════════ مزامنة حكم المنشور مع صفّ تحليله ══════════

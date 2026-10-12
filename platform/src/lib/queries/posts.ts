@@ -4,7 +4,7 @@ import type { PostFilters } from '@/lib/validation/posts';
 import { resolveDateRange } from '@/lib/validation/common';
 import { intersectScope, type AccountScope } from '@/lib/auth/account-scope';
 import { parseSearchTerms } from '@/lib/domain/search-terms';
-import { normalizeForSearch } from '@/lib/analysis/text';
+import { searchNeedle } from '@/lib/analysis/text';
 
 /** تحويل قيمة قد تكون نصاً أو مصفوفة إلى مصفوفة نظيفة */
 function toArray(value: string | string[] | undefined): string[] {
@@ -150,7 +150,16 @@ export function buildPostWhere(
  *   فلا يُترك أمام نتيجةٍ فارغة لا يفهم سببها.
  */
 function searchFields(term: string): Prisma.PostWhereInput[] {
-  return [{ searchText: { contains: normalizeForSearch(term) } }];
+  const needle = searchNeedle(term);
+  /*
+   * حدٌّ لا يبقى منه شيء بعد التجذير لا يُبنى له شرط.
+   *
+   * `contains: ''` تُطابق كلّ صفّ، فحدٌّ فارغ يوسّع النتيجة بدل أن
+   * يضيّقها — وهو عكس ما يقصده من كتبه. (ولا يقع عادةً: القارئ يُسقط
+   * القصير قبل هنا. وهذه الحارسة لمن استدعى الدالّة من موضعٍ آخر.)
+   */
+  if (!needle) return [{ id: { in: [] } }];
+  return [{ searchText: { contains: needle } }];
 }
 
 /** مجموعةُ مرادفاتٍ تتحقّق بأيّ عنصرٍ منها */

@@ -126,7 +126,12 @@ export function TopPostsSection({
           }
         >
           {posts.map((post) => (
-            <PostCard key={post.id} post={post} onDelete={canDelete} />
+            <PostCard
+              key={post.id}
+              post={post}
+              query={typeof params.q === 'string' ? params.q : undefined}
+              onDelete={canDelete}
+            />
           ))}
         </div>
       )}

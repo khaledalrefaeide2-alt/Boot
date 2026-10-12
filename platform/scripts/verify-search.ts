@@ -10,6 +10,8 @@
  */
 import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { buildSearchText, lightStem, searchNeedle } from '../src/lib/analysis/text';
+import { highlightSegments, queryStems } from '../src/lib/domain/search-highlight';
 import {
   buildExpandedQuery,
   cleanAdditions,
@@ -229,6 +231,109 @@ check(
   'ثماني مجموعاتٍ بعشرة مرادفات تعني ثمانين شرط LIKE في استعلامٍ واحد',
 );
 
+// ══════════════ الدقّة: الكلمة لا جزؤها ══════════════
+
+/*
+ * ★ المطابقة كانت `contains` على النصّ المطبَّع — أي أيّ موضعٍ في أيّ كلمة.
+ *
+ *   وقياسٌ على عشر حالاتٍ حقيقية أعطى أربع مطابقاتٍ خاطئة. وفي منصّة
+ *   رصد يعني ذلك أنّ البحث عن «نار» يُرجع كلّ منشورٍ فيه «دينار» —
+ *   فيُقرأ العدد ارتفاعاً في موضوعٍ لم يُذكر.
+ *
+ *   والجدول أدناه هو القياس نفسه، محفوظاً: ستّ مطابقاتٍ يجب أن تبقى،
+ *   وأربعٌ يجب أن تزول.
+ */
+const matchesPost = (text: string, term: string) =>
+  buildSearchText({ text }).includes(searchNeedle(term));
+
+const PRECISION: [string, string, boolean, string][] = [
+  ['المعلم في المدرسة', 'علم', false, 'جزءُ كلمةٍ أخرى'],
+  ['سعر الدينار اليوم', 'نار', false, 'جزءُ كلمةٍ أخرى'],
+  ['مستشفى الأطفال', 'شفى', false, 'جزءُ كلمةٍ أخرى'],
+  ['حالة الطوارئ', 'الة', false, 'جزءُ كلمةٍ أخرى'],
+  ['اجتماع الوزارة', 'وزارة', true, 'الكلمة بأل التعريف'],
+  ['قرار الوزارة الجديد', 'الوزارة', true, 'الحدّ بأل والنصّ بأل'],
+  ['بالوزارة اجتماع', 'وزارة', true, 'الكلمة بحرف جرّ وأل'],
+  ['والكهرباء مقطوعة', 'كهرباء', true, 'الكلمة بواو وأل'],
+  ['منشورات كثيرة', 'منشور', true, 'جمعٌ سالم'],
+  ['أعلنت الوزارة تقنيناً جديداً', 'تقنين', true, 'منصوبٌ بتنوين'],
+];
+
+let precisionWrong = 0;
+for (const [text, term, expected, why] of PRECISION) {
+  const got = matchesPost(text, term);
+  if (got !== expected) precisionWrong += 1;
+  check(
+    `${expected ? 'يجد' : 'لا يجد'} «${term}» في «${text}» — ${why}`,
+    got === expected,
+  );
+}
+check(
+  'ولا خطأ واحد في جدول الدقّة',
+  precisionWrong === 0,
+  'كان أربعةً من عشرة قبل التجذير',
+);
+
+/*
+ * ★ والمجذّر ثابت: `stem(stem(x)) = stem(x)`.
+ *
+ *   وهذا شرطُ صحّةٍ لا ضبط. فالنصّ يُجذَّر مرّةً عند الاستيراد، والحدّ
+ *   يُجذَّر عند البحث — فإن لم يستقرّ الاثنان عند النقطة نفسها لم
+ *   يلتقيا أبداً. وقد وقع فعلاً: «تقنيناً» وقفت عند «تقنين» والحدّ
+ *   «تقنين» مضى إلى «تقن».
+ */
+for (const word of [
+  'تقنينا',
+  'الوزارات',
+  'بالمنشورات',
+  'والمسءولين',
+  'قرارا',
+  'عمليه',
+  'اللاذقيه',
+  'كهرباء',
+  'حاله',
+  'بيت',
+]) {
+  check(
+    `والتجذير ثابت على «${word}»`,
+    lightStem(lightStem(word)) === lightStem(word),
+    'مجذّرٌ غير ثابت يجعل النصّ والحدّ يستقرّان في موضعين مختلفين فلا يلتقيان',
+  );
+}
+
+/*
+ * وحدُّ الطول يمنع المجذّر من أن يأكل الكلمة.
+ *
+ * «والد» لو جُرّدت «وال» لصارت «د»، و«بالغ» لصارت «غ». وهما كلمتان
+ * لا أداتان — وحدُّ الثلاثة يردّهما.
+ */
+for (const word of ['والد', 'بالغ', 'الف', 'الان', 'بيت', 'لها']) {
+  check(`ولا يُقصّ «${word}» — أقصر من الحدّ`, lightStem(word) === word);
+}
+
+check(
+  'والعمود محاطٌ بمسافتين — وهما ما يجعل المطابقة على الكلمة',
+  buildSearchText({ text: 'كهرباء' }).startsWith(' ') &&
+    buildSearchText({ text: 'كهرباء' }).endsWith(' '),
+  "بلا إحاطة تصير `LIKE '%نار%'` فتُطابق «دينار»",
+);
+check(
+  'والحدّ محاطٌ كذلك',
+  searchNeedle('نار') === ' نار ',
+);
+check(
+  'والنصّ الفارغ لا يُنتج عموداً بمسافة',
+  buildSearchText({ text: '' }) === '',
+  'عمودٌ قيمتُه مسافة يُطابق كلّ حدٍّ محاطٍ بمسافتين؟ لا — ولكنّه ضجيجٌ في الفهرس',
+);
+check(
+  'وحدٌّ لا يبقى منه شيء لا يُطابق كلّ شيء',
+  /if \(!needle\) return \[\{ id: \{ in: \[\] \} \}\]/.test(
+    readCode('src/lib/queries/posts.ts'),
+  ),
+  "`contains: ''` تُطابق كلّ صفّ — فحدٌّ فارغ يوسّع بدل أن يضيّق",
+);
+
 // ══════════════ توسيع البحث إلى الموضوع ══════════════
 
 /*
@@ -421,9 +526,10 @@ check(
   'شرطٌ على جدولٍ آخر داخل OR يُبطل فهرس الثلاثيّات ويُحيل كلّ بحثٍ إلى مسحٍ كامل',
 );
 check(
-  'والمطابقة مطبَّعةٌ على مطبَّع',
-  /searchText: \{ contains: normalizeForSearch\(term\) \}/.test(queries),
-  'المنصّة تطبّع عند الاستيراد، فالكلمة التي ربطت المنشور لا يجدها من كتبها في الشاشة',
+  'والمطابقة مطبَّعةٌ مجذَّرةٌ على مثلها',
+  /searchText: \{ contains: needle \}/.test(queries) &&
+    /const needle = searchNeedle\(term\)/.test(queries),
+  'الطرفان يُطبَّعان ويُجذَّران بالدالّة نفسها — وإلا لم يلتقيا',
 );
 
 // ══════════════ الواجهة ══════════════
@@ -470,6 +576,169 @@ check(
   /postSearchWhere\(args\.query, args\.queryMode\)/.test(tools),
   'لو اختلف بحثه عن بحث صاحبه لأجاب بأن لا شيء عمّا يراه صاحبه في الجدول',
 );
+
+// ══════════════ إبراز موضع المطابقة ══════════════
+
+/*
+ * ★ هذا القسم يفحص ما يراه القارئ، لا ما تُرجعه القاعدة.
+ *
+ *   فبطاقةٌ مطابِقةٌ لا أثر فيها للكلمة تُقرأ على أنّها خطأ في البحث —
+ *   والبحث سليم. والمبرَزُ يجب أن يكون المطابَقَ نفسه: بالجذر الذي
+ *   تطابق به القاعدة، لا بالمقارنة الحرفية.
+ */
+
+const HAY =
+  'بدأ المجلس جلسته صباح اليوم وتحدث الأعضاء في شؤون كثيرة لا يتصل منها بالموضوع شيء ثم أعلن المتحدث أن الوزارة ستبدأ خطة تقنين جديدة في المحافظات الشرقية الأسبوع المقبل بعد موافقة اللجنة المالية على التمويل';
+
+const marks = (text: string, query: string) =>
+  highlightSegments(text, parseSearchTerms(query))
+    .segments.filter((segment) => segment.match)
+    .map((segment) => segment.text);
+
+const shown = (text: string, query: string) =>
+  highlightSegments(text, parseSearchTerms(query))
+    .segments.map((segment) => segment.text)
+    .join('');
+
+/*
+ * أهمّ فحص في القسم: الإبراز والقاعدة يتكلّمان بجذرٍ واحد.
+ *
+ * فلو جذّر الإبراز بشيفرةٍ خاصّة لانفصل عن القاعدة بعد أوّل تعديل في
+ * المجذّر: تُطابق القاعدة ولا يُبرز شيء، فيُظنّ العيب في المطابقة.
+ */
+check(
+  'الإبراز يجذّر بجذر القاعدة نفسه',
+  [...queryStems(parseSearchTerms('الوزارة'))].join(' ') === searchNeedle('الوزارة').trim(),
+  `جذر الإبراز «${[...queryStems(parseSearchTerms('الوزارة'))].join(' ')}» وجذر القاعدة «${searchNeedle('الوزارة').trim()}»`,
+);
+check(
+  'ويقرأ المجذّر من مكتبة القاعدة لا من نسخةٍ عنده',
+  /import \{[^}]*lightStem[^}]*\} from '@\/lib\/analysis\/text'/.test(
+    read('src/lib/domain/search-highlight.ts'),
+  ) && !/PREFIXES|slice\(prefix\.length\)/.test(readCode('src/lib/domain/search-highlight.ts')),
+  'نسخةٌ ثانية من المجذّر تنفصل عن الأولى بعد أوّل تعديل، فيختلف المبرَز عن المطابَق',
+);
+
+check('والعبارة تُبسط إلى كلماتها للإبراز', same([...queryStems(parseSearchTerms('"خطة تقنين"'))], ['خطه', 'تقن']));
+check('ولا جذور بلا بحث', queryStems(parseSearchTerms('')).size === 0);
+
+/*
+ * حدُّ «وزارة» يُبرز «الوزارة» — وهي المطابقة التي جرت فعلاً.
+ */
+check('يُبرز صيغة النصّ لا صيغة الحدّ', same(marks(HAY, 'وزارة'), ['الوزارة']));
+check('ويُبرز الجمع كما تطابقه القاعدة', same(marks('أعلنت الوزارات خطتها', 'وزارة'), ['الوزارات']));
+check(
+  'ويُبرز كلمتي العبارة معاً',
+  same(marks(HAY, '"خطة تقنين"'), ['خطة', 'تقنين']),
+  'كلمةٌ ملوّنةٌ وأخرى بلا لون في عبارةٍ واحدة تُقرأ على أنّ نصفها لم يُطابق',
+);
+check(
+  'ولا يُبرز ما لا تطابقه القاعدة',
+  marks('قرار كهربائي قديم', 'كهرباء').length === 0 && !searchNeedle('كهرباء').includes('كهربائي'),
+  'إبرازٌ على جزء الكلمة يَعِد بمطابقةٍ لم تجرِ',
+);
+check(
+  'وعلامة الترقيم لا تمنع الإبراز',
+  same(marks('قرار الكهرباء، وما بعده', 'كهرباء'), ['الكهرباء،']),
+);
+
+/*
+ * المقتطف حول المطابقة لا من أوّل النصّ — وهذا سبب وجود الملفّ.
+ */
+const FAR = `${'كلمةٌ عابرة '.repeat(30)}الوزارة ${'وكلامٌ بعدها '.repeat(30)}`;
+const far = highlightSegments(FAR, parseSearchTerms('وزارة'));
+check(
+  'المقتطف يُفتح على موضع المطابقة لا على أوّل النصّ',
+  far.segments.some((segment) => segment.match) && FAR.indexOf('الوزارة') > 220,
+  'أوّلُ مئتي حرفٍ من منشورٍ طويل لا أثر فيه لما بُحث عنه، فتُفتح البطاقة بطاقةً بطاقة',
+);
+check('وما قبل النافذة مُعلَمٌ بالحذف', far.clippedStart && far.clippedEnd);
+
+/*
+ * والطرفان مستقلّان: نافذةٌ تبدأ من الوسط وتنتهي بنهاية النصّ لها نقطةُ
+ * حذفٍ قبلها وليس بعدها — ونقطةٌ بعد تمام النصّ تقول إنّ بعده بقيّة.
+ */
+const mid = highlightSegments(HAY, parseSearchTerms('"خطة تقنين"'));
+check(
+  'ولا نقطةَ حذفٍ بعد تمام النصّ',
+  mid.clippedStart && !mid.clippedEnd,
+  'جمعُ الطرفين في راءٍ واحدة يَعِد ببقيّةٍ لا توجد',
+);
+check(
+  'والمقتطف لا يتجاوز حدّه',
+  far.segments.map((segment) => segment.text).join('').length <= 220,
+);
+
+/*
+ * ★ والمطابقة في النصف الأوّل من المعروض، أيّاً كان الحدّ.
+ *
+ *   الشاشة تقصّ بعدد الأسطر لا بعدد المحارف. فمطابقةٌ في آخر المقتطف
+ *   تقع في آخر سطرٍ أو بعده — فتُقصّ، ويعود القارئ إلى بطاقةٍ لا أثر
+ *   فيها لما بحث عنه. وهو عين ما كُتب الملفّ لمنعه.
+ */
+const leadOf = (limit: number) => {
+  const windowed = highlightSegments(FAR, parseSearchTerms('وزارة'), limit);
+  let before = 0;
+  for (const segment of windowed.segments) {
+    if (segment.match) return before;
+    before += segment.text.length;
+  }
+  return Number.POSITIVE_INFINITY;
+};
+check(
+  'والمطابقة في النصف الأوّل من المعروض',
+  leadOf(220) <= 110 && leadOf(140) <= 70,
+  `البطاقة ${leadOf(220)}/220 والجدول ${leadOf(140)}/140 — وما بعد النصف يُقصّ بعدد الأسطر`,
+);
+
+/*
+ * ما يُعرض مقطوعٌ من النصّ لا مُعاد تركيبه.
+ *
+ * فالمقاطع تُلصق في الشاشة بلا فاصل: مقطعٌ زائدٌ أو ناقصٌ حرفاً يُظهر
+ * كلاماً لم يقله صاحب المنشور.
+ */
+check('وما يُعرض مقطوعٌ من النصّ حرفاً بحرف', HAY.includes(shown(HAY, 'وزارة')) && HAY.includes(shown(HAY, '"خطة تقنين"')));
+
+check(
+  'وبلا بحثٍ يُعرض أوّل النصّ كما كان',
+  shown(HAY, '') === HAY && !highlightSegments(HAY, parseSearchTerms('')).clippedStart,
+);
+check(
+  'ومطابقةٌ في غير النصّ لا تُفرغ البطاقة',
+  shown('نصٌّ قصير', 'كهرباء') === 'نصٌّ قصير',
+  'الكلمة قد تكون في اسم الكاتب أو في هاشتاغ — وكلاهما في عمود البحث لا في النصّ',
+);
+
+/*
+ * والبطاقة تتلقّى ما بُحث عنه فعلاً — وإلّا فالإبراز شيفرةٌ لا تعمل.
+ */
+const card = readCode('src/components/posts/post-card.tsx');
+check('البطاقة تمرّر الحدّ إلى المقتطف', /<PostSnippet text=\{post\.text\} query=\{query\}/.test(card));
+check(
+  'والجدول يُبرز كالبطاقة بحدّ سطريه',
+  /PostRow\(\{ post, query \}/.test(card) &&
+    /<PostSnippet text=\{post\.text\} query=\{query\} limit=\{140\}/.test(card) &&
+    /<PostRow[\s\S]{0,120}?query=\{filters\.q\}/.test(
+      readCode('src/app/(app)/posts/posts-client.tsx'),
+    ),
+  'من بدّل الشكل إلى جدولٍ فقد ما يدلّه على موضع المطابقة',
+);
+check(
+  'والمقتطف يفصل حذف الطرفين',
+  /clippedStart && '… '/.test(card) && /clippedEnd && ' …'/.test(card),
+  'نقطةُ حذفٍ بعد تمام النصّ تقول إنّ بعده بقيّة',
+);
+for (const screen of [
+  'src/app/(app)/posts/posts-client.tsx',
+  'src/app/(app)/stories/[id]/story-client.tsx',
+  'src/app/(app)/entities/[id]/entity-client.tsx',
+]) {
+  check(
+    `وشاشةُ ${screen.includes('posts-client') ? 'المنشورات' : screen.includes('story') ? 'القصّة' : 'الكيان'} تمرّر سطر البحث`,
+    /<PostCard[\s\S]{0,200}?query=\{filters\.q\}/.test(readCode(screen)),
+    'بطاقةٌ لا تتلقّى الحدّ لا تُبرز شيئاً — والميزة تُظنّ معطّلة',
+  );
+}
 
 // ══════════════ النتيجة ══════════════
 
