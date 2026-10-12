@@ -153,11 +153,11 @@ function OverflowMenu({ actions }: { actions: RowAction[] }) {
                 className={cn(
                   'flex w-full items-center gap-2 rounded-md px-3 py-2 text-start text-sm font-medium',
                   'transition-colors duration-150',
-                  'focus-visible:outline-none focus-visible:bg-olive-50',
+                  'focus-visible:outline-none focus-visible:bg-brand-50',
                   'disabled:cursor-not-allowed disabled:text-disabled-text',
                   action.tone === 'danger'
                     ? 'text-danger hover:bg-danger-soft'
-                    : 'text-foreground hover:bg-olive-50',
+                    : 'text-foreground hover:bg-brand-50',
                 )}
               >
                 {action.icon && (

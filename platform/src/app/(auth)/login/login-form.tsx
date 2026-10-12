@@ -100,7 +100,7 @@ export function LoginForm() {
           </Button>
 
           <div className="flex items-center justify-between pt-1 text-xs">
-            <Link href="/forgot-password" className="text-primary hover:underline">
+            <Link href="/forgot-password" className="text-primary-text hover:underline">
               نسيت كلمة المرور؟
             </Link>
             <span className="text-muted-foreground">لا يوجد تسجيل ذاتي — الحسابات تُنشأ من الإدارة</span>

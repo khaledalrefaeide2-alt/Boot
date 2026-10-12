@@ -149,7 +149,7 @@ export function ProfileClient({
             <CardHeader title="الدور والصلاحيات" />
             <CardBody className="space-y-3">
               <div className="flex items-center gap-2.5">
-                <ShieldCheck className="h-5 w-5 text-primary" aria-hidden />
+                <ShieldCheck className="h-5 w-5 text-primary-text" aria-hidden />
                 <div>
                   <p className="text-sm font-medium">{roleLabel}</p>
                   <p className="text-xs text-muted-foreground">{roleDescription}</p>

@@ -34,7 +34,7 @@ export function AccountAvatar({
     <span
       className={cn(
         'relative flex shrink-0 items-center justify-center overflow-hidden rounded-full',
-        'bg-olive-100 font-semibold text-olive-800 ring-1 ring-border',
+        'bg-brand-100 font-semibold text-brand-800 ring-1 ring-border',
         SIZES[size],
         className,
       )}

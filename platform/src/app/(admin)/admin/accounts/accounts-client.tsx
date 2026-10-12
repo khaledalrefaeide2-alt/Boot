@@ -398,7 +398,7 @@ export function AccountsAdminClient({
                         >
                           <AccountAvatar name={account.name} src={account.avatarUrl} size="sm" />
                           <span className="min-w-0">
-                            <span className="block truncate font-medium hover:text-primary">
+                            <span className="block truncate font-medium hover:text-primary-text">
                               {account.name}
                             </span>
                             <span className="ltr block truncate text-xs text-muted-foreground">

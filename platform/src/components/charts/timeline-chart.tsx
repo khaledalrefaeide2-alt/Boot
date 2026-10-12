@@ -22,6 +22,7 @@ import {
   seriesDash,
   tooltipDateFormatter,
 } from './chart-kit';
+import { ChartColumn, TrendingUp } from 'lucide-react';
 
 export interface TimelinePoint {
   date: string;
@@ -39,25 +40,44 @@ export function TimelineChart({
   metric = 'posts',
   title,
   description,
+  action,
   height = 280,
 }: {
   data: TimelinePoint[];
   metric?: 'posts' | 'engagement';
   title: string;
   description?: string;
+  action?: React.ReactNode;
   height?: number;
 }) {
-  const color = metric === 'posts' ? seriesColor(0) : seriesColor(1);
+  /*
+   * التفاعل بتركواز الهوية كما في المرجع، والنشر بالأزرق.
+   * رسمان متجاوران بلونٍ واحد يُقرآن رسماً مكرّراً، فيفترقان لوناً.
+   */
+  const color = metric === 'engagement' ? seriesColor(0) : seriesColor(2);
   const label = metric === 'posts' ? 'عدد المنشورات' : 'إجمالي التفاعل';
+  /*
+   * النقاط على كلّ يوم حين تكون الأيام قليلة — كما في المرجع — فيُرى أين
+   * تقع القيم الحقيقية بين ما يرسمه المنحنى. وتسقط حين تتزاحم: ستّون نقطة
+   * على عرض بطاقة تصير خطّاً سميكاً لا نقاطاً.
+   */
+  const showDots = data.length <= 35;
 
   return (
-    <ChartFrame title={title} description={description} isEmpty={data.length === 0} height={height}>
+    <ChartFrame
+      title={title}
+      description={description}
+      action={action}
+      icon={metric === 'engagement' ? TrendingUp : ChartColumn}
+      isEmpty={data.length === 0}
+      height={height}
+    >
       <ResponsiveContainer width="100%" height="100%">
         <AreaChart data={data} margin={{ top: 8, right: 8, bottom: 4, left: 8 }}>
           <defs>
             <linearGradient id={`fill-${metric}`} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.28} />
-              <stop offset="100%" stopColor={color} stopOpacity={0.02} />
+              <stop offset="0%" stopColor={color} stopOpacity={0.32} />
+              <stop offset="100%" stopColor={color} stopOpacity={0.03} />
             </linearGradient>
           </defs>
 
@@ -92,10 +112,10 @@ export function TimelineChart({
             dataKey={metric}
             name={label}
             stroke={color}
-            strokeWidth={2}
+            strokeWidth={2.25}
             fill={`url(#fill-${metric})`}
-            dot={false}
-            activeDot={{ r: 4, strokeWidth: 2, stroke: 'var(--surface)' }}
+            dot={showDots ? { r: 3, strokeWidth: 2, stroke: color, fill: 'var(--surface)' } : false}
+            activeDot={{ r: 5, strokeWidth: 2, stroke: 'var(--surface)', fill: color }}
           />
         </AreaChart>
       </ResponsiveContainer>

@@ -25,7 +25,7 @@ export function Card({
   return (
     <div
       className={cn(
-        'min-w-0 rounded-xl border border-border bg-surface shadow-elev-1',
+        'min-w-0 rounded-card border border-border bg-surface shadow-elev-1',
         interactive && 'card-interactive',
         className,
       )}
@@ -48,32 +48,36 @@ export function CardHeader({
   return (
     <div
       className={cn(
-        'flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3 sm:px-5',
+        'flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-4 sm:px-5',
         className,
       )}
       {...props}
     >
       <div className="space-y-0.5">
         {title && (
-          <h2 className="text-sm font-semibold tracking-[-0.01em] text-heading sm:text-base">
+          <h2 className="text-base font-bold text-heading">
             {title}
           </h2>
         )}
         {description && <p className="text-xs text-muted-foreground">{description}</p>}
       </div>
-      {action && <div className="flex items-center gap-2">{action}</div>}
+      {/*
+        الإجراءات تلتفّ ولا تفيض: بطاقةٌ في عمودٍ ضيّق (ثلث الشاشة على
+        1024px) لا تتّسع لزرّين بجانب العنوان، فيدفعان حافّتها خارج الصفحة.
+      */}
+      {action && <div className="flex flex-wrap items-center gap-2">{action}</div>}
     </div>
   );
 }
 
 export function CardBody({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
-  return <div className={cn('px-4 py-4 sm:px-5', className)} {...props} />;
+  return <div className={cn('p-4 sm:p-5', className)} {...props} />;
 }
 
 export function CardFooter({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) {
   return (
     <div
-      className={cn('border-t border-border bg-surface-2/50 px-4 py-3 sm:px-5', className)}
+      className={cn('rounded-b-card border-t border-border bg-surface-2/60 px-4 py-3 sm:px-5', className)}
       {...props}
     />
   );

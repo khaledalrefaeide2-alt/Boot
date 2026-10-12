@@ -7,7 +7,6 @@ import { can, PERMISSIONS } from '@/lib/auth/rbac';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { Badge, StatusDot } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
 import { METRIC_ICONS, StatCard, StatGrid } from '@/components/ui/stat-card';
 import { EmptyState } from '@/components/ui/states';
@@ -17,6 +16,7 @@ import {
   EXTRACTION_TRIGGER_LABELS,
 } from '@/lib/domain/constants';
 import { formatDate, formatDateTime, formatDuration, formatNumber, truncate } from '@/lib/utils';
+import { LinkButton } from '@/components/ui/link-button';
 
 export const metadata: Metadata = { title: 'تفاصيل عملية الاستخراج' };
 
@@ -63,13 +63,9 @@ export default async function ExtractionDetailPage({
         description={`أُنشئت في ${formatDateTime(run.createdAt)}`}
         action={
           <>
-            <Link href="/admin/extractions">
-              <Button variant="secondary">العودة إلى السجل</Button>
-            </Link>
+            <LinkButton href="/admin/extractions" variant="secondary">العودة إلى السجل</LinkButton>
             {run.account && (
-              <Link href={`/posts?accountId=${run.account.id}&range=all`}>
-                <Button>عرض منشورات الحساب</Button>
-              </Link>
+              <LinkButton href={`/posts?accountId=${run.account.id}&range=all`}>عرض منشورات الحساب</LinkButton>
             )}
           </>
         }
@@ -172,7 +168,7 @@ export default async function ExtractionDetailPage({
           <CardBody className="py-1">
             <DetailRow label="الحساب">
               {run.account ? (
-                <Link href={`/accounts/${run.account.id}`} className="text-primary hover:underline">
+                <Link href={`/accounts/${run.account.id}`} className="text-primary-text hover:underline">
                   {run.account.name}
                 </Link>
               ) : (

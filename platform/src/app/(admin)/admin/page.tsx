@@ -10,7 +10,6 @@ import { isRedisReady } from '@/lib/redis';
 import { PageHeader } from '@/components/layout/page-header';
 import { METRIC_ICONS, StatCard, StatGrid } from '@/components/ui/stat-card';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge, StatusDot } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
 import { EmptyState } from '@/components/ui/states';
@@ -20,6 +19,7 @@ import {
   EXTRACTION_STATUS_TONE,
 } from '@/lib/domain/constants';
 import { formatDuration, formatNumber, formatRelativeTime } from '@/lib/utils';
+import { LinkButton } from '@/components/ui/link-button';
 
 export const metadata: Metadata = { title: 'لوحة تحكم الإدارة' };
 
@@ -77,9 +77,7 @@ export default async function AdminHomePage() {
         title="لوحة تحكم الإدارة"
         description="حالة النظام والعمليات الجارية"
         action={
-          <Link href="/analytics">
-            <Button variant="secondary">لوحة العرض</Button>
-          </Link>
+          <LinkButton href="/analytics" variant="secondary">لوحة العرض</LinkButton>
         }
       />
 
@@ -147,11 +145,9 @@ export default async function AdminHomePage() {
         <CardHeader
           title="آخر عمليات الاستخراج"
           action={
-            <Link href="/admin/extractions">
-              <Button variant="ghost" size="sm">
-                السجل الكامل
-              </Button>
-            </Link>
+            <LinkButton href="/admin/extractions" variant="ghost" size="sm">
+              السجل الكامل
+            </LinkButton>
           }
         />
         {recentRuns.length === 0 ? (
@@ -160,9 +156,7 @@ export default async function AdminHomePage() {
             title="لم تُشغَّل أي عملية استخراج بعد"
             description="أضف حساباً ثم شغّل أول عملية"
             action={
-              <Link href="/admin/accounts">
-                <Button variant="secondary">إدارة الحسابات</Button>
-              </Link>
+              <LinkButton href="/admin/accounts" variant="secondary">إدارة الحسابات</LinkButton>
             }
           />
         ) : (

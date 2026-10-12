@@ -1,479 +1,95 @@
-# Design System Master File
+# النظام البصري — المرجع الرئيسي
 
-> **LOGIC:** When building a specific page, first check `design-system/pages/[page-name].md`.
-> If that file exists, its rules **override** this Master file.
-> If not, strictly follow the rules below.
+> مصدر الحقيقة هو **`src/app/globals.css`** (الرموز) و**`src/components/ui/`** (المكوّنات).
+> هذا الملفّ يشرحهما ولا يُكرّر قيمهما إلا للعرض. ومن غيّر قيمةً هناك يُحدّثها هنا.
+> و`npm run verify:contrast` و`npm run verify:buttons` يرسبان إن خرج رمزٌ عمّا يلي.
 
----
-
-**Project:** Media Monitoring Platform
-**Generated:** 2026-09-06 20:40:05
-**Category:** Smart Home/IoT Dashboard
-**Design Dials:** Variance 6/10 (Balanced / Modern) | Motion 5/10 (Standard) | Density 8/10 (Dense / Dashboard)
+**الهوية:** واجهة عربية تحليلية هادئة — قائمة جانبية كحلية، أرضية فاتحة، بطاقات بيضاء، وتركواز للإجراء الرئيسي وحده.
+**الاتجاه:** `rtl` — والمواضع كلّها منطقية (`start`/`end`، `ps`/`pe`) لا فيزيائية.
 
 ---
 
-## Global Rules
+## الألوان (السمة الفاتحة)
 
-### Color Palette
-
-| Role | Hex | CSS Variable |
-|------|-----|--------------|
-| Primary | `#1E293B` | `--color-primary` |
-| On Primary | `#FFFFFF` | `--color-on-primary` |
-| Secondary | `#334155` | `--color-secondary` |
-| On Secondary | `#FFFFFF` | `--color-on-secondary` |
-| Accent/CTA | `#22C55E` | `--color-accent` |
-| On Accent/CTA | `#0F172A` | `--color-on-accent` |
-| Background | `#0F172A` | `--color-background` |
-| Foreground | `#F8FAFC` | `--color-foreground` |
-| Card | `#1B2336` | `--color-card` |
-| Card Foreground | `#F8FAFC` | `--color-card-foreground` |
-| Muted | `#272F42` | `--color-muted` |
-| Muted Foreground | `#94A3B8` | `--color-muted-foreground` |
-| Border | `#475569` | `--color-border` |
-| Destructive | `#EF4444` | `--color-destructive` |
-| On Destructive | `#000000` | `--color-on-destructive` |
-| Ring | `#FFFFFF` | `--color-ring` |
-
-**Color Notes:** Dark tech + status green
-
-### Typography
-
-- **Heading Font:** Fira Code
-- **Body Font:** Fira Sans
-- **Mood:** dashboard, data, analytics, code, technical, precise
-- **Google Fonts:** [Fira Code + Fira Sans](https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap)
-
-**CSS Import:**
-```css
-@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600;700&family=Fira+Sans:wght@300;400;500;600;700&display=swap');
-```
-
-### Spacing Variables
-
-*Density: 8/10 — Dense / Dashboard*
-
-| Token | Value | Usage |
-|-------|-------|-------|
-| `--space-xs` | `2px` / `0.125rem` | Tight gaps |
-| `--space-sm` | `4px` / `0.25rem` | Icon gaps, inline spacing |
-| `--space-md` | `8px` / `0.5rem` | Standard padding |
-| `--space-lg` | `12px` / `0.75rem` | Section padding |
-| `--space-xl` | `16px` / `1rem` | Large gaps |
-| `--space-2xl` | `24px` / `1.5rem` | Section margins |
-| `--space-3xl` | `32px` / `2rem` | Hero padding |
-
-### Shadow Depths
-
-| Level | Value | Usage |
-|-------|-------|-------|
-| `--shadow-sm` | `0 1px 2px rgba(0,0,0,0.05)` | Subtle lift |
-| `--shadow-md` | `0 4px 6px rgba(0,0,0,0.1)` | Cards, buttons |
-| `--shadow-lg` | `0 10px 15px rgba(0,0,0,0.1)` | Modals, dropdowns |
-| `--shadow-xl` | `0 20px 25px rgba(0,0,0,0.15)` | Hero images, featured cards |
-
----
-
-## Component Specs
-
-### Buttons
-
-```css
-/* Primary Button */
-.btn-primary {
-  background: #22C55E;
-  color: white;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 200ms ease;
-  cursor: pointer;
-}
-
-.btn-primary:hover {
-  opacity: 0.9;
-  transform: translateY(-1px);
-}
-
-/* Secondary Button */
-.btn-secondary {
-  background: transparent;
-  color: #1E293B;
-  border: 2px solid #1E293B;
-  padding: 12px 24px;
-  border-radius: 8px;
-  font-weight: 600;
-  transition: all 200ms ease;
-  cursor: pointer;
-}
-```
-
-### Cards
-
-```css
-.card {
-  background: #0F172A;
-  border-radius: 12px;
-  padding: 24px;
-  box-shadow: var(--shadow-md);
-  transition: all 200ms ease;
-  cursor: pointer;
-}
-
-.card:hover {
-  box-shadow: var(--shadow-lg);
-  transform: translateY(-2px);
-}
-```
-
-### Inputs
-
-```css
-.input {
-  padding: 12px 16px;
-  border: 1px solid #E2E8F0;
-  border-radius: 8px;
-  font-size: 16px;
-  transition: border-color 200ms ease;
-}
-
-.input:focus {
-  border-color: #1E293B;
-  outline: none;
-  box-shadow: 0 0 0 3px #1E293B20;
-}
-```
-
-### Modals
-
-```css
-.modal-overlay {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(4px);
-}
-
-.modal {
-  background: white;
-  border-radius: 16px;
-  padding: 32px;
-  box-shadow: var(--shadow-xl);
-  max-width: 500px;
-  width: 90%;
-}
-```
-
----
-
-## Style Guidelines
-
-**Style:** Glassmorphism
-
-**Keywords:** Frosted glass, transparent, blurred background, layered, vibrant background, light source, depth, multi-layer
-
-**Best For:** Modern SaaS, financial dashboards, high-end corporate, lifestyle apps, modal overlays, navigation
-
-**Key Effects:** Backdrop blur (10-20px), subtle border (1px solid rgba white 0.2), light reflection, Z-depth
-
-### Page Pattern
-
-**Pattern Name:** Real-Time / Operations Landing
-
-- **Conversion Strategy:** Offer a demo or sandbox and show trust signals. Label telemetry as live only when backed by a current source, with update time and stale state. Provide pause/hide or update-frequency controls for tickers and previews, stop offscreen/hidden work, support keyboard controls, and render a static final snapshot under reduced motion.
-- **CTA Placement:** Primary CTA in nav + After metrics
-- **Section Order:** Hero (product + live preview or status) > Key metrics/indicators > How it works > CTA (Start trial / Contact)
-
----
-
-## Motion
-
-**Stagger List** (Standard) — Trigger: load or scroll | Duration: 300-450ms | Easing: `back.out(1.4)`
-
-```js
-gsap.from('.grid-item', { opacity: 0, scale: 0.92, y: 16, duration: 0.4, stagger: { each: 0.06, from: 'start', grid: 'auto' }, ease: 'back.out(1.4)' });
-```
-
-**Framework notes:** grid: 'auto' lets GSAP infer rows/columns from a CSS grid layout for a natural wave stagger; Use matchMedia('(prefers-reduced-motion: reduce)') to skip non-essential motion and render the final state immediately
-
-- ✅ Combine with from: 'center' for a bento-grid layout to draw the eye inward first
-- ❌ Don't use back.out on dense data tables; the overshoot reads as sloppy on informational UI
-- ⚡ Group DOM writes; avoid interleaving layout reads (getBoundingClientRect) between staggered tweens
-
----
-
-## Anti-Patterns (Do NOT Use)
-
-- ❌ Slow updates
-- ❌ No automation
-
-### Additional Forbidden Patterns
-
-- ❌ **Emojis as icons** — Use SVG icons (Heroicons, Lucide, Simple Icons)
-- ❌ **Missing cursor:pointer** — All clickable elements must have cursor:pointer
-- ❌ **Layout-shifting hovers** — Avoid scale transforms that shift layout
-- ❌ **Low contrast text** — Maintain 4.5:1 minimum contrast ratio
-- ❌ **Instant state changes** — Always use transitions (150-300ms)
-- ❌ **Invisible focus states** — Focus states must be visible for a11y
-
----
-
-## Pre-Delivery Checklist
-
-Before delivering any UI code, verify:
-
-- [ ] No emojis used as icons (use SVG instead)
-- [ ] All icons from consistent icon set (Heroicons/Lucide)
-- [ ] `cursor-pointer` on all clickable elements
-- [ ] Hover states with smooth transitions (150-300ms)
-- [ ] Light mode: text contrast 4.5:1 minimum
-- [ ] Focus states visible for keyboard navigation
-- [ ] `prefers-reduced-motion` respected
-- [ ] Responsive: 375px, 768px, 1024px, 1440px
-- [ ] No content hidden behind fixed navbars
-- [ ] No horizontal scroll on mobile
-
----
-
-## ما نُفِّذ فعلياً في هذا المشروع
-
-> كل ما فوق هذا الخط مخرجات المهارة كما ولّدتها. وما تحته سجلّ التنفيذ:
-> أين طابقنا التوصية وأين خالفناها ولماذا. عند التعارض، هذا القسم هو
-> الصحيح لأنه يصف الكود القائم — وجدول `Shadow Depths` أعلاه بقيمه العامة
-> لم يُستعمل.
-
-### مصفوفة الارتفاع (`src/app/globals.css`)
-
-مستوى واحد لكل ارتفاع حقيقي، والقيم مشتقّة من لون الهوية `#0f1b2d` لا من
-أسود عام. الصنف المستعمل في المكوّنات `shadow-elev-N`.
-
-| المستوى | فاتح | داكن | أين يُستعمل |
-|---|---|---|---|
-| `--elev-0` | `none` | `none` | مسطّح داخل حاوية (شريط فلاتر مدمج) |
-| `--elev-1` | `0 1px 2px #0f1b2d0f` | `0 1px 2px #0006` | بطاقة، زر، لوحة رسم، شريط فلاتر مستقل |
-| `--elev-2` | `0 1px 3px #0f1b2d14, 0 4px 12px #0f1b2d0d` | `0 1px 3px #00000073, 0 4px 14px #00000059` | بطاقات شاشة الدخول الزجاجية |
-| `--elev-3` | `0 8px 28px #0f1b2d1f` | `0 10px 34px #0000008c` | قائمة منسدلة، إشعار، تلميح رسم |
-| `--elev-4` | `0 24px 56px #0f1b2d33` | `0 24px 60px #0000009e` | نافذة، درج الجوال، معرض الصور |
-
-قاعدتان لازمتان:
-
-1. **قيم الداكن مُعادة الاشتقاق لا معكوسة.** ظلّ بشفافية 10% فوق أرضية
-   `#0a1120` لا يُرى أصلاً، فالفصل بين السطوح في الوضع الداكن كان معدوماً
-   عملياً قبل هذا التوحيد.
-2. **مفتاح السمة هو صنف `.dark`** لأن `next-themes` هنا مضبوط على
-   `attribute="class"`. الربط بـ `data-theme` أو `prefers-color-scheme`
-   يجعل عتمة الظل تتبع نظام التشغيل لا اختيار المستخدم في الموقع.
-
-### شبكة الأمان
-
-سلّم ظلال Tailwind كله (`--shadow-2xs … --shadow-2xl`) مربوط بالمصفوفة في
-`@theme`، ومستويات الارتفاع مضافة إلى مجموعة `shadow` في `tailwind-merge`
-داخل `cn`. الأثر: من يكتب `shadow-lg` لاحقاً دون علمٍ بالمصفوفة يقع على
-مستوى منها، ومن يمرّر ظلاً مخالفاً لمكوّن يحسم التعارض لصالح ما مرّره لا
-لصالح ترتيب القواعد في الملف.
-
-### مخالفتان مقصودتان لمخرجات المهارة
-
-| التوصية | ما نُفِّذ | السبب |
+| الدور | القيمة | الرمز |
 |---|---|---|
-| Fira Code / Fira Sans عبر Google Fonts | دور الخط الأحادي بمكدّس محلي، و Cairo مستضاف ذاتياً | المنصة قد تعمل على شبكة معزولة: طلب خط خارجي يُفقد الهوية عند الانقطاع ويُسرّب طلباً من جهاز كل موظف |
-| شفافية الزجاج 15% | 72% | المواصفة تفترض خلفية زاهية خلف الزجاج؛ عند 15% نزل تباين النص تحت 4.5:1 وهو شرط المهارة نفسها |
-| WebGL (Three.js / R3F / Spline) | لا محرّك رسوميات إطلاقاً | المهارة نفسها رشّحت Glassmorphism بوسم `drivers:none`، والعمق يتحقق بـ CSS خالص |
+| القائمة الجانبية | `#142338` | `--sidebar` |
+| أرضية الصفحة | `#F5F7FA` | `--background` |
+| السطح (البطاقات) | `#FFFFFF` | `--surface` |
+| الرئيسي (خلفية الزرّ والعنصر النشط) | `#087F8C` | `--brand-700` = `--primary` |
+| الرئيسي نصّاً (روابط، أزرار شبحية) | `#066A75` | `--brand-800` = `--primary-text` |
+| النصّ الأساسي | `#17263C` | `--foreground` |
+| النصّ الثانوي | `#56667D` | `--muted-foreground` |
+| الحدّ الزخرفي | `#E2E8F0` | `--border` |
+| حدّ الحقل والزرّ الثانوي | `#7F8A9B` | `--border-input` |
 
-### نطاق التطبيق
+**عدولان عن قيم المواصفة، مقيسان:**
+- النصّ الثانوي `#64748B` يعطي 4.43:1 على `#F5F7FA` — تحت حدّ 4.5. فصار `#56667D`.
+- التركواز `#087F8C` نصّاً على الأرضية 4.42:1. فالنصّ التركوازي بـ`--brand-800`، والقيمة الأصلية للخلفيات (والأبيض عليها 4.75:1).
 
-العمق (زجاج + ميل) على **شاشة الدخول وحدها**. مصفوفة الارتفاع وحدها هي
-التي عمّت بقية الشاشات. شاشات التشغيل كثافتها وظيفتها، والزجاج والميل فيها
-يزاحمان الجداول والأرقام.
+**ألوان التمييز** (أزرق، أخضر، بنفسجي، عنبري، وردي): في رقاقات الأيقونات والأعمدة الصغيرة والشارات وحدها — `--tint-*-chip` و`--tint-*-ink`. البطاقات نفسها بيضاء.
 
+**السمة الداكنة:** كحليٌّ عميق (`#0B1320`) لا أسود، والقائمة كحليّة في السمتين. سلّم `--brand-*` مقلوب فيها (700 تركواز فاتح بحبرٍ داكن)، فتُكتب قاعدة الزرّ مرّةً وتعمل في السمتين.
 
----
+## الخطّ
 
-## إعادة التصميم الشاملة — سجلّ التنفيذ
+- **IBM Plex Sans Arabic** — مستضاف محلياً (`public/fonts/plex-*.woff2`)، أوزان 400/500/600/700، ورخصته OFL.
+- لا وزن فوق 700 (`font-extrabold` لا وجود له في الخطّ).
 
-> الاستعلام: `"government media monitoring analytics dashboard" --design-system
-> --variance 4 --motion 3 --density 8`. ما يلي هو ما طُبِّق فعلاً، ومصدر كل
-> قرار: رقم من المهارة، أو قياس أُجري على الكود.
-
-### اللوحة اللونية
-
-المصدر: نتيجتان من `--domain color` — «Analytics Dashboard» للفاتح
-و«Financial Dashboard» للداكن. لم تُنقل القيم كما هي: كل لون نصّي حُسب
-تباينه قبل كتابته، وما رسب رُفع حتى يعبر.
-
-| الرمز | فاتح | داكن | ملاحظة |
-|---|---|---|---|
-| `--background` | `#f8fafc` | `#020617` | من المهارة حرفياً |
-| `--surface` | `#ffffff` | `#0e1223` | |
-| `--foreground` | `#0f172a` | `#e8eef7` | انظر المخالفات |
-| `--heading` | `#1e3a8a` | `#bfd6f5` | رمز جديد |
-| `--primary` | `#1e40af` | `#7cb2f7` | من المهارة |
-| `--accent` | `#b45309` | `#e79b3d` | رُفع من `#D97706` (3.19:1) |
-| `--success` | `#166534` | `#4ade80` | رُفع من `#15803d` (4.46 على الناعم) |
-| `--warning` | `#854d0e` | `#fbbf24` | رُفع من `#a16207` (4.47) |
-| `--danger` | `#b91c1c` | `#f87171` | رُفع من `#dc2626` (4.23) |
-
-### السلّم الطباعي
-
-المهارة رشّحت Fira Code / Fira Sans عبر Google Fonts — مرفوض للسبب نفسه
-(شبكة معزولة). لكن توصيتها البنيوية طُبِّقت: «سلّم معياري ثابت» و«لا نص
-تحت 12px». وكانت الواجهة تحمل **146 موضعاً بمقاس 12px** وعشرة مواضع
-بمقاسات حرّة تنزل إلى **10px**.
-
-السلّم الجديد مضبوط للعربية: كل درجة أكبر ببكسل أو اثنين من نظيرتها
-اللاتينية، لأن الحرف العربي يحمل نقاطاً واتصالاً وتشكيلاً لا يحملها
-اللاتيني في المقاس نفسه. أصغر مقاس 12px بلا استثناء.
-
-### الجداول
-
-| التغيير | السبب |
-|---|---|
-| تخطيط الصفوف بلونين | جدول الحسابات 11 عموداً وجدول المقارنة 12؛ الفاصل الأفقي وحده لا يمسك السطر عبر عرض الشاشة |
-| حدّ الترويسة مضاعف | خط واحد تعرف منه العين أين ينتهي اسم العمود |
-| لون التحويم من الأساسي لا من الرمادي | لولاه لأشبه الصفُّ المحوَّم صفاً مخطّطاً عادياً |
-
-**لم يُنفَّذ: ترويسة لاصقة.** حاوية التمرير الأفقي تصير حاوية تمرير في
-المحورين، فتفقد `sticky` مرجعها من الصفحة. تنفيذها يتطلّب ارتفاعاً أقصى
-للجدول وتمريراً رأسياً داخله — وهو تغيير في سلوك التصفّح لا في مظهره،
-والجداول هنا مقسّمة إلى صفحات أصلاً فالفائدة محدودة.
-
-### الرسوم
-
-اللوحة القديمة كانت تسقط في فحصين:
-
-1. ثلاث سلاسل تحت 3:1 على الأبيض (أدناها **2.17**) — أي خطوط لا تكاد تُرى.
-2. سلسلتان تتطابقان عملياً عند عمى الأخضر (**ΔE = 2.0**).
-
-اللوحة الجديدة مُشتقّة ببحث آلي على قيدين: تباين ≥3.5:1 مع أرضية البطاقة،
-وΔE ≥20 بين كل زوج في الرؤية الطبيعية وبعد محاكاة عمى الأخضر وعمى الأحمر.
-
-| | أدنى تباين | ΔE طبيعي | ΔE عمى أخضر | ΔE عمى أحمر |
-|---|---|---|---|---|
-| فاتح | 4.23 | 24.8 | 24.3 | 20.4 |
-| داكن | 4.04 | 46.0 | 32.3 | 37.7 |
-
-ومع ذلك: **ستّ سلاسل لا تُميَّز باللون وحده**، ولا لوحة تحقق ذلك. فطُبِّقت
-توصية المهارة نفسها في `--domain chart`: «استعمل خطوطاً متصلة ومتقطّعة
-ومنقّطة مع تسميات مباشرة؛ لا تميّز السلاسل بالتدرّج اللوني وحده». كل سلسلة
-تحمل نمط خط خاصاً، والدليل يعرض الخط بنمطه لا مربّعاً ملوّناً.
-
-### مخالفات موثّقة
-
-| التوصية | ما نُفِّذ | السبب |
+| الدور | المقاس | الصنف |
 |---|---|---|
-| `Foreground: #1E3A8A` (أزرق للنص كله) | أزرق للعناوين، وأردوازي `#0f172a` للنص | نص عربي كثيف مصبوغ بالأزرق أقلّ وضوحاً في الجداول؛ التسلسل يبقى بالأزرق حيث ينفع |
-| نص داكن `#F8FAFC` ناصع | `#e8eef7` | الناصع على شبه الأسود يُحدث هالة حول الحرف العربي بنقاطه |
-| `Accent: #D97706` | `#b45309` | 3.19:1 — دون الحدّ الذي تشترطه المهارة نفسها |
-| `Border: #DBEAFE` | `#d7e2f0` / `#b9c9de` | 1.22:1 لا يفصل صفاً عن صف |
-| الأخضر `#22C55E` لوناً مميّزاً في الداكن | الكهرماني في السمتين | الأخضر محجوز لمشاعر المنشور؛ استعماله للتمييز يخلط دلالتين |
-| حركة كشف عند التمرير (300-400ms) | لا شيء | تأخير ظهور البيانات في شاشة تشغيل عيب لا ميزة |
-| نمط «Real-Time / Operations Landing» | القسم التسويقي منه متروك | المنصة ليست صفحة هبوط؛ أُخذ منها ترتيب المؤشرات فقط |
+| المتن والأزرار | 14px | `text-sm` |
+| الزرّ الكبير | 16px | `text-base` |
+| عنوان الصفحة | 30px | `text-3xl` (24px على الجوال) |
+| الحدّ الأدنى | 12px | `text-2xs` |
 
-### القياس
+## الزوايا والارتفاعات
 
-- **421 تركيبة نص/خلفية** مقيسة في المتصفح على 13 شاشة × سمتين، على
-  الخلفيات المركّبة فعلياً لا المفترضة. أضيقها 4.78 في الفاتح و5.09 في
-  الداكن — كلها فوق 4.5:1.
-- لا تمرير أفقي على 390px في ثلاث شاشات.
-- الطباعة تقلب السمة الداكنة إلى أبيض وأسود.
-- حصر بيانات المستخدمين: 15/15 بعد التغيير.
-
----
-
-## إعادة التصميم الثانية — الطابع الاستعراضي (سجلّ التنفيذ)
-
-طُلبت مطابقة طابع وكالة رقمية (لوحة داكنة غالبة، زجاج، طباعة معمارية،
-حركة). ونُفِّذت على ست مراحل. وهذا سجلّ ما تغيّر وما رُفض ولماذا.
-
-### قراران محسومان قبل البدء
-
-| السؤال | القرار |
-|---|---|
-| «Dark primacy» | الداكن افتراضي وواجهة استعراضية، **والفاتح يبقى ويُقاس** — «غلبة» لا «حصر» |
-| Lenis + framer-motion + WebGL | طبقة ثقيلة على السطح العام وحده، وداخل التطبيق `IntersectionObserver` وCSS بلا مكتبة |
-
-### اللوحة الداكنة الجديدة
-
-| الرمز | القيمة |
-|---|---|
-| `--background` | `#070708` — محايد لا نيليّ |
-| `--surface` | `#121216` |
-| `--border` | `#24242b` (مكافئ شعرة بيضاء 8%) |
-| `--border-input` | `#65656c` — **رمز جديد** |
-| `--foreground` | `#f5f5f7` |
-| `--primary` | `#00e5ff` |
-| `--accent` | `#2563eb` |
-| `--glass-bg` / `--glass-blur` | `rgb(18 18 22 / .65)` / `16px` |
-| `--glow-primary` | حلقة 28% + انتشار 32px بلا إزاحة |
-
-الحياد مقصود: على أرضية ملوّنة يتنافس لونان، وعلى رمادية يبقى واحد.
-
-### عطل إتاحة أُصلح بالمناسبة
-
-حدّ حقول الإدخال كان يرسمه الرمز الزخرفي `--border` نفسه — 1.6:1 في
-الداكن، خلافاً لـ WCAG 1.4.11 الذي يفرض 3:1 على ما يحدّ مكوّناً تفاعلياً.
-فُصل `--border-input` عند 3.2:1 في السمتين، وبقي `--border` شعرةً زخرفية
-كما تقتضي الهوية. والزخرفي خارج نطاق 1.4.11 فلا يُقاس بحدّه.
-
-### مخالفات موثّقة للمواصفة المطلوبة
-
-| ما طُلب | ما نُفِّذ | السبب |
+| الرمز | القيمة | الصنف |
 |---|---|---|
-| `Syne` / `PP Neue Montreal` / `Inter Display` | **Cairo** كما هو + JetBrains Mono للاتيني | الثلاثة بلا حروف عربية؛ منتج عربي RTL لا يحتمل عناوين بخط احتياطي |
-| تتبّع `-0.035em` للعناوين | `-0.02em` للعربية، و`-0.035em` لرمز لاتيني مستقل | الحرف العربي متصل؛ التضييق يقارب النقاط ويُلصق الكاف بالميم |
-| `overline` بتتبّع `0.15em` ومونوسبيس | `.overline` عربي بلا تتبّع، و`.overline-latin` يحمل الثلاثة | التباعد يُبقي وصلات الحروف مرسومة ويباعد الأجسام، فتظهر الكلمة مقطّعة بخيوط |
-| جسيمات WebGL | `canvas` ثنائي الأبعاد | محرّك رسوميات كامل مقابل خلفية تُرى ثوانيَ، على أجهزة قد تكون بلا تسريع رسومي |
-| Lenis على كل الموقع | لا Lenis داخل التطبيق | خطف التمرير في جدول RTL كثيف تراجع في الاستعمال لا ترقية |
-| Bento Portfolio / Case Studies | **متروك** — ولا بديل ملفّق | لا عملاء ولا مشاريع في هذا النظام |
-| Testimonials + شعارات عملاء | **متروك** | لا شهادات؛ ومحتوى ملفّق في نظام رسمي عيب لا إنجاز |
-| Newsletter | **متروك** | لا نشرة، ولا تسجيل ذاتي أصلاً |
-| شريط مؤشرات على صفحة الدخول | **متروك على الدخول**، والأرقام الحقيقية بعد الدخول | صفحة الدخول عامة؛ عرض حجم العملية عليها يسلّمه لمن لم يُصرَّح له |
+| زاوية الزرّ والحقل | 10px | `rounded-control` |
+| زاوية البطاقة | 12px | `rounded-card` |
+| زاوية النافذة | 16px | `rounded-modal` |
+| ارتفاع التحكّم القياسي | 44px | `h-control` |
+| المضغوط | 36px | `h-control-compact` |
+| الكبير | 48px | `h-control-lg` |
+| عرض القائمة الجانبية | 248px | `w-sidebar` |
 
-### مصيدة تقنية تستحق التذكّر
+المسافات على سلّم 4px: 4 · 8 · 12 · 16 · 24 · 32. حشوة المحتوى 24px على سطح المكتب و16px على الجوال.
 
-`hover:glow` لا يُنتج قاعدةً في Tailwind v4: الأصناف المعرَّفة داخل
-`@layer utilities` ساكنة ولا تولّد صيغاً للحالات. تُكتب القيمة صريحةً
-(`hover:shadow-[var(--glow-primary)]`) أو يُعرَّف الصنف بـ `@utility`.
-والسقوط صامت — لا خطأ ولا تحذير.
+## الأزرار — `Button` و`LinkButton`
 
-### القياس
+| المقاس | الارتفاع | الحشوة | الخطّ | الأيقونة | الاستعمال |
+|---|---|---|---|---|---|
+| `md` (الافتراضي) | 44 | 16 | 14 | 20 | الصفحات والنماذج والفلاتر |
+| `sm` | 36 | 12 | 14 | 18 | الجداول والمناطق الكثيفة |
+| `lg` | 48 | 20 | 16 | 20 | الإجراء البارز (الدخول) |
+| `icon` | 44×44 | — | — | 20 | ومعه `aria-label` إلزاماً |
 
-| الفحص | النتيجة |
-|---|---|
-| `npm run verify:contrast` | **78/78** في السمتين · أدناها 3.23:1 |
-| `npm run typecheck` | نظيف |
-| `npm run build` | ينجح · 60 صفحة |
-| لقطات المتصفح | 4 لقطات (سمتان × سطح مكتب وجوال) |
-| أخطاء الطرفية في الصفحة | **0** في الأربع |
-| تمرير أفقي على 390px | **لا** في الأربع |
-| أرضية الداكن المُقاسة | `rgb(7,7,8)` — مطابقة للمواصفة تماماً |
+**الأنواع:** `primary` (تركواز) · `secondary` (أبيض بحدّ محايد) · `outline` (أبيض بحدّ تركوازي — مفاتيح تُفتح وتُغلق) · `tonal` · `ghost` (محايد) · `danger` · `link`.
 
-### أدوات جديدة في `globals.css`
+**قواعد:**
+- الزرّ يضبط مقاس أيقونته — لا يُكتب `h-4 w-4` على أيقونةٍ داخله.
+- التحميل لا يغيّر العرض: المحتوى يبقى مخفيّاً والمؤشّر فوقه.
+- **لا زرّ داخل رابط.** الرابط بهيئة زرّ: `<LinkButton href variant size>`، و`as="a"` للتنزيل والروابط الخارجية.
+- استيراد `buttonVariants` من `button-variants.ts` لا من `button.tsx` (الثاني وحدة عميل).
 
-`.overline` · `.overline-latin` · `.display` · `.glass-panel` ·
-`.card-interactive` · `.media-zoom` · `.glow` · `.nav-indicator` ·
-`.enter-stagger`
+## الحقول — `Input` و`Select` و`Textarea`
 
-### إضافة لاحقة: الخلفية الحيّة
+ارتفاع 44 وزاوية 10 كالزرّ — فيستوي صفّ الفلاتر. وتقبل `icon` (أيقونة في البداية)، ويقبل `Input` الخاصيّة `trailing` (أزرار داخل نهايته). وسهم القائمة المنسدلة مرسوم في نهايتها.
 
-ثلاث هالات لونية ضخمة تنجرف خلف الواجهة كلها (`.aurora-layer`). CSS خالص
-بلا JavaScript ولا canvas — مكوّن خادمي لا يضيف بايتاً إلى حزمة العميل.
+## الهيكل
 
-| القيد | السبب |
-|---|---|
-| الشدّة من `--aurora-opacity` وحده | 0.13 داكن · 0.055 فاتح — رفعها أو تصفيرها بسطر واحد |
-| مدد 43s / 59s / 71s | أعداد أوّلية متباعدة: لو تقاربت لعادت الهالات معاً كل دورة فيُقرأ التكرار نبضاً منتظماً يجذب العين |
-| `translate3d` و`scale` فقط | يُركَّبان على GPU بلا إعادة تخطيط ولا طلاء — تحريك `left`/`width` يُعيد حساب الصفحة ستين مرة في الثانية خلف جدول مفتوح |
-| `position: fixed` + `contain: strict` | لا تتمرر مع المحتوى فلا يُعاد تركيب طبقة مطموسة مع كل حركة عجلة |
-| `animation: none` مع `prefers-reduced-motion` | القاعدة العامة (0.01ms) تُجمّدها عند إطارها **الأخير** لا الأول، فتظهر مزاحة عن موضعها المصمَّم |
+- **القائمة الجانبية:** يمين، 248px، كحلية. عناوين المجموعات تركوازٌ فاتح، وخطٌّ خفيف بين المجموعات. العنصر النشط ممتلئ بالتركواز ونصّه أبيض. وعلى الجوال درجٌ منبثق.
+- **الشريط العلوي:** أبيض معتم. في البداية زرّ القائمة ولوحة الإدارة، وفي النهاية التنبيهات وأزرار السمة الثلاثة وبطاقة المستخدم.
+- **رأس الصفحة (`PageHeader`):** العنوان يميناً بجانب أيقونة قسمه (تُشتقّ من التنقّل تلقائياً)، والإجراءات يساراً، وتلتفّ تحته على الجوال.
 
-### ★ مصيدة ثانية: تصادم أسماء مع أدوات Tailwind المدمجة
+## البطاقات
 
-الصنف `.overline` اصطدم بأداة مدمجة في Tailwind تحمل الاسم نفسه وتضع
-`text-decoration-line: overline`. والصنف المخصّص **لا يلغيها** — تُطبَّق
-القاعدتان معاً فيظهر خط فوق كل عنوان فرعي في الواجهة كلها.
+- `Card`: بيضاء، حدّ `--border`، زاوية 12، ظلّ `elev-1`.
+- `StatCard`: الاسم والرقم في البداية، والرقاقة الملوّنة في النهاية، والأعمدة الصغيرة أسفلها. والرقم معزول الاتجاه وحده فتقع الوحدة («ألف»، «مليون») بعده في القراءة. الشبكة 4 أعمدة من 1280px، و2 على اللوحي، و1 على الجوال.
+- `ChartFrame`: بطاقة بيضاء بلا خطّ تحت العنوان، وأيقونة بجانبه، وحالة فراغ تقول «لا بيانات» ولا ترسم محاور فارغة.
 
-ولا خطأ في البناء ولا تحذير ولا فشل في typecheck. كشفته **لقطة شاشة** بعد
-تسجيل دخول حقيقي، لا فحص آلي.
+## الحركة
 
-أُعيدت التسمية إلى `.eyebrow` / `.eyebrow-latin`. والدرس أوسع من الحالة:
-قبل تسمية أي صنف مخصّص باسم شائع، يُتحقَّق أنه ليس أداة في المكتبة.
+انتقالات 150–200ms بـ`ease-out`. لا تكبير على التحويم (يُعيد تنقيط الحرف العربي). و`prefers-reduced-motion` يُطفئ الحركة كلّها.

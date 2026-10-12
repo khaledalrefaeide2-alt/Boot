@@ -1,10 +1,31 @@
 'use client';
 
 import { forwardRef, type InputHTMLAttributes, type SelectHTMLAttributes, type TextareaHTMLAttributes, useId } from 'react';
+import { ChevronDown, type LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
+/*
+ * أساسُ كلّ عنصر إدخال: ارتفاع 44px وزاوية 10px — كالزرّ تماماً.
+ *
+ * ★ والتساوي شرطٌ لا تجميل.
+ *
+ *   شريط الفلاتر يضع حقل البحث وأربع قوائم وزرّاً في صفٍّ واحد. فإن كان
+ *   الحقل 40 والزرّ 44 انكسر خطُّ الصفّ الأسفل، وقرأته العين عناصرَ
+ *   متفرّقة لا شريطاً واحداً. والرمزان (`h-control` و`rounded-control`)
+ *   هما ما يقرؤه الزرّ أيضاً، فلا يفترقان.
+ */
 const controlBase =
-  'w-full rounded-md border border-border-input bg-surface px-3 text-sm text-foreground transition-colors placeholder:text-subtle-foreground focus-visible:border-primary focus-visible:outline-2 focus-visible:outline-offset-0 focus-visible:outline-ring disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-70';
+  'w-full rounded-control border border-border-input bg-surface px-3 text-sm text-foreground transition-[border-color,box-shadow] duration-150 placeholder:text-subtle-foreground hover:border-subtle-foreground focus-visible:border-primary focus-visible:outline-none focus-visible:shadow-[0_0_0_1px_var(--primary),0_0_0_4px_var(--primary-soft)] disabled:cursor-not-allowed disabled:bg-surface-2 disabled:opacity-70';
+
+/** أيقونةٌ في بداية الحقل — مقاسها ثابت وموضعها منطقيّ (يمين في العربية) */
+function LeadingIcon({ icon: Icon }: { icon: LucideIcon }) {
+  return (
+    <Icon
+      className="pointer-events-none absolute start-3 top-1/2 h-[18px] w-[18px] -translate-y-1/2 text-subtle-foreground"
+      aria-hidden
+    />
+  );
+}
 
 export interface FieldWrapperProps {
   label?: string;
@@ -55,10 +76,20 @@ export interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   hint?: string;
   error?: string | null;
   wrapperClassName?: string;
+  /** أيقونة في بداية الحقل — بحثٌ، تاريخٌ… */
+  icon?: LucideIcon;
+  /**
+   * أزرارٌ داخل الحقل في نهايته — كزرّ البحث وزرّ التوسيع.
+   *
+   * داخلُه لا بجانبه: زرّان بجانب الحقل يأخذان مئة بكسل من صفّ الفلاتر،
+   * فيُنزلان آخر عنصرٍ فيه إلى سطرٍ وحده. وداخلُه يُبقي الصفّ صفّاً،
+   * والزرّان بارتفاع 36 داخل حقلٍ بارتفاع 44.
+   */
+  trailing?: React.ReactNode;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
-  { label, hint, error, className, wrapperClassName, id, required, ...props },
+  { label, hint, error, className, wrapperClassName, id, required, icon, trailing, ...props },
   ref,
 ) {
   const generatedId = useId();
@@ -73,14 +104,20 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       className={wrapperClassName}
       htmlFor={inputId}
     >
-      <input
-        ref={ref}
-        id={inputId}
-        required={required}
-        aria-invalid={error ? true : undefined}
-        className={cn(controlBase, 'h-10', error && 'border-danger', className)}
-        {...props}
-      />
+      <div className="relative">
+        {icon && <LeadingIcon icon={icon} />}
+        <input
+          ref={ref}
+          id={inputId}
+          required={required}
+          aria-invalid={error ? true : undefined}
+          className={cn(controlBase, 'h-control', icon && 'ps-10', error && 'border-danger', className)}
+          {...props}
+        />
+        {trailing && (
+          <div className="absolute inset-y-1 end-1 flex items-center gap-0.5">{trailing}</div>
+        )}
+      </div>
     </FieldWrapper>
   );
 });
@@ -125,10 +162,12 @@ export interface SelectProps extends SelectHTMLAttributes<HTMLSelectElement> {
   hint?: string;
   error?: string | null;
   wrapperClassName?: string;
+  /** أيقونة في بداية القائمة — تقول نوع ما يُختار قبل قراءته */
+  icon?: LucideIcon;
 }
 
 export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select(
-  { label, hint, error, className, wrapperClassName, id, required, children, ...props },
+  { label, hint, error, className, wrapperClassName, id, required, children, icon, ...props },
   ref,
 ) {
   const generatedId = useId();
@@ -143,16 +182,36 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(function Select
       className={wrapperClassName}
       htmlFor={selectId}
     >
-      <select
-        ref={ref}
-        id={selectId}
-        required={required}
-        aria-invalid={error ? true : undefined}
-        className={cn(controlBase, 'h-10 cursor-pointer', error && 'border-danger', className)}
-        {...props}
-      >
-        {children}
-      </select>
+      {/*
+        السهم مرسومٌ لا سهمُ المتصفّح.
+
+        سهمُ المتصفّح يختلف بين النظامين، ويقع في الجهة الفيزيائية لا
+        المنطقية في بعضها — فيلتصق بالنصّ العربي. والسهم المرسوم في نهاية
+        القائمة (يسارها في العربية) كما في المرجع، وبلون النصّ الثانوي.
+      */}
+      <div className="relative">
+        {icon && <LeadingIcon icon={icon} />}
+        <select
+          ref={ref}
+          id={selectId}
+          required={required}
+          aria-invalid={error ? true : undefined}
+          className={cn(
+            controlBase,
+            'h-control cursor-pointer appearance-none pe-9',
+            icon && 'ps-10',
+            error && 'border-danger',
+            className,
+          )}
+          {...props}
+        >
+          {children}
+        </select>
+        <ChevronDown
+          className="pointer-events-none absolute end-3 top-1/2 h-4 w-4 -translate-y-1/2 text-subtle-foreground"
+          aria-hidden
+        />
+      </div>
     </FieldWrapper>
   );
 });
@@ -172,7 +231,7 @@ export function Checkbox({
       <input
         type="checkbox"
         id={boxId}
-        className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-border-strong text-primary accent-[var(--primary)]"
+        className="mt-0.5 h-4 w-4 shrink-0 cursor-pointer rounded border-border-input text-primary-text accent-[var(--primary)]"
         {...props}
       />
       <div className="space-y-0.5">

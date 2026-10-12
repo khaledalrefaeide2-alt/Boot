@@ -3,11 +3,11 @@
 import { useCallback, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { Bell, LogOut, PanelRightClose, PanelRightOpen, Shield, User as UserIcon } from 'lucide-react';
+import { Bell, ChevronDown, LogOut, PanelRightClose, PanelRightOpen, Settings, User as UserIcon } from 'lucide-react';
 import { Sidebar, MobileSidebar } from './sidebar';
-import { AmbientBackground } from './ambient-background';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button-variants';
 import { Badge } from '@/components/ui/badge';
 import { api } from '@/lib/api-client';
 import { ROLE_LABELS } from '@/lib/auth/rbac';
@@ -109,13 +109,6 @@ export function AppShell({
 
   return (
     <div className="relative flex min-h-dvh bg-background">
-      {/*
-        الخلفية أولاً في ترتيب المستند وفي طبقة مستقلة تحت الجميع. والشريط
-        الجانبي وعمود المحتوى يرتفعان فوقها بـ z-10 صراحةً: بدونها يقرّر
-        ترتيب المستند وحده أيّهما فوق، فتغطّي الهالةُ المحتوى في المتصفحات
-        التي تُنشئ سياق تكديس جديداً عند التحويل.
-      */}
-      <AmbientBackground />
       <Sidebar sections={sections} appName={appName} open={desktopOpen} />
       <MobileSidebar
         sections={sections}
@@ -126,11 +119,16 @@ export function AppShell({
 
       <div className="relative z-10 flex min-w-0 flex-1 flex-col">
         {/*
-          الشريط العلوي زجاجي لا معتم: المحتوى يمرّ تحته فيبقى الإحساس بأن
-          الصفحة طبقة واحدة تتحرك خلف لوح ثابت، لا شريطٌ يقصّ ما تحته. ولذلك
-          رُفع ارتفاعه إلى 4rem — الزجاج يحتاج مساحة ليُقرأ زجاجاً.
+          الشريط العلوي أبيضُ معتم بحدٍّ سفلي — لا زجاج.
+
+          الزجاج يُظهر ما تحته ممرّراً، فيصير الشريط في جدولٍ طويل لوحةً
+          تتبدّل ألوانها مع كلّ صفّ. والمعتم ثابت: أدواته تُقرأ في مكانها
+          دائماً.
+
+          الترتيب كما في المرجع: في البداية (يمين) زرّ القائمة ولوحة
+          الإدارة، وفي النهاية (يسار) التنبيهات والسمة ثم بطاقة المستخدم.
         */}
-        <header className="glass sticky top-0 z-30 flex h-16 items-center gap-2 border-0 border-b border-border px-3 sm:px-4 no-print">
+        <header className="sticky top-0 z-30 flex h-[4.25rem] items-center gap-2 border-b border-border bg-surface px-3 sm:px-6 no-print">
           <Button
             variant="ghost"
             size="icon"
@@ -140,30 +138,33 @@ export function AppShell({
             aria-controls="main-nav"
             title={desktopOpen ? 'طيّ القائمة' : 'إظهار القائمة'}
           >
-            {desktopOpen ? (
-              <PanelRightClose className="h-5 w-5" aria-hidden />
-            ) : (
-              <PanelRightOpen className="h-5 w-5" aria-hidden />
-            )}
+            {desktopOpen ? <PanelRightClose aria-hidden /> : <PanelRightOpen aria-hidden />}
           </Button>
 
           {canAccessAdmin && (
-            <Link href={isAdminArea ? '/' : '/admin'}>
-              <Button variant={isAdminArea ? 'tonal' : 'secondary'} size="sm">
-                <Shield className="h-3.5 w-3.5" aria-hidden />
+            <Link
+              href={isAdminArea ? '/' : '/admin'}
+              className={buttonVariants({ variant: isAdminArea ? 'tonal' : 'secondary', size: 'sm' })}
+            >
+              <Settings aria-hidden />
+              <span className="max-sm:sr-only">
                 {isAdminArea ? 'العودة إلى لوحة العرض' : 'لوحة الإدارة'}
-              </Button>
+              </span>
             </Link>
           )}
 
           <div className="flex-1" />
 
-          <Link href="/notifications" className="relative">
-            <Button variant="ghost" size="icon" aria-label="التنبيهات">
-              <Bell className="h-4.5 w-4.5" aria-hidden />
-            </Button>
+          <Link
+            href="/notifications"
+            className={cn(buttonVariants({ variant: 'ghost', size: 'icon' }), 'relative')}
+            aria-label={
+              unreadCount > 0 ? `التنبيهات — ${unreadCount} غير مقروءة` : 'التنبيهات'
+            }
+          >
+            <Bell aria-hidden />
             {unreadCount > 0 && (
-              <span className="absolute -top-0.5 left-0 flex h-4 min-w-4 items-center justify-center rounded-full bg-danger px-1 text-2xs font-semibold text-white shadow-[0_0_12px_-2px_var(--danger)]">
+              <span className="absolute -top-0.5 start-6 flex h-5 min-w-5 items-center justify-center rounded-full border-2 border-surface bg-danger px-1 text-2xs font-semibold leading-none text-danger-foreground">
                 <span className="num">{unreadCount > 99 ? '99+' : unreadCount}</span>
               </span>
             )}
@@ -171,34 +172,36 @@ export function AppShell({
 
           <ThemeToggle className="hidden sm:inline-flex" />
 
-          <div className="relative">
+          <div className="relative ms-1">
             <button
               type="button"
               onClick={() => setMenuOpen((open) => !open)}
-              className="flex items-center gap-2 rounded-lg border border-border bg-surface/60 px-2 py-1.5 text-start transition-colors hover:border-border-strong hover:bg-surface-2"
+              className="flex h-control items-center gap-2.5 rounded-control px-2 text-start transition-colors hover:bg-surface-2 focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_var(--surface),0_0_0_4px_var(--ring)]"
               aria-expanded={menuOpen}
               aria-haspopup="menu"
+              aria-label={`حساب ${user.name}`}
             >
-              <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary-soft text-xs font-semibold text-primary-soft-foreground">
-                {user.name.trim().charAt(0)}
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-surface-3 text-sm font-semibold text-foreground">
+                {user.name.trim().charAt(0).toUpperCase()}
               </div>
               <div className="hidden leading-tight sm:block">
-                <p className="max-w-32 truncate text-xs font-medium text-foreground">{user.name}</p>
-                <p className="text-2xs text-muted-foreground">{ROLE_LABELS[user.role]}</p>
+                <p className="max-w-36 truncate text-sm font-semibold text-foreground">{user.name}</p>
+                <p className="text-xs text-muted-foreground">{ROLE_LABELS[user.role]}</p>
               </div>
+              <ChevronDown className="hidden h-4 w-4 text-muted-foreground sm:block" aria-hidden />
             </button>
 
             {menuOpen && (
               <>
                 <div className="fixed inset-0 z-10" onClick={() => setMenuOpen(false)} aria-hidden />
                 <div
-                  className="glass-panel enter-stagger absolute left-0 top-full z-20 mt-2 w-60 rounded-xl p-1.5 shadow-elev-3"
+                  className="enter-stagger absolute left-0 top-full z-20 mt-2 w-64 rounded-card border border-border bg-surface p-1.5 shadow-elev-3"
                   role="menu"
                 >
-                  <div className="border-b border-border px-2.5 py-2">
-                    <p className="truncate text-sm font-medium text-foreground">{user.name}</p>
+                  <div className="border-b border-border px-3 py-2.5">
+                    <p className="truncate text-sm font-semibold text-foreground">{user.name}</p>
                     <p className="ltr truncate text-xs text-muted-foreground">{user.email}</p>
-                    <Badge tone="primary" size="sm" className="mt-1.5">
+                    <Badge tone="primary" size="sm" className="mt-2">
                       {ROLE_LABELS[user.role]}
                     </Badge>
                   </div>
@@ -206,14 +209,14 @@ export function AppShell({
                   <Link
                     href="/profile"
                     onClick={() => setMenuOpen(false)}
-                    className="mt-1 flex items-center gap-2 rounded px-2.5 py-2 text-sm text-muted-foreground transition-colors hover:bg-surface-2 hover:text-foreground"
+                    className="mt-1 flex h-11 items-center gap-2.5 rounded-control px-3 text-sm text-foreground transition-colors hover:bg-surface-2"
                     role="menuitem"
                   >
-                    <UserIcon className="h-4 w-4" aria-hidden />
+                    <UserIcon className="h-5 w-5 text-muted-foreground" aria-hidden />
                     الملف الشخصي
                   </Link>
 
-                  <div className="px-2.5 py-2 sm:hidden">
+                  <div className="px-3 py-2 sm:hidden">
                     <ThemeToggle />
                   </div>
 
@@ -222,12 +225,12 @@ export function AppShell({
                     onClick={onLogout}
                     disabled={loggingOut}
                     className={cn(
-                      'flex w-full items-center gap-2 rounded px-2.5 py-2 text-sm text-danger transition-colors hover:bg-danger-soft',
+                      'flex h-11 w-full items-center gap-2.5 rounded-control px-3 text-sm text-danger transition-colors hover:bg-danger-soft',
                       loggingOut && 'opacity-60',
                     )}
                     role="menuitem"
                   >
-                    <LogOut className="h-4 w-4" aria-hidden />
+                    <LogOut className="h-5 w-5" aria-hidden />
                     {loggingOut ? 'جارٍ تسجيل الخروج…' : 'تسجيل الخروج'}
                   </button>
                 </div>
@@ -236,7 +239,8 @@ export function AppShell({
           </div>
         </header>
 
-        <main className="min-w-0 flex-1 px-3 py-5 sm:px-6 sm:py-7">
+        {/* الحشوة 16px على الجوال و24px على سطح المكتب — كما في المواصفة */}
+        <main className="min-w-0 flex-1 px-4 py-5 sm:px-6 sm:py-6">
           <PermissionsProvider permissions={permissions}>{children}</PermissionsProvider>
         </main>
       </div>

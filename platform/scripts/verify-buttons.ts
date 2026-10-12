@@ -46,11 +46,19 @@ const appFiles = tsxFiles(path.join(root, 'src')).filter(
 );
 const sources = new Map(appFiles.map((file) => [file, readFileSync(file, 'utf8')]));
 
-// ── المقاسات: ارتفاع | حشوة | خط | أيقونة | فجوة | عرض أدنى
+/*
+ * ── المقاسات من المواصفة: ارتفاع | حشوة | خط | أيقونة | فجوة | عرض أدنى
+ *
+ *   القياسي 44 | 16 | 14 | 20 | 8 — والمضغوط 36 | 12 | 14 | 18 | 8
+ *   والكبير 48 | 20 | 16 | 20 | 8 — والأيقوني 44 × 44 بأيقونة 20
+ *
+ * والارتفاع رمزٌ (`h-control`) لا رقم: الحقل يقرأ الرمز نفسه، فيُفحص هنا
+ * أنّ الرمز يساوي الرقم المطلوب، وفي الحقل أنّه يستعمل الرمز.
+ */
 const SIZES: Record<string, string[]> = {
-  sm: ['h-8', 'min-w-16', 'gap-1.5', 'px-3', 'text-[13px]', '[--btn-icon:16px]'],
-  md: ['h-10', 'min-w-22', 'gap-2', 'px-4', 'text-sm', '[--btn-icon:18px]'],
-  lg: ['h-12', 'min-w-30', 'gap-2', 'px-5', 'text-base', '[--btn-icon:20px]'],
+  sm: ['h-control-compact', 'min-w-16', 'gap-2', 'px-3', 'text-sm', '[--btn-icon:18px]'],
+  md: ['h-control', 'min-w-22', 'gap-2', 'px-4', 'text-sm', '[--btn-icon:20px]'],
+  lg: ['h-control-lg', 'min-w-30', 'gap-2', 'px-5', 'text-base', '[--btn-icon:20px]'],
 };
 
 for (const [size, tokens] of Object.entries(SIZES)) {
@@ -63,9 +71,41 @@ check(
   'المقاسات الأيقونية مربّعة وبلا عرض أدنى',
   ['icon-sm', 'icon', 'icon-lg'].every((size) => {
     const line = BUTTON.match(new RegExp(`'?${size}'?:\\s*'([^']+)'`))?.[1] ?? '';
-    return line.includes('min-w-0') && line.includes('p-0') && /h-(8|10|12)/.test(line) && /w-(8|10|12)/.test(line);
+    return line.includes('min-w-0') && line.includes('p-0') && /size-control/.test(line);
   }),
 );
+
+/*
+ * الرموز نفسها بالأرقام المطلوبة — فلا يتغيّر ارتفاع الزرّ بتعديل رمزٍ
+ * في ملفّ الأنماط دون أن يسقط هذا الفحص.
+ */
+const CSS = readFileSync(path.join(root, 'src/app/globals.css'), 'utf8');
+const TOKENS: [string, string][] = [
+  ['--spacing-control', '2.75rem'],
+  ['--spacing-control-compact', '2.25rem'],
+  ['--spacing-control-lg', '3rem'],
+  ['--radius-control', '0.625rem'],
+  ['--radius-card', '0.75rem'],
+  ['--radius-modal', '1rem'],
+];
+for (const [token, value] of TOKENS) {
+  check(
+    `الرمز ${token} = ${value}`,
+    new RegExp(`${token}:\\s*${value.replace('.', '\\.')};`).test(CSS),
+  );
+}
+
+/*
+ * الحقل والقائمة بارتفاع الزرّ وزاويته — فيستوي صفّ الفلاتر.
+ */
+const FIELD = readFileSync(path.join(root, 'src/components/ui/field.tsx'), 'utf8');
+check('الحقل بارتفاع الزرّ', /'h-control'/.test(FIELD) && /'h-control cursor-pointer/.test(FIELD));
+check('والحقل بزاوية الزرّ', /rounded-control/.test(FIELD));
+
+/*
+ * الزرّ يضبط مقاس أيقونته — أيّاً كان ما كُتب عليها.
+ */
+check('الأيقونة بمقاس الزرّ', BUTTON.includes('[&_svg]:size-[var(--btn-icon)]'));
 
 // ── الأساس
 const BASE = [
@@ -74,7 +114,7 @@ const BASE = [
   ['توسيط أفقي', 'justify-center'],
   ['وزن 600', 'font-semibold'],
   ['حدّ شفاف يحجز مكانه', 'border border-transparent'],
-  ['زاوية 8px', 'rounded-lg'],
+  ['زاوية 10px', 'rounded-control'],
   ['ارتفاع سطر 1', 'leading-none'],
   ['بلا التفاف', 'whitespace-nowrap'],
   ['مؤشّر الممنوع عند التعطيل', 'disabled:cursor-not-allowed'],
@@ -82,12 +122,12 @@ const BASE = [
 for (const [label, token] of BASE) check(`الأساس: ${label}`, BUTTON.includes(token));
 
 check(
-  'حلقة التركيز حلقتان — بيضاء ثم زيتونية',
-  /focus-visible:shadow-\[0_0_0_2px_var\(--surface\),0_0_0_4px_var\(--olive-500\)\]/.test(BUTTON),
+  'حلقة التركيز حلقتان — بلون السطح ثم بلون الحلقة',
+  /focus-visible:shadow-\[0_0_0_2px_var\(--surface\),0_0_0_4px_var\(--ring\)\]/.test(BUTTON),
 );
 
 // ── الأنواع الستة وحالاتها
-const VARIANTS = ['primary', 'secondary', 'tonal', 'ghost', 'danger', 'link'];
+const VARIANTS = ['primary', 'secondary', 'outline', 'tonal', 'ghost', 'danger', 'link'];
 for (const variant of VARIANTS) {
   const block = BUTTON.match(new RegExp(`\\n\\s+'?${variant}'?:\\s*\\[([\\s\\S]*?)\\]\\.join`))?.[1] ?? '';
   check(`${variant}: موجود`, block.length > 0);
@@ -112,7 +152,29 @@ for (const variant of ['ghost', 'link']) {
 check('الرابط بلا حشوة ولا عرض أدنى', /variant: 'link'[\s\S]*?class: 'h-auto min-w-0 px-0'/.test(BUTTON));
 check('التحميل يضع aria-busy', BUTTON.includes('aria-busy={loading || undefined}'));
 check('التحميل يُعطّل الزرّ', BUTTON.includes('disabled={disabled || loading}'));
-check('المؤشّر الدوّار يحلّ محلّ الأيقونة البادئة', /loading \? \([\s\S]{0,200}animate-spin/.test(BUTTON));
+/*
+ * التحميل لا يغيّر عرض الزرّ: المحتوى يبقى في مكانه مخفيّاً، والمؤشّر فوقه.
+ * ولو أُضيف بجوار النصّ لاتّسع الزرّ لحظةَ الضغط ودفع جاره تحت الإصبع.
+ */
+check(
+  'التحميل لا يغيّر عرض الزرّ',
+  /loading && \([\s\S]{0,200}absolute inset-0[\s\S]{0,200}animate-spin/.test(BUTTON) &&
+    /loading && 'invisible'/.test(BUTTON),
+);
+
+/*
+ * لا زرّ داخل رابط.
+ *
+ * عنصران تفاعليان متداخلان: لوحة المفاتيح تقف مرّتين على إجراءٍ واحد،
+ * وقارئ الشاشة يُعلن «رابط، زرّ». والبديل `LinkButton`.
+ */
+const nested: string[] = [];
+for (const [file, text] of sources) {
+  for (const match of text.matchAll(/<(Link|a)\b[^>]*>\s*(?:\{\/\*[\s\S]*?\*\/\}\s*)?<Button\b/g)) {
+    nested.push(`${path.relative(root, file)}:${text.slice(0, match.index).split('\n').length}`);
+  }
+}
+check('لا زرّ داخل رابط', nested.length === 0, nested.join('، '));
 
 // ── قواعد على مواضع الاستعمال
 const legacy: string[] = [];

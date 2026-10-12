@@ -143,7 +143,7 @@ export function StoriesClient() {
                   <CardBody className="flex flex-1 flex-col gap-3">
                     <Link
                       href={`/stories/${story.id}`}
-                      className="text-sm leading-relaxed text-foreground hover:text-primary"
+                      className="text-sm leading-relaxed text-foreground hover:text-primary-text"
                     >
                       {story.headline.trim().slice(0, HEADLINE_CHARS) ||
                         '(منشور بلا نصّ — صورة أو فيديو)'}

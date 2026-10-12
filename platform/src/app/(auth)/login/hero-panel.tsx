@@ -60,8 +60,18 @@ const CAPABILITIES = [
 
 export function HeroPanel() {
   return (
+    /*
+      اللوح كحليٌّ كالقائمة الجانبية — أوّلُ ما يراه الموظّف من إطار التطبيق.
+
+      ★ وصنف `dark` على اللوح وحده، لا ألوانٌ مكتوبة لكلّ عنصر.
+
+        رموز السمة الداكنة متغيّراتٌ تتنزّل إلى ما تحتها، فوضعُ الصنف على
+        اللوح يجعل كلّ ما فيه — النصّ والخافت والحدود والتركواز — بقيم
+        الداكن المقيسة سلفاً على أرضيةٍ كحلية. فلا لون يُخترع هنا ولا
+        يفلت من فحص التباين.
+    */
     <section
-      className="relative hidden overflow-hidden rounded-2xl border border-border bg-surface p-8 lg:flex lg:flex-col lg:justify-center xl:p-10"
+      className="dark relative hidden overflow-hidden rounded-modal bg-sidebar p-8 text-foreground lg:flex lg:flex-col lg:justify-center xl:p-10"
       aria-labelledby="hero-title"
     >
       <AmbientCanvas />
@@ -113,7 +123,7 @@ export function HeroPanel() {
             <li key={no}>
               <details className="group">
                 <summary className="flex cursor-pointer list-none items-center gap-3 py-3 outline-none transition-colors hover:text-heading focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring">
-                  <span className="eyebrow eyebrow-latin w-6 shrink-0 text-primary">{no}</span>
+                  <span className="eyebrow eyebrow-latin w-6 shrink-0 text-primary-text">{no}</span>
                   <span className="flex-1 text-sm font-semibold text-foreground">{title}</span>
                   {/* علامة الفتح بـ CSS لا بأيقونة: خط واحد يدور 90 درجة */}
                   <span

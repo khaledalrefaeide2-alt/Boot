@@ -138,7 +138,7 @@ export function AnalysisPanel({
       <CardHeader
         title="التصنيف الآلي"
         action={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {canCorrect && current && (
               <Button size="sm" variant="secondary" onClick={() => setCorrecting(true)}>
                 <GraduationCap className="h-3.5 w-3.5" aria-hidden />

@@ -195,7 +195,7 @@ export function KeywordsClient() {
                       <TD className="num">
                         <Link
                           href={`/posts?keywordId=${keyword.id}&range=all`}
-                          className="hover:text-primary hover:underline"
+                          className="hover:text-primary-text hover:underline"
                         >
                           {formatNumber(keyword._count.posts)}
                         </Link>

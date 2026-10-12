@@ -158,7 +158,7 @@ export function TopAccountsSection({
           {accounts.map((account, index) => (
             <article
               key={account.id}
-              className="@container card-interactive flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-elev-2 print-avoid-break"
+              className="@container card-interactive flex flex-col gap-3 rounded-card border border-border bg-surface p-4 shadow-elev-2 print-avoid-break"
             >
               <header className="flex items-center gap-3">
                 <AccountAvatar name={account.name} src={account.avatarUrl} />
@@ -166,7 +166,7 @@ export function TopAccountsSection({
                   {canBrowse ? (
                     <Link
                       href={`/accounts/${account.id}`}
-                      className="block truncate text-sm font-semibold text-foreground hover:text-primary @[15rem]:text-[0.95rem]"
+                      className="block truncate text-sm font-semibold text-foreground hover:text-primary-text @[15rem]:text-[0.95rem]"
                     >
                       {account.name}
                     </Link>
@@ -181,7 +181,7 @@ export function TopAccountsSection({
                   الرتبة رقمٌ لا وسام: القسم مرتَّب أصلاً، لكن البطاقات
                   تُقرأ متفرّقةً على سطرين فيضيع الترتيب بينها.
                 */}
-                <span className="num flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-olive-100 text-sm font-bold text-olive-800">
+                <span className="num flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-100 text-sm font-bold text-brand-800">
                   {index + 1}
                 </span>
               </header>
@@ -194,7 +194,7 @@ export function TopAccountsSection({
                 <p className="eyebrow">
                   {METRICS.find((item) => item.value === metric)?.label ?? ''}
                 </p>
-                <p className="num whitespace-nowrap text-2xl font-extrabold tracking-[-0.02em] tabular-nums text-primary">
+                <p className="num whitespace-nowrap text-2xl font-extrabold tracking-[-0.02em] tabular-nums text-primary-text">
                   {formatCompactNumber(account[metric])}
                 </p>
                 {account.followersCount !== null && (
@@ -206,7 +206,7 @@ export function TopAccountsSection({
 
               <Link
                 href={`/posts?accountId=${account.id}&range=all`}
-                className="w-fit text-xs font-medium text-primary hover:underline @[15rem]:text-sm"
+                className="w-fit text-xs font-medium text-primary-text hover:underline @[15rem]:text-sm"
               >
                 عرض منشورات الحساب
               </Link>

@@ -15,7 +15,7 @@ export function LoadingState({
       role="status"
       aria-live="polite"
     >
-      <Loader2 className="h-6 w-6 animate-spin text-primary" aria-hidden />
+      <Loader2 className="h-6 w-6 animate-spin text-primary-text" aria-hidden />
       <p className="text-sm text-muted-foreground">{message}</p>
     </div>
   );
@@ -162,7 +162,7 @@ export function SkeletonRows({ rows = 5, className }: { rows?: number; className
   return (
     <div className={cn('space-y-2 p-4', className)} aria-hidden>
       {Array.from({ length: rows }).map((_, index) => (
-        <div key={index} className="skeleton h-9 w-full" />
+        <div key={index} className="skeleton h-11 w-full rounded-control" />
       ))}
     </div>
   );
@@ -171,9 +171,9 @@ export function SkeletonRows({ rows = 5, className }: { rows?: number; className
 /** هيكل تحميل لبطاقات الإحصاء */
 export function SkeletonCards({ count = 4, className }: { count?: number; className?: string }) {
   return (
-    <div className={cn('grid gap-3 sm:grid-cols-2 lg:grid-cols-4', className)} aria-hidden>
+    <div className={cn('grid gap-4 sm:grid-cols-2 xl:grid-cols-4', className)} aria-hidden>
       {Array.from({ length: count }).map((_, index) => (
-        <div key={index} className="skeleton h-24 w-full" />
+        <div key={index} className="skeleton h-[8.5rem] w-full rounded-card" />
       ))}
     </div>
   );

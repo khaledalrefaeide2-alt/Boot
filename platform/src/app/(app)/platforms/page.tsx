@@ -8,11 +8,11 @@ import { getAccountScope } from '@/lib/auth/account-scope';
 import { can, PERMISSIONS } from '@/lib/auth/rbac';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardBody } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { EmptyState } from '@/components/ui/states';
 import { ENTITY_STATUS_LABELS } from '@/lib/domain/constants';
 import { formatCompactNumber, formatNumber } from '@/lib/utils';
+import { LinkButton } from '@/components/ui/link-button';
 
 export const metadata: Metadata = { title: 'المنصات' };
 
@@ -66,9 +66,7 @@ export default async function PlatformsPage() {
         description="المنصات الإعلامية المرصودة وحجم المحتوى المستخرج منها"
         action={
           can(user, PERMISSIONS.PLATFORMS_MANAGE) && (
-            <Link href="/admin/platforms">
-              <Button variant="secondary">إدارة المنصات</Button>
-            </Link>
+            <LinkButton href="/admin/platforms" variant="secondary">إدارة المنصات</LinkButton>
           )
         }
       />
@@ -110,7 +108,7 @@ export default async function PlatformsPage() {
                       <p className="text-xs text-muted-foreground">منشور</p>
                     </div>
                     <div>
-                      <p className="num text-lg font-bold text-primary">
+                      <p className="num text-lg font-bold text-primary-text">
                         {formatCompactNumber(engagementMap.get(platform.id) ?? 0)}
                       </p>
                       <p className="text-xs text-muted-foreground">تفاعل</p>

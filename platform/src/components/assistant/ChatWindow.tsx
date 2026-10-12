@@ -229,7 +229,7 @@ export function ChatWindow({ configured }: { configured: boolean }) {
         تحت طيّة الشاشة على ارتفاع 900 بكسل — وحقلُ إدخالٍ لا يُرى هو
         شاشةٌ لا تعمل.
       */}
-      <div className="flex h-[calc(100dvh-17rem)] min-h-96 overflow-hidden rounded-lg border border-border bg-background">
+      <div className="flex h-[calc(100dvh-17rem)] min-h-96 overflow-hidden rounded-card border border-border bg-background">
       <div className="hidden lg:block">
         <ChatHistory
           conversations={conversations}

@@ -51,7 +51,7 @@ export function Modal({
   return (
     <div className="fixed inset-0 z-50 flex items-end justify-center overflow-y-auto p-0 sm:items-center sm:p-4 no-print">
       <div
-        className="fixed inset-0 bg-black/45 backdrop-blur-[2px]"
+        className="fixed inset-0 bg-[#0b1320]/50 backdrop-blur-[2px]"
         onClick={onClose}
         aria-hidden
       />
@@ -62,20 +62,20 @@ export function Modal({
         aria-modal="true"
         aria-label={title}
         className={cn(
-          'relative z-10 w-full rounded-t-xl border border-border bg-surface shadow-elev-4 outline-none sm:rounded-lg',
+          'relative z-10 w-full rounded-t-modal border border-border bg-surface shadow-elev-4 outline-none sm:rounded-modal',
           sizes[size],
         )}
       >
-        <div className="flex items-start justify-between gap-3 border-b border-border px-5 py-3.5">
+        <div className="flex items-start justify-between gap-3 border-b border-border px-6 py-4">
           <div className="space-y-0.5">
-            <h2 className="text-base font-semibold text-foreground">{title}</h2>
+            <h2 className="text-lg font-bold text-heading">{title}</h2>
             {description && <p className="text-xs text-muted-foreground">{description}</p>}
           </div>
-          <Button variant="ghost" size="icon-sm" onClick={onClose} aria-label="إغلاق">
-            <X className="h-4 w-4" aria-hidden />
+          <Button variant="ghost" size="icon" onClick={onClose} aria-label="إغلاق" className="-me-2 -mt-1">
+            <X aria-hidden />
           </Button>
         </div>
-        <div className="max-h-[70vh] overflow-y-auto px-5 py-4">{children}</div>
+        <div className="max-h-[70vh] overflow-y-auto px-6 py-5">{children}</div>
         {footer && (
           /*
             الترتيب في RTL: الإجراء الرئيسي أولاً من جهة البداية ثم الثانوي
@@ -86,7 +86,7 @@ export function Modal({
             فيبقى ترتيب التنقّل بلوحة المفاتيح على «إلغاء» أولاً — وهو
             الأسلم في حوار تأكيد — ويصير الترتيب البصري على المواصفة.
           */
-          <div className="flex flex-row-reverse flex-wrap items-center justify-end gap-2 border-t border-border bg-surface-2/50 px-5 py-4">
+          <div className="flex flex-row-reverse flex-wrap items-center justify-end gap-2 rounded-b-modal border-t border-border bg-surface-2/60 px-6 py-4">
             {footer}
           </div>
         )}

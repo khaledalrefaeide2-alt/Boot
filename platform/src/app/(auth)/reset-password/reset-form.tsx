@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/field';
 import { Button } from '@/components/ui/button';
 import { Alert } from '@/components/ui/alert';
 import { api, ApiClientError } from '@/lib/api-client';
+import { LinkButton } from '@/components/ui/link-button';
 
 export function ResetPasswordForm() {
   const searchParams = useSearchParams();
@@ -27,7 +28,7 @@ export function ResetPasswordForm() {
           <Alert tone="danger" title="رابط غير صالح">
             لا يحتوي الرابط على رمز استعادة. اطلب رابطاً جديداً من مدير النظام.
           </Alert>
-          <Link href="/login" className="block text-center text-xs text-primary hover:underline">
+          <Link href="/login" className="block text-center text-xs text-primary-text hover:underline">
             العودة إلى تسجيل الدخول
           </Link>
         </CardBody>
@@ -64,9 +65,7 @@ export function ResetPasswordForm() {
             <Alert tone="success" title="تم بنجاح">
               غُيّرت كلمة المرور وأُبطلت جلساتك السابقة. يمكنك تسجيل الدخول الآن.
             </Alert>
-            <Link href="/login">
-              <Button className="w-full">الانتقال إلى تسجيل الدخول</Button>
-            </Link>
+            <LinkButton href="/login" className="w-full">الانتقال إلى تسجيل الدخول</LinkButton>
           </div>
         ) : (
           <form onSubmit={onSubmit} className="space-y-4" noValidate>

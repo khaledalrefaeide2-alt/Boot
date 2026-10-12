@@ -23,6 +23,7 @@ import {
 } from '@/lib/domain/constants';
 import { formatDateTime, formatNumber } from '@/lib/utils';
 import type { ReportFormat, ReportPeriod, ReportStatus } from '@/generated/prisma';
+import { LinkButton } from '@/components/ui/link-button';
 
 interface TemplateRow {
   id: string;
@@ -185,17 +186,13 @@ export function TemplatesClient({ canManage }: { canManage: boolean }) {
                     </TD>
                     <TD>
                       <div className="flex items-center justify-end gap-1">
-                        <a
-                          href={buildQuery('/api/reports/export', {
+                        <LinkButton href={buildQuery('/api/reports/export', {
                             ...template.filters,
                             format: 'excel',
-                          })}
-                        >
-                          <Button size="sm" variant="tonal">
+                          })} size="sm" variant="tonal" as="a">
                             <Download className="h-3.5 w-3.5" aria-hidden />
                             تصدير
-                          </Button>
-                        </a>
+                          </LinkButton>
                         {canManage && (
                           <Button
                             size="icon-sm"

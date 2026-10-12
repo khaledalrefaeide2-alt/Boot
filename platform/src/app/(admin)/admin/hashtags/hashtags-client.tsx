@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
 import { Hash, Search } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
@@ -13,6 +12,7 @@ import { EmptyState, ErrorState, SkeletonRows } from '@/components/ui/states';
 import { Pagination } from '@/components/ui/pagination';
 import { api, ApiClientError, buildQuery } from '@/lib/api-client';
 import { formatDate, formatNumber } from '@/lib/utils';
+import { LinkButton } from '@/components/ui/link-button';
 
 interface HashtagRow {
   id: string;
@@ -92,16 +92,14 @@ export function HashtagsClient() {
                 <TBody>
                   {data.hashtags.map((hashtag) => (
                     <TR key={hashtag.id}>
-                      <TD className="font-medium text-primary">#{hashtag.tag}</TD>
+                      <TD className="font-medium text-primary-text">#{hashtag.tag}</TD>
                       <TD className="num">{formatNumber(hashtag.usageCount)}</TD>
                       <TD className="num">{formatNumber(hashtag._count.posts)}</TD>
                       <TD className="text-xs text-muted-foreground">{formatDate(hashtag.createdAt)}</TD>
                       <TD className="text-end">
-                        <Link href={`/posts?hashtag=${encodeURIComponent(hashtag.tag)}&range=all`}>
-                          <Button size="sm" variant="secondary">
-                            عرض المنشورات
-                          </Button>
-                        </Link>
+                        <LinkButton href={`/posts?hashtag=${encodeURIComponent(hashtag.tag)}&range=all`} size="sm" variant="secondary">
+                          عرض المنشورات
+                        </LinkButton>
                       </TD>
                     </TR>
                   ))}

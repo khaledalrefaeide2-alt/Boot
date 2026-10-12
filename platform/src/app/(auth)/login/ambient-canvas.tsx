@@ -68,9 +68,15 @@ export function AmbientCanvas() {
       seed();
     }
 
-    /** لون التفاعل يُقرأ من رمز اللوحة لا يُكتب هنا — فيتبع تبديل السمة */
+    /*
+     * لون التفاعل يُقرأ من رمز اللوحة لا يُكتب هنا — فيتبع تبديل السمة.
+     *
+     * ويُقرأ من اللوح نفسه لا من جذر الصفحة: اللوح كحليٌّ بصنف `dark`
+     * محلّي، وتركوازُ الجذر الفاتح داكنٌ لا يُرى على الكحلي. والمتغيّر
+     * المحسوب على العنصر يرث ما وضعه اللوح.
+     */
     function accent(): string {
-      const value = getComputedStyle(document.documentElement)
+      const value = getComputedStyle(canvas!)
         .getPropertyValue('--primary')
         .trim();
       return value || '#00e5ff';

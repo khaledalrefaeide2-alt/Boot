@@ -24,6 +24,7 @@ import {
 import { formatDateTime, formatDuration, formatNumber, formatRelativeTime } from '@/lib/utils';
 import { BackfillPanel } from './backfill-panel';
 import type { ExtractionStatus, ExtractionTrigger } from '@/generated/prisma';
+import { LinkButton } from '@/components/ui/link-button';
 
 interface RunRow {
   id: string;
@@ -326,7 +327,7 @@ export function ExtractionsClient({ canRun, canCancel }: { canRun: boolean; canC
                       <TD className="max-w-48 truncate text-sm">
                         <Link
                           href={`/admin/extractions/${run.id}`}
-                          className="hover:text-primary hover:underline"
+                          className="hover:text-primary-text hover:underline"
                         >
                           {run.account?.name ?? 'حساب محذوف'}
                         </Link>
@@ -362,11 +363,9 @@ export function ExtractionsClient({ canRun, canCancel }: { canRun: boolean; canC
                       </TD>
                       <TD>
                         <div className="flex items-center justify-end gap-1">
-                          <Link href={`/admin/extractions/${run.id}`}>
-                            <Button size="sm" variant="secondary">
-                              تفاصيل
-                            </Button>
-                          </Link>
+                          <LinkButton href={`/admin/extractions/${run.id}`} size="sm" variant="secondary">
+                            تفاصيل
+                          </LinkButton>
                           {canCancel && ['PENDING', 'RUNNING'].includes(run.status) && (
                             <Button
                               size="icon-sm"

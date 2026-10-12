@@ -17,6 +17,7 @@ import { DonutChart, SentimentChart } from '@/components/charts/distribution-cha
 import { api, buildQuery } from '@/lib/api-client';
 import { formatDate, formatNumber } from '@/lib/utils';
 import { POST_TYPE_LABELS, SENTIMENT_LABELS } from '@/lib/domain/constants';
+import { LinkButton } from '@/components/ui/link-button';
 
 /**
  * شاشة التقارير: معاينة قابلة للطباعة مباشرة (PDF عبر طباعة المتصفح)
@@ -100,12 +101,10 @@ export function ReportsClient({
               طباعة أو حفظ PDF
             </Button>
             {canExport && (
-              <a href={exportHref}>
-                <Button>
-                  <Download className="h-4 w-4" aria-hidden />
-                  تصدير Excel
-                </Button>
-              </a>
+              <LinkButton href={exportHref} as="a">
+                <Download className="h-4 w-4" aria-hidden />
+                تصدير Excel
+              </LinkButton>
             )}
           </>
         }
@@ -255,12 +254,10 @@ export function ReportsClient({
               />
               <CardBody>
                 {canExport ? (
-                  <a href={exportHref}>
-                    <Button>
-                      <Download className="h-4 w-4" aria-hidden />
-                      تنزيل ملف Excel بالفلاتر الحالية
-                    </Button>
-                  </a>
+                  <LinkButton href={exportHref} as="a">
+                    <Download className="h-4 w-4" aria-hidden />
+                    تنزيل ملف Excel بالفلاتر الحالية
+                  </LinkButton>
                 ) : (
                   <p className="text-sm text-muted-foreground">لا تملك صلاحية التصدير.</p>
                 )}

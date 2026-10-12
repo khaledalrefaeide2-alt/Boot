@@ -1,8 +1,7 @@
-import Link from 'next/link';
 import type { ReactNode } from 'react';
 import { ArrowLeft } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { LinkButton } from '@/components/ui/link-button';
 
 /**
  * ترويسة قسم داخل الصفحة.
@@ -41,16 +40,15 @@ export function SectionHeader({
           )}
         </div>
 
+        {/*
+          السهم إلى اليسار في واجهة من اليمين إلى اليسار: هو اتجاه «إلى
+          الأمام» هنا، فالسهم المنطقي يتبع اتجاه القراءة لا اسمه.
+        */}
         {href && (
-          <Link href={href} className="no-print shrink-0">
-            {/*
-              السهم إلى اليسار في واجهة من اليمين إلى اليسار: هو اتجاه
-              «إلى الأمام» هنا، فالسهم المنطقي يتبع اتجاه القراءة لا اسمه.
-            */}
-            <Button variant="primary" size="sm" endIcon={<ArrowLeft aria-hidden />}>
-              {hrefLabel}
-            </Button>
-          </Link>
+          <LinkButton href={href} variant="primary" size="sm" className="no-print shrink-0">
+            {hrefLabel}
+            <ArrowLeft aria-hidden />
+          </LinkButton>
         )}
       </div>
 

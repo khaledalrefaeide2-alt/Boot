@@ -84,35 +84,35 @@ const STYLE = `
    *   خطأٍ من هويّةٍ أخرى، ولكانت نسخةً تُنسى بلا من يذكّر بها.
    */
   :root {
-    --bg: #f8fafc;           /* --background */
-    --surface: #ffffff;      /* --surface */
-    --text: #0f172a;         /* --foreground */
-    --muted: #475569;        /* --muted-foreground */
-    --line: #d7e2f0;         /* --border */
-    --btn-line: #878e68;     /* --olive-400 */
-    --danger: #b91c1c;       /* --danger */
-    --danger-soft: #fdeceb;  /* --danger-soft */
-    --primary: #46501b;      /* --olive-700 */
-    --primary-hover: #374015;/* --olive-800 */
-    --primary-text: #ffffff; /* --primary-foreground */
+    --bg: #f5f7fa;            /* --background */
+    --surface: #ffffff;       /* --surface */
+    --text: #17263c;          /* --foreground */
+    --muted: #56667d;         /* --muted-foreground */
+    --line: #e2e8f0;          /* --border */
+    --btn-line: #7f8a9b;      /* --border-input */
+    --danger: #c0262d;        /* --danger */
+    --danger-soft: #fdeced;   /* --danger-soft */
+    --primary: #087f8c;       /* --brand-700 */
+    --primary-hover: #066a75; /* --brand-800 */
+    --primary-text: #ffffff;  /* --primary-foreground */
   }
   @media (prefers-color-scheme: dark) {
     /*
-     * والزيتون في السمة الداكنة يُقلب: فاتحٌ بحبرٍ غامق لا العكس. ولو
-     * نُسخ زيتونُ الفاتحة إلى هنا لظهر زرٌّ غامقٌ على أرضيةٍ غامقة.
+     * والتركواز في السمة الداكنة يُقلب: فاتحٌ بحبرٍ غامق لا العكس. ولو
+     * نُسخ تركواز الفاتحة إلى هنا لظهر زرٌّ داكنٌ على أرضيةٍ داكنة.
      */
     :root {
-      --bg: #070708;            /* --background */
-      --surface: #121216;       /* --surface */
-      --text: #f5f5f7;          /* --foreground */
-      --muted: #8e8e96;         /* --muted-foreground */
-      --line: #24242b;          /* --border */
-      --btn-line: #6f7b3d;      /* --olive-400 */
+      --bg: #0b1320;            /* --background */
+      --surface: #121c2b;       /* --surface */
+      --text: #e6edf5;          /* --foreground */
+      --muted: #9aa9bc;         /* --muted-foreground */
+      --line: #26344a;          /* --border */
+      --btn-line: #66788f;      /* --border-input */
       --danger: #f87171;        /* --danger */
       --danger-soft: #2c1616;   /* --danger-soft */
-      --primary: #c8d87f;       /* --olive-700 */
-      --primary-hover: #d7e49a; /* --olive-800 */
-      --primary-text: #11150a;  /* --primary-foreground */
+      --primary: #45c2cd;       /* --brand-700 */
+      --primary-hover: #6ad0d9; /* --brand-800 */
+      --primary-text: #04191c;  /* --primary-foreground */
     }
   }
   * { box-sizing: border-box; }
@@ -125,7 +125,7 @@ const STYLE = `
     padding: 24px 16px;
     background: var(--bg);
     color: var(--text);
-    font-family: 'Segoe UI', Tahoma, system-ui, -apple-system, sans-serif;
+    font-family: 'IBM Plex Sans Arabic', 'Segoe UI', Tahoma, system-ui, -apple-system, sans-serif;
     line-height: 1.9;
     -webkit-font-smoothing: antialiased;
   }
@@ -134,7 +134,7 @@ const STYLE = `
     max-width: 30rem;
     padding: 32px 24px;
     border: 1px solid var(--line);
-    border-radius: 14px;
+    border-radius: 16px;
     background: var(--surface);
     text-align: center;
   }
@@ -165,8 +165,8 @@ const STYLE = `
    *
    * فحدُّ البطاقة زينةٌ لا يدلّ على شيء، أمّا حدُّ الزرّ فهو الدليلُ
    * الوحيد على أنّ هنا زرّاً: خلفيّتُه خلفيّةُ البطاقة نفسها. وحدٌّ
-   * بنسبة ١٫٢ لا يُرى، فيبقى الفعل موجوداً لا مرئياً. وزيتونُ ٤٠٠
-   * يعطي ٣٫٤ على الفاتح و٤٫١ على الغامق — فوق حدّ ٣ المطلوب.
+   * بنسبة ١٫٢ لا يُرى، فيبقى الفعل موجوداً لا مرئياً. وحدُّ الحقول
+   * («--border-input») يعطي ٣٫٥ على الفاتح و٣٫٨ على الداكن — فوق حدّ ٣.
    */
   .btn {
     /* ٤٨ بكسلاً: هدفُ لمسٍ مريح على الجوال، وهذه الصفحة تُفتح عليه أيضاً */

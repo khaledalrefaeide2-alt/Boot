@@ -218,7 +218,7 @@ export function SearchTopicsClient() {
                           {/* «جرّبه» يفتح شاشة المنشورات بسطر الموضوع نفسه — فالنتيجة تُرى لا تُوصف */}
                           <Link
                             href={`/posts?q=${encodeURIComponent(topic.query)}&range=all`}
-                            className="rounded-md px-2 py-1 text-xs font-medium text-primary hover:underline"
+                            className="rounded-md px-2 py-1 text-xs font-medium text-primary-text hover:underline"
                           >
                             جرّبه
                           </Link>

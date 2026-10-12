@@ -180,7 +180,12 @@ export function ClassificationBadge({
       type="button"
       onClick={onClick}
       aria-expanded={expanded ?? false}
-      className="rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+      /*
+       * منطقة النقر أوسع من الشارة: الشارة 24px، والإصبع يحتاج نحو 44.
+       * والتوسيع بطبقةٍ شفّافة حولها (`after`) لا بحشوةٍ تكبّر شكلها —
+       * فتبقى الشارة بحجمها بين جاراتها، ويصيبها الإصبع.
+       */
+      className="relative rounded-full after:absolute after:-inset-x-1 after:-inset-y-2.5 after:content-[''] focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
     >
       {content}
     </button>
@@ -206,7 +211,7 @@ function AnalysisSummary({ post }: { post: PostListItemView }) {
   const stance = AUTHOR_STANCE[analysis.authorStance];
 
   return (
-    <dl className="space-y-2 rounded-xl border border-border bg-surface-2 p-3 text-xs">
+    <dl className="space-y-2 rounded-control border border-border bg-surface-2 p-3 text-xs">
       <div className="flex flex-wrap items-center gap-1.5">
         <dt className="sr-only">درجة الخطورة</dt>
         <dd>
@@ -250,7 +255,7 @@ function AnalysisSummary({ post }: { post: PostListItemView }) {
 
       <Link
         href={`/posts/${post.id}`}
-        className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+        className="inline-flex items-center gap-1 font-medium text-primary-text hover:underline"
       >
         التعليل والدليل الكامل
         <ExternalLink className="h-3 w-3" aria-hidden />
@@ -407,7 +412,7 @@ export function PostCard({
       الجانبي معاً، فالنافذة وحدها لا تعرف كم بقي لها فعلاً. البطاقة بعرض
       220 بكسل تتصرّف تصرّفاً واحداً سواء أكانت النافذة 1280 أم 2560.
     */
-    <article className="@container card-interactive flex flex-col gap-3 rounded-2xl border border-border bg-surface p-4 shadow-elev-2 print-avoid-break">
+    <article className="@container card-interactive flex flex-col gap-3 rounded-card border border-border bg-surface p-4 shadow-elev-2 print-avoid-break">
       {/*
         الترويسة: الحساب أوّلاً ثم الحذف في الطرف المقابل.
 
@@ -422,7 +427,7 @@ export function PostCard({
           <AccountName
             id={post.account.id}
             name={post.account.name}
-            className="block truncate text-sm font-semibold text-foreground hover:text-primary @[15rem]:text-[0.95rem]"
+            className="block truncate text-sm font-semibold text-foreground hover:text-primary-text @[15rem]:text-[0.95rem]"
           />
           <p className="truncate text-xs text-muted-foreground">{platformLabel(post.platform)}</p>
         </div>
@@ -536,7 +541,7 @@ export function PostCard({
           href={post.url}
           target="_blank"
           rel="noopener noreferrer"
-          className="inline-flex w-fit items-center gap-1.5 text-xs font-medium text-primary hover:underline @[15rem]:text-sm"
+          className="inline-flex w-fit items-center gap-1.5 text-xs font-medium text-primary-text hover:underline @[15rem]:text-sm"
         >
           عرض المنشور
           <ExternalLink className="h-3.5 w-3.5" aria-hidden />
@@ -591,7 +596,7 @@ export function PostRow({ post, query }: { post: PostListItemView; query?: strin
   return (
     <TR>
       <TD className="max-w-80">
-        <Link href={`/posts/${post.id}`} className="line-clamp-2 text-sm hover:text-primary">
+        <Link href={`/posts/${post.id}`} className="line-clamp-2 text-sm hover:text-primary-text">
           {post.text ? <PostSnippet text={post.text} query={query} limit={140} /> : 'منشور بلا نص'}
         </Link>
       </TD>
@@ -599,7 +604,7 @@ export function PostRow({ post, query }: { post: PostListItemView; query?: strin
         <AccountName
           id={post.account.id}
           name={post.account.name}
-          className="hover:text-primary hover:underline"
+          className="hover:text-primary-text hover:underline"
         />
       </TD>
       <TD className="text-xs text-muted-foreground">{post.platform.name}</TD>
@@ -617,7 +622,7 @@ export function PostRow({ post, query }: { post: PostListItemView; query?: strin
       <TD className="num">{formatNumber(post.comments)}</TD>
       <TD className="num">{formatNumber(post.shares)}</TD>
       <TD className="num">{formatNumber(post.views)}</TD>
-      <TD className="num font-semibold text-primary">{formatNumber(post.engagementTotal)}</TD>
+      <TD className="num font-semibold text-primary-text">{formatNumber(post.engagementTotal)}</TD>
     </TR>
   );
 }

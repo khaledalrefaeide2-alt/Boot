@@ -3,15 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useTheme } from 'next-themes';
 import { Monitor, Moon, Sun } from 'lucide-react';
-import { Segmented } from '@/components/ui/button-group';
 import { cn } from '@/lib/utils';
 
 /*
- * مبدّل السمة مجموعةٌ مجزّأة لا ثلاثة أزرار.
+ * مبدّل السمة — اختيارُ حالةٍ واحدة من ثلاث، لا ثلاثة أزرار.
  *
- * الفرق ليس شكلياً: الزرّ يفعل شيئاً، وهذه تختار حالةً واحدة من ثلاث.
- * وبـ`role="radiogroup"` يسمع مستخدم قارئ الشاشة «واحد من ثلاثة» بدل
- * ثلاثة أزرار منفصلة لا يعرف أنّها تستبعد بعضها.
+ * الزرّ يفعل شيئاً، وهذه تختار حالة. وبـ`role="radiogroup"` يسمع مستخدم
+ * قارئ الشاشة «واحد من ثلاثة» بدل ثلاثة أزرار لا يعرف أنّها تستبعد بعضها.
  */
 
 const OPTIONS = [
@@ -28,26 +26,48 @@ export function ThemeToggle({ className }: { className?: string }) {
 
   useEffect(() => setMounted(true), []);
 
+  /*
+   * قبل التركيب يُحجز المكان بالمقاس نفسه، ولا يُرسم اختيار.
+   * الخادم لا يعرف السمة المحفوظة، فرسمُ اختيارٍ هنا يكذب لحظةً ثم يقفز.
+   */
   if (!mounted) {
-    return <div className={cn('h-8 w-[7.5rem] rounded-lg skeleton', className)} aria-hidden />;
+    return <div className={cn('h-control w-[8.25rem]', className)} aria-hidden />;
   }
 
+  const current = (OPTIONS.find((option) => option.value === theme)?.value ?? 'system') as ThemeValue;
+
+  /*
+   * ثلاث أيقونات متجاورة بلا حاوية — كما في المرجع.
+   *
+   * والدلالة كما كانت: مجموعةُ اختيارٍ واحد (`radiogroup`) لا ثلاثة
+   * أزرار، فيسمع قارئ الشاشة «واحد من ثلاثة». والمختار يحمل لون الهوية
+   * على رقاقةٍ خفيفة، فيُعرف بلا قراءة.
+   */
   return (
-    <Segmented<ThemeValue>
-      className={className}
-      size="sm"
-      label="نمط العرض"
-      value={(OPTIONS.find((option) => option.value === theme)?.value ?? 'system') as ThemeValue}
-      onChange={setTheme}
-      options={OPTIONS.map(({ value, label, Icon }) => ({
-        value,
-        label: (
-          <>
-            <Icon className="h-4 w-4" aria-hidden />
-            <span className="sr-only">{label}</span>
-          </>
-        ),
-      }))}
-    />
+    <div role="radiogroup" aria-label="نمط العرض" className={cn('inline-flex items-center gap-0.5', className)}>
+      {OPTIONS.map(({ value, label, Icon }) => {
+        const active = value === current;
+        return (
+          <button
+            key={value}
+            type="button"
+            role="radio"
+            aria-checked={active}
+            aria-label={label}
+            title={label}
+            onClick={() => setTheme(value)}
+            className={cn(
+              'flex size-control items-center justify-center rounded-control transition-colors duration-150',
+              'focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_var(--surface),0_0_0_4px_var(--ring)]',
+              active
+                ? 'bg-brand-50 text-primary-text'
+                : 'text-muted-foreground hover:bg-surface-2 hover:text-foreground',
+            )}
+          >
+            <Icon className="h-5 w-5" aria-hidden />
+          </button>
+        );
+      })}
+    </div>
   );
 }

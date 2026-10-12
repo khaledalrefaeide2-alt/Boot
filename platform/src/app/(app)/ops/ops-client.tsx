@@ -129,19 +129,19 @@ export function OpsRoomClient() {
           <>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
               {[
-                { label: 'منشورات اليوم', value: stats.postsToday, tone: 'text-primary' },
+                { label: 'منشورات اليوم', value: stats.postsToday, tone: 'text-primary-text' },
                 { label: 'منشورات الأسبوع', value: stats.totalPosts, tone: 'text-foreground' },
                 {
                   label: 'إجمالي التفاعل',
                   value: formatCompactNumber(stats.totalEngagement),
-                  tone: 'text-primary',
+                  tone: 'text-primary-text',
                 },
                 { label: 'الحسابات المرصودة', value: stats.accountsCount, tone: 'text-foreground' },
                 { label: 'المنصات', value: stats.platformsCount, tone: 'text-foreground' },
               ].map((item) => (
                 <div
                   key={item.label}
-                  className="rounded-lg border border-border bg-surface p-4 text-center shadow-elev-1"
+                  className="rounded-card border border-border bg-surface p-4 text-center shadow-elev-1"
                 >
                   <p className="text-sm text-muted-foreground">{item.label}</p>
                   <p className={`ops-metric num font-bold ${item.tone}`}>
@@ -189,14 +189,14 @@ export function OpsRoomClient() {
               />
             </div>
 
-            <div className="rounded-lg border border-border bg-surface shadow-elev-1">
+            <div className="rounded-card border border-border bg-surface shadow-elev-1">
               <div className="border-b border-border px-4 py-3">
                 <h2 className="font-semibold text-foreground">أعلى المنشورات تفاعلاً</h2>
               </div>
               <ul className="divide-y divide-border">
                 {(top.data?.posts ?? []).slice(0, 5).map((post) => (
                   <li key={post.id} className="flex items-start gap-4 px-4 py-3">
-                    <span className="num shrink-0 text-lg font-bold text-primary">
+                    <span className="num shrink-0 text-lg font-bold text-primary-text">
                       {formatCompactNumber(post.engagementTotal)}
                     </span>
                     <div className="min-w-0 flex-1">

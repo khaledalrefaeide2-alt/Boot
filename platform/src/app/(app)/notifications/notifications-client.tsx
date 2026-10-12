@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { Bell, CheckCheck } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
@@ -16,6 +15,7 @@ import { NOTIFICATION_SEVERITY_TONE, NOTIFICATION_TYPE_LABELS } from '@/lib/doma
 import { formatRelativeTime } from '@/lib/utils';
 import { cn } from '@/lib/utils';
 import type { NotificationSeverity, NotificationType } from '@/generated/prisma';
+import { LinkButton } from '@/components/ui/link-button';
 
 interface NotificationRow {
   id: string;
@@ -136,11 +136,9 @@ export function NotificationsClient() {
 
                   <div className="flex items-center gap-1.5">
                     {notification.link && (
-                      <Link href={notification.link}>
-                        <Button size="sm" variant="secondary">
-                          فتح
-                        </Button>
-                      </Link>
+                      <LinkButton href={notification.link} size="sm" variant="secondary">
+                        فتح
+                      </LinkButton>
                     )}
                     {!notification.isRead && (
                       <Button

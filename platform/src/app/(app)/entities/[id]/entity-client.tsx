@@ -23,6 +23,7 @@ import { ENTITY_TYPE_LABELS, ENTITY_TYPE_TONE, STANCE_METRIC } from '@/lib/domai
 import { api, ApiClientError, buildQuery } from '@/lib/api-client';
 import { formatDate, formatNumber, formatPercent } from '@/lib/utils';
 import type { EntityType } from '@/generated/prisma';
+import { LinkButton } from '@/components/ui/link-button';
 
 interface EntitySummary {
   id: string;
@@ -96,12 +97,10 @@ export function EntityClient({
         }
         leading={<AtSign className="h-5 w-5 text-muted-foreground" aria-hidden />}
         action={
-          <Link href="/entities">
-            <Button variant="secondary">
-              <ArrowRight className="h-4 w-4" aria-hidden />
-              كل الكيانات
-            </Button>
-          </Link>
+          <LinkButton href="/entities" variant="secondary">
+            <ArrowRight className="h-4 w-4" aria-hidden />
+            كل الكيانات
+          </LinkButton>
         }
       />
 
@@ -218,7 +217,7 @@ export function EntityClient({
                     >
                       <Link
                         href={`/accounts/${account.id}`}
-                        className="truncate text-foreground hover:text-primary hover:underline"
+                        className="truncate text-foreground hover:text-primary-text hover:underline"
                       >
                         {account.name}
                       </Link>

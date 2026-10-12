@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Download, LayoutGrid, List, Newspaper } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
@@ -20,6 +19,7 @@ import { Table, TBody, TableWrapper } from '@/components/ui/table';
 import { api, ApiClientError, buildQuery } from '@/lib/api-client';
 import { formatNumber } from '@/lib/utils';
 import type { PostListItemView } from '@/components/posts/post-card';
+import { LinkButton } from '@/components/ui/link-button';
 
 interface PostsResponse {
   posts: PostListItemView[];
@@ -147,12 +147,10 @@ export function PostsClient({
               ]}
             />
             {canExport && (
-              <a href={exportHref}>
-                <Button variant="secondary">
-                  <Download className="h-4 w-4" aria-hidden />
-                  تصدير Excel
-                </Button>
-              </a>
+              <LinkButton href={exportHref} variant="secondary" as="a">
+                <Download className="h-4 w-4" aria-hidden />
+                تصدير Excel
+              </LinkButton>
             )}
           </>
         }
@@ -205,9 +203,7 @@ export function PostsClient({
             title="لا توجد منشورات مطابقة"
             description="جرّب توسيع النطاق الزمني أو إزالة بعض الفلاتر، أو شغّل عملية استخراج جديدة."
             action={
-              <Link href="/admin/extractions">
-                <Button variant="secondary">عمليات الاستخراج</Button>
-              </Link>
+              <LinkButton href="/admin/extractions" variant="secondary">عمليات الاستخراج</LinkButton>
             }
           />
         </Card>

@@ -30,11 +30,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         {/*
           الخط مستضاف محلياً (public/fonts) ومُعرَّف في globals.css — لا طلب
           خارجي وقت التشغيل، فتعمل الهوية البصرية كاملة على شبكة معزولة.
-          نُحمّل نطاق العربية مسبقاً لأنه الخط الفعلي لكل نص في الواجهة.
+
+          يُحمَّل مسبقاً وزنان عربيّان لا أكثر: 400 للمتن و700 للعناوين
+          والأرقام، وهما ما يقع في أوّل ما يُرى. وكلّ تحميلٍ مسبق يزاحم
+          ما سواه على الشبكة، فالأوزان الأخرى تصل عند الحاجة.
         */}
         <link
           rel="preload"
-          href="/fonts/cairo-arabic.woff2"
+          href="/fonts/plex-arabic-400.woff2"
+          as="font"
+          type="font/woff2"
+          crossOrigin="anonymous"
+        />
+        <link
+          rel="preload"
+          href="/fonts/plex-arabic-700.woff2"
           as="font"
           type="font/woff2"
           crossOrigin="anonymous"

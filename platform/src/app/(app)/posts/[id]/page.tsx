@@ -9,7 +9,6 @@ import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
 import { AnalysisPanel } from '@/components/analysis/analysis-panel';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { METRIC_ICONS, StatCard, StatGrid } from '@/components/ui/stat-card';
 import { Alert } from '@/components/ui/alert';
 import {
@@ -23,6 +22,7 @@ import { formatDateTime, formatNumber } from '@/lib/utils';
 import { MediaGallery } from '@/components/posts/media-gallery';
 import { ClassificationBadge } from '@/components/posts/post-card';
 import { getAccountScope, scopeAllows } from '@/lib/auth/account-scope';
+import { LinkButton } from '@/components/ui/link-button';
 
 export const metadata: Metadata = { title: 'تفاصيل المنشور' };
 
@@ -76,16 +76,12 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
         description={`${post.account.name} — ${post.platform.name}`}
         action={
           <>
-            <Link href={`/posts?accountId=${post.account.id}&range=all`}>
-              <Button variant="secondary">منشورات الحساب</Button>
-            </Link>
+            <LinkButton href={`/posts?accountId=${post.account.id}&range=all`} variant="secondary">منشورات الحساب</LinkButton>
             {post.url && (
-              <a href={post.url} target="_blank" rel="noopener noreferrer">
-                <Button>
-                  <ExternalLink className="h-4 w-4" aria-hidden />
-                  فتح في المنصة
-                </Button>
-              </a>
+              <LinkButton href={post.url} target="_blank" rel="noopener noreferrer" as="a">
+                <ExternalLink className="h-4 w-4" aria-hidden />
+                فتح في المنصة
+              </LinkButton>
             )}
           </>
         }
@@ -142,7 +138,7 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
                 href={post.videoUrl}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="mt-4 inline-flex items-center gap-2 text-sm text-primary hover:underline"
+                className="mt-4 inline-flex items-center gap-2 text-sm text-primary-text hover:underline"
               >
                 <Play className="h-4 w-4" aria-hidden />
                 فتح رابط الفيديو
@@ -271,7 +267,7 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
             <DetailRow label="الحساب">
               {/* الرابط لمن يملك تصفّح الدليل — ولغيره الاسم وحده */}
               {canBrowseAccounts ? (
-                <Link href={`/accounts/${post.account.id}`} className="text-primary hover:underline">
+                <Link href={`/accounts/${post.account.id}`} className="text-primary-text hover:underline">
                 {post.account.name}
               </Link>
               ) : (
@@ -318,7 +314,7 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
             </DetailRow>
             <DetailRow label="التصنيف">
               {post.topic ? (
-                <Link href={`/posts?topicId=${post.topic.id}&range=all`} className="text-primary hover:underline">
+                <Link href={`/posts?topicId=${post.topic.id}&range=all`} className="text-primary-text hover:underline">
                   {post.topic.name}
                 </Link>
               ) : (
@@ -335,7 +331,7 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
               <DetailRow label="عملية الاستخراج">
                 <Link
                   href={`/admin/extractions/${post.extractionRun.id}`}
-                  className="text-primary hover:underline"
+                  className="text-primary-text hover:underline"
                 >
                   عرض العملية
                 </Link>

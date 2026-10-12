@@ -33,7 +33,7 @@ export function SuggestedQuestions({ onPick }: { onPick: (question: string) => v
             <button
               type="button"
               onClick={() => onPick(question)}
-              className="rounded-full border border-border bg-surface px-3.5 py-1.5 text-xs text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="min-h-control-compact rounded-full border border-border bg-surface px-4 py-1 text-sm text-muted-foreground shadow-elev-1 transition-colors hover:border-brand-700 hover:bg-brand-50 hover:text-primary-text focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_var(--surface),0_0_0_4px_var(--ring)]"
             >
               {question}
             </button>

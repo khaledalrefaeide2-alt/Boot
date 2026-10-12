@@ -1,7 +1,6 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { ListChecks, Plus, Star, Trash2 } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
@@ -17,6 +16,7 @@ import { FilterBar, EMPTY_FILTERS, filtersToParams, type PostFilterState } from 
 import { useFilterOptions, EMPTY_OPTIONS } from '@/lib/hooks/use-filters';
 import { api, ApiClientError, buildQuery } from '@/lib/api-client';
 import { formatDateTime } from '@/lib/utils';
+import { LinkButton } from '@/components/ui/link-button';
 
 interface SavedDashboard {
   id: string;
@@ -158,16 +158,12 @@ export function DashboardsClient() {
                 </p>
 
                 <div className="flex items-center gap-2 border-t border-border pt-3">
-                  <Link href={buildQuery('/posts', dashboard.filters)} className="flex-1">
-                    <Button variant="secondary" size="sm" className="w-full">
-                      فتح المنشورات
-                    </Button>
-                  </Link>
-                  <Link href={buildQuery('/analytics', dashboard.filters)} className="flex-1">
-                    <Button variant="secondary" size="sm" className="w-full">
-                      الإحصائيات
-                    </Button>
-                  </Link>
+                  <LinkButton href={buildQuery('/posts', dashboard.filters)} variant="secondary" size="sm" className="flex-1 w-full">
+                    فتح المنشورات
+                  </LinkButton>
+                  <LinkButton href={buildQuery('/analytics', dashboard.filters)} variant="secondary" size="sm" className="flex-1 w-full">
+                    الإحصائيات
+                  </LinkButton>
                   <Button
                     size="icon-sm"
                     variant="ghost"

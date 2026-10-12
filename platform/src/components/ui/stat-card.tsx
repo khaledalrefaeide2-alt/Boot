@@ -5,7 +5,6 @@ import {
   ArrowDownRight,
   ArrowUpRight,
   BellRing,
-  ChevronLeft,
   Bookmark,
   CalendarClock,
   CalendarDays,
@@ -67,26 +66,23 @@ export const METRIC_ICONS = {
 } as const satisfies Record<string, LucideIcon>;
 
 /*
- * الأسطح الملوّنة.
+ * ألوان الرقاقات والأعمدة.
  *
  * ★ اللون تسريعٌ للتعرّف لا حاملٌ للمعنى.
  *
- *   «لا تنقل المعلومة باللون وحده» قاعدةٌ تُخالَف في كلّ لوحة مقاييس
- *   ملوّنة. وهي محفوظة هنا لأنّ البطاقة تحمل أيقونتها واسمها ورقمها
- *   كاملةً: من لا يميّز الأزرق من الأخضر يقرأ «عدد الحسابات ٣٧٢» كما
- *   يقرأها غيره، ويخسر التسريعَ وحده.
+ *   البطاقة تحمل أيقونتها واسمها ورقمها كاملةً: من لا يميّز الأزرق من
+ *   الأخضر يقرأ «عدد الحسابات ٤٠٢» كما يقرأها غيره، ويخسر التسريعَ وحده.
  *
- * والدرجات كلّها مقيسة في `verify:contrast` — الحبر على سطحه وعلى
- * رقاقته، ونصُّ البطاقة العادي على السطح الملوّن.
+ * والدرجات كلّها مقيسة في `verify:contrast` — الحبر على رقاقته.
  */
-const TINTS = {
-  sky: 'bg-tint-sky-surface text-tint-sky-ink',
-  mint: 'bg-tint-mint-surface text-tint-mint-ink',
-  amber: 'bg-tint-amber-surface text-tint-amber-ink',
-  rose: 'bg-tint-rose-surface text-tint-rose-ink',
-  violet: 'bg-tint-violet-surface text-tint-violet-ink',
-  teal: 'bg-tint-teal-surface text-tint-teal-ink',
-  olive: 'bg-tint-olive-surface text-tint-olive-ink',
+const INKS = {
+  sky: 'text-tint-sky-ink',
+  mint: 'text-tint-mint-ink',
+  amber: 'text-tint-amber-ink',
+  rose: 'text-tint-rose-ink',
+  violet: 'text-tint-violet-ink',
+  teal: 'text-tint-teal-ink',
+  brand: 'text-tint-brand-ink',
 } as const;
 
 const CHIPS = {
@@ -96,10 +92,10 @@ const CHIPS = {
   rose: 'bg-tint-rose-chip text-tint-rose-ink',
   violet: 'bg-tint-violet-chip text-tint-violet-ink',
   teal: 'bg-tint-teal-chip text-tint-teal-ink',
-  olive: 'bg-tint-olive-chip text-tint-olive-ink',
+  brand: 'bg-tint-brand-chip text-tint-brand-ink',
 } as const;
 
-export type StatTint = keyof typeof TINTS;
+export type StatTint = keyof typeof INKS;
 
 /**
  * لون كلّ أيقونة — تُبنى مرّةً عند التحميل من خريطتَي الأيقونات والألوان.
@@ -167,8 +163,8 @@ for (const [metric, icon] of Object.entries(METRIC_ICONS) as [
  * إلى الأسطح الجديدة هنا، ويُكتب `tint` صراحةً فيما يُنشأ بعد اليوم.
  */
 const TONES = {
-  default: 'olive',
-  primary: 'olive',
+  default: 'brand',
+  primary: 'brand',
   success: 'mint',
   warning: 'amber',
   danger: 'rose',
@@ -188,30 +184,31 @@ const TONES = {
  *   القارئ يخمّن أيّ الطرفين اليوم.
  */
 function Spark({ values }: { values: number[] }) {
-  const series = values.slice(-14);
+  const series = values.slice(-24);
   if (series.length < 2) return null;
   const max = Math.max(...series, 1);
+  const step = 5;
 
   return (
     <svg
-      viewBox={`0 0 ${series.length * 4 - 1} 24`}
+      viewBox={`0 0 ${series.length * step - 2} 28`}
       preserveAspectRatio="none"
-      className="h-6 w-[4.5rem] shrink-0"
+      className="h-7 w-full max-w-[9.5rem] shrink-0"
       aria-hidden
     >
       {series.map((value, index) => {
-        // أدنى ارتفاع 2 ليبقى العمود الصفري مرئياً عموداً لا فراغاً
-        const height = Math.max(2, (Math.max(0, value) / max) * 24);
+        // أدنى ارتفاع 3 ليبقى العمود الصفري مرئياً عموداً لا فراغاً
+        const height = Math.max(3, (Math.max(0, value) / max) * 28);
         return (
           <rect
             key={index}
-            x={index * 4}
-            y={24 - height}
-            width={2.6}
+            x={index * step}
+            y={28 - height}
+            width={3.2}
             height={height}
-            rx={1.3}
+            rx={1}
             fill="currentColor"
-            opacity={0.45 + (index / (series.length - 1)) * 0.55}
+            opacity={0.35 + (index / (series.length - 1)) * 0.65}
           />
         );
       })}
@@ -272,66 +269,36 @@ export function splitUnit(display: string): { amount: string; unit: string | nul
 }
 
 /**
- * موجةٌ زخرفية أسفل البطاقة.
- *
- * تكسر استواء السطح الملوّن فلا يبدو مستطيلاً مصمتاً. وهي `aria-hidden`
- * بلا استثناء ولا تحمل معنى: من أطفأ الألوان أو قرأ بالصوت لا يفقد شيئاً.
- */
-/**
  * قشرة البطاقة — مكتوبةٌ مرّةً وتستعملها البطاقتان.
  *
- * بطاقة المقياس وبطاقة العنصر البارز تقفان جنباً إلى جنب في الصفّ نفسه،
- * فأيّ فرق في نصف القطر أو الحشوة أو الظلّ يُقرأ خطأً لا تنويعاً. وكتابةُ
- * الأصناف مرّتين تعني أن ينحرف أحدهما عن الآخر عند أوّل تعديل.
+ * بطاقة المقياس وبطاقة العنصر البارز تقفان في صفٍّ واحد، فأيّ فرقٍ في
+ * الزاوية أو الحشوة أو الظلّ يُقرأ خطأً لا تنويعاً.
+ *
+ * ★ بيضاء بحدٍّ خفيف — واللون في الرقاقة وحدها.
+ *
+ *   كانت كلّ بطاقة بسطحٍ ملوّن. والمرجع يجعل البطاقات بيضاء ويضع اللون
+ *   في رقاقة الأيقونة وفي الأعمدة الصغيرة. واثنتا عشرة بطاقة بيضاء
+ *   تُقرأ لوحةً هادئة، أمّا اثنتا عشرة سطحاً ملوّناً فتتنافس على العين؛
+ *   والرقاقةُ الملوّنة تكفي لتسريع التعرّف.
  */
 const TILE_SHELL =
-  'group relative flex h-full flex-col justify-between gap-3 overflow-hidden rounded-[1.25rem] p-4 shadow-elev-1 print-avoid-break dark:border dark:border-border';
-
-/** السهم في دائرة — علامةٌ ثابتة تقول إنّ البطاقة تُفتح */
-function OpenChevron({ tint }: { tint: StatTint }) {
-  return (
-    <span
-      className={cn(
-        'flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-current/25 opacity-50 transition-opacity group-hover:opacity-90',
-        TINTS[tint].split(' ')[1],
-      )}
-    >
-      <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
-    </span>
-  );
-}
-
-function TileWave() {
-  return (
-    <svg
-      className="pointer-events-none absolute inset-x-0 bottom-0 h-16 w-full opacity-[0.07]"
-      viewBox="0 0 400 64"
-      preserveAspectRatio="none"
-      aria-hidden
-    >
-      <path
-        d="M0 34c58-26 104 14 168 8s96-34 160-22c30 6 54 18 72 24v20H0z"
-        fill="currentColor"
-      />
-    </svg>
-  );
-}
+  '@container group relative flex h-full flex-col justify-between gap-4 rounded-card border border-border bg-surface p-5 shadow-elev-1 print-avoid-break';
 
 /**
- * بطاقة إحصاء — رقم واحد مع سياقه.
+ * بطاقة إحصاء — رقمٌ واحد مع سياقه.
  *
  * ★ الرقم هو البطاقة، وكلّ ما عداه يخدمه.
  *
- *   الاسم فوقه صغيراً، والأيقونة بجانبه رقاقةً ملوّنة، والاتجاه تحته
- *   أعمدةً وحبّة نسبة. وهذا ترتيبٌ مقصود: العين تقع على الرقم أوّلاً لأنه
- *   أكبر ما في البطاقة، ثم تصعد للاسم لتعرف ماذا يعني، ثم تنزل للاتجاه
- *   لتعرف إلى أين يمضي. ثلاث وقفات لا تحتاج قراءةً متتابعة.
+ *   الاسم في البداية (يمين) صغيراً، والرقم تحته كبيراً، والرقاقة في
+ *   النهاية (يسار)، والأعمدة أسفلها. العين تقع على الرقم لأنه أكبر ما
+ *   في البطاقة، ثم تصعد للاسم لتعرف ما يعني، ثم تنزل للأعمدة لتعرف إلى
+ *   أين يمضي. ثلاث وقفات لا تحتاج قراءةً متتابعة.
  *
- * ★ والسطح ملوّن لكلّ مقياس.
+ * ★ والرقم لا يُقصّ أبداً، ويصغر قبل أن يُقصّ.
  *
- *   ثماني بطاقات بيضاء متطابقة تُقرأ كتلةً واحدة، فتُمسح الأسماء واحداً
- *   واحداً بحثاً عن المطلوب. واللون يجعل كلّ بطاقة معلَماً يُعرف موضعه
- *   قبل قراءته — ولا يحمل معنىً وحده: الأيقونة والاسم والرقم كاملةٌ فيها.
+ *   «281.5 مليون» على بطاقةٍ ضيّقة تخرج عن حدّها. فالبطاقة حاويةٌ
+ *   (`@container`) والرقم يكبر حين تتّسع لا حين تتّسع الشاشة: بطاقةٌ في
+ *   شبكة أربعة أعمدة على 1280px أضيق منها في عمودين على 768px.
  */
 export function StatCard({
   label,
@@ -353,9 +320,9 @@ export function StatCard({
   icon?: LucideIcon;
   href?: string;
   compact?: boolean;
-  /** الأسماء القديمة — تُترجَم إلى سطحٍ ملوّن */
+  /** الأسماء القديمة — تُترجَم إلى لونٍ للرقاقة */
   tone?: keyof typeof TONES;
-  /** السطح الملوّن صراحةً — يتقدّم على `tone` */
+  /** لون الرقاقة صراحةً — يتقدّم على `tone` */
   tint?: StatTint;
   /** نسبة التغيّر بين نصفَي الفترة، موجبةً أو سالبة */
   trend?: number;
@@ -382,98 +349,77 @@ export function StatCard({
   const hasSpark = Boolean(spark && spark.length > 1);
   const hasTrend = trend !== undefined && Number.isFinite(trend);
   const hasProgress = progress !== undefined && Number.isFinite(progress);
+  const ink = INKS[key];
 
   const content = (
-    <div
-      className={cn(
-        /*
-         * نصف قطر ٢٠px وبلا حدّ في الفاتح.
-         *
-         * السطح الملوّن يفصل البطاقة عن أرضية الصفحة بنفسه، والحدّ فوقه
-         * خطٌّ ثالث بلا وظيفة. وفي الداكن يبقى شعرةً تفصل سطحين متقاربَي
-         * العتمة.
-         */
-        TILE_SHELL,
-        TINTS[key],
-        href && 'card-interactive',
-        className,
-      )}
-    >
-      <TileWave />
-
-      {/*
-        الصفّ الأعلى: الأيقونة في حافّة البداية، والنصّ يليها، والسهم في
-        حافّة النهاية. والترتيب منطقيّ لا فيزيائي — يصحّ في الاتجاهين.
-      */}
-      <div className="relative flex items-start gap-3">
-        {Icon && (
-          <span
-            className={cn(
-              'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
-              CHIPS[key],
-            )}
-          >
-            <Icon className="h-5 w-5" aria-hidden />
-          </span>
-        )}
-
-        <div className="min-w-0 flex-1 text-end">
+    <div className={cn(TILE_SHELL, href && 'card-interactive', className)}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
           {/*
             الاسم يلتفّ سطرين ولا يُقصّ.
 
             «معدل التف…» ليست تسميةً بل لغزاً: العربية لا تُقرأ ببدايتها
             كما تُقرأ اللاتينية، والقصُّ فيها يُتلف الكلمة.
           */}
-          <p className="eyebrow line-clamp-2" title={label}>
+          <p className="line-clamp-2 text-sm font-medium text-muted-foreground" title={label}>
             {label}
           </p>
           {/*
-            الرقم لا يُقصّ أبداً.
+            الرقم معزولُ الاتجاه وحده، والوحدة خارجه في سياق العربية.
 
-            كان يُقصّ مع الاسم فصارت «4.3 مليون» تُعرض «4.3 ن…» — والرقم
-            هو كلّ ما في البطاقة. فإن ضاق المكان فليضِق الاسمُ لا هو.
-            والوحدة أصغر منه: «مليون» كلمةٌ تُعرف بشكلها ولا تحتاج حجمه.
+            لو عُزل السطر كلّه لصار من اليسار إلى اليمين فانتقل إلى يسار
+            البطاقة، ووقعت «ألف» يمين الرقم — أي قبله في القراءة العربية.
+            والعزل على الرقم وحده يُبقيه في البداية (يمين)، والوحدةُ بعده.
           */}
-          <p className="num whitespace-nowrap text-2xl font-bold leading-tight tracking-[-0.02em] tabular-nums text-foreground">
-            {amount}
-            {unit && <span className="ms-1 text-base font-semibold">{unit}</span>}
+          <p className="mt-2 whitespace-nowrap text-2xl font-bold leading-none tracking-[-0.01em] text-heading @[13rem]:text-[1.875rem]">
+            <span className="num">{amount}</span>
+            {unit && <span className="ms-1.5 text-lg font-semibold @[13rem]:text-xl">{unit}</span>}
           </p>
         </div>
 
-        {/*
-          السهم في دائرة لا عارياً.
-
-          البطاقة القابلة للنقر لا تفترق عن غيرها إلا عند التحويم — ومن
-          يعمل بلوحة المفاتيح أو على شاشة لمس لا يحوّم. والدائرة علامةٌ
-          ثابتة تُقرأ زرّاً، وتخفت حتى لا تزاحم الرقم.
-        */}
-        {href && <OpenChevron tint={key} />}
+        {Icon && (
+          <span
+            className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-control', CHIPS[key])}
+          >
+            <Icon className="h-5 w-5" aria-hidden />
+          </span>
+        )}
       </div>
 
       {/*
-        الصفّ الأسفل: الاتجاه ثم الأعمدة، مدفوعةً إلى حافّة النهاية.
-        الترتيب في الشيفرة يعكس ما يُرى: الأعمدة في الطرف والحبّة تليها.
+        الصفّ الأسفل: التلميح أو الاتجاه في البداية، والأعمدة في النهاية
+        — تحت الرقاقة، فيقرآن عموداً واحداً من اللون نفسه.
       */}
       {(hasSpark || hasTrend || hasProgress || hint) && (
-        <div className="relative flex items-center justify-end gap-2">
-          {hint && <p className="me-auto truncate text-2xs text-muted-foreground">{hint}</p>}
-          {hasProgress && !hasSpark && (
-            <div className="me-auto h-1.5 w-20 overflow-hidden rounded-full bg-current/15" aria-hidden>
-              <div
-                className="h-full rounded-full bg-current"
-                style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
-              />
-            </div>
+        <div className="flex min-h-7 items-end justify-between gap-3">
+          <div className="flex min-w-0 items-center gap-2">
+            {hasTrend && <Trend value={trend} />}
+            {hint && !hasTrend && <p className="truncate text-xs text-muted-foreground">{hint}</p>}
+          </div>
+          {hasSpark ? (
+            <span className={cn('flex min-w-0 flex-1 justify-end', ink)}>
+              <Spark values={spark!} />
+            </span>
+          ) : (
+            hasProgress && (
+              <div className={cn('h-2 w-24 shrink-0 overflow-hidden rounded-full bg-surface-2', ink)} aria-hidden>
+                <div
+                  className="h-full rounded-full bg-current"
+                  style={{ width: `${Math.min(100, Math.max(0, progress))}%` }}
+                />
+              </div>
+            )
           )}
-          {hasTrend && <Trend value={trend} />}
-          {hasSpark && <Spark values={spark!} />}
         </div>
       )}
     </div>
   );
 
   return href ? (
-    <Link href={href} className="block h-full">
+    <Link
+      href={href}
+      className="block h-full rounded-card focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_var(--background),0_0_0_4px_var(--ring)]"
+    >
       {content}
     </Link>
   ) : (
@@ -492,19 +438,21 @@ export function StatCard({
  *   شكلٌ مألوف في كلّ لوحة، أمّا البطاقة الشاذّة العرض فتُربك الترتيب
  *   كلّه.
  *
- *   والسقف خمسة أعمدة: ما فوقها يُعطي البطاقة نحو 190 بكسل، وهو عرضٌ
- *   يقصّ الاسم العربي والرقم معاً.
+ *   والأعمدة كما في المواصفة: أربعة على سطح المكتب، واثنان على اللوحي،
+ *   وواحد على الجوال. والأربعة تبدأ عند 1280px لا 1024: مع القائمة
+ *   الجانبية يبقى للمحتوى عند 1024 نحو 730px، وأربعةُ أعمدةٍ فيها تعطي
+ *   البطاقة 170px — عرضٌ يقصّ الاسم العربي والرقم معاً.
  */
 const COLUMNS: Record<number, string> = {
   3: 'grid-cols-1 sm:grid-cols-3',
-  4: 'grid-cols-2 lg:grid-cols-4',
-  5: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5',
-  6: 'grid-cols-2 sm:grid-cols-3',
-  7: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4',
-  8: 'grid-cols-2 lg:grid-cols-4',
-  9: 'grid-cols-2 sm:grid-cols-3',
-  10: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-5',
-  12: 'grid-cols-2 sm:grid-cols-3 lg:grid-cols-4',
+  4: 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4',
+  5: 'grid-cols-1 sm:grid-cols-3 xl:grid-cols-5',
+  6: 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-3',
+  7: 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4',
+  8: 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4',
+  9: 'grid-cols-1 sm:grid-cols-3',
+  10: 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-5',
+  12: 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4',
 };
 
 export function StatGrid({
@@ -518,7 +466,7 @@ export function StatGrid({
   className?: string;
 }) {
   return (
-    <div className={cn('grid gap-2.5', COLUMNS[count] ?? 'grid-cols-2 lg:grid-cols-4', className)}>
+    <div className={cn('grid gap-4', COLUMNS[count] ?? 'grid-cols-1 sm:grid-cols-2 xl:grid-cols-4', className)}>
       {children}
     </div>
   );
@@ -545,7 +493,7 @@ export function HighlightCard({
   valueLabel,
   href,
   icon: Icon,
-  tint = 'olive',
+  tint = 'brand',
   /** صورة المنشور — تُقرأ من مخزننا أوّلاً ثم من المصدر */
   thumbnail,
   thumbnailKey,
@@ -575,70 +523,66 @@ export function HighlightCard({
   const { amount, unit } = splitUnit(value === undefined ? '' : formatCompactNumber(value));
 
   const content = (
-    <div className={cn(TILE_SHELL, TINTS[tint], href && 'card-interactive', className)}>
-      <TileWave />
+    <div className={cn(TILE_SHELL, href && 'card-interactive', className)}>
+      <div className="flex items-start justify-between gap-3">
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium text-muted-foreground">{label}</p>
+          {/*
+            العنوان يلتفّ سطرين ولا يُقصّ بنقاط في منتصف كلمة.
+            نصُّ المنشور مقصوصٌ أصلاً في الخادم إلى طولٍ معقول.
+          */}
+          <p className="mt-1.5 line-clamp-2 text-base font-semibold leading-snug text-heading">{title}</p>
+        </div>
 
-      <div className="relative flex items-start gap-3">
         {thumbnail || thumbnailKey ? (
           <RemoteMedia
             src={thumbnail ?? ''}
             mediaKey={thumbnailKey}
-            className="h-11 w-11 shrink-0 rounded-2xl"
+            className="h-11 w-11 shrink-0 rounded-control"
             fallback="hide"
           />
         ) : (
           Icon && (
             <span
-              className={cn(
-                'flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl',
-                CHIPS[tint],
-              )}
+              className={cn('flex h-11 w-11 shrink-0 items-center justify-center rounded-control', CHIPS[tint])}
             >
               <Icon className="h-5 w-5" aria-hidden />
             </span>
           )
         )}
-
-        <div className="min-w-0 flex-1 text-end">
-          <p className="eyebrow">{label}</p>
-          {/*
-            العنوان يلتفّ سطرين ولا يُقصّ بنقاط في منتصف كلمة.
-            نصُّ المنشور مقصوصٌ أصلاً في الخادم إلى طولٍ معقول.
-          */}
-          <p className="line-clamp-2 text-sm font-medium leading-snug text-foreground">{title}</p>
-        </div>
-
-        {href && <OpenChevron tint={tint} />}
       </div>
 
-      <div className="relative flex items-end justify-between gap-2">
-        {meta && <p className="min-w-0 flex-1 truncate text-2xs text-muted-foreground">{meta}</p>}
-
-        {percent !== null && (
-          <div className="h-1.5 w-16 shrink-0 overflow-hidden rounded-full bg-current/15" aria-hidden>
-            <div className="h-full rounded-full bg-current" style={{ width: `${percent}%` }} />
-          </div>
-        )}
-
+      <div className="flex items-end justify-between gap-3">
         {value !== undefined && (
-          <p className="shrink-0 whitespace-nowrap text-end">
+          <p className="shrink-0 whitespace-nowrap">
             {/*
               الرقم بالمقاس نفسه الذي في بطاقة المقياس — هو ما يجعل الصفّ
               يُقرأ صفّاً واحداً لا صفّين متجاورين.
             */}
-            <span className="num text-2xl font-bold leading-tight tracking-[-0.02em] tabular-nums text-foreground">
+            <span className="num text-2xl font-bold leading-none tracking-[-0.01em] text-heading">
               {amount}
             </span>
-            {unit && <span className="num ms-1 text-base font-semibold">{unit}</span>}
-            {valueLabel && <span className="ms-1 text-2xs text-muted-foreground">{valueLabel}</span>}
+            {unit && <span className="ms-1.5 text-base font-semibold text-heading">{unit}</span>}
+            {valueLabel && <span className="ms-1.5 text-xs text-muted-foreground">{valueLabel}</span>}
           </p>
+        )}
+
+        {meta && <p className="min-w-0 flex-1 truncate text-end text-xs text-muted-foreground">{meta}</p>}
+
+        {percent !== null && (
+          <div className={cn('h-2 w-20 shrink-0 overflow-hidden rounded-full bg-surface-2', INKS[tint])} aria-hidden>
+            <div className="h-full rounded-full bg-current" style={{ width: `${percent}%` }} />
+          </div>
         )}
       </div>
     </div>
   );
 
   return href ? (
-    <Link href={href} className="block h-full">
+    <Link
+      href={href}
+      className="block h-full rounded-card focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_var(--background),0_0_0_4px_var(--ring)]"
+    >
       {content}
     </Link>
   ) : (

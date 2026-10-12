@@ -17,7 +17,7 @@ export function Table({ className, ...props }: React.TableHTMLAttributes<HTMLTab
  */
 export function THead({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
   return (
-    <thead className={cn('border-b-2 border-border-strong bg-surface-2/60', className)} {...props} />
+    <thead className={cn('border-b border-border bg-surface-2', className)} {...props} />
   );
 }
 
@@ -32,7 +32,7 @@ export function THead({ className, ...props }: React.HTMLAttributes<HTMLTableSec
 export function TBody({ className, ...props }: React.HTMLAttributes<HTMLTableSectionElement>) {
   return (
     <tbody
-      className={cn('divide-y divide-border [&>tr:nth-child(even)]:bg-surface-2/40', className)}
+      className={cn('divide-y divide-border', className)}
       {...props}
     />
   );
@@ -46,7 +46,7 @@ export function TBody({ className, ...props }: React.HTMLAttributes<HTMLTableSec
 export function TR({ className, ...props }: React.HTMLAttributes<HTMLTableRowElement>) {
   return (
     <tr
-      className={cn('transition-colors hover:bg-primary-soft/70', className)}
+      className={cn('transition-colors hover:bg-surface-2/70', className)}
       {...props}
     />
   );
@@ -64,7 +64,7 @@ export function TH({ className, scope = 'col', ...props }: React.ThHTMLAttribute
       className={cn(
         // بلا تتبّع موجب: أسماء الأعمدة عربية، والعربية متصلة فالتباعد يقطع
         // وصلات الحروف. الوزن واللون يكفيان لتمييز الترويسة عن الصف.
-        'whitespace-nowrap px-3 py-3 text-start text-xs font-semibold text-muted-foreground',
+        'h-11 whitespace-nowrap px-3 text-start text-xs font-semibold text-muted-foreground',
         className,
       )}
       {...props}
@@ -73,5 +73,5 @@ export function TH({ className, scope = 'col', ...props }: React.ThHTMLAttribute
 }
 
 export function TD({ className, ...props }: React.TdHTMLAttributes<HTMLTableCellElement>) {
-  return <td className={cn('px-3 py-2.5 align-middle text-foreground', className)} {...props} />;
+  return <td className={cn('px-3 py-3 align-middle text-foreground', className)} {...props} />;
 }

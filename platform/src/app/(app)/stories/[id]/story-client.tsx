@@ -22,6 +22,7 @@ import { PostCard, type PostListItemView } from '@/components/posts/post-card';
 import { STANCE_METRIC } from '@/lib/domain/constants';
 import { api, ApiClientError, buildQuery } from '@/lib/api-client';
 import { formatDate, formatNumber, formatPercent } from '@/lib/utils';
+import { LinkButton } from '@/components/ui/link-button';
 
 interface StorySummary {
   id: string;
@@ -91,12 +92,10 @@ export function StoryClient({ storyId, canReview }: { storyId: string; canReview
         }
         leading={<Layers className="h-5 w-5 text-muted-foreground" aria-hidden />}
         action={
-          <Link href="/stories">
-            <Button variant="secondary">
-              <ArrowRight className="h-4 w-4" aria-hidden />
-              كل الأحداث
-            </Button>
-          </Link>
+          <LinkButton href="/stories" variant="secondary">
+            <ArrowRight className="h-4 w-4" aria-hidden />
+            كل الأحداث
+          </LinkButton>
         }
       />
 
@@ -146,7 +145,7 @@ export function StoryClient({ storyId, canReview }: { storyId: string; canReview
               </p>
               <Link
                 href={`/posts/${summary.headlinePostId}`}
-                className="mt-3 inline-block text-xs text-primary hover:underline"
+                className="mt-3 inline-block text-xs text-primary-text hover:underline"
               >
                 فتح المنشور
               </Link>
@@ -216,7 +215,7 @@ export function StoryClient({ storyId, canReview }: { storyId: string; canReview
                     >
                       <Link
                         href={`/accounts/${account.id}`}
-                        className="truncate text-foreground hover:text-primary hover:underline"
+                        className="truncate text-foreground hover:text-primary-text hover:underline"
                       >
                         {account.name}
                       </Link>

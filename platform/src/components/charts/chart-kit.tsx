@@ -1,6 +1,7 @@
 'use client';
 
 import { cn, formatCompactNumber, formatNumber } from '@/lib/utils';
+import { ChartNoAxesColumn, type LucideIcon } from 'lucide-react';
 
 /**
  * لبنات مشتركة للرسوم البيانية.
@@ -55,11 +56,20 @@ export function seriesDash(index: number): string | undefined {
   return SERIES_DASH[index % SERIES_DASH.length];
 }
 
-/** إطار موحّد لكل رسم: عنوان، وصف، حالة فراغ، ومنطقة الرسم */
+/**
+ * إطار موحّد لكلّ رسم: عنوان، وصف، حالة فراغ، ومنطقة الرسم.
+ *
+ * ★ بطاقةٌ بيضاء بلا خطٍّ تحت العنوان — كما في المرجع.
+ *
+ *   الخطُّ يقسم البطاقة لوحين، والعنوانُ والرسم شيءٌ واحد. فيُفصلان
+ *   بالمسافة وحدها، ويحمل العنوانُ أيقونته في البداية فيُعرف نوعُ الرسم
+ *   قبل قراءة اسمه.
+ */
 export function ChartFrame({
   title,
   description,
   action,
+  icon: Icon,
   isEmpty,
   emptyMessage = 'لا توجد بيانات في هذه الفترة',
   height = 280,
@@ -70,6 +80,8 @@ export function ChartFrame({
   title: string;
   description?: string;
   action?: React.ReactNode;
+  /** أيقونة بجانب العنوان */
+  icon?: LucideIcon;
   isEmpty?: boolean;
   emptyMessage?: string;
   height?: number;
@@ -79,30 +91,49 @@ export function ChartFrame({
 }) {
   return (
     <figure
-      className={cn('rounded-lg border border-border bg-surface shadow-elev-1 print-avoid-break', className)}
+      className={cn(
+        /*
+         * `h-full` وعمودٌ مرن: بطاقتان في صفٍّ واحد تتساويان ارتفاعاً،
+         * والأقصرُ محتوىً تتمدّد منطقةُ رسمها لا يبقى تحتها فراغ.
+         */
+        'flex h-full min-w-0 flex-col rounded-card border border-border bg-surface shadow-elev-1 print-avoid-break',
+        className,
+      )}
     >
-      <figcaption className="flex flex-wrap items-start justify-between gap-3 border-b border-border px-4 py-3">
-        <div className="space-y-0.5">
-          <h3 className="text-sm font-semibold text-heading">{title}</h3>
-          {description && <p className="text-xs text-muted-foreground">{description}</p>}
+      <figcaption className="flex flex-wrap items-start justify-between gap-3 px-5 pb-2 pt-5">
+        <div className="flex min-w-0 items-start gap-2.5">
+          {Icon && <Icon className="mt-0.5 h-5 w-5 shrink-0 text-primary-text" aria-hidden />}
+          <div className="min-w-0 space-y-0.5">
+            <h3 className="text-base font-bold text-heading">{title}</h3>
+            {description && <p className="text-xs text-muted-foreground">{description}</p>}
+          </div>
         </div>
         {action}
       </figcaption>
 
-      <div className="px-2 py-3 sm:px-3">
+      <div className="flex flex-1 flex-col justify-center px-3 pb-4 pt-2 sm:px-4">
         {isEmpty ? (
+          /*
+           * الفراغ يُقال ولا يُرسم محاوراً فارغة.
+           *
+           * محورٌ بلا خطٍّ يُقرأ «صفر» — وهو قولٌ عن البيانات لم يُقل.
+           * والرسالة تقول ما حدث فعلاً: لا بيانات في هذه الفترة.
+           */
           <div
-            className="flex items-center justify-center text-sm text-muted-foreground"
+            className="flex flex-col items-center justify-center gap-3 text-center"
             style={{ height }}
           >
-            {emptyMessage}
+            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-2">
+              <ChartNoAxesColumn className="h-5 w-5 text-subtle-foreground" aria-hidden />
+            </span>
+            <p className="text-sm text-muted-foreground">{emptyMessage}</p>
           </div>
         ) : (
           <div style={{ height }}>{children}</div>
         )}
       </div>
 
-      {footer && <div className="border-t border-border px-4 py-2.5">{footer}</div>}
+      {footer && <div className="border-t border-border px-5 py-3">{footer}</div>}
     </figure>
   );
 }

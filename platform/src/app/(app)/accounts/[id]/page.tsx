@@ -8,7 +8,6 @@ import { can, PERMISSIONS } from '@/lib/auth/rbac';
 import { PageHeader } from '@/components/layout/page-header';
 import { AccountAvatar } from '@/components/ui/avatar';
 import { Card, CardBody, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { METRIC_ICONS, StatCard, StatGrid } from '@/components/ui/stat-card';
 import { EmptyState } from '@/components/ui/states';
@@ -24,6 +23,7 @@ import {
 } from '@/lib/domain/constants';
 import { formatCompactNumber, formatDateTime, formatNumber, truncate } from '@/lib/utils';
 import { getAccountScope, scopeAllows } from '@/lib/auth/account-scope';
+import { LinkButton } from '@/components/ui/link-button';
 
 export const metadata: Metadata = { title: 'تفاصيل الحساب' };
 
@@ -93,15 +93,11 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
         description={`${account.platform.name} — ${ACCOUNT_TYPE_LABELS[account.type]}`}
         action={
           <>
-            <a href={account.url} target="_blank" rel="noopener noreferrer">
-              <Button variant="secondary">
-                <ExternalLink className="h-4 w-4" aria-hidden />
-                فتح الحساب
-              </Button>
-            </a>
-            <Link href={`/posts?accountId=${account.id}&range=all`}>
-              <Button>كل المنشورات</Button>
-            </Link>
+            <LinkButton href={account.url} target="_blank" rel="noopener noreferrer" variant="secondary" as="a">
+              <ExternalLink className="h-4 w-4" aria-hidden />
+              فتح الحساب
+            </LinkButton>
+            <LinkButton href={`/posts?accountId=${account.id}&range=all`}>كل المنشورات</LinkButton>
           </>
         }
       />
@@ -141,7 +137,7 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
           <CardHeader title="بيانات الحساب" />
           <CardBody className="py-1">
             <DetailRow label="المنصة">
-              <Link href={`/platforms/${account.platform.id}`} className="text-primary hover:underline">
+              <Link href={`/platforms/${account.platform.id}`} className="text-primary-text hover:underline">
                 {account.platform.name}
               </Link>
             </DetailRow>
@@ -182,11 +178,9 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
           <CardHeader
             title="أحدث المنشورات"
             action={
-              <Link href={`/posts?accountId=${account.id}&range=all`}>
-                <Button variant="ghost" size="sm">
-                  عرض الكل
-                </Button>
-              </Link>
+              <LinkButton href={`/posts?accountId=${account.id}&range=all`} variant="ghost" size="sm">
+                عرض الكل
+              </LinkButton>
             }
           />
           {recentPosts.length === 0 ? (
@@ -223,11 +217,9 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
           <CardHeader
             title="آخر عمليات الاستخراج"
             action={
-              <Link href={`/admin/extractions?accountId=${account.id}`}>
-                <Button variant="ghost" size="sm">
-                  السجل الكامل
-                </Button>
-              </Link>
+              <LinkButton href={`/admin/extractions?accountId=${account.id}`} variant="ghost" size="sm">
+                السجل الكامل
+              </LinkButton>
             }
           />
           <CardBody className="space-y-2">

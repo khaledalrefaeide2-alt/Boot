@@ -17,11 +17,11 @@ const ICON_STYLE = {
 export interface ButtonProps
   extends Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children'>,
     VariantProps<typeof buttonVariants> {
-  /** أيقونة قبل النصّ — يحلّ المؤشّر الدوّار محلّها أثناء التحميل */
+  /** أيقونة قبل النصّ — مقاسها يضبطه الزرّ */
   startIcon?: ReactNode;
   /** أيقونة بعد النصّ */
   endIcon?: ReactNode;
-  /** مظهرٌ فقط: مؤشّر دوّار و aria-busy، بلا أي منطق إضافي */
+  /** مظهرٌ فقط: مؤشّر دوّار فوق المحتوى و aria-busy، والعرض ثابت */
   loading?: boolean;
   children?: ReactNode;
 }
@@ -57,7 +57,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
   return (
     <button
       ref={ref}
-      className={cn(buttonVariants({ variant, size, fullWidth }), className)}
+      className={cn(buttonVariants({ variant, size, fullWidth }), 'relative', className)}
       disabled={disabled || loading}
       aria-busy={loading || undefined}
       /*
@@ -67,23 +67,30 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button
       title={props.title ?? (iconOnly ? (props['aria-label'] as string | undefined) : undefined)}
       {...props}
     >
-      {loading ? (
-        <Loader2 className="shrink-0 animate-spin" style={ICON_STYLE} aria-hidden />
-      ) : (
-        startIcon && (
-          <span className="inline-flex shrink-0 items-center [&>svg]:h-[var(--btn-icon)] [&>svg]:w-[var(--btn-icon)]">
-            {startIcon}
-          </span>
-        )
-      )}
+      {/*
+        ★ التحميل لا يغيّر عرض الزرّ.
 
-      {children}
-
-      {endIcon && !iconOnly && (
-        <span className="inline-flex shrink-0 items-center [&>svg]:h-[var(--btn-icon)] [&>svg]:w-[var(--btn-icon)]">
-          {endIcon}
+          كان المؤشّر الدوّار يُضاف بجوار النصّ حين لا أيقونة، فيتّسع الزرّ
+          لحظةَ الضغط ويدفع جاره — وفي صفّ «حفظ · إلغاء» ينزاح «إلغاء» تحت
+          الإصبع التي تهمّ بالضغط عليه. فالمحتوى يبقى في مكانه مخفيّاً
+          (يحفظ العرض)، والمؤشّر يُرسم فوقه في المنتصف.
+      */}
+      {loading && (
+        <span className="absolute inset-0 flex items-center justify-center" aria-hidden>
+          <Loader2 className="animate-spin" style={ICON_STYLE} />
         </span>
       )}
+
+      <span
+        className={cn(
+          'inline-flex items-center justify-center gap-[inherit]',
+          loading && 'invisible',
+        )}
+      >
+        {startIcon && <span className="inline-flex shrink-0 items-center">{startIcon}</span>}
+        {children}
+        {endIcon && !iconOnly && <span className="inline-flex shrink-0 items-center">{endIcon}</span>}
+      </span>
     </button>
   );
 });

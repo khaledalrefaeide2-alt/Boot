@@ -4,273 +4,285 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* ===========================================================================
-   الهوية البصرية: رسمية حكومية هادئة — نيلي داكن ورمادي محايد
+   الهوية البصرية: كحليٌّ هادئ وتركواز — واجهة تحليلية عربية
+
+   ثلاث طبقات لا أكثر: قائمةٌ جانبية كحلية تحمل التنقّل، وأرضيةٌ فاتحة
+   يقف عليها المحتوى، وبطاقاتٌ بيضاء تحمل البيانات. واللون التفاعلي واحد
+   — التركواز — للإجراء الرئيسي والعنصر النشط وحلقة التركيز. وكلُّ ما
+   عداه محايد، فيبقى التركواز حدثاً تقع عليه العين لا خلفيةً تعتادها.
+
+   ★ وكلُّ قيمة هنا مقيسة لا مختارة بالعين.
+
+     `verify:contrast` يقيس كلّ زوجٍ يلتقي في الواجهة بحدّ WCAG المناسب
+     لدوره: 4.5:1 للنصّ، و3:1 لما يحدّ مكوّناً تفاعلياً. وحيث خالف رقمُ
+     المواصفة هذا الحدّ عُدِّل بأدنى قدرٍ يُجيزه، وكُتب السبب بجانبه.
    =========================================================================== */
 :root {
   color-scheme: light;
 
-  --background: #f8fafc;
+  /* ── الأسطح ─────────────────────────────────────────────────────────── */
+  --background: #f5f7fa;
   --surface: #ffffff;
-  --surface-2: #eef2f8;
-  --surface-3: #e2e8f2;
-  --border: #d7e2f0;
-  --border-strong: #b9c9de;
+  /* سطحٌ ثانٍ: ترويسة الجدول، خلفية التبويب، تذييل البطاقة */
+  --surface-2: #f1f4f8;
+  --surface-3: #e8edf3;
+
+  /* الحدّ الزخرفي — شعرةٌ تفصل ولا تُرى خطّاً */
+  --border: #e2e8f0;
+  --border-strong: #cbd5e1;
   /*
-   * حدّ عناصر الإدخال — رمز مستقل عن الحدّ الزخرفي.
+   * حدّ عناصر الإدخال والزرّ الثانوي — رمزٌ مستقلّ عن الحدّ الزخرفي.
    *
-   * WCAG 1.4.11 يفرض 3:1 على ما يُعرّف مكوّناً تفاعلياً أو يحدّه. والحدّ
-   * الزخرفي (حافة بطاقة، فاصل) خارج ذلك فيبقى شعرةً خفيفة كما تقتضي
-   * الهوية، أما إطار حقل الإدخال فهو ما يقول «هنا تكتب» — وهو الفرق بين
-   * نموذج يُرى ونموذج يُخمَّن. الرمزان منفصلان حتى لا يجرّ تجميلُ أحدهما
-   * الآخرَ تحت الحدّ.
+   * WCAG 1.4.11 يفرض 3:1 على ما يُعرّف مكوّناً تفاعلياً أو يحدّه. وحافةُ
+   * البطاقة خارج ذلك فتبقى شعرة، أمّا إطارُ الحقل فهو ما يقول «هنا تكتب»،
+   * وحدُّ الزرّ الأبيض على بطاقةٍ بيضاء هو كلّ ما يجعله زرّاً. فالرمزان
+   * منفصلان حتى لا يجرّ تخفيفُ أحدهما الآخرَ تحت الحدّ.
    */
-  --border-input: #7c8797;
+  --border-input: #7f8a9b;
 
-  --foreground: #0f172a;
-  /* العناوين بزيتونيّ عميق لا بلون النص: تسلسل بلا وزن إضافي ولا حجم إضافي */
-  --heading: #2f3a12;
-  --muted-foreground: #475569;
-  --subtle-foreground: #5b6b80;
+  /* ── النصّ ──────────────────────────────────────────────────────────── */
+  --foreground: #17263c;
+  --heading: #17263c;
+  /*
+   * النصّ الثانوي — #64748B في المواصفة، وهنا أغمق بدرجتين.
+   *
+   * تلك القيمة تعطي 4.43:1 على أرضية الصفحة (#F5F7FA) — تحت حدّ 4.5
+   * بشعرة، ووصفُ كلّ صفحةٍ يقع على تلك الأرضية تحديداً. والفرق لا تراه
+   * العين، ويراه من يقرأ بضعف بصر.
+   */
+  --muted-foreground: #56667d;
+  --subtle-foreground: #5f6f86;
 
   /*
-   * السلّم الزيتوني — لون الهوية.
+   * سلّم التركواز — لون الهوية.
    *
-   * القيم ليست اختياراً ذوقياً بل ناتج قياس: كل درجة تُستعمل في نظام
-   * الأزرار مقيسةٌ على الأسطح الثلاثة التي يقف عليها الزرّ (البطاقة،
-   * أرضية الصفحة، شريط الأدوات) بحدّ WCAG المناسب لدورها — 4.5:1 للنصّ
-   * و3:1 لما يحدّ مكوّناً تفاعلياً.
+   * 700 هي قيمة المواصفة (#087F8C): خلفيةُ الزرّ الرئيسي والعنصر النشط،
+   * والأبيض عليها 4.75:1. و800 للتحويم و900 للضغط ولنصّ الأسطح الفاتحة.
    *
-   * وفيه درجة 400 لم تَرِد في المواصفة: حدّ الزرّ الثانوي. المواصفة تطلب
-   * olive-300 حدّاً، وهي عند 1.93:1 على الأبيض — والحدّ هو كلّ ما يجعل
-   * زرّاً أبيض على بطاقة بيضاء مرئياً أصلاً، فيقع تحت 1.4.11 لا خارجه.
-   * فبقيت 300 على قيمتها للتظليل، وأُفردت 400 لما يحدّ.
+   * ★ والنصُّ التركوازي يُكتب بـ800 لا بـ700.
+   *
+   *   700 نصّاً على أرضية الصفحة تعطي 4.42:1 — تحت الحدّ. و800 تعطي
+   *   5.88:1 ولا تبدو لوناً آخر. فالرابط والزرّ الشبحي يُكتبان بها.
    */
-  --olive-50: #f7f8f0;
-  --olive-100: #eaeeda;
-  --olive-200: #d5dcb7;
-  --olive-300: #b6c08c;
-  --olive-400: #878e68;
-  --olive-500: #75832f;
-  --olive-600: #5c6724;
-  --olive-700: #46501b;
-  --olive-800: #374015;
-  --olive-900: #28300f;
+  --brand-50: #eef8f9;
+  --brand-100: #d5eef0;
+  --brand-200: #abdde2;
+  --brand-300: #77c4cc;
+  --brand-400: #3fa9b4;
+  --brand-500: #1597a3;
+  --brand-600: #0e8c99;
+  --brand-700: #087f8c;
+  --brand-800: #066a75;
+  --brand-900: #044a52;
 
-  --primary: var(--olive-700);
-  --primary-hover: var(--olive-800);
+  --primary: var(--brand-700);
+  --primary-hover: var(--brand-800);
   --primary-foreground: #ffffff;
-  --primary-soft: var(--olive-100);
-  --primary-soft-foreground: var(--olive-900);
+  --primary-soft: var(--brand-100);
+  --primary-soft-foreground: var(--brand-900);
+  /* التركواز حين يكون نصّاً — راجع الشرح أعلاه */
+  --primary-text: var(--brand-800);
+
+  /* ── القائمة الجانبية — كحليّة في السمتين ─────────────────────────────
+   *
+   * القائمة لا تتبع السمة: هي إطار التطبيق لا محتواه، والإطار الثابت هو
+   * ما يجعل تبديل السمة يُقرأ تبديلاً للمحتوى لا تبديلاً للتطبيق.
+   */
+  --sidebar: #142338;
+  --sidebar-foreground: #c9d3e0;
+  --sidebar-heading: #ffffff;
+  /* عناوين المجموعات بتركوازٍ فاتح — 8:1 على الكحلي */
+  --sidebar-section: #5cc8d3;
+  --sidebar-muted: #8a99ae;
+  --sidebar-hover: #1c2e47;
+  --sidebar-border: #22354f;
+  --sidebar-active: #087f8c;
+  --sidebar-active-foreground: #ffffff;
 
   /*
-   * حالة المعطَّل.
-   *
-   * رمادٌ محايد لا زيتونيٌّ باهت: الزيتوني الباهت يبقى لوناً، واللون يقول
-   * «هذا الزرّ حيّ». وحيادُ الرمادي هو ما يُخرجه من نظام الألوان كله.
+   * حالة المعطَّل — رمادٌ محايد لا تركوازٌ باهت.
+   * التركواز الباهت يبقى لوناً، واللون يقول «هذا حيّ».
    */
-  --disabled-bg: #e4e7ec;
-  --disabled-text: #5f646e;
+  --disabled-bg: #e4e8ee;
+  --disabled-text: #5f6673;
 
   --accent: #b45309;
   --accent-soft: #fdf2e3;
 
-  --success: #166534;
-  --success-soft: #e7f5ec;
-  --warning: #854d0e;
+  --success: #147339;
+  --success-soft: #e7f6ec;
+  --warning: #92400e;
   --warning-soft: #fdf3e0;
-  --danger: #b91c1c;
-  --danger-hover: #991b1b;
-  --danger-active: #7a1a14;
+  --danger: #c0262d;
+  --danger-hover: #a51f25;
+  --danger-active: #86191e;
   /* نصّ الزرّ الخطِر رمزٌ مستقل: أبيض على الأحمر الداكن، وداكن على الفاتح */
   --danger-foreground: #ffffff;
-  --danger-soft: #fdeceb;
+  --danger-soft: #fdeced;
   --info: #1d4ed8;
-  --info-soft: #e7edfb;
+  --info-soft: #e8effc;
 
-  --ring: var(--olive-500);
+  --ring: var(--brand-600);
 
   /*
-   * مصفوفة الارتفاع.
+   * مصفوفة الارتفاع — ظلالٌ خفيفة ناعمة، والحدّ هو ما يفصل.
    *
-   * مستوى لكل ارتفاع حقيقي في الواجهة، لا ظلّ يُخترع داخل مكوّن:
    *   0 — ملتصق بالسطح (جدول، صف، حقل)
-   *   1 — يرتفع قليلاً (بطاقة، زر، لوحة رسم)
-   *   2 — يرتفع عن جاره (شريط لاصق، بطاقة مميّزة)
-   *   3 — يطفو فوق المحتوى (قائمة منسدلة، تلميح، إشعار)
-   *   4 — يطفو فوق الصفحة كلها خلف حجاب (نافذة، درج، معرض صور)
+   *   1 — بطاقة، زرّ، لوحة رسم
+   *   2 — شريطٌ لاصق، بطاقةٌ تحت المؤشّر
+   *   3 — قائمة منسدلة، تلميح، إشعار
+   *   4 — نافذة، درج، معرض صور
    *
-   * القيم مأخوذة من ثلاثي الظلال السابق في هذا الملف (sm/base/lg) لا
-   * مخترعة، فالبطاقات والأزرار لم يتغيّر مظهرها. أما السطوح التي كانت على
-   * سلّم Tailwind العام — النافذة والدرج والقائمة المنسدلة والإشعار ومعرض
-   * الصور — فانتقلت إليها فعلاً: ظلّ أسود بشفافية 10% لا يُرى على أرضية
-   * `#0a1120`، فكان الفصل بين السطوح في الوضع الداكن معدوماً عملياً.
+   * والظلّ مشتقٌّ من كحليّ الهوية لا من الأسود: ظلٌّ أسود على أرضيةٍ
+   * مزرقّة يبدو رمادياً متّسخاً، والمشتقُّ منها يبدو عمقاً.
    */
   --elev-0: none;
-  --elev-1: 0 1px 2px rgb(15 27 45 / 0.06);
-  --elev-2: 0 1px 3px rgb(15 27 45 / 0.08), 0 4px 12px rgb(15 27 45 / 0.05);
-  --elev-3: 0 8px 28px rgb(15 27 45 / 0.12);
-  --elev-4: 0 24px 56px rgb(15 27 45 / 0.2);
+  --elev-1: 0 1px 2px rgb(20 35 56 / 0.04), 0 1px 3px rgb(20 35 56 / 0.05);
+  --elev-2: 0 2px 4px rgb(20 35 56 / 0.05), 0 6px 16px rgb(20 35 56 / 0.06);
+  --elev-3: 0 10px 28px rgb(20 35 56 / 0.12);
+  --elev-4: 0 24px 56px rgb(20 35 56 / 0.2);
 
-  /* الزجاج — يُستعمل على شاشة الدخول وحدها، وشرحه أسفل الملف */
-  /* شدّة الخلفية الحيّة — أخفت في الفاتح: الهالة الملوّنة على أرضية
-   * فاتحة تُرى أوضح بكثير منها على شبه الأسود عند العتامة نفسها. */
-  --aurora-opacity: 0.055;
-
-  --glass-bg: rgb(255 255 255 / 0.72);
-  --glass-border: rgb(15 27 45 / 0.1);
+  /* الزجاج — شاشة الدخول وحدها */
+  --glass-bg: rgb(255 255 255 / 0.82);
+  --glass-border: rgb(20 35 56 / 0.08);
   --glass-blur: 16px;
-  --tilt-max: 6deg;
+  --tilt-max: 4deg;
 
-  /* =========================== أسطح المقاييس ===========================
+  /* =========================== رقاقات المقاييس ===========================
    *
-   * سطحٌ ملوّن خفيف لكل مقياس، مع رقاقة أغمق للأيقونة ولونِ حبرٍ عليها.
+   * البطاقة بيضاء، واللون في رقاقة الأيقونة والأعمدة الصغيرة وحدهما.
    *
    * ★ اللون هنا تسريعٌ للتعرّف لا حاملٌ للمعنى.
    *
-   *   «لا تنقل المعلومة باللون وحده» قاعدةٌ تُخالَف في كلّ لوحة مقاييس
-   *   ملوّنة. وهي محفوظة هنا لأنّ البطاقة تحمل أيقونتها واسمها ورقمها
-   *   كاملةً — فمن لا يميّز الأزرق من الأخضر يقرأ «عدد الحسابات ٣٧٢»
-   *   كما يقرأها غيره، ويخسر التسريعَ وحده.
-   *
-   * ★ والدرجات مشتقّة من اللوحة المقيسة لا مخترَعة.
-   *
-   *   كلّ حبر هنا لونٌ سبق قياسه في هذا الملف (info · success · warning ·
-   *   danger · chart-4 · chart-3 · olive-700)، والسطح تفتيحٌ له. فلا يدخل
-   *   النظامَ لونٌ سابع لم يمرّ بفحص التباين — والأزواج كلّها مُدرَجة في
-   *   `verify:contrast` فتُقاس ولا تُفترض.
+   *   البطاقة تحمل أيقونتها واسمها ورقمها كاملةً — فمن لا يميّز الأزرق
+   *   من الأخضر يقرأ «عدد الحسابات ٤٠٢» كما يقرأها غيره، ويخسر التسريعَ
+   *   وحده. والأزواج كلّها مُدرَجة في `verify:contrast`.
    */
-  --tint-sky-surface: #eef4fd;
-  --tint-sky-chip: #dbe8fb;
-  --tint-sky-ink: #1d4ed8;
+  --tint-sky-surface: #eff4fe;
+  --tint-sky-chip: #e3ecfd;
+  --tint-sky-ink: #2257d6;
 
-  --tint-mint-surface: #eaf6ef;
-  --tint-mint-chip: #d6ecdf;
-  --tint-mint-ink: #166534;
+  --tint-mint-surface: #ecf8f1;
+  --tint-mint-chip: #dcf1e5;
+  --tint-mint-ink: #147339;
 
-  --tint-amber-surface: #fdf4e7;
-  --tint-amber-chip: #f9e7cb;
-  --tint-amber-ink: #854d0e;
+  --tint-amber-surface: #fef5ea;
+  --tint-amber-chip: #fde8d0;
+  --tint-amber-ink: #a1480c;
 
-  --tint-rose-surface: #fdeeed;
-  --tint-rose-chip: #f9dcda;
-  --tint-rose-ink: #b91c1c;
+  --tint-rose-surface: #fef0f1;
+  --tint-rose-chip: #fde0e2;
+  --tint-rose-ink: #c0262d;
 
-  --tint-violet-surface: #f2effc;
-  --tint-violet-chip: #e3ddf8;
-  --tint-violet-ink: #4c1d95;
+  --tint-violet-surface: #f4f1fe;
+  --tint-violet-chip: #e9e3fd;
+  --tint-violet-ink: #6d3fd6;
 
-  --tint-teal-surface: #e9f5f4;
-  --tint-teal-chip: #d4eae7;
-  --tint-teal-ink: #065f46;
+  --tint-teal-surface: #ebf7f8;
+  --tint-teal-chip: #d8eff1;
+  --tint-teal-ink: #066a75;
 
-  --tint-olive-surface: #f4f6ea;
-  --tint-olive-chip: #eaeeda;
-  --tint-olive-ink: #46501b;
-
-  --radius: 0.5rem;
+  --tint-brand-surface: #eef8f9;
+  --tint-brand-chip: #d5eef0;
+  --tint-brand-ink: #066a75;
 
   /*
-   * ألوان الرسوم — ترتيب ثابت لا يُدوَّر، مُشتقّ ببحث آلي لا باختيار ذوقي.
-   * القيد ثلاثي: تباين ≥3.5:1 مع أرضية البطاقة (وهو حدّ العناصر الرسومية
-   * في WCAG مع هامش)، وفرق ΔE ≥20 بين كل زوج في الرؤية الطبيعية، والفرق
-   * نفسه بعد محاكاة عمى الأخضر وعمى الأحمر.
+   * ألوان الرسوم — ترتيب ثابت لا يُدوَّر.
    *
-   * اللوحة السابقة كانت تسقط في الاثنين: ثلاث سلاسل تحت 3:1 على الأبيض
-   * (أدناها 2.17)، وسلسلتان تتطابقان عملياً عند عمى الأخضر (ΔE = 2.0).
+   * القيد ثلاثي: تباين ≥3:1 مع البطاقة البيضاء (حدّ العناصر الرسومية)،
+   * وفرقٌ مُميِّز بين كلّ زوج في الرؤية الطبيعية، وبعد محاكاة عمى الأخضر
+   * والأحمر. والأولى تركواز الهوية: السلسلة الوحيدة في رسمٍ مفرد تحمل
+   * لون المنصّة، كما في المرجع.
    *
-   * ومع ذلك يبقى اللون وحده غير كافٍ لستّ سلاسل: أدنى فرق هنا 20.4 وهو
-   * «مُميَّز» لا «مريح». لذلك تحمل الخطوط أنماطاً مختلفة أيضاً (متصل،
-   * متقطّع، منقّط) فلا يتوقف الفهم على تمييز اللون أصلاً.
+   * ومع ذلك لا يكفي اللون وحده لستّ سلاسل، فتحمل الخطوط أنماطاً مختلفة
+   * أيضاً (متصل، متقطّع، منقّط).
    */
-  --chart-1: #1d4ed8;
+  --chart-1: #087f8c;
   --chart-2: #d2521f;
-  --chart-3: #065f46;
-  --chart-4: #4c1d95;
-  --chart-5: #db2777;
-  --chart-6: #365314;
-  --chart-grid: #e2e8f2;
-  --chart-axis: #475569;
+  --chart-3: #2257d6;
+  --chart-4: #6d3fd6;
+  --chart-5: #c0267a;
+  --chart-6: #4d6a12;
+  --chart-grid: #e8edf3;
+  --chart-axis: #56667d;
 
   /* ألوان الحالة محجوزة للمشاعر ولا تُستخدم كسلسلة بيانات */
-  --chart-positive: #166534;
-  --chart-neutral: #52606f;
-  --chart-negative: #b91c1c;
-  --chart-mixed: #854d0e;
+  --chart-positive: #147339;
+  --chart-neutral: #56667d;
+  --chart-negative: #c0262d;
+  --chart-mixed: #92400e;
 }
 
 .dark {
   color-scheme: dark;
 
   /*
-   * أرضية «الفراغ العميق» — شبه سوداء محايدة لا زرقاء.
+   * الداكن كحليٌّ عميق لا أسود.
    *
-   * اللوحة السابقة كانت نيليّة (#020617) فكانت تقرأ «تطبيق إداري». هذه
-   * محايدة تماماً، وحيادها هو ما يجعل اللون الواحد المضيء يبدو مضيئاً:
-   * على أرضية ملوّنة يتنافس اللونان، وعلى أرضية رمادية يبقى واحد.
+   * القائمة الجانبية كحليّة في السمتين، وأرضيةٌ سوداء بجوارها تجعلها
+   * بقعةً زرقاء معلّقة. والأرضية هنا من عائلتها نفسها، أعمق منها درجة،
+   * فتبقى القائمة إطاراً والمحتوى داخله.
    */
-  --background: #070708;
-  --surface: #121216;
-  --surface-2: #17171d;
-  --surface-3: #1f1f26;
+  --background: #0b1320;
+  --surface: #121c2b;
+  --surface-2: #172233;
+  --surface-3: #1e2b3f;
+
+  --border: #26344a;
+  --border-strong: #33445e;
+  --border-input: #66788f;
 
   /*
-   * الحدود شعرة بيضاء لا لون مستقل: قيمتها المكافئة لـ rgba(255,255,255,.08)
-   * فوق سطح #121216. تُكتب معتمة لا شفافة لأن الحدود تُرسم فوق أسطح مختلفة
-   * العتامة، والشفافة تختلف سماكتها المرئية من سطح لآخر فينكسر الانتظام.
+   * النصّ أبيضُ مزرقٌّ خفيف لا ناصع: الناصع على الداكن يُحدث هالةً حول
+   * الحرف العربي بنقاطه وتشكيله فيُتعب العين في الجداول الطويلة.
    */
-  --border: #24242b;
-  --border-strong: #33333c;
-  --border-input: #65656c;
+  --foreground: #e6edf5;
+  --heading: #f5f8fc;
+  --muted-foreground: #9aa9bc;
+  --subtle-foreground: #8f9eb3;
 
   /*
-   * النص أبيض عالي التباين كما تطلب المواصفة (#F5F5F7) لا أبيض مزرقّ.
-   * ومع ذلك ليس ناصعاً تماماً: الناصع على شبه الأسود يُحدث هالة حول الحرف
-   * العربي بنقاطه وتشكيله فيتعب العين في الجداول الطويلة. الفارق درجتان
-   * تكفيان لإزالة الهالة ولا تُنقصان التباين إدراكياً.
-   */
-  --foreground: #f5f5f7;
-  --heading: #ffffff;
-  --muted-foreground: #8e8e96;
-  --subtle-foreground: #83838a;
-
-  /*
-   * السماوي المضيء هو لون التفاعل كله: الأزرار، الرابط، المؤشر النشط،
-   * حلقة التركيز. و«الاقتصاد» المطلوب في المواصفة لا يتحقق بتقليل مواضعه
-   * بل بأن يكون كل ما عداه رمادياً — لون واحد على حقل محايد يبقى حدثاً
-   * مهما تكرر، ولونان يُلغيان بعضهما من أول ظهور.
-   */
-  /*
-   * السلّم مقلوب في الداكن لا معكوس القيم حسابياً.
+   * السلّم مقلوبٌ في الداكن لا معكوس القيم حسابياً.
    *
-   * 50 أخفت تظليل على شبه الأسود، و900 أفتح نصّ — فتبقى كل قاعدة في نظام
-   * الأزرار مكتوبةً مرة واحدة («الأساسي = خلفية 700») وتعمل في السمتين.
-   * ولو تُركت أرقام الفاتح كما هي لصار الزرّ الأساسي زيتونياً داكناً على
-   * أرضية شبه سوداء — أي غير مرئي.
+   * 50 أخفت تظليل و900 أفتح نصّ — فتبقى كلّ قاعدة في نظام الأزرار
+   * مكتوبةً مرّةً واحدة («الرئيسي = خلفية 700») وتعمل في السمتين. ولو
+   * بقيت أرقام الفاتح لصار الزرّ الرئيسي تركوازاً داكناً على أرضيةٍ داكنة.
    */
-  --olive-50: #15180e;
-  --olive-100: #1d2112;
-  --olive-200: #272c18;
-  --olive-300: #3a4220;
-  --olive-400: #6f7b3d;
-  --olive-500: #98a750;
-  --olive-600: #b4c569;
-  --olive-700: #c8d87f;
-  --olive-800: #d7e49a;
-  --olive-900: #e7f0c3;
+  --brand-50: #0c2226;
+  --brand-100: #0f2c31;
+  --brand-200: #13393f;
+  --brand-300: #185058;
+  --brand-400: #2a8c96;
+  --brand-500: #2ba3af;
+  --brand-600: #38b5c1;
+  --brand-700: #45c2cd;
+  --brand-800: #6ad0d9;
+  --brand-900: #a3e3e9;
 
-  --primary: var(--olive-700);
-  --primary-hover: var(--olive-800);
-  /* النصّ على الزيتوني المضيء داكن لا أبيض — والأبيض عليه 1.6:1 */
-  --primary-foreground: #11150a;
-  --primary-soft: var(--olive-100);
-  --primary-soft-foreground: var(--olive-900);
+  --primary: var(--brand-700);
+  --primary-hover: var(--brand-800);
+  /* النصّ على التركواز المضيء داكن لا أبيض — والأبيض عليه 2:1 */
+  --primary-foreground: #04191c;
+  --primary-soft: var(--brand-100);
+  --primary-soft-foreground: var(--brand-900);
+  --primary-text: var(--brand-700);
 
-  --disabled-bg: #232329;
-  --disabled-text: #8c8c96;
+  /* القائمة أفتح من الأرضية درجةً: إطارٌ لا ثقب */
+  --sidebar: #0f1a2a;
+  --sidebar-foreground: #c3cedc;
+  --sidebar-heading: #ffffff;
+  --sidebar-section: #5cc8d3;
+  --sidebar-muted: #8a99ae;
+  --sidebar-hover: #182639;
+  --sidebar-border: #1f2c40;
+  --sidebar-active: #0b6f7a;
+  --sidebar-active-foreground: #ffffff;
 
-  /* الأزرق الكهربائي — تدرّجات الهالة والتوكيد الثانوي، لا نصّ على أرضية */
-  --accent: #2563eb;
-  --accent-soft: #101a33;
+  --disabled-bg: #1e2a3b;
+  --disabled-text: #8a97a8;
+
+  --accent: #f59e0b;
+  --accent-soft: #2a2113;
 
   --success: #4ade80;
   --success-soft: #0f2a1c;
@@ -279,25 +291,18 @@
   --danger: #f87171;
   --danger-hover: #fca5a5;
   --danger-active: #fecaca;
-  /*
-   * على الأحمر الفاتح يكون النصّ داكناً.
-   * الأبيض عليه 2.9:1 — وهو ما كان عليه الزرّ الخطِر في السمة الداكنة قبل
-   * هذا النظام: `bg-danger text-white` في السمتين معاً.
-   */
+  /* على الأحمر الفاتح يكون النصّ داكناً — والأبيض عليه 2.9:1 */
   --danger-foreground: #2a0b0b;
   --danger-soft: #2c1616;
   --info: #93c5fd;
   --info-soft: #122240;
 
-    /*
-   * الأسطح الملوّنة في الداكن تفتيحٌ للأرضية لا تعتيمٌ للفاتح.
-   *
-   * تفتيح اللون الباستيلي على شبه الأسود يعطي لطخةً رمادية بلا هوية.
-   * فالسطح هنا أرضيةٌ صُبغت بأثرٍ من اللون، والحبر هو الدرجة المضيئة
-   * المقيسة أصلاً في هذه السمة — فيبقى اللون يُقرأ وتبقى الأرضية داكنة.
+  /*
+   * الرقاقات في الداكن أرضيةٌ صُبغت بأثرٍ من اللون، والحبر هو الدرجة
+   * المضيئة — فيبقى اللون يُقرأ وتبقى الأرضية داكنة.
    */
-  --tint-sky-surface: #101a2b;
-  --tint-sky-chip: #16233a;
+  --tint-sky-surface: #101b2e;
+  --tint-sky-chip: #16243d;
   --tint-sky-ink: #93c5fd;
 
   --tint-mint-surface: #0f2119;
@@ -320,55 +325,38 @@
   --tint-teal-chip: #142e2a;
   --tint-teal-ink: #5eead4;
 
-  --tint-olive-surface: #171a0e;
-  --tint-olive-chip: #1d2112;
-  --tint-olive-ink: #c8d87f;
+  --tint-brand-surface: #0c2226;
+  --tint-brand-chip: #0f2c31;
+  --tint-brand-ink: #45c2cd;
 
-
-  --ring: var(--olive-500);
+  --ring: var(--brand-600);
 
   /*
-   * الظل على أرضية داكنة لا يُشتق من الفاتح بضرب النسب: العين تقرأ الارتفاع
-   * على الداكن من عتمة أشدّ ونطاق أوسع، فالقيم مُعادة الاشتقاق لا معكوسة.
+   * الظلّ على الداكن لا يُشتقّ من الفاتح بضرب النسب: العين تقرأ الارتفاع
+   * هنا من عتمةٍ أشدّ ونطاقٍ أوسع.
    */
-  --elev-1: 0 1px 2px rgb(0 0 0 / 0.4);
-  --elev-2: 0 1px 3px rgb(0 0 0 / 0.45), 0 4px 14px rgb(0 0 0 / 0.35);
-  --elev-3: 0 10px 34px rgb(0 0 0 / 0.55);
-  --elev-4: 0 24px 60px rgb(0 0 0 / 0.62);
+  --elev-1: 0 1px 2px rgb(0 0 0 / 0.35);
+  --elev-2: 0 1px 3px rgb(0 0 0 / 0.4), 0 4px 14px rgb(0 0 0 / 0.3);
+  --elev-3: 0 10px 34px rgb(0 0 0 / 0.5);
+  --elev-4: 0 24px 60px rgb(0 0 0 / 0.6);
 
-  /* الزجاج على مواصفتك: rgba(18,18,22,.65) وحدّ أبيض 8% وطمس 16px */
-  --aurora-opacity: 0.13;
-
-  --glass-bg: rgb(18 18 22 / 0.65);
+  --glass-bg: rgb(18 28 43 / 0.82);
   --glass-border: rgb(255 255 255 / 0.08);
   --glass-blur: 16px;
 
-  /*
-   * الهالة — وهي ما يفصل «بطاقة داكنة» عن «بطاقة مضيئة». حلقة بلون التفاعل
-   * بشفافية منخفضة ثم انتشار واسع بلا إزاحة، فيبدو الضوء صادراً من الحافة
-   * لا ساقطاً عليها. تُستعمل على التحويم والحالة النشطة وحدهما.
-   */
-  --glow-primary: 0 0 0 1px rgb(200 216 127 / 0.28), 0 0 32px -10px rgb(200 216 127 / 0.5);
-  --glow-soft: 0 0 40px -16px rgb(200 216 127 / 0.35);
-
-  /* بحث مستقل على أرضية البطاقة الداكنة، لا انعكاس للوحة الفاتحة */
-  --chart-1: #93c5fd;
+  /* بحثٌ مستقلّ على أرضية البطاقة الداكنة، لا انعكاسٌ للوحة الفاتحة */
+  --chart-1: #45c2cd;
   --chart-2: #f97316;
-  --chart-3: #5eead4;
-  --chart-4: #8b5cf6;
-  --chart-5: #db2777;
-  --chart-6: #d9f99d;
-  /*
-   * الشبكة والمحور محايدان مثل بقية اللوحة الداكنة الجديدة. كانا مزرقّين
-   * (#232840 و#94a3b8) مشتقّين من الأرضية النيليّة السابقة، وعلى أرضية
-   * رمادية صار الزرقة تُقرأ لوناً سابعاً يزاحم سلاسل البيانات الست.
-   * والشبكة بلون الحدّ نفسه: كلاهما خط هيكلي لا يحمل معنى.
-   */
-  --chart-grid: #24242b;
-  --chart-axis: #8e8e96;
+  --chart-3: #93c5fd;
+  --chart-4: #a78bfa;
+  --chart-5: #f472b6;
+  --chart-6: #bef264;
+  /* الشبكة بلون الحدّ نفسه: كلاهما خطٌّ هيكلي لا يحمل معنى */
+  --chart-grid: #26344a;
+  --chart-axis: #9aa9bc;
 
   --chart-positive: #4ade80;
-  --chart-neutral: #94a3b8;
+  --chart-neutral: #9aa9bc;
   --chart-negative: #f87171;
   --chart-mixed: #fbbf24;
 }
@@ -387,17 +375,34 @@
   --color-muted-foreground: var(--muted-foreground);
   --color-subtle-foreground: var(--subtle-foreground);
 
-  /* السلّم الزيتوني متاحٌ بأصنافه: bg-olive-700 و text-olive-800 وغيرها */
-  --color-olive-50: var(--olive-50);
-  --color-olive-100: var(--olive-100);
-  --color-olive-200: var(--olive-200);
-  --color-olive-300: var(--olive-300);
-  --color-olive-400: var(--olive-400);
-  --color-olive-500: var(--olive-500);
-  --color-olive-600: var(--olive-600);
-  --color-olive-700: var(--olive-700);
-  --color-olive-800: var(--olive-800);
-  --color-olive-900: var(--olive-900);
+  /*
+   * سلّم الهوية متاحٌ بأصنافه: bg-brand-700 و text-brand-800 وغيرها.
+   *
+   * والاسم «brand» لا اسمُ اللون: كان «olive» فلمّا تغيّرت الهوية صار
+   * الاسم يكذب على كلّ من يقرأ الشيفرة. والاسم الوظيفي يبقى صادقاً
+   * مهما تبدّل اللون.
+   */
+  --color-brand-50: var(--brand-50);
+  --color-brand-100: var(--brand-100);
+  --color-brand-200: var(--brand-200);
+  --color-brand-300: var(--brand-300);
+  --color-brand-400: var(--brand-400);
+  --color-brand-500: var(--brand-500);
+  --color-brand-600: var(--brand-600);
+  --color-brand-700: var(--brand-700);
+  --color-brand-800: var(--brand-800);
+  --color-brand-900: var(--brand-900);
+
+  /* القائمة الجانبية */
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-heading: var(--sidebar-heading);
+  --color-sidebar-section: var(--sidebar-section);
+  --color-sidebar-muted: var(--sidebar-muted);
+  --color-sidebar-hover: var(--sidebar-hover);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-active: var(--sidebar-active);
+  --color-sidebar-active-foreground: var(--sidebar-active-foreground);
 
   --color-disabled-bg: var(--disabled-bg);
   --color-disabled-text: var(--disabled-text);
@@ -407,6 +412,7 @@
   --color-primary-foreground: var(--primary-foreground);
   --color-primary-soft: var(--primary-soft);
   --color-primary-soft-foreground: var(--primary-soft-foreground);
+  --color-primary-text: var(--primary-text);
 
   --color-accent: var(--accent);
   --color-accent-soft: var(--accent-soft);
@@ -444,9 +450,9 @@
   --color-tint-teal-surface: var(--tint-teal-surface);
   --color-tint-teal-chip: var(--tint-teal-chip);
   --color-tint-teal-ink: var(--tint-teal-ink);
-  --color-tint-olive-surface: var(--tint-olive-surface);
-  --color-tint-olive-chip: var(--tint-olive-chip);
-  --color-tint-olive-ink: var(--tint-olive-ink);
+  --color-tint-brand-surface: var(--tint-brand-surface);
+  --color-tint-brand-chip: var(--tint-brand-chip);
+  --color-tint-brand-ink: var(--tint-brand-ink);
 
   /*
    * أصناف الارتفاع الصريحة: shadow-elev-0 … shadow-elev-4.
@@ -472,40 +478,75 @@
   --shadow-2xl: var(--elev-4);
 
   /*
-   * السلّم الطباعي — مضبوط للعربية لا منقولاً عن مقاسات لاتينية.
+   * السلّم الطباعي.
    *
-   * الحرف العربي يحمل تفاصيل لا يحملها اللاتيني في المقاس نفسه: نقاط تحت
-   * الباء والياء، وتمييز الحاء عن الجيم عن الخاء، واتصال يغيّر شكل الحرف.
-   * فما يُقرأ بارتياح عند 12px بالإنجليزية يُقرأ بمشقّة بالعربية. لذلك
-   * كل درجة هنا أكبر بمقدار بكسل أو اثنين من نظيرتها في السلّم القياسي.
+   * المتن 14px والعنوان 30px كما في المواصفة، وما بينهما درجاتٌ لا تتقارب
+   * حتى تُقرأ مستوياتٍ لا أحجاماً متشابهة. وأصغر مقاسٍ في النظام 12px
+   * بلا استثناء: الحرف العربي بنقاطه وتمييز الحاء من الجيم من الخاء لا
+   * يُقرأ بارتياحٍ دونها، وهذه شاشةٌ تُقرأ ساعات لا لحظات.
    *
-   * وأصغر مقاس في النظام 12px بلا استثناء. كانت الواجهة تحمل عشرة مواضع
-   * بمقاسات حرّة تنزل إلى 10px، وهي في شاشة تشغيل تُقرأ ساعات لا لحظات.
-   *
-   * ارتفاع السطر أوسع للمقاسات الصغيرة لأن التشكيل والنقاط تحتاج مجالاً
-   * رأسياً، وأضيق للعناوين لأن سطورها قليلة وتماسكها أهم.
+   * وارتفاع السطر أوسع في المقاسات الصغيرة: التشكيل والنقاط فوق السطر
+   * وتحته تحتاج مجالاً رأسياً لا يحتاجه الحرف اللاتيني. وأضيق في
+   * العناوين: سطورها قليلة، وتماسكها أهمّ من انفراجها.
    */
   --text-2xs: 0.75rem;
-  --text-2xs--line-height: 1.5;
+  --text-2xs--line-height: 1.55;
   --text-xs: 0.8125rem;
-  --text-xs--line-height: 1.55;
-  --text-sm: 0.9375rem;
-  --text-sm--line-height: 1.6;
-  --text-base: 1.0625rem;
-  --text-base--line-height: 1.65;
-  --text-lg: 1.1875rem;
-  --text-lg--line-height: 1.5;
-  --text-xl: 1.375rem;
-  --text-xl--line-height: 1.4;
-  --text-2xl: 1.75rem;
-  --text-2xl--line-height: 1.3;
-  --text-3xl: 2.125rem;
-  --text-3xl--line-height: 1.2;
+  --text-xs--line-height: 1.6;
+  --text-sm: 0.875rem;
+  --text-sm--line-height: 1.7;
+  --text-base: 1rem;
+  --text-base--line-height: 1.7;
+  --text-lg: 1.125rem;
+  --text-lg--line-height: 1.55;
+  --text-xl: 1.25rem;
+  --text-xl--line-height: 1.45;
+  --text-2xl: 1.5rem;
+  --text-2xl--line-height: 1.35;
+  --text-3xl: 1.875rem;
+  --text-3xl--line-height: 1.25;
 
-  --radius-DEFAULT: var(--radius);
+  /*
+   * الزوايا — أربعٌ بأسماء أدوارها لا بأحجامها.
+   *
+   * `rounded-control` للأزرار والحقول (10px)، و`rounded-card` للبطاقات
+   * (12px)، و`rounded-modal` للنوافذ (16px). والاسم يمنع ما يقع حين
+   * يُكتب حجمٌ: زرٌّ بـ`rounded-lg` وجارُه بـ`rounded-md` في صفٍّ واحد.
+   */
+  --radius-control: 0.625rem;
+  --radius-card: 0.75rem;
+  --radius-modal: 1rem;
+
+  /*
+   * وسلّم Tailwind نفسه مضبوطٌ على الأدوار — شبكةَ أمان.
+   *
+   * خمسون صندوقاً داخلياً في الشاشات (لوح تلميح، قائمة داخل نافذة، كتلة
+   * شيفرة) تكتب `rounded-md` أو `rounded-lg`. ورفعُ السلّم هنا يُلحقها
+   * بالنظام دفعةً واحدة: الصغير 8px، والمتوسّط 10px كالحقل، والكبير
+   * 12px كالبطاقة — فلا يقف صندوقٌ بزاوية 6px بجوار زرٍّ بزاوية 10.
+   */
+  --radius-md: 0.5rem;
+  --radius-lg: 0.625rem;
+  --radius-xl: 0.75rem;
+  --radius-2xl: 1rem;
+
+  /*
+   * مقاسات التحكّم — 44px هو الأساس.
+   *
+   * ارتفاعُ الزرّ والحقل والقائمة المنسدلة واحد في الصفّ الواحد، وهو
+   * أيضاً أدنى هدف لمسٍ مريح. فيُكتب مرّةً هنا وتقرؤه الأزرار والحقول
+   * معاً: `h-control` و`h-control-compact` و`h-control-lg`.
+   */
+  --spacing-control: 2.75rem;
+  --spacing-control-compact: 2.25rem;
+  --spacing-control-lg: 3rem;
+  --spacing-sidebar: 15.5rem;
+
+  --radius-DEFAULT: var(--radius-control);
 
   --font-sans:
-    'Cairo', 'Noto Kufi Arabic', 'Segoe UI', 'Tahoma', 'Dubai', 'Geeza Pro', system-ui, sans-serif;
+    'IBM Plex Sans Arabic', 'Noto Sans Arabic', 'Segoe UI', 'Tahoma', 'Dubai', 'Geeza Pro',
+    system-ui, sans-serif;
 
   --font-mono:
     'JetBrains Mono', ui-monospace, 'SFMono-Regular', 'Cascadia Mono', 'Consolas', monospace;
@@ -548,52 +589,141 @@
 }
 
 /*
- * خط Cairo مستضاف محلياً — لا يخرج أي طلب إلى الإنترنت وقت التشغيل.
- * المنصة داخلية وقد تعمل على شبكة معزولة، فتحميل الخط من مصدر خارجي
- * يعني فقدان الهوية البصرية عند انقطاع الاتصال، وتسريب طلب من كل جهاز
- * موظف إلى خادم خارجي. الملفات في public/fonts ورخصتها SIL OFL 1.1
- * (نص الرخصة في public/fonts/OFL.txt).
+ * IBM Plex Sans Arabic — مستضافٌ محلياً، ولا طلب إلى الإنترنت وقت التشغيل.
  *
- * ملف واحد لكل نطاق محارف، ووزن متغير 400–800 يغطي كل الأوزان المستخدمة.
+ * المنصة داخلية وقد تعمل على شبكة معزولة: تحميلُ الخطّ من مصدرٍ خارجي
+ * يعني فقدان الهوية عند انقطاع الاتصال، وتسريبَ طلبٍ من جهاز كلّ موظّف
+ * إلى خادمٍ لا نملكه — وسياسةُ المحتوى (CSP) تمنعه أصلاً. الملفات في
+ * public/fonts، ورخصتها SIL OFL 1.1 (public/fonts/IBM-Plex-OFL.txt).
+ *
+ * ★ ولماذا أربعة أوزان ثابتة لا وزنٌ متغيّر؟
+ *
+ *   الخطّ لا يُنشر بصيغةٍ متغيّرة. والأوزان المستعملة في الواجهة أربعة
+ *   لا أكثر: 400 للمتن، و500 للتسميات، و600 للأزرار والعناوين الفرعية،
+ *   و700 للعناوين والأرقام. وما فوق 700 لا وجود له في الخطّ، فلا يُكتب
+ *   `font-extrabold` في الواجهة — كان المتصفّح سيُركّبه تركيباً مشوّهاً.
+ *
+ * والنطاقات ثلاثة: العربية واللاتينية واللاتينية الموسّعة. فصفحةٌ عربية
+ * لا تُنزل الملفّ اللاتيني الموسّع إلا إن ظهر فيها اسمٌ بحرفٍ منه.
  */
 
 @font-face {
-  font-family: 'Cairo';
+  font-family: 'IBM Plex Sans Arabic';
   font-style: normal;
-  font-weight: 400 800;
+  font-weight: 400;
   font-display: swap;
-  src: url('/fonts/cairo-arabic.woff2') format('woff2');
+  src: url('/fonts/plex-arabic-400.woff2') format('woff2');
   unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
 }
 
 @font-face {
-  font-family: 'Cairo';
+  font-family: 'IBM Plex Sans Arabic';
   font-style: normal;
-  font-weight: 400 800;
+  font-weight: 500;
   font-display: swap;
-  src: url('/fonts/cairo-latin-ext.woff2') format('woff2');
+  src: url('/fonts/plex-arabic-500.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/plex-arabic-600.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/plex-arabic-700.woff2') format('woff2');
+  unicode-range: U+0600-06FF, U+0750-077F, U+0870-088E, U+0890-0891, U+0897-08E1, U+08E3-08FF, U+200C-200E, U+2010-2011, U+204F, U+2E41, U+FB50-FDFF, U+FE70-FE74, U+FE76-FEFC, U+102E0-102FB, U+10E60-10E7E, U+10EC2-10EC4, U+10EFC-10EFF, U+1EE00-1EE03, U+1EE05-1EE1F, U+1EE21-1EE22, U+1EE24, U+1EE27, U+1EE29-1EE32, U+1EE34-1EE37, U+1EE39, U+1EE3B, U+1EE42, U+1EE47, U+1EE49, U+1EE4B, U+1EE4D-1EE4F, U+1EE51-1EE52, U+1EE54, U+1EE57, U+1EE59, U+1EE5B, U+1EE5D, U+1EE5F, U+1EE61-1EE62, U+1EE64, U+1EE67-1EE6A, U+1EE6C-1EE72, U+1EE74-1EE77, U+1EE79-1EE7C, U+1EE7E, U+1EE80-1EE89, U+1EE8B-1EE9B, U+1EEA1-1EEA3, U+1EEA5-1EEA9, U+1EEAB-1EEBB, U+1EEF0-1EEF1;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/plex-latin-ext-400.woff2') format('woff2');
   unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
 }
 
 @font-face {
-  font-family: 'Cairo';
+  font-family: 'IBM Plex Sans Arabic';
   font-style: normal;
-  font-weight: 400 800;
+  font-weight: 500;
   font-display: swap;
-  src: url('/fonts/cairo-latin.woff2') format('woff2');
+  src: url('/fonts/plex-latin-ext-500.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/plex-latin-ext-600.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/plex-latin-ext-700.woff2') format('woff2');
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/plex-latin-400.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/plex-latin-500.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/plex-latin-600.woff2') format('woff2');
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: 'IBM Plex Sans Arabic';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/plex-latin-700.woff2') format('woff2');
   unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
 }
 
 /*
  * JetBrains Mono — نطاق latin وحده، وزن متغيّر 400–700، مستضاف محلياً مثل
- * Cairo ولنفس السبب. رخصته SIL OFL 1.1 أيضاً (نصّها في public/fonts/OFL.txt
- * ويسري على الخطّين).
+ * خطّ الواجهة ولنفس السبب. رخصته SIL OFL 1.1 أيضاً (نصّها في public/fonts/OFL.txt).
  *
  * دوره محصور ولا يمسّ النص العربي إطلاقاً: العناوين الفرعية المتباعدة
  * (`MEDIA MONITORING`)، وأرقام التسلسل (`01`)، والمعرّفات اللاتينية. وهذه
  * كلها لاتينية أصلاً، فنطاق latin يكفيها ولا داعي لتحميل ما لا يُعرض.
  *
- * ولا يُستعمل لأرقام الإحصاءات داخل الجداول: هناك `tabular-nums` من Cairo
+ * ولا يُستعمل لأرقام الإحصاءات داخل الجداول: هناك `tabular-nums` من خطّ الواجهة
  * تحاذي رأسياً وتنسجم مع محيطها العربي، وخطّ مختلف في خلية واحدة يقطع السطر.
  */
 @font-face {
@@ -635,6 +765,9 @@
     background-color: var(--background);
     color: var(--foreground);
     font-family: var(--font-sans);
+    /* المتن 14px كما في المواصفة — ما لا يحدّد مقاسه يرثه من هنا */
+    font-size: var(--text-sm);
+    line-height: var(--text-sm--line-height);
     letter-spacing: var(--tracking-body);
     font-feature-settings: 'kern';
     -webkit-font-smoothing: antialiased;
@@ -729,7 +862,7 @@
 
   /* العنوان المعماري — وزن ثقيل وتتبّع سالب وسطر متماسك */
   .display {
-    font-weight: 800;
+    font-weight: 700;
     letter-spacing: var(--tracking-display);
     color: var(--heading);
     text-wrap: balance;
@@ -748,28 +881,23 @@
   }
 
   /*
-   * البطاقة التفاعلية.
+   * البطاقة التفاعلية — ترتفع درجةً ويغمق حدّها، ولا تكبر.
    *
-   * ثلاثة تغييرات متزامنة على التحويم: إضاءة الحدّ، وتكبير 1.5%، وهالة.
-   * والتكبير محسوب لا مُقدَّر — 1.015 هو أكبر قيمة لا يُرى عندها اهتزاز
-   * النص داخل البطاقة عند إعادة الرسم. وما فوقها يُجبر المتصفح على إعادة
-   * تنقيط الحروف فتظهر «قفزة» في الخط العربي المتصل.
-   *
-   * التحويل على translate3d ليُرفع إلى طبقة GPU مستقلة، وwill-change يُعلن
-   * ذلك مسبقاً فلا تُنشأ الطبقة عند أول تحويم (وهو ما يسبّب التلعثم الأول).
+   * التكبير يُجبر المتصفّح على إعادة تنقيط الحروف، فتظهر «قفزة» في الخطّ
+   * العربي المتصل، وفي شبكةٍ من اثنتي عشرة بطاقة يصير المسح بالمؤشّر
+   * موجاً. والارتفاع بالظلّ وبكسلين يقول «هذه تُفتح» ولا يحرّك ما حولها.
    */
   .card-interactive {
     transform: translate3d(0, 0, 0);
     transition:
-      transform 0.45s cubic-bezier(0.16, 1, 0.3, 1),
-      border-color 0.3s ease-out,
-      box-shadow 0.45s cubic-bezier(0.16, 1, 0.3, 1);
-    will-change: transform;
+      transform 0.2s ease-out,
+      border-color 0.2s ease-out,
+      box-shadow 0.2s ease-out;
   }
   .card-interactive:hover {
-    transform: translate3d(0, -2px, 0) scale(1.015);
+    transform: translate3d(0, -2px, 0);
     border-color: var(--border-strong);
-    box-shadow: var(--elev-3), var(--glow-soft, none);
+    box-shadow: var(--elev-2);
   }
   .card-interactive:focus-within {
     border-color: var(--primary);
@@ -783,11 +911,6 @@
   }
   .card-interactive:hover .media-zoom {
     transform: translate3d(0, 0, 0) scale(1.05);
-  }
-
-  /* هالة اللون الواحد — للحالة النشطة ولزرّ الدعوة الأساسي */
-  .glow {
-    box-shadow: var(--glow-primary, var(--elev-2));
   }
 
   /*
@@ -807,136 +930,32 @@
     }
   }
   .enter-stagger {
-    animation: enter-stagger 0.42s cubic-bezier(0.16, 1, 0.3, 1) both;
+    animation: enter-stagger 0.24s ease-out both;
     animation-delay: var(--stagger, 0ms);
   }
 
-  /* =========================== الخلفية الحيّة ===========================
-   *
-   * ثلاث هالات لونية ضخمة تنجرف ببطء خلف الواجهة كلها.
-   *
-   * القيود هنا ليست تحفّظاً بل شرط بقائها: هذه خلفية شاشة تشغيل تُقرأ فيها
-   * جداول بأحد عشر عموداً ساعاتٍ يومياً، لا صفحة هبوط تُزار دقيقة.
-   *
-   * ١) الشدّة من متغيّر واحد: --aurora-opacity. رفعها أو خفضها أو تصفيرها
-   *    لا يحتاج لمس أي قاعدة أدناه.
-   *
-   * ٢) المدد طويلة جداً (٤٠–٧٠ ثانية) وغير متناسبة عمداً: لو تساوت أو
-   *    تقاربت لعادت الهالات الثلاث إلى وضعها الأول معاً كل دورة، فيُقرأ
-   *    التكرار نبضاً منتظماً — وهو ما يجذب العين. وبأعداد أولية متباعدة لا
-   *    يتكرر المشهد عملياً.
-   *
-   * ٣) الحركة على translate3d و scale وحدهما — كلاهما يُركَّب على GPU بلا
-   *    إعادة تخطيط ولا إعادة طلاء. تحريك left/top أو width يُعيد حساب
-   *    الصفحة ستين مرة في الثانية خلف جدول مفتوح.
-   *
-   * ٤) طبقة ثابتة (fixed) لا تتمرر مع المحتوى: تمريرها يعني إعادة تركيب
-   *    طبقة مطموسة بحجم الشاشة مع كل حركة عجلة.
-   *
-   * ٥) لا تُطبع، ولا تستقبل نقراً، ولا يراها قارئ الشاشة.
-   */
-  .aurora-layer {
-    position: fixed;
-    inset: 0;
-    z-index: 0;
-    overflow: hidden;
-    pointer-events: none;
-    contain: strict;
-  }
-
-  .aurora-blob {
-    position: absolute;
-    border-radius: 9999px;
-    filter: blur(90px);
-    opacity: var(--aurora-opacity, 0.1);
-    will-change: transform;
-    transform: translate3d(0, 0, 0);
-  }
-
-  @keyframes aurora-a {
-    0%,
-    100% {
-      transform: translate3d(0, 0, 0) scale(1);
-    }
-    50% {
-      transform: translate3d(6vw, 8vh, 0) scale(1.18);
-    }
-  }
-  @keyframes aurora-b {
-    0%,
-    100% {
-      transform: translate3d(0, 0, 0) scale(1.1);
-    }
-    50% {
-      transform: translate3d(-9vw, -6vh, 0) scale(0.92);
-    }
-  }
-  @keyframes aurora-c {
-    0%,
-    100% {
-      transform: translate3d(0, 0, 0) scale(0.95);
-    }
-    50% {
-      transform: translate3d(5vw, -10vh, 0) scale(1.22);
-    }
-  }
-
-  .aurora-a {
-    animation: aurora-a 43s ease-in-out infinite;
-  }
-  .aurora-b {
-    animation: aurora-b 59s ease-in-out infinite;
-  }
-  .aurora-c {
-    animation: aurora-c 71s ease-in-out infinite;
-  }
-
   /*
-   * مع تقليل الحركة: تتوقف تماماً ولا تبطؤ.
+   * شريط التمرير داخل القائمة الكحلية.
    *
-   * القاعدة العامة أعلى الملف تضبط المدة على 0.01ms، وهي تكفي لإيقاف أغلب
-   * الحركات — لكنها هنا تُجمّد الهالة عند إطارها الأخير لا الأول، فتظهر
-   * مزاحة عن موضعها المصمَّم. الإلغاء الصريح يُبقيها حيث وُضعت.
+   * الشريط العامّ رماديٌّ فاتح على مسارٍ فاتح، وعلى الكحلي يصير شريطاً
+   * أبيض يقطع القائمة طولاً. فهنا بلون حدودها، على مسارٍ شفّاف.
    */
-  @media (prefers-reduced-motion: reduce) {
-    .aurora-a,
-    .aurora-b,
-    .aurora-c {
-      animation: none !important;
-    }
+  .sidebar-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--sidebar-border) transparent;
   }
-
-  @media print {
-    .aurora-layer {
-      display: none !important;
-    }
+  .sidebar-scroll::-webkit-scrollbar-track {
+    background: transparent;
   }
-
-  /*
-   * المؤشّر المضيء للعنصر النشط في التنقّل.
-   *
-   * عمود صغير على حافة البداية المنطقية (inset-inline-start) لا على اليسار:
-   * الواجهة عربية والشريط الجانبي على اليمين، فاليسار الفيزيائي هو الحافة
-   * الداخلية لا حافة البداية. الخاصية المنطقية تصيب الجهة الصحيحة في
-   * الاتجاهين بلا استثناء في الشيفرة.
-   */
-  .nav-indicator::before {
-    content: '';
-    position: absolute;
-    inset-inline-start: 0;
-    top: 50%;
-    height: 1.15rem;
-    width: 3px;
-    border-radius: 999px;
-    background: var(--primary);
-    box-shadow: var(--glow-soft, none);
-    transform: translate3d(0, -50%, 0);
+  .sidebar-scroll::-webkit-scrollbar-thumb {
+    background: var(--sidebar-border);
+    border-color: var(--sidebar);
   }
 
   .card-surface {
     background-color: var(--surface);
     border: 1px solid var(--border);
-    border-radius: var(--radius);
+    border-radius: var(--radius-card);
     box-shadow: var(--elev-1);
   }
 

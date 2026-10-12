@@ -10,5 +10,5 @@ export default async function AnalyticsPage() {
   const user = await getSession();
   // الحارس في الخادم لا في قائمة التنقّل: إخفاء الرابط يُخفي الباب ولا يُغلقه
   if (!can(user, PERMISSIONS.POSTS_VIEW)) notFound();
-  return <AnalyticsClient />;
+  return <AnalyticsClient canExport={can(user, PERMISSIONS.REPORTS_EXPORT)} />;
 }

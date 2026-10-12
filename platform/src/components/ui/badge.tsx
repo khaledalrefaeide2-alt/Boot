@@ -10,7 +10,7 @@ import { cn } from '@/lib/utils';
  * حاوية. والحدّ بلون النص نفسه يربط الاثنين بصرياً بدل إدخال لون ثالث.
  */
 const badgeVariants = cva(
-  'inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium whitespace-nowrap',
+  'inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-xs font-medium whitespace-nowrap',
   {
     variants: {
       tone: {
@@ -22,8 +22,8 @@ const badgeVariants = cva(
         info: 'bg-info-soft text-info border-info/25',
       },
       size: {
-        sm: 'px-2 py-0 text-2xs',
-        md: 'px-2.5 py-0.5 text-xs',
+        sm: 'px-2 py-0.5 text-2xs leading-none',
+        md: 'px-2.5 py-1 text-xs leading-none',
       },
     },
     defaultVariants: { tone: 'neutral', size: 'md' },

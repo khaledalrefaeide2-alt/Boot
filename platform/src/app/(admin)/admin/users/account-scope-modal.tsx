@@ -239,7 +239,7 @@ export function AccountScopeModal({
                           </p>
                           <button
                             type="button"
-                            className="text-xs font-medium text-primary underline underline-offset-2"
+                            className="text-xs font-medium text-primary-text underline underline-offset-2"
                             onClick={() => toggleGroup(group.accounts)}
                           >
                             {allSelected ? 'إلغاء تحديد الكل' : 'تحديد الكل'}

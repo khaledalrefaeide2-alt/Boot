@@ -19,6 +19,7 @@ import { ComparisonBars } from '@/components/charts/distribution-charts';
 import { seriesColor } from '@/components/charts/chart-kit';
 import { api, ApiClientError, buildQuery } from '@/lib/api-client';
 import { formatCompactNumber, formatNumber, formatPercent } from '@/lib/utils';
+import { LinkButton } from '@/components/ui/link-button';
 
 interface CompareAccount {
   id: string;
@@ -108,7 +109,7 @@ export function CompareClient() {
                 return (
                   <span
                     key={id}
-                    className="inline-flex items-center gap-1.5 rounded-md border border-border bg-surface-2 px-2 py-1 text-xs"
+                    className="inline-flex h-9 items-center gap-2 rounded-full border border-border bg-surface-2 ps-3 pe-1 text-sm"
                   >
                     <span
                       className="h-2.5 w-2.5 rounded-sm"
@@ -119,10 +120,10 @@ export function CompareClient() {
                     <button
                       type="button"
                       onClick={() => setSelected(selected.filter((item) => item !== id))}
-                      className="rounded p-0.5 text-muted-foreground transition-colors hover:text-danger"
+                      className="-me-1 flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-danger-soft hover:text-danger"
                       aria-label={`إزالة ${account?.name ?? ''}`}
                     >
-                      <X className="h-3 w-3" aria-hidden />
+                      <X className="h-4 w-4" aria-hidden />
                     </button>
                   </span>
                 );
@@ -139,9 +140,7 @@ export function CompareClient() {
             title="لم تختر أي حساب بعد"
             description="اختر حسابين أو أكثر من القائمة أعلاه لبدء المقارنة"
             action={
-              <Link href="/accounts">
-                <Button variant="secondary">تصفح الحسابات</Button>
-              </Link>
+              <LinkButton href="/accounts" variant="secondary">تصفح الحسابات</LinkButton>
             }
           />
         </Card>
@@ -249,7 +248,7 @@ export function CompareClient() {
                               />
                               <Link
                                 href={`/accounts/${account.id}`}
-                                className="font-medium hover:text-primary hover:underline"
+                                className="font-medium hover:text-primary-text hover:underline"
                               >
                                 {account.name}
                               </Link>
@@ -264,7 +263,7 @@ export function CompareClient() {
                           <TD className="num">{formatCompactNumber(account.comments)}</TD>
                           <TD className="num">{formatCompactNumber(account.shares)}</TD>
                           <TD className="num">{formatCompactNumber(account.views)}</TD>
-                          <TD className="num font-semibold text-primary">
+                          <TD className="num font-semibold text-primary-text">
                             {formatCompactNumber(account.engagement)}
                           </TD>
                           <TD className="num">{formatNumber(account.engagementPerPost)}</TD>

@@ -1,13 +1,13 @@
 'use client';
 
 import { useState } from 'react';
-import Link from 'next/link';
 import { useQuery } from '@tanstack/react-query';
-import { FileSpreadsheet, Printer } from 'lucide-react';
+import { CalendarDays, FileText, Printer } from 'lucide-react';
 import { PageHeader } from '@/components/layout/page-header';
 import { Reveal } from '@/components/motion/reveal';
 import { Card, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { buttonVariants } from '@/components/ui/button-variants';
 import { HighlightCard, METRIC_ICONS, StatCard, StatGrid } from '@/components/ui/stat-card';
 import { TopPostsSection } from '@/components/sections/top-posts-section';
 import { TopAccountsSection } from '@/components/sections/top-accounts-section';
@@ -20,6 +20,7 @@ import {
 } from '@/components/filters/filter-bar';
 import { useFilterOptions, EMPTY_OPTIONS } from '@/lib/hooks/use-filters';
 import { TimelineChart } from '@/components/charts/timeline-chart';
+import { PlatformShareBars } from '@/components/charts/platform-share';
 import {
   ComparisonBars,
   DonutChart,
@@ -28,7 +29,13 @@ import {
 } from '@/components/charts/distribution-charts';
 import { api, ApiClientError, buildQuery } from '@/lib/api-client';
 import { formatNumber, halfOverHalfChange, truncate } from '@/lib/utils';
-import { POST_TYPE_LABELS, SENTIMENT_LABELS, languageLabel } from '@/lib/domain/constants';
+import {
+  DATE_RANGES,
+  POST_TYPE_LABELS,
+  SENTIMENT_LABELS,
+  languageLabel,
+} from '@/lib/domain/constants';
+import { LinkButton } from '@/components/ui/link-button';
 
 /*
  * شاشةٌ واحدة بدل شاشتين.
@@ -85,7 +92,7 @@ interface SeriesPoint {
 }
 
 interface BreakdownsResponse {
-  byPlatform: { id: string; name: string; posts: number; engagement: number }[];
+  byPlatform: { id: string; name: string; code: string; posts: number; engagement: number }[];
   byType: { type: string; posts: number }[];
   bySentiment: { sentiment: string; posts: number }[];
   byTopic: { id: string | null; name: string; posts: number }[];
@@ -93,7 +100,26 @@ interface BreakdownsResponse {
   byCountry: { country: string; posts: number }[];
 }
 
-export function AnalyticsClient() {
+/*
+ * الفترة المعروضة — تُكتب في رأس كلّ رسم.
+ *
+ * المرجع يضع في رأس الرسم قائمةً بالفترة. وهنا الفترةُ واحدةٌ للصفحة كلّها
+ * (من شريط الفلاتر)، وقائمةٌ ثانية في الرسم تعني فترتين في صفحةٍ واحدة:
+ * بطاقاتٌ عن ثلاثين يوماً ورسمٌ بجانبها عن سبعة، ولا يعرف القارئ أيّهما
+ * يقرأ. فالرأس يقول الفترة ولا يغيّرها — شارةٌ لا قائمة.
+ */
+function PeriodTag({ range }: { range: string }) {
+  const label =
+    range === 'all' ? 'كل الفترات' : (DATE_RANGES.find((item) => item.value === range)?.label ?? range);
+  return (
+    <span className="inline-flex h-9 items-center gap-2 rounded-control border border-border px-3 text-xs font-medium text-muted-foreground">
+      <CalendarDays className="h-4 w-4" aria-hidden />
+      {label}
+    </span>
+  );
+}
+
+export function AnalyticsClient({ canExport = false }: { canExport?: boolean }) {
   const [filters, setFilters] = useState<PostFilterState>(EMPTY_FILTERS);
   const params = filtersToParams(filters);
   const optionsQuery = useFilterOptions();
@@ -136,6 +162,12 @@ export function AnalyticsClient() {
   const seriesOf = (pick: (point: SeriesPoint) => number) => series.map(pick);
 
   const postsSeries = seriesOf((point) => point.posts);
+  /*
+   * معدّل التفاعل لكلّ منشور يوماً بيوم — سلسلةُ المقياس نفسه لا مستعارة.
+   * والاتجاه لا يُحسب منها: متوسّطُ نسبٍ يومية غيرُ نسبة الفترة كلّها،
+   * وشارةٌ تقول «+١٢٪» عن متوسّطٍ كهذا تقول ما لم يُحسب.
+   */
+  const rateSeries = seriesOf((point) => (point.posts > 0 ? point.engagement / point.posts : 0));
   const engagementSeries = seriesOf((point) => point.engagement);
   const likesSeries = seriesOf((point) => point.likes);
   const commentsSeries = seriesOf((point) => point.comments);
@@ -148,28 +180,37 @@ export function AnalyticsClient() {
   return (
     <>
       <PageHeader
-        hero
-        eyebrow="لوحة التشغيل"
         title="الإحصائيات"
-        description="ملخّص نشاط المنصات المرصودة وتحليله التفصيلي خلال الفترة المحددة"
+        description="نظرة شاملة على أداء الحسابات والمنصات خلال الفترة المحددة"
         action={
           <>
             <Button variant="secondary" onClick={() => window.print()}>
-              <Printer className="h-4 w-4" aria-hidden />
-              طباعة أو حفظ PDF
+              <Printer aria-hidden />
+              طباعة
             </Button>
-            <Link href="/reports">
-              <Button>
-                <FileSpreadsheet className="h-4 w-4" aria-hidden />
-                التقارير والتصدير
-              </Button>
-            </Link>
+            {/*
+              «تصدير التقرير» يصدّر فعلاً — بفلاتر هذه الصفحة.
+
+              كان الزرّ يفتح صفحة التقارير، فيضبط الموظّف فلاتره هناك من
+              جديد. والمسار نفسه (`/api/reports/export`) يقبل الفلاتر ذاتها،
+              فيُطلب منه مباشرةً ما يراه الموظّف الآن. والصلاحية تُحرس في
+              الخادم؛ وهنا يُخفى الزرّ عمّن لا يملكها فلا يضغط زرّاً يُرفض.
+            */}
+            {canExport && (
+              <a
+                href={buildQuery('/api/reports/export', { ...params, format: 'excel' })}
+                className={buttonVariants({ variant: 'primary' })}
+              >
+                <FileText aria-hidden />
+                تصدير التقرير
+              </a>
+            )}
           </>
         }
       />
 
       <FilterBar
-        className="mb-4"
+        className="mb-6"
         filters={filters}
         options={optionsQuery.data ?? EMPTY_OPTIONS}
         onChange={setFilters}
@@ -177,7 +218,7 @@ export function AnalyticsClient() {
       />
 
       {overview.isPending ? (
-        <SkeletonCards count={8} className="mb-4" />
+        <SkeletonCards count={12} className="mb-6" />
       ) : overview.isError ? (
         <Card className="mb-4">
           <ErrorState
@@ -199,27 +240,47 @@ export function AnalyticsClient() {
             اثنتا عشرة بطاقة في شبكةٍ واحدة متساوية.
             الحجم أوّلاً (كم نُشر، ومن أين)، ثم التفاعل (كم استُقبل).
           */}
-          <StatGrid count={12} className="mb-4">
+          <StatGrid count={12} className="mb-6">
             <StatCard
               label="إجمالي المنشورات"
               value={stats.totalPosts}
               icon={METRIC_ICONS.posts}
+              tint="sky"
               href="/posts"
               spark={postsSeries}
               trend={halfOverHalfChange(postsSeries)}
             />
-            <StatCard label="منشورات اليوم" value={stats.postsToday} icon={METRIC_ICONS.today} />
+            {/*
+              الفترة مكتوبةٌ تحت الرقم: «منشورات الأسبوع» تُفهم أسبوعاً
+              تقويمياً، والرقم عن آخر سبعة أيام. والفرق يغيّر القراءة يوم
+              السبت مثلاً — فيُقال ما حُسب فعلاً.
+            */}
+            <StatCard
+              label="منشورات اليوم"
+              value={stats.postsToday}
+              icon={METRIC_ICONS.today}
+              hint="منذ بداية اليوم"
+            />
             <StatCard
               label="منشورات الأسبوع"
               value={stats.postsThisWeek}
               icon={METRIC_ICONS.week}
+              tint="sky"
+              hint="آخر 7 أيام"
             />
-            <StatCard label="منشورات الشهر" value={stats.postsThisMonth} icon={METRIC_ICONS.month} />
+            <StatCard
+              label="منشورات الشهر"
+              value={stats.postsThisMonth}
+              icon={METRIC_ICONS.month}
+              tint="mint"
+              hint="آخر 30 يوماً"
+            />
             <StatCard
               label="عدد الحسابات"
               value={stats.accountsCount}
               hint="الحسابات المرصودة النشطة"
               icon={METRIC_ICONS.accounts}
+              tint="violet"
               href="/accounts"
             />
             <StatCard
@@ -278,10 +339,11 @@ export function AnalyticsClient() {
               label="معدل التفاعل لكل منشور"
               value={formatNumber(stats.engagementRate)}
               icon={METRIC_ICONS.rate}
+              spark={rateSeries}
             />
           </StatGrid>
 
-          <div className="mb-4 grid gap-3 sm:grid-cols-2">
+          <div className="mb-6 grid gap-4 sm:grid-cols-2">
             <Reveal index={0} className="h-full">
               <HighlightCard
                 label="أكثر منشور تفاعلاً"
@@ -335,58 +397,78 @@ export function AnalyticsClient() {
             title="لا توجد منشورات في هذه الفترة"
             description="أضف حسابات من لوحة الإدارة وشغّل عملية استخراج، أو وسّع النطاق الزمني للفلتر."
             action={
-              <Link href="/admin/accounts">
-                <Button variant="secondary">إدارة الحسابات</Button>
-              </Link>
+              <LinkButton href="/admin/accounts" variant="secondary">إدارة الحسابات</LinkButton>
             }
           />
         </Card>
       ) : (
-        <div className="space-y-4">
-          <div className="grid gap-4 lg:grid-cols-2">
-            <TimelineChart
-              title="نشاط النشر عبر الزمن"
-              description="عدد المنشورات في كل يوم"
-              data={series}
-              metric="posts"
-            />
-            <TimelineChart
-              title="التفاعل عبر الزمن"
-              description="مجموع الإعجابات والتعليقات والمشاركات والحفظ"
-              data={series}
-              metric="engagement"
-            />
+        <div className="space-y-6">
+          {/*
+            الصفّ الأوّل كما في المرجع: التوزيع على المنصّات في البداية
+            (يمين) وتطوّر التفاعل أعرض منه في النهاية (يسار). والتفاعل أعرض
+            لأنّه سلسلةٌ زمنية تحتاج طولاً لتُقرأ، والتوزيع ثلاثة أسطر.
+          */}
+          <div className="grid gap-6 lg:grid-cols-5">
+            <div className="min-w-0 lg:col-span-2">
+              <PlatformShareBars
+                data={breakdowns.data?.byPlatform ?? []}
+                action={<PeriodTag range={filters.range} />}
+              />
+            </div>
+            <div className="min-w-0 lg:col-span-3">
+              <TimelineChart
+                title="تطور التفاعل"
+                description="مجموع الإعجابات والتعليقات والمشاركات والحفظ في كل يوم"
+                data={series}
+                metric="engagement"
+                action={<PeriodTag range={filters.range} />}
+              />
+            </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-3">
-            <DonutChart
-              title="حسب المنصة"
-              data={(breakdowns.data?.byPlatform ?? []).map((item) => ({
-                label: item.name,
-                value: item.posts,
-              }))}
-            />
-            <SentimentChart data={breakdowns.data?.bySentiment ?? []} labels={SENTIMENT_LABELS} />
-            <DonutChart
-              title="حسب نوع المنشور"
-              data={(breakdowns.data?.byType ?? []).map((item) => ({
-                label: POST_TYPE_LABELS[item.type as keyof typeof POST_TYPE_LABELS] ?? item.type,
-                value: item.posts,
-              }))}
-            />
+          {/*
+            التوزيع على المنصّات لا يتكرّر قرصاً هنا: الأشرطة أعلاه تقوله
+            بأرقامه ونِسَبه، وقرصٌ بجوارها يعرض الشيء نفسه بشكلٍ أضعف.
+          */}
+          <div className="grid gap-6 lg:grid-cols-5">
+            <div className="min-w-0 lg:col-span-3">
+              <TimelineChart
+                title="نشاط النشر عبر الزمن"
+                description="عدد المنشورات في كل يوم"
+                data={series}
+                metric="posts"
+              />
+            </div>
+            <div className="min-w-0 lg:col-span-2">
+              <SentimentChart data={breakdowns.data?.bySentiment ?? []} labels={SENTIMENT_LABELS} />
+            </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-2">
-            <ComparisonBars
-              title="أهم المواضيع"
-              description="حسب التصنيف الموضوعي"
-              data={(breakdowns.data?.byTopic ?? []).slice(0, 10).map((item) => ({
-                label: item.name,
-                value: item.posts,
-              }))}
-              valueLabel="منشور"
-              colorByIndex
-            />
+          <div className="grid gap-6 lg:grid-cols-5">
+            <div className="min-w-0 lg:col-span-2">
+              <DonutChart
+                title="حسب نوع المنشور"
+                data={(breakdowns.data?.byType ?? []).map((item) => ({
+                  label: POST_TYPE_LABELS[item.type as keyof typeof POST_TYPE_LABELS] ?? item.type,
+                  value: item.posts,
+                }))}
+              />
+            </div>
+            <div className="min-w-0 lg:col-span-3">
+              <ComparisonBars
+                title="أهم المواضيع"
+                description="حسب التصنيف الموضوعي"
+                data={(breakdowns.data?.byTopic ?? []).slice(0, 10).map((item) => ({
+                  label: item.name,
+                  value: item.posts,
+                }))}
+                valueLabel="منشور"
+                colorByIndex
+              />
+            </div>
+          </div>
+
+          <div className="grid gap-6 lg:grid-cols-3">
             <ComparisonBars
               title="أكثر الهاشتاغات استخداماً"
               data={(top.data?.hashtags ?? []).slice(0, 12).map((item) => ({
@@ -395,14 +477,6 @@ export function AnalyticsClient() {
               }))}
               valueLabel="مرة"
             />
-          </div>
-
-          <WordCloud
-            words={top.data?.words ?? []}
-            description="خريطة حرارية للكلمات الأكثر تكراراً في نصوص المنشورات"
-          />
-
-          <div className="grid gap-4 lg:grid-cols-2">
             <ComparisonBars
               title="حسب اللغة"
               data={(breakdowns.data?.byLanguage ?? []).map((item) => ({
@@ -427,6 +501,11 @@ export function AnalyticsClient() {
               height={200}
             />
           </div>
+
+          <WordCloud
+            words={top.data?.words ?? []}
+            description="خريطة حرارية للكلمات الأكثر تكراراً في نصوص المنشورات"
+          />
 
           {/*
             المنشور ببطاقته والحساب بقسمه — لا جدولين.

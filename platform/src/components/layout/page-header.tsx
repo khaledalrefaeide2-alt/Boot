@@ -1,27 +1,37 @@
 import { cn } from '@/lib/utils';
+import { PageIcon } from './page-icon';
 
+/**
+ * رأس الصفحة — العنوان في البداية (يمين)، والإجراءات في النهاية (يسار).
+ *
+ * ★ العنوان أكبر ما في الصفحة، وبجانبه أيقونة قسمه.
+ *
+ *   30px وزن 700: هو أوّل ما تقع عليه العين فيقول «أين أنا» قبل أن يُقرأ
+ *   شيءٌ آخر. والأيقونة تُشتقّ من التنقّل (`PageIcon`) فتطابق ما في
+ *   القائمة الجانبية حرفاً بحرف. ومن مرّر `leading` (صورة حسابٍ مثلاً)
+ *   حلّت محلّها.
+ *
+ * ★ والإجراءات تلتفّ تحت العنوان على الشاشة الضيّقة ولا تُقصّ.
+ *
+ *   صفٌّ واحد على 390px يضغط العنوان إلى كلمة في سطر، أو يدفع الأزرار
+ *   خارج الشاشة. فالحاوية تلتفّ: العنوان صفٌّ كامل، والإجراءات صفٌّ تحته.
+ */
 export function PageHeader({
   title,
   description,
   /** عنوان فرعي صغير فوق العنوان — يسمّي المقطع الذي تنتمي إليه الصفحة */
   eyebrow,
-  /** عنصر يتصدّر العنوان — صورة حساب أو أيقونة قسم */
+  /** عنصر يتصدّر العنوان — صورة حساب أو أيقونة؛ وبدونه تُشتقّ أيقونة القسم */
   leading,
   action,
   /**
-   * شريطٌ استعراضي خلف الترويسة — للشاشة الأولى وحدها.
+   * أُبقيت للتوافق مع الصفحات التي تمرّرها، ولم يعد لها أثرٌ بصري.
    *
-   * ★ ولا صورة فيه.
-   *
-   *   المنصة داخلية وقد تعمل على شبكة معزولة، وصورةٌ في الترويسة تعني
-   *   طلباً ثقيلاً في أوّل ما يُفتح، وتعني أنّ تغيير الهوية يمرّ بمصمّم
-   *   لا بملفّ رموز. والتدرّج يعطي الأثر نفسه بلا بايتٍ واحد، ويتبع
-   *   السمتين تلقائياً.
-   *
-   *   ولا يُستعمل في شاشات العمل: الكثافة هناك مقصودة، وشريطٌ استعراضي
-   *   فوق كلّ جدول يدفع الصفّ الأوّل خارج الشاشة في عملٍ يُقرأ ساعات.
+   * كانت تضع تدرّجاً ملوّناً خلف الترويسة الأولى. والهوية الآن هادئة:
+   * العنوان على الأرضية نفسها في كلّ صفحة، فلا تبدو صفحةٌ أهمّ من أخرى
+   * لأنّها كُتبت أوّلاً.
    */
-  hero = false,
+  hero: _hero = false,
   className,
 }: {
   title: string;
@@ -33,42 +43,22 @@ export function PageHeader({
   className?: string;
 }) {
   return (
-    <div
-      className={cn(
-        'mb-5 flex flex-wrap items-start justify-between gap-3',
-        hero
-          ? [
-              'relative overflow-hidden rounded-2xl px-5 py-6 sm:px-6',
-              'bg-gradient-to-bl from-olive-100 via-surface to-surface',
-              'dark:from-olive-100 dark:via-surface dark:to-surface dark:border dark:border-border',
-            ]
-          : 'border-b border-border pb-4',
-        className,
-      )}
-    >
-      <div className="flex min-w-0 items-center gap-3">
-        {leading}
+    <div className={cn('mb-6 flex flex-wrap items-center justify-between gap-x-6 gap-y-4', className)}>
+      <div className="flex min-w-0 items-center gap-4">
+        {leading ?? <PageIcon />}
         <div className="min-w-0 space-y-1">
           {eyebrow && <p className="eyebrow">{eyebrow}</p>}
-        {/*
-          العنوان بوزن ثقيل وتتبّع سالب خفيف. والسالب هنا 0.015em لا 0.035em
-          التي في المواصفة: تلك مقيسة على حرف لاتيني منفصل، والحرف العربي متصل
-          فتضييقه يقارب النقاط ويُلصق الكاف بالميم.
-        */}
-        <h1
-          className={cn(
-            'font-bold tracking-[-0.015em] text-heading',
-            hero ? 'text-2xl sm:text-3xl' : 'text-xl sm:text-2xl',
-          )}
-        >
-          {title}
-        </h1>
-          {description && (
-            <p className="max-w-prose text-sm text-muted-foreground">{description}</p>
-          )}
+          <h1 className="text-2xl font-bold leading-tight tracking-[-0.01em] text-heading sm:text-3xl">
+            {title}
+          </h1>
+          {description && <p className="max-w-prose text-sm text-muted-foreground">{description}</p>}
         </div>
       </div>
-      {action && <div className="flex flex-wrap items-center gap-2 no-print">{action}</div>}
+      {action && (
+        <div className="flex flex-wrap items-center gap-2 no-print max-sm:w-full max-sm:[&>*]:flex-1">
+          {action}
+        </div>
+      )}
     </div>
   );
 }

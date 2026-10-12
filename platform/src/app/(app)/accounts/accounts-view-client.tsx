@@ -21,6 +21,7 @@ import {
 import { formatCompactNumber, formatNumber, formatRelativeTime } from '@/lib/utils';
 import type { AccountOwnership, AccountType } from '@/generated/prisma';
 import { AccountAvatar } from '@/components/ui/avatar';
+import { LinkButton } from '@/components/ui/link-button';
 
 interface AccountRow {
   id: string;
@@ -67,13 +68,9 @@ export function AccountsViewClient({ canManage }: { canManage: boolean }) {
         description="الحسابات والصفحات المرصودة على المنصات"
         action={
           <>
-            <Link href="/compare">
-              <Button variant="secondary">مقارنة الحسابات</Button>
-            </Link>
+            <LinkButton href="/compare" variant="secondary">مقارنة الحسابات</LinkButton>
             {canManage && (
-              <Link href="/admin/accounts">
-                <Button>إدارة الحسابات</Button>
-              </Link>
+              <LinkButton href="/admin/accounts">إدارة الحسابات</LinkButton>
             )}
           </>
         }
@@ -147,7 +144,7 @@ export function AccountsViewClient({ canManage }: { canManage: boolean }) {
                           className="flex max-w-72 items-center gap-2.5"
                         >
                           <AccountAvatar name={account.name} src={account.avatarUrl} size="sm" />
-                          <span className="truncate font-medium hover:text-primary hover:underline">
+                          <span className="truncate font-medium hover:text-primary-text hover:underline">
                             {account.name}
                           </span>
                         </Link>

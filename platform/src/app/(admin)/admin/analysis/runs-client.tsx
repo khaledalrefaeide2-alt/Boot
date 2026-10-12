@@ -85,7 +85,7 @@ function Progress({ done, total }: { done: number; total: number }) {
       aria-valuemin={0}
       aria-valuemax={total}
       aria-label={`أُنجز ${done} من ${total}`}
-      className="h-2 w-full overflow-hidden rounded-full bg-olive-100"
+      className="h-2 w-full overflow-hidden rounded-full bg-brand-100"
     >
       <div
         className="h-full rounded-full bg-primary transition-[width] duration-500"

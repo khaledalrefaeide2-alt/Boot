@@ -189,7 +189,7 @@ export function TopicsClient() {
                       <TD className="num">
                         <Link
                           href={`/posts?topicId=${topic.id}&range=all`}
-                          className="hover:text-primary hover:underline"
+                          className="hover:text-primary-text hover:underline"
                         >
                           {formatNumber(topic._count.posts)}
                         </Link>

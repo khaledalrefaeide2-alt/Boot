@@ -11,6 +11,7 @@ import { Table, TBody, TD, TH, THead, TR, TableWrapper } from '@/components/ui/t
 import { useToast } from '@/components/ui/toast';
 import { api, ApiClientError } from '@/lib/api-client';
 import { arabicPlural } from '@/lib/utils';
+import { LinkButton } from '@/components/ui/link-button';
 
 type RowState = 'ready' | 'duplicate' | 'error';
 
@@ -166,7 +167,7 @@ export function AccountsImportModal({
     >
       <div className="space-y-4">
         <div className="flex flex-wrap items-center gap-3 rounded-md border border-border bg-surface-2 p-3">
-          <FileSpreadsheet className="h-8 w-8 shrink-0 text-primary" aria-hidden />
+          <FileSpreadsheet className="h-8 w-8 shrink-0 text-primary-text" aria-hidden />
           <div className="min-w-40 flex-1">
             <p className="text-sm font-medium text-foreground">القالب يحمل الأعمدة الصحيحة</p>
             <p className="text-xs text-muted-foreground">
@@ -178,12 +179,10 @@ export function AccountsImportModal({
             العربي، والسمة الفارغة تطغى عليه فيُحفظ الملف باسم «download».
             اسم واحد في مكان واحد أفضل من اسمين قد يفترقان.
           */}
-          <a href="/api/accounts/import/template">
-            <Button variant="secondary" type="button">
-              <Download className="h-4 w-4" aria-hidden />
-              تنزيل القالب
-            </Button>
-          </a>
+          <LinkButton href="/api/accounts/import/template" variant="secondary" as="a">
+            <Download className="h-4 w-4" aria-hidden />
+            تنزيل القالب
+          </LinkButton>
         </div>
 
         <div>

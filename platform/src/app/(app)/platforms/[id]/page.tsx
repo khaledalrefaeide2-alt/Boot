@@ -6,13 +6,13 @@ import { getSession } from '@/lib/auth/session';
 import { can, PERMISSIONS } from '@/lib/auth/rbac';
 import { PageHeader } from '@/components/layout/page-header';
 import { Card, CardHeader } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { METRIC_ICONS, StatCard, StatGrid } from '@/components/ui/stat-card';
 import { EmptyState } from '@/components/ui/states';
 import { Table, TBody, TD, TH, THead, TR, TableWrapper } from '@/components/ui/table';
 import { getOverviewStats } from '@/lib/queries/stats';
 import { formatCompactNumber, formatNumber, formatRelativeTime } from '@/lib/utils';
 import { getAccountScope } from '@/lib/auth/account-scope';
+import { LinkButton } from '@/components/ui/link-button';
 
 export const metadata: Metadata = { title: 'تفاصيل المنصة' };
 
@@ -59,9 +59,7 @@ export default async function PlatformDetailPage({
         title={platform.name}
         description={`لوحة المنصة — ${formatNumber(accounts.length)} حساباً مرصوداً`}
         action={
-          <Link href={`/posts?platformId=${platform.id}&range=all`}>
-            <Button>عرض منشورات المنصة</Button>
-          </Link>
+          <LinkButton href={`/posts?platformId=${platform.id}&range=all`}>عرض منشورات المنصة</LinkButton>
         }
       />
 
@@ -121,7 +119,7 @@ export default async function PlatformDetailPage({
                       {canBrowseAccounts ? (
                         <Link
                           href={`/accounts/${account.id}`}
-                          className="font-medium hover:text-primary hover:underline"
+                          className="font-medium hover:text-primary-text hover:underline"
                         >
                           {account.name}
                         </Link>

@@ -203,7 +203,7 @@ export function EntitiesClient() {
                     <TD>
                       <Link
                         href={`/entities/${entity.id}`}
-                        className="font-medium text-foreground hover:text-primary hover:underline"
+                        className="font-medium text-foreground hover:text-primary-text hover:underline"
                       >
                         {entity.name}
                       </Link>

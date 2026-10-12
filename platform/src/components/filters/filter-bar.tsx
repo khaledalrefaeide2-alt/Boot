@@ -1,7 +1,18 @@
 'use client';
 
 import { useState } from 'react';
-import { Filter, Minus, RotateCcw, Search, Sparkles } from 'lucide-react';
+import {
+  BookmarkCheck,
+  Building2,
+  CalendarDays,
+  Filter,
+  Layers,
+  Minus,
+  RotateCcw,
+  Search,
+  Sparkles,
+  UsersRound,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Segmented } from '@/components/ui/button-group';
 import { Input, Select } from '@/components/ui/field';
@@ -253,44 +264,64 @@ export function FilterBar({
   }
 
   return (
-    <div className={cn('rounded-lg border border-border bg-surface shadow-elev-1 no-print', className)}>
-      <div className="flex flex-wrap items-end gap-3 px-4 py-3">
+    /*
+      لوحةٌ بيضاء واحدة، وعناصرها في صفٍّ يلتفّ — كما في المرجع.
+
+      ★ وكلّ عنصرٍ ينمو ليملأ صفّه.
+
+        عرضٌ ثابت لكلّ قائمة يترك فراغاً ممزّقاً في آخر كلّ صفٍّ يلتفّ،
+        فيبدو الشريط مكسوراً على 1024px وسليماً على 1440. والنموّ مع حدٍّ
+        أدنى (`basis`) يجعل كلّ صفٍّ ممتلئاً أيّاً كان العرض، والبحثُ أعرضها.
+    */
+    <div className={cn('rounded-card border border-border bg-surface shadow-elev-1 no-print', className)}>
+      <div className="flex flex-wrap items-end gap-3 p-4 sm:p-5">
         {showSearch && (
           <form
-            className="flex min-w-56 flex-1 items-end gap-2"
+            className="flex min-w-0 grow basis-full items-end md:basis-[16rem]"
             onSubmit={(event) => {
               event.preventDefault();
               apply();
             }}
           >
             <Input
-              wrapperClassName="flex-1"
+              wrapperClassName="min-w-0 flex-1"
               label="بحث"
-              placeholder="كلمة أو أكثر… كهرباء|تيار للمرادفات، «عبارة» بعلامتين، و-كلمة للاستبعاد"
+              type="search"
+              enterKeyHint="search"
+              icon={Search}
+              className="pe-[5.25rem]"
+              placeholder="ابحث في المنشورات…"
+              title="كهرباء|تيار للمرادفات، «عبارة» بعلامتين، و-كلمة للاستبعاد"
               value={searchInput}
               onChange={(event) => setSearchInput(event.target.value)}
-            />
-            <Button size="icon" type="submit" variant="secondary" aria-label="بحث">
-              <Search className="h-4 w-4" aria-hidden />
-            </Button>
-            {/*
-              زرٌّ ثانٍ لا نمطٌ في قائمة.
+              trailing={
+                <>
+                  {/*
+                    زرٌّ ثانٍ لا نمطٌ في قائمة.
 
-              التوسيع فعلٌ يُطلب مرّةً عند الحاجة، لا حالةٌ تبقى مفعّلة:
-              حالةٌ مفعّلة تعني استدعاءً مدفوعاً مع كلّ بحثٍ بعدها، وأكثر
-              عمليات البحث لا تحتاجه. والزرّ يجعل الكلفة مقرونةً بقرار.
-            */}
-            <Button
-              size="icon"
-              type="button"
-              variant="secondary"
-              onClick={() => void expandThenApply()}
-              loading={expanding}
-              aria-label="وسّع البحث إلى الكلمات المرتبطة"
-              title="وسّع البحث: يضيف ألفاظاً يُرجَّح ورودُها في منشورٍ عن الموضوع نفسه"
-            >
-              <Sparkles className="h-4 w-4" aria-hidden />
-            </Button>
+                    التوسيع فعلٌ يُطلب مرّةً عند الحاجة، لا حالةٌ تبقى
+                    مفعّلة: حالةٌ مفعّلة تعني استدعاءً مدفوعاً مع كلّ بحثٍ
+                    بعدها، وأكثر عمليات البحث لا تحتاجه. والزرّ يجعل الكلفة
+                    مقرونةً بقرار.
+                  */}
+                  <Button
+                    size="icon-sm"
+                    type="button"
+                    variant="ghost"
+                    onClick={() => void expandThenApply()}
+                    loading={expanding}
+                    aria-label="وسّع البحث إلى الكلمات المرتبطة"
+                    title="وسّع البحث: يضيف ألفاظاً يُرجَّح ورودُها في منشورٍ عن الموضوع نفسه"
+                    className="text-primary-text"
+                  >
+                    <Sparkles aria-hidden />
+                  </Button>
+                  <Button size="icon-sm" type="submit" variant="tonal" aria-label="بحث">
+                    <Search aria-hidden />
+                  </Button>
+                </>
+              }
+            />
           </form>
         )}
 
@@ -312,8 +343,9 @@ export function FilterBar({
         */}
         {showSearch && options.searchTopics.length > 0 && (
           <Select
-            wrapperClassName="w-44"
+            wrapperClassName="grow basis-[10rem]"
             label="موضوع محفوظ"
+            icon={BookmarkCheck}
             value=""
             onChange={(event) => {
               const topic = options.searchTopics.find((item) => item.id === event.target.value);
@@ -332,8 +364,9 @@ export function FilterBar({
         )}
 
         <Select
-          wrapperClassName="w-40"
+          wrapperClassName="grow basis-[10rem]"
           label="الفترة"
+          icon={CalendarDays}
           value={filters.range}
           onChange={(event) => set('range', event.target.value)}
         >
@@ -352,8 +385,9 @@ export function FilterBar({
           يُرجع صفر نتائج بلا سبب ظاهر.
         */}
         <Select
-          wrapperClassName="w-44"
+          wrapperClassName="grow basis-[10rem]"
           label="المجموعة"
+          icon={Building2}
           value={filters.groupId}
           onChange={(event) => onChange({ ...filters, groupId: event.target.value, accountId: '' })}
         >
@@ -366,8 +400,9 @@ export function FilterBar({
         </Select>
 
         <Select
-          wrapperClassName="w-40"
+          wrapperClassName="grow basis-[10rem]"
           label="المنصة"
+          icon={Layers}
           value={filters.platformId}
           onChange={(event) => onChange({ ...filters, platformId: event.target.value, accountId: '' })}
         >
@@ -380,8 +415,9 @@ export function FilterBar({
         </Select>
 
         <Select
-          wrapperClassName="w-48"
+          wrapperClassName="grow basis-[10rem]"
           label="الحساب"
+          icon={UsersRound}
           value={filters.accountId}
           onChange={(event) => set('accountId', event.target.value)}
         >
@@ -393,8 +429,13 @@ export function FilterBar({
           ))}
         </Select>
 
-        <Button variant="secondary" onClick={() => setExpanded((value) => !value)}>
-          <Filter className="h-4 w-4" aria-hidden />
+        <Button
+          variant={expanded ? 'tonal' : 'outline'}
+          onClick={() => setExpanded((value) => !value)}
+          aria-expanded={expanded}
+          className="grow sm:grow-0"
+        >
+          <Filter aria-hidden />
           فلاتر إضافية
           {count > 0 && (
             <Badge tone="primary" size="sm">
@@ -411,7 +452,7 @@ export function FilterBar({
               onReset();
             }}
           >
-            <RotateCcw className="h-3.5 w-3.5" aria-hidden />
+            <RotateCcw aria-hidden />
             إعادة ضبط
           </Button>
         )}
@@ -423,20 +464,20 @@ export function FilterBar({
         ولا يُعرض خيار نمطٍ لا معنى له على كلمةٍ واحدة.
       */}
       {showSearch && expandNote && (
-        <div className="border-t border-border px-4 py-2 text-2xs text-muted-foreground">
+        <div className="border-t border-border px-5 py-2.5 text-xs text-muted-foreground">
           {expandNote}
         </div>
       )}
 
       {showSearch && accountHint && (
-        <div className="flex flex-wrap items-center gap-2 border-t border-border px-4 py-2 text-2xs">
+        <div className="flex flex-wrap items-center gap-2 border-t border-border px-5 py-2.5 text-xs">
           <span className="text-muted-foreground">
             «{accountHint.name}» اسمُ حسابٍ مرصود — والبحث النصّي يبحث في المنشورات لا في أسماء
             الحسابات.
           </span>
           <button
             type="button"
-            className="font-medium text-primary hover:underline"
+            className="font-medium text-primary-text hover:underline"
             onClick={() => {
               setSearchInput('');
               onChange({ ...filters, q: '', accountId: accountHint.id });
@@ -448,7 +489,7 @@ export function FilterBar({
       )}
 
       {showSearch && showTerms && (
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border px-4 py-2.5">
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-2 border-t border-border px-5 py-3">
           <span className="text-2xs text-muted-foreground">يُبحث عن:</span>
 
           <ul className="flex flex-wrap items-center gap-1.5">
@@ -517,7 +558,7 @@ export function FilterBar({
       )}
 
       {expanded && (
-        <div className="grid gap-3 border-t border-border px-4 py-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid gap-4 border-t border-border p-4 sm:grid-cols-2 sm:p-5 lg:grid-cols-4">
           {filters.range === 'custom' && (
             <>
               <Input

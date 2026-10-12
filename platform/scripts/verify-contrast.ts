@@ -93,8 +93,12 @@ const TEXT_ON: Array<[string, string[]]> = [
   ['--heading', ['--background', '--surface']],
   ['--muted-foreground', ['--background', '--surface', '--surface-2']],
   ['--subtle-foreground', ['--background', '--surface']],
-  ['--primary', ['--background', '--surface', '--surface-2']],
-  ['--primary-foreground', ['--primary']],
+  /*
+   * التركواز نصّاً يُكتب بـ`--primary-text` لا بـ`--primary`: الثاني
+   * خلفيةُ الزرّ (والأبيض عليه 4.75)، والأول ما يُقرأ على الأرضية.
+   */
+  ['--primary-text', ['--background', '--surface', '--surface-2', '--brand-50']],
+  ['--primary-foreground', ['--primary', '--primary-hover', '--brand-900']],
   ['--primary-soft-foreground', ['--primary-soft']],
   ['--success', ['--background', '--surface', '--success-soft']],
   ['--warning', ['--background', '--surface', '--warning-soft']],
@@ -109,9 +113,21 @@ const TEXT_ON: Array<[string, string[]]> = [
    * درجاته، والشبح على ما يقف عليه. وبدونها يبقى السلّم لوحةً جميلة لا
    * يعرف أحد أيّ درجتين منها تلتقيان في زرّ حقيقي.
    */
-  ['--olive-700', ['--surface', '--background', '--surface-2', '--olive-50', '--olive-100']],
-  ['--olive-800', ['--surface', '--background', '--olive-50', '--olive-100']],
-  ['--olive-900', ['--olive-100', '--olive-200', '--olive-300']],
+  ['--brand-800', ['--surface', '--background', '--surface-2', '--brand-50', '--brand-100']],
+  ['--brand-900', ['--brand-100', '--brand-200', '--brand-300']],
+  /* الثانوي والشبح: نصّ المتن والخافت على أسطح التحويم والضغط */
+  ['--foreground', ['--surface-2', '--surface-3']],
+  ['--muted-foreground', ['--surface-3']],
+
+  /*
+   * القائمة الجانبية — كحليّة في السمتين، فتُقاس في كلتيهما.
+   * العنصر النشط تركوازٌ بنصٍّ أبيض، وعناوين المجموعات تركوازٌ فاتح.
+   */
+  ['--sidebar-foreground', ['--sidebar', '--sidebar-hover']],
+  ['--sidebar-heading', ['--sidebar', '--sidebar-hover']],
+  ['--sidebar-section', ['--sidebar']],
+  ['--sidebar-muted', ['--sidebar']],
+  ['--sidebar-active-foreground', ['--sidebar-active']],
   ['--danger-foreground', ['--danger', '--danger-hover', '--danger-active']],
   ['--disabled-text', ['--disabled-bg', '--surface', '--background']],
 
@@ -129,7 +145,7 @@ const TEXT_ON: Array<[string, string[]]> = [
   ['--tint-rose-ink', ['--tint-rose-surface', '--tint-rose-chip']],
   ['--tint-violet-ink', ['--tint-violet-surface', '--tint-violet-chip']],
   ['--tint-teal-ink', ['--tint-teal-surface', '--tint-teal-chip']],
-  ['--tint-olive-ink', ['--tint-olive-surface', '--tint-olive-chip']],
+  ['--tint-brand-ink', ['--tint-brand-surface', '--tint-brand-chip']],
 
   [
     '--foreground',
@@ -140,7 +156,7 @@ const TEXT_ON: Array<[string, string[]]> = [
       '--tint-rose-surface',
       '--tint-violet-surface',
       '--tint-teal-surface',
-      '--tint-olive-surface',
+      '--tint-brand-surface',
     ],
   ],
   [
@@ -152,21 +168,26 @@ const TEXT_ON: Array<[string, string[]]> = [
       '--tint-rose-surface',
       '--tint-violet-surface',
       '--tint-teal-surface',
-      '--tint-olive-surface',
+      '--tint-brand-surface',
     ],
   ],
 ];
 
 const GRAPHIC_ON: Array<[string, string[]]> = [
-  ['--border-input', ['--surface', '--background']],
-  ['--ring', ['--background', '--surface']],
   /*
-   * حدّ الزرّ الثانوي وحلقة التركيز — كلاهما يقع تحت 1.4.11.
-   * الحدّ هو ما يجعل زرّاً أبيض على بطاقة بيضاء مرئياً، والحلقة هي ما
-   * يقول لمن يتنقّل بلوحة المفاتيح «أنت هنا».
+   * حدّ الحقل والزرّ الثانوي، وحدّ الزرّ المحدَّد، وحلقة التركيز — كلّها
+   * تحت 1.4.11. الحدّ هو ما يجعل زرّاً أبيض على بطاقةٍ بيضاء مرئياً،
+   * والحلقة هي ما يقول لمن يتنقّل بلوحة المفاتيح «أنت هنا».
    */
-  ['--olive-400', ['--surface', '--background', '--surface-2']],
-  ['--olive-500', ['--surface', '--background', '--olive-50']],
+  ['--border-input', ['--surface', '--background', '--surface-2']],
+  ['--brand-700', ['--surface', '--background']],
+  ['--ring', ['--background', '--surface', '--surface-2']],
+  /*
+   * حلقة التركيز في القائمة الكحلية بيضاء: التركوازُ الفاتح كان 2.4:1 على
+   * العنصر النشط — أي أنّ من يتنقّل بلوحة المفاتيح لا يرى أين هو حين يقف
+   * على الصفحة المفتوحة. كشفه هذا الفحص.
+   */
+  ['--sidebar-heading', ['--sidebar', '--sidebar-hover', '--sidebar-active']],
   ['--chart-1', ['--surface']],
   ['--chart-2', ['--surface']],
   ['--chart-3', ['--surface']],
@@ -210,7 +231,7 @@ function run(
    * `var(--x)` تُتبَّع حتى قيمةٍ صريحة.
    *
    * بدون هذا يصمت الفحص بدل أن يفشل: الرمز الذي لا يُفهم يُتخطّى، فيمرّ
-   * `--primary: var(--olive-700)` بلا قياس ويبدو الملف «سليماً» لأنه لم
+   * `--primary: var(--brand-700)` بلا قياس ويبدو الملف «سليماً» لأنه لم
    * يقِس شيئاً. والسكوت أخطر من الرسوب هنا.
    */
   const literal = (name: string, depth = 0): string | null => {
@@ -305,11 +326,11 @@ const MIRROR: Array<[string, string]> = [
   ['--text', '--foreground'],
   ['--muted', '--muted-foreground'],
   ['--line', '--border'],
-  ['--btn-line', '--olive-400'],
+  ['--btn-line', '--border-input'],
   ['--danger', '--danger'],
   ['--danger-soft', '--danger-soft'],
-  ['--primary', '--olive-700'],
-  ['--primary-hover', '--olive-800'],
+  ['--primary', '--brand-700'],
+  ['--primary-hover', '--brand-800'],
   ['--primary-text', '--primary-foreground'],
 ];
 

@@ -39,7 +39,7 @@ export function ButtonGroup({ children, className, stack = false, align = 'start
            أولاً في DOM ليأخذه التنقّل بلوحة المفاتيح أولاً، ويظهر أعلى
            الكومة على الجوال — فيتطابق الترتيبان بدل أن يتعارضا.
         */
-        stack && 'max-sm:flex-col max-sm:items-stretch max-sm:[&>*]:w-full max-sm:[&_button]:h-11',
+        stack && 'max-sm:flex-col max-sm:items-stretch max-sm:[&>*]:w-full',
         className,
       )}
     >
@@ -140,8 +140,11 @@ export function Segmented<T extends string>({
       aria-label={label}
       className={cn(
         pills
-          ? 'flex flex-wrap items-center gap-1.5'
-          : 'inline-flex rounded-lg border border-border bg-olive-50 p-0.5',
+          ? 'flex flex-wrap items-center gap-2'
+          : cn(
+              'inline-flex items-stretch rounded-control border border-border bg-surface-2',
+              size === 'sm' ? 'h-control-compact p-0.5' : 'h-control p-1',
+            ),
         className,
       )}
     >
@@ -155,18 +158,24 @@ export function Segmented<T extends string>({
             aria-checked={active}
             onClick={() => onChange(option.value)}
             className={cn(
-              'inline-flex items-center justify-center gap-1.5 font-semibold leading-none whitespace-nowrap',
-              'transition-[background-color,color,box-shadow] duration-150',
-              'focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_var(--surface),0_0_0_4px_var(--olive-500)]',
-              pills ? 'rounded-full' : 'rounded-md',
-              size === 'sm' ? 'h-7 px-3 text-[13px]' : 'h-9 px-4 text-sm',
+              'inline-flex items-center justify-center gap-2 font-semibold leading-none whitespace-nowrap',
+              'transition-[background-color,color,box-shadow] duration-150 ease-out',
+              '[&_svg]:size-[18px] [&_svg]:shrink-0',
+              'focus-visible:outline-none focus-visible:shadow-[0_0_0_2px_var(--surface),0_0_0_4px_var(--ring)]',
+              /*
+               * الأقراص بارتفاع الزرّ المضغوط، والمجزّأة تملأ حاويتها: الحاوية
+               * هي التي تحمل الارتفاع (44 أو 36) فيستوي الصفّ مع الحقول.
+               */
+              pills
+                ? 'h-control-compact rounded-full px-4 text-sm'
+                : cn('rounded-[0.5rem] text-sm', size === 'sm' ? 'px-3' : 'px-4'),
               pills
                 ? active
-                  ? 'bg-olive-700 text-white shadow-elev-1'
-                  : 'bg-transparent text-muted-foreground hover:bg-olive-50 hover:text-olive-800'
+                  ? 'bg-brand-700 text-primary-foreground shadow-elev-1'
+                  : 'bg-transparent text-muted-foreground hover:bg-surface-2 hover:text-foreground'
                 : active
-                  ? 'bg-surface text-olive-900 shadow-elev-1'
-                  : 'bg-transparent text-olive-700 hover:text-olive-900',
+                  ? 'bg-surface text-primary-text shadow-elev-1'
+                  : 'bg-transparent text-muted-foreground hover:text-foreground',
             )}
           >
             {option.label}
