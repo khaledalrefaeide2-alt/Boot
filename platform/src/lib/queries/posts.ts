@@ -238,13 +238,34 @@ export const POST_LIST_SELECT = {
   platform: { select: { id: true, name: true, code: true, color: true } },
   topic: { select: { id: true, name: true, color: true } },
   /*
-   * حقلان من التحليل لا التحليل كله.
+   * خلاصةُ التحليل لا التحليل كله.
    *
-   * البطاقة تحتاج أن تقول «هذا خطر» في لمحة، ولا تحتاج التعليل ولا
-   * الدليل ولا الألفاظ — تلك في صفحة المنشور. وجلبُ الصفّ كاملاً لأربعٍ
-   * وعشرين بطاقة يحمل نصوصاً طويلة لا تُعرض.
+   * ★ ومنها `sentiment` — وهو ما كان ينقصها.
+   *
+   *   كانت البطاقة تقرأ `post.sentiment` (نسخةٌ مكرَّرة على المنشور)
+   *   وتقرأ صفحةُ المنشور `analysis.sentiment`. فلمّا اختلف الحقلان —
+   *   لعطبٍ في المزامنة — قالت البطاقة «غير محسوم» وقالت الصفحة
+   *   «محايد» عن المنشور نفسه.
+   *
+   *   والعطب أُصلح وما تراكم صُحِّح بترحيل. ومع ذلك تقرأ البطاقة اليوم
+   *   من صفّ التحليل مباشرةً: فمصدرٌ واحد لا يستطيع أن يناقض نفسه،
+   *   مهما جرى في المزامنة بعد اليوم.
+   *
+   * والحقول التي تُعرض عند فتح البطاقة وحدها — بلا تعليلٍ ولا دليلٍ ولا
+   * ألفاظ: تلك نصوصٌ طويلة لا تُحمَّل لأربعٍ وعشرين بطاقة، ومكانها
+   * صفحة المنشور.
    */
-  analysis: { select: { severityLevel: true, labels: true } },
+  analysis: {
+    select: {
+      sentiment: true,
+      confidence: true,
+      severityLevel: true,
+      labels: true,
+      rumorStatus: true,
+      authorStance: true,
+      needsReview: true,
+    },
+  },
 } satisfies Prisma.PostSelect;
 
 export type PostListItem = Prisma.PostGetPayload<{ select: typeof POST_LIST_SELECT }>;

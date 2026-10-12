@@ -271,12 +271,29 @@ check(
   /levelBadge/.test(panel),
   'القديمة مشتقّةٌ من الجديدة، فعرضُهما معاً يقول الشيء مرّتين بمقياسين',
 );
+/*
+ * ★ والعدد ليس هو المقصود — المقصود ألّا تُجلب النصوص الطويلة.
+ *
+ *   كان التوكيد يطلب حقلين بعينهما، فكسره توسيعُ الخلاصة إلى سبعة
+ *   حقولٍ قصيرة تُعرض عند فتح البطاقة. والمعنى الذي يحرسه: `rationale`
+ *   و`evidence` و`reviewReason` و`matchedKeywords` نصوصٌ طويلة، وجلبُها
+ *   لأربعٍ وعشرين بطاقة يحمّل الاستعلام ما لا يُعرض — ومكانها صفحة
+ *   المنشور.
+ */
+const listSelect = read('src/lib/queries/posts.ts');
+const analysisSelect =
+  listSelect.slice(listSelect.indexOf('  analysis: {'), listSelect.indexOf('} satisfies Prisma.PostSelect'));
+for (const heavy of ['rationale', 'evidence', 'reviewReason', 'matchedKeywords', 'subject']) {
+  check(
+    `والبطاقة لا تجلب «${heavy}» من التحليل`,
+    !new RegExp(`${heavy}: true`).test(analysisSelect),
+    'نصوصٌ طويلة لا تُعرض في البطاقة — وجلبُها لأربعٍ وعشرين بطاقة ثمنٌ بلا مقابل',
+  );
+}
 check(
-  'والبطاقة تجلب حقلين من التحليل لا الصفّ كله',
-  /analysis: \{ select: \{ severityLevel: true, labels: true \} \}/.test(
-    read('src/lib/queries/posts.ts'),
-  ),
-  'الصفّ كاملاً لأربعٍ وعشرين بطاقة يحمل نصوصاً طويلة لا تُعرض',
+  'وتجلب الحكم نفسه — فلا تناقض صفحة المنشور',
+  /sentiment: true/.test(analysisSelect),
+  'قراءتُها من العمود المكرَّر جعلتها تقول «غير محسوم» وتقول الصفحة «محايد»',
 );
 
 // ══════════════ الترشيح ══════════════

@@ -1,7 +1,19 @@
 'use client';
 
+import { useState } from 'react';
+
 import Link from 'next/link';
-import { Clock, Eye, ExternalLink, EyeOff, MessageSquare, Share2, ThumbsUp, Trash2 } from 'lucide-react';
+import {
+  ChevronDown,
+  Clock,
+  Eye,
+  ExternalLink,
+  EyeOff,
+  MessageSquare,
+  Share2,
+  ThumbsUp,
+  Trash2,
+} from 'lucide-react';
 import { Badge, type BadgeTone } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { AccountAvatar } from '@/components/ui/avatar';
@@ -18,9 +30,11 @@ import {
   languageLabel,
   SEVERITY_LEVELS,
   SEVERITY_VISIBLE_FROM,
+  RUMOR_STATUS,
+  AUTHOR_STANCE,
   sortLabels,
 } from '@/lib/domain/constants';
-import { formatCompactNumber, formatDateTime, formatNumber, truncate } from '@/lib/utils';
+import { cn, formatCompactNumber, formatDateTime, formatNumber, truncate } from '@/lib/utils';
 
 export interface PostListItemView {
   id: string;
@@ -50,16 +64,30 @@ export interface PostListItemView {
   platform: { id: string; name: string; code: string };
   topic: { id: string; name: string } | null;
   /**
-   * حقلان من التحليل التفصيلي — الباقي في صفحة المنشور.
+   * خلاصة التصنيف الآلي — والباقي في صفحة المنشور.
    *
    * ★ وإلزاميّ لا اختياريّ، و`null` لا غياب.
    *
    *   البطاقة تقرأ من هذا الحقل الفرقَ بين «لم يُصنَّف بعد» و«صُنِّف ولم
-   *   يُحسم» — وهما حالتان كانتا تُعرضان بكلمةٍ واحدة. ولو كان اختيارياً
-   *   لصار نسيانُه في أيّ موضعِ بناءٍ جديد إعلاناً صامتاً بأنّ المنشور
-   *   بلا تصنيف، وهو خطأ لا يكشفه شيء. فإلزامُه يجعل النسيان خطأ تصريف.
+   *   يُحسم». ولو كان اختيارياً لصار نسيانُه في أيّ موضعِ بناءٍ جديد
+   *   إعلاناً صامتاً بأنّ المنشور بلا تصنيف — خطأٌ لا يكشفه شيء.
+   *   فإلزامُه يجعل النسيان خطأ تصريف.
+   *
+   * ★ والحكم يُقرأ من هنا لا من `post.sentiment`.
+   *
+   *   ذاك نسخةٌ مكرَّرة على المنشور تخدم الفلترة والإحصاءات، وهذا هو
+   *   الصفّ الذي كتبه التصنيف. وقراءةُ البطاقة من المكرَّر جعلتها تقول
+   *   «غير محسوم» بينما تقول صفحةُ المنشور «محايد» عن المنشور نفسه.
    */
-  analysis: { severityLevel: number; labels: string[] } | null;
+  analysis: {
+    sentiment: string;
+    confidence: number;
+    severityLevel: number;
+    labels: string[];
+    rumorStatus: string;
+    authorStance: string;
+    needsReview: boolean;
+  } | null;
 }
 
 function sentimentTone(sentiment: string): BadgeTone {
@@ -85,36 +113,37 @@ function sentimentTone(sentiment: string): BadgeTone {
  * إحالته. فوجودُه جوابٌ قاطع عن «هل نُظر فيه؟».
  */
 export function ClassificationBadge({
-  sentiment,
-  analyzed,
+  analysis,
   size = 'sm',
+  onClick,
+  expanded,
 }: {
-  sentiment: string;
-  analyzed: boolean;
+  analysis: PostListItemView['analysis'];
   /** `sm` في الشبكة والجدول، و`md` في صفحة المنشور حيث السطر أوسع */
   size?: 'sm' | 'md';
+  /** يجعل الشارة زرّاً يفتح التفاصيل — وبلا زرٍّ تبقى شارةً ساكنة */
+  onClick?: () => void;
+  expanded?: boolean;
 }) {
-  if (!analyzed) {
-    return (
-      <Badge
-        tone="neutral"
-        size={size}
-        title="لم يُصنَّف بعد — المكنسة تصنّف الأحدث أوّلاً، وتبلغه في دورتها القادمة"
-      >
-        {/*
-          الأيقونة ليست زينة.
+  const sentiment = analysis?.sentiment ?? 'UNKNOWN';
 
-          «بانتظار التصنيف» و«غير محسوم» كلتاهما بلون محايد — وهو الصحيح،
-          فليست إحداهما خطراً — فلو تجاورتا في شبكةٍ من أربع وعشرين بطاقة
-          لفُرِّق بينهما بالقراءة وحدها. والساعةُ تُفرّقهما بلمحة.
-        */}
-        <Clock className="h-3 w-3" aria-hidden />
-        بانتظار التصنيف
-      </Badge>
-    );
-  }
+  const content = !analysis ? (
+    <Badge
+      tone="neutral"
+      size={size}
+      title="لم يُصنَّف بعد — المكنسة تصنّف الأحدث أوّلاً، وتبلغه في دورتها القادمة"
+    >
+      {/*
+        الأيقونة ليست زينة.
 
-  return (
+        «بانتظار التصنيف» و«غير محسوم» كلتاهما بلون محايد — وهو الصحيح،
+        فليست إحداهما خطراً — فلو تجاورتا في شبكةٍ من أربع وعشرين بطاقة
+        لفُرِّق بينهما بالقراءة وحدها. والساعةُ تُفرّقهما بلمحة.
+      */}
+      <Clock className="h-3 w-3" aria-hidden />
+      بانتظار التصنيف
+    </Badge>
+  ) : (
     <Badge
       tone={sentimentTone(sentiment)}
       size={size}
@@ -126,7 +155,105 @@ export function ClassificationBadge({
     >
       <span className="sr-only">{STANCE_METRIC.compact}: </span>
       {SENTIMENT_LABELS[sentiment as keyof typeof SENTIMENT_LABELS] ?? sentiment}
+      {onClick && (
+        <ChevronDown
+          className={cn('h-3 w-3 transition-transform', expanded && 'rotate-180')}
+          aria-hidden
+        />
+      )}
     </Badge>
+  );
+
+  if (!onClick) return content;
+
+  /*
+   * زرٌّ يلفّ الشارة لا شارةٌ عليها مستمع نقر.
+   *
+   * الفرق لمن لا يستعمل الفأرة: الزرّ يبلغه مفتاح Tab، ويُقرأ له
+   * «موسَّع/مطويّ»، ويُفتح بالمسافة. و`<span onClick>` لا شيء من ذلك —
+   * يراه المبصر زرّاً ولا يجده غيره.
+   */
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-expanded={expanded ?? false}
+      className="rounded-full focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary"
+    >
+      {content}
+    </button>
+  );
+}
+
+/**
+ * تفاصيل التصنيف الآلي داخل البطاقة.
+ *
+ * ★ تُفتح في موضعها ولا تنقل القارئ إلى صفحة أخرى.
+ *
+ *   من يمسح لوحةً من أربعٍ وعشرين بطاقة ويسأل «لماذا وُسم هذا؟» لا يريد
+ *   أن يغادر اللوحة ويفقد موضعه ليقرأ ثلاثة أسطر. فالخلاصة تُفتح تحت
+ *   الشارة، ويبقى الرابط إلى الصفحة لمن أراد التعليل والدليل والألفاظ.
+ */
+function AnalysisSummary({ post }: { post: PostListItemView }) {
+  const analysis = post.analysis;
+  if (!analysis) return null;
+
+  const level = SEVERITY_LEVELS[analysis.severityLevel] ?? SEVERITY_LEVELS[0]!;
+  const labels = sortLabels(analysis.labels);
+  const rumor = RUMOR_STATUS[analysis.rumorStatus];
+  const stance = AUTHOR_STANCE[analysis.authorStance];
+
+  return (
+    <dl className="space-y-2 rounded-xl border border-border bg-surface-2 p-3 text-xs">
+      <div className="flex flex-wrap items-center gap-1.5">
+        <dt className="sr-only">درجة الخطورة</dt>
+        <dd>
+          <Badge tone={level.tone} size="sm">
+            خطورة {level.short} — {level.label}
+          </Badge>
+        </dd>
+        {labels.map((key) => {
+          const meta = CONTENT_LABELS[key];
+          if (!meta) return null;
+          return (
+            <dd key={key}>
+              <Badge tone={meta.tone} size="sm">
+                {meta.label}
+              </Badge>
+            </dd>
+          );
+        })}
+      </div>
+
+      {rumor && analysis.rumorStatus !== 'NONE' && (
+        <div className="flex gap-2">
+          <dt className="shrink-0 text-muted-foreground">حال الادعاء:</dt>
+          <dd>{rumor.label}</dd>
+        </div>
+      )}
+      {stance && (
+        <div className="flex gap-2">
+          <dt className="shrink-0 text-muted-foreground">موقف الكاتب:</dt>
+          <dd>{stance}</dd>
+        </div>
+      )}
+      <div className="flex gap-2">
+        <dt className="shrink-0 text-muted-foreground">الثقة:</dt>
+        <dd className="num">{Math.round(analysis.confidence * 100)}%</dd>
+      </div>
+
+      {analysis.needsReview && (
+        <p className="text-warning">أُحيل إلى المراجعة البشرية</p>
+      )}
+
+      <Link
+        href={`/posts/${post.id}`}
+        className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+      >
+        التعليل والدليل الكامل
+        <ExternalLink className="h-3 w-3" aria-hidden />
+      </Link>
+    </dl>
   );
 }
 
@@ -200,7 +327,14 @@ export function PostCard({
 }) {
   const hasMedia = Boolean(post.thumbnailUrl || post.imageUrl);
 
-  const analyzed = post.analysis !== null;
+  /*
+   * التفاصيل مطويّة افتراضاً ومفتوحةٌ لمن ضغط.
+   *
+   * اللوحة أداةُ مسحٍ سريع: أربعٌ وعشرون بطاقة كلٌّ منها تعرض خمسة
+   * أسطر من التعليل تصير جداراً لا يُمسح. والشارة تقول الحكم في كلمة،
+   * ومن سأل «لماذا؟» ضغطها فانفتح ما وراءها في موضعه.
+   */
+  const [showAnalysis, setShowAnalysis] = useState(false);
   const level = post.analysis?.severityLevel ?? 0;
   const severity = level >= SEVERITY_VISIBLE_FROM ? SEVERITY_LEVELS[level] : undefined;
   /* أخطر وسمٍ وحده — القائمة كاملةً في صفحة المنشور */
@@ -300,7 +434,11 @@ export function PostCard({
           والعنوان المكتوب يأخذ سطراً في بطاقةٍ ضيّقة بلا حاجة — الشارة
           الملوّنة في موضعها الثابت تكفي من يرى.
         */}
-        <ClassificationBadge sentiment={post.sentiment} analyzed={analyzed} />
+        <ClassificationBadge
+          analysis={post.analysis}
+          onClick={post.analysis ? () => setShowAnalysis((open) => !open) : undefined}
+          expanded={showAnalysis}
+        />
         {/*
           ★ الخطورة تسبق الموضوع في البطاقة الضيّقة.
 
@@ -331,6 +469,8 @@ export function PostCard({
           </Badge>
         )}
       </div>
+
+      {showAnalysis && <AnalysisSummary post={post} />}
 
       {post.url && (
         <a
@@ -403,7 +543,7 @@ export function PostRow({ post }: { post: PostListItemView }) {
       </TD>
       <TD>
         {/* الجدول والبطاقة يقولان الشيء نفسه — ومن شارةٍ واحدة لا من نسختين */}
-        <ClassificationBadge sentiment={post.sentiment} analyzed={post.analysis !== null} />
+        <ClassificationBadge analysis={post.analysis} />
       </TD>
       <TD className="whitespace-nowrap text-xs text-muted-foreground">
         {formatDateTime(post.publishedAt)}

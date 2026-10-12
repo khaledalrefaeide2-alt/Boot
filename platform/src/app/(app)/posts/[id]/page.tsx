@@ -292,11 +292,7 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
               يُصنَّف» و«لم يُحسم» أُصلح في ثلاثة مواضع وبقي في الرابع.
             */}
             <DetailRow label={STANCE_METRIC.compact}>
-              <ClassificationBadge
-                sentiment={post.sentiment}
-                analyzed={post.analysis !== null}
-                size="md"
-              />
+              <ClassificationBadge analysis={post.analysis} size="md" />
               {post.sentimentScore !== null && (
                 <span className="num ms-2 text-xs text-muted-foreground">
                   {post.sentimentScore.toFixed(2)}

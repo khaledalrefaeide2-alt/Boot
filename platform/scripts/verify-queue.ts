@@ -24,6 +24,7 @@ import { readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { PrismaClient, type Prisma } from '../src/generated/prisma';
 import { storedFilters, targetWhere } from '../src/lib/analysis/run';
+import { WRITABLE_SENTIMENT } from '../src/lib/analysis/persist';
 import { NEWEST_FIRST } from '../src/lib/queries/post-order';
 import { postFiltersSchema } from '../src/lib/validation/posts';
 import { buildPostWhere } from '../src/lib/queries/posts';
@@ -394,6 +395,101 @@ async function main() {
         check(
           'والعبارة تُطابَق بمسافاتها',
           (await search('"انقطاع التيار"')) === 'E' && (await search('"تقنين التيار"')) === '',
+        );
+
+        // ══════════ مزامنة حكم المنشور مع صفّ تحليله ══════════
+
+        /*
+         * ★ شرطٌ بمنطق SQL الثلاثيّ أخفى كلّ تصنيفٍ جرى.
+         *
+         *   `NOT (sentimentSource = 'MANUAL')` تساوي NULL — لا TRUE —
+         *   حين يكون العمود فارغاً، والصفّ لا يُطابَق إلا بـTRUE. وكلّ
+         *   منشورٍ وارد عمودُه فارغ، فكان صفّ التحليل يُكتب صحيحاً
+         *   ويبقى `posts.sentiment` على UNKNOWN إلى الأبد.
+         *
+         *   وأثرُه لم يكن في البطاقة وحدها: الفلترة بالمشاعر ونسب
+         *   اللوحات والتقارير كلّها تقرأ ذلك العمود.
+         *
+         *   فيُفحص الشرطان هنا على قاعدة حقيقية — لأنّ الفرق بينهما لا
+         *   يظهر في نصّ الشيفرة ولا في الأنواع، بل في منطق القاعدة.
+         */
+        const SOURCES = [
+          { key: 'S1', source: null, label: 'وارد جديد (فارغ)' },
+          { key: 'S2', source: 'RULES' as const, label: 'قديم بالقواعد' },
+          { key: 'S3', source: 'MANUAL' as const, label: 'صحّحه مراجع' },
+        ];
+        for (const [index, row] of SOURCES.entries()) {
+          await tx.post.create({
+            data: {
+              id: `vq-m${index}`,
+              accountId: account.id,
+              platformId: platform.id,
+              dedupeKey: row.key,
+              text: `منشور ${row.key}`,
+              sentiment: row.source === 'MANUAL' ? 'POSITIVE' : 'UNKNOWN',
+              ...(row.source ? { sentimentSource: row.source } : {}),
+            },
+          });
+        }
+
+        const touched = await tx.post.updateMany({
+          where: {
+            dedupeKey: { in: SOURCES.map((row) => row.key) },
+            accountId: account.id,
+            // الشرط مستورَدٌ من طبقة الحفظ لا منسوخٌ هنا — فكسرُها يُسقط هذا الفحص
+            ...WRITABLE_SENTIMENT,
+          },
+          data: { sentiment: 'NEUTRAL', sentimentSource: 'AI' },
+        });
+        check(
+          'شرطُ الكتابة يبلغ الوارد الجديد (وعمودُه فارغ)',
+          touched.count === 2,
+          `المتوقَّع صفّان — الفارغ والقديم. والناتج ${touched.count}. وصفٌّ واحد يعني أنّ الفارغ سقط، وهو العطب نفسه`,
+        );
+
+        const fresh = await tx.post.findFirst({
+          where: { accountId: account.id, dedupeKey: 'S1' },
+          select: { sentiment: true },
+        });
+        check(
+          'فحكمُ المنشور يطابق ما قرّره التحليل',
+          fresh?.sentiment === 'NEUTRAL',
+          'بقاؤه UNKNOWN يعني بطاقةً تقول «غير محسوم» وصفحةً تقول «محايد» عن المنشور نفسه',
+        );
+
+        const corrected = await tx.post.findFirst({
+          where: { accountId: account.id, dedupeKey: 'S3' },
+          select: { sentiment: true, sentimentSource: true },
+        });
+        check(
+          'وتصحيحُ المراجع لا يُكتب فوقه',
+          corrected?.sentiment === 'POSITIVE' && corrected?.sentimentSource === 'MANUAL',
+          'وهو ما أراده الشرط الأصلي، ويجب ألّا يضيع في الإصلاح',
+        );
+
+        /*
+         * ★ والشرط الخاطئ يُجرَّب هنا صراحةً — فالتوكيد يقيس الفرق لا يصفه.
+         *
+         *   لو اكتُفي بفحص الشرط الصحيح لمرّ الفحص على شيفرةٍ أُعيدت إلى
+         *   الشرط القديم في موضعٍ آخر. وتجربةُ الاثنين على الصفوف نفسها
+         *   تُثبت أنّ الفرق حقيقيّ في القاعدة لا في الصياغة.
+         */
+        await tx.post.updateMany({
+          where: { accountId: account.id, dedupeKey: { in: ['S1', 'S2'] } },
+          data: { sentiment: 'UNKNOWN', sentimentSource: null },
+        });
+        const legacy = await tx.post.updateMany({
+          where: {
+            dedupeKey: { in: SOURCES.map((row) => row.key) },
+            accountId: account.id,
+            NOT: { sentimentSource: 'MANUAL' },
+          },
+          data: { sentiment: 'NEUTRAL', sentimentSource: 'AI' },
+        });
+        check(
+          'والشرطُ القديم يُسقط الفارغ فعلاً — فالفرق مقيس لا موصوف',
+          legacy.count === 0,
+          `الصفّان فارغان الآن، و\`NOT (… = 'MANUAL')\` لا تطابق الفارغ. والناتج ${legacy.count}`,
         );
 
         throw new Rollback();

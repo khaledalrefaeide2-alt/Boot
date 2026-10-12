@@ -1,5 +1,6 @@
 import 'server-only';
 import { prisma } from '@/lib/db';
+import type { Prisma } from '@/generated/prisma';
 import {
   analyzePostImage,
   analyzePostText,
@@ -68,6 +69,24 @@ function emptyResult(reason: string): PostAnalysisResult & { needsReview: boolea
   };
   return { ...raw, stance: deriveStance(raw), matchedKeywords: [], needsReview: true };
 }
+
+/**
+ * الصفوف التي يجوز أن يُكتب عليها حكمُ المحرّك.
+ *
+ * ★ مُصدَّرٌ ليُفحص على قاعدة حقيقية، ولا يُنسخ إلى الفحص.
+ *
+ *   الفرق بين هذا الشرط وسابقه لا يظهر في نصّ الشيفرة ولا في الأنواع —
+ *   يظهر في منطق SQL الثلاثيّ وحده. وفحصٌ ينسخ الشرط إلى نفسه يقيس
+ *   نسخته لا الشيفرة: يمرّ على شيفرةٍ أُعيدت إلى الشرط القديم. وقد
+ *   وقع ذلك فعلاً أوّل مرّة، فكُشف بكسر الشيفرة عمداً ورؤية الفحص يمرّ.
+ *
+ * و`OR` صريحةٌ لا `NOT`: `NOT (sentimentSource = 'MANUAL')` تساوي NULL
+ * لا TRUE على عمودٍ فارغ، والصفّ لا يُطابَق إلا بـTRUE. وكلّ منشورٍ
+ * وارد عمودُه فارغ.
+ */
+export const WRITABLE_SENTIMENT: Prisma.PostWhereInput = {
+  OR: [{ sentimentSource: null }, { sentimentSource: { not: 'MANUAL' } }],
+};
 
 export async function analyzeAndSave(postId: string, text: string) {
   const config = getAssistantConfig();
@@ -239,8 +258,29 @@ export async function analyzeAndSave(postId: string, text: string) {
       data: { analyzedAt: new Date() },
     });
 
+    /*
+     * ★ وهنا كان العطب الذي أخفى كلّ تصنيفٍ جرى.
+     *
+     *   كان الشرط `NOT: { sentimentSource: 'MANUAL' }`، وهو يُترجَم إلى
+     *   `NOT (sentimentSource = 'MANUAL')`. وفي منطق SQL الثلاثيّ تكون
+     *   هذه **NULL** لا TRUE حين يكون العمود فارغاً — والصفّ لا يُطابَق
+     *   إلا بـTRUE. فالمنشور الجديد (وعمودُه فارغٌ بحكم المخطّط) كان
+     *   يسقط من التحديث.
+     *
+     *   وأثرُه أنّ صفّ التحليل يُكتب صحيحاً بينما يبقى `post.sentiment`
+     *   على `UNKNOWN` إلى الأبد. فتقول صفحة المنشور «محايد» وتقول
+     *   بطاقتُه «غير محسوم» عن المنشور نفسه، وتُحسب اللوحات والنسب
+     *   والفلترة بالمشاعر كلّها على حقلٍ لم يُكتب قطّ.
+     *
+     *   ولم يظهر العطب لأنّ المنشورات القديمة كان لها `sentimentSource`
+     *   من محرّك القواعد القديم — فتُحدَّث هي وحدها. فبدا أنّ بعض
+     *   المنشورات «تُصنَّف» وبعضها لا.
+     *
+     *   والشرط الصريح أدناه يُطابق الفارغ وغيرَ الفارغ معاً، ويستثني
+     *   `MANUAL` وحدها. (مُثبَت على Postgres حقيقية في `verify:queue`.)
+     */
     await tx.post.updateMany({
-      where: { id: postId, NOT: { sentimentSource: 'MANUAL' } },
+      where: { id: postId, ...WRITABLE_SENTIMENT },
       data: {
         sentiment: result.sentiment,
         sentimentScore: result.confidence,

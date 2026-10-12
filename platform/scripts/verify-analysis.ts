@@ -334,7 +334,19 @@ check(
   /analyzeAndSave\(post\.id, post\.text \?\? ''\)/.test(run),
   'مسارٌ ثانٍ للكتابة يعني قيدين مختلفين على البيانات نفسها',
 );
-check('ولا تُكتب النتيجة فوق تصنيف يدوي', /NOT:\s*\{\s*sentimentSource:\s*'MANUAL'\s*\}/.test(persist));
+/*
+ * ★ والشرط صريحٌ لا `NOT`: الأخير يُسقط الصفوف الفارغة معه.
+ *
+ *   `NOT (sentimentSource = 'MANUAL')` تساوي NULL — لا TRUE — على
+ *   عمودٍ فارغ، فلا يُطابَق الصفّ. وكلّ منشورٍ وارد عمودُه فارغ. وقد
+ *   أخفى ذلك كلّ تصنيفٍ جرى منذ بدأ المحرّك.
+ */
+check(
+  'ولا تُكتب النتيجة فوق تصنيف يدوي',
+  /sentimentSource: \{ not: 'MANUAL' \}/.test(persist) &&
+    !/NOT:\s*\{\s*sentimentSource:\s*'MANUAL'\s*\}/.test(persist),
+  'والشرط يبلغ الفارغ: `NOT` على عمودٍ فارغ يُسقط الصفّ فلا يُكتب حكمُ أيّ منشورٍ جديد',
+);
 check(
   'ولا يُخفى منشور ولا يُنقل تصنيفه',
   !/\b(isHidden|topicId)\b/.test(persist),
@@ -1181,15 +1193,36 @@ check(
   /بانتظار التصنيف/.test(read('src/components/posts/post-card.tsx')),
   'المنشور الذي لم تبلغه المكنسة يُعرض بكلمة «غير محسوم» نفسها، فتُقرأ اللوحة عطلاً',
 );
+/*
+ * ★ والبطاقة تقرأ الحكم من صفّ التحليل لا من النسخة المكرَّرة.
+ *
+ *   `post.sentiment` عمودٌ مكرَّر يخدم الفلترة والإحصاءات، وصفُّ
+ *   التحليل هو ما كتبه التصنيف. وقراءةُ البطاقة من المكرَّر جعلتها
+ *   تقول «غير محسوم» بينما تقول صفحةُ المنشور «محايد» عن المنشور نفسه.
+ *   ومصدرٌ واحد لا يستطيع أن يناقض نفسه.
+ */
+check(
+  'البطاقة تقرأ الحكم من صفّ التحليل',
+  /const sentiment = analysis\?\.sentiment \?\? 'UNKNOWN';/.test(cardCode) &&
+    !/sentiment=\{post\.sentiment\}/.test(cardCode),
+  'القراءة من العمود المكرَّر تجعل البطاقة تناقض صفحة المنشور',
+);
+check(
+  'وتفتح باقي التفاصيل عند الضغط',
+  /aria-expanded/.test(cardCode) && /function AnalysisSummary/.test(cardCode),
+  'من سأل «لماذا وُسم هذا؟» لا يريد أن يغادر اللوحة ليقرأ ثلاثة أسطر',
+);
+
 check(
   'والتفريق من وجود صفّ التحليل لا من قيمة الحقل',
-  /const analyzed = post\.analysis !== null;/.test(cardCode) &&
+  /analysis\?\.sentiment/.test(cardCode) &&
     !/analyzed[\s\S]{0,40}sentiment [!=]==? 'UNKNOWN'/.test(cardCode),
   'الاعتماد على sentiment === UNKNOWN يخلط الحالتين من جديد — وهو ما كان',
 );
 check(
   'وحقلُ التحليل إلزاميّ في نوع البطاقة',
-  /analysis: \{ severityLevel: number; labels: string\[\] \} \| null;/.test(cardCode),
+  /analysis: \{[\s\S]{0,260}?\} \| null;/.test(cardCode) &&
+    /sentiment: string;/.test(cardCode),
   'الحقل الاختياريّ يجعل نسيانَه في موضع بناءٍ جديد إعلاناً صامتاً بأن المنشور بلا تصنيف',
 );
 check(
@@ -1273,12 +1306,43 @@ check(
   /tx\.post\.update\(\{[\s\S]{0,160}analyzedAt: new Date\(\)/.test(persistCode),
   'كتابةٌ خارج المعاملة تترك منشوراً له تحليلٌ وهو في الطابور — يُصنَّف كل دورة بثمنٍ كامل',
 );
+/*
+ * ★ وشرطُ حماية تصحيح المراجع يُكتب صريحاً لا بـ`NOT`.
+ *
+ *   `NOT: { sentimentSource: 'MANUAL' }` يُترجَم إلى
+ *   `NOT (sentimentSource = 'MANUAL')` — وهي NULL لا TRUE حين يكون
+ *   العمود فارغاً، والصفّ لا يُطابَق إلا بـTRUE. فكلّ منشورٍ وارد
+ *   (وعمودُه فارغ) كان يسقط من كتابة الحكم، ويبقى على UNKNOWN بينما
+ *   صفّ تحليله يحمل الجواب.
+ *
+ *   والفرق مقيسٌ على قاعدة حقيقية في `verify:queue`.
+ */
+check(
+  'وحماية التصحيح تُكتب شرطاً صريحاً يبلغ الفارغ',
+  /OR: \[\{ sentimentSource: null \}, \{ sentimentSource: \{ not: 'MANUAL' \} \}\]/.test(
+    persistCode,
+  ) && !/NOT: \{ sentimentSource: 'MANUAL' \}/.test(persistCode),
+  '`NOT` على عمودٍ فارغ يُسقط الصفّ، فلا يُكتب حكمُ أيّ منشورٍ جديد',
+);
+check(
+  'والترحيل يُصحّح ما تراكم',
+  /SET[\s\S]{0,120}"sentiment"\s*=\s*a\."sentiment"/.test(
+    read('prisma/migrations/20261012090000_sync_post_sentiment/migration.sql'),
+  ),
+);
+check(
+  'ولا يمسّ ما صحّحه مراجع',
+  /IS DISTINCT FROM 'MANUAL'/.test(
+    read('prisma/migrations/20261012090000_sync_post_sentiment/migration.sql'),
+  ),
+);
+
 check(
   'والخروج غير مشروط بخلاف كتابة الحكم',
-  /tx\.post\.update\(\{[\s\S]{0,200}analyzedAt[\s\S]{0,400}NOT: \{ sentimentSource: 'MANUAL' \}/.test(
+  /tx\.post\.update\(\{\s*where: \{ id: postId \},\s*data: \{ analyzedAt: new Date\(\) \}/.test(
     persistCode,
-  ),
-  'لو جُمعا لبقي منشورٌ صحّحه إنسانٌ في الطابور إلى الأبد',
+  ) && /updateMany\(\{\s*where: \{ id: postId, \.\.\.WRITABLE_SENTIMENT \}/.test(persistCode),
+  'لو جُمعا لبقي منشورٌ صحّحه إنسانٌ في الطابور إلى الأبد — يُصنَّف كل دورة ويُرفض حكمُه',
 );
 
 const queueMigration = read(
