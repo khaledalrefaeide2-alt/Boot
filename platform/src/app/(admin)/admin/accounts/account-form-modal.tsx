@@ -31,6 +31,8 @@ export interface AccountRow {
   externalId: string | null;
   notes: string | null;
   avatarUrl: string | null;
+  /** الصورة المحفوظة عندنا — تُعرض في الجدول، ولا تُحرَّر في النموذج */
+  avatarKey?: string | null;
   groupId: string | null;
   type: AccountType;
   ownership: AccountOwnership;

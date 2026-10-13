@@ -1,5 +1,6 @@
 import 'server-only';
 import { cachePostThumbnails, pendingMediaCount, type CacheResult } from './cache-posts';
+import { cacheAccountAvatars, type AvatarCacheResult } from './cache-avatars';
 
 /*
  * مكنسة الوسائط.
@@ -36,8 +37,8 @@ import { cachePostThumbnails, pendingMediaCount, type CacheResult } from './cach
 export const MEDIA_SWEEP_INTERVAL_MS = 4 * 60 * 1000;
 
 export type MediaSweepOutcome =
-  | { swept: false; reason: string }
-  | (CacheResult & { swept: true; remaining: number });
+  | { swept: false; reason: string; avatars?: AvatarCacheResult }
+  | (CacheResult & { swept: true; remaining: number; avatars?: AvatarCacheResult });
 
 /**
  * دورة واحدة من مكنسة الوسائط.
@@ -50,14 +51,23 @@ export async function sweepMedia(options: {
   maxAttempts: number;
 }): Promise<MediaSweepOutcome> {
   try {
+    /*
+     * صور الحسابات أوّلاً، وقبل أيّ خروجٍ مبكر.
+     *
+     * هي بالمئات والدورة عليها رخيصة، والخروج حين «كلّ مصغّرات المنشورات
+     * محفوظة» كان سيتركها بلا دورةٍ أبداً في أهدأ الأوقات — وهي أنسبها.
+     */
+    const avatars = await cacheAccountAvatars();
+    const withAvatars = avatars.attempted > 0 ? { avatars } : {};
+
     const before = await pendingMediaCount(options.maxAttempts);
-    if (before === 0) return { swept: false, reason: 'كل الصور محفوظة' };
+    if (before === 0) return { swept: false, reason: 'كل الصور محفوظة', ...withAvatars };
 
     const result = await cachePostThumbnails({}, options.batch, options.maxAttempts);
-    if (result.attempted === 0) return { swept: false, reason: 'لا صور تنتظر' };
+    if (result.attempted === 0) return { swept: false, reason: 'لا صور تنتظر', ...withAvatars };
 
     const remaining = await pendingMediaCount(options.maxAttempts);
-    return { swept: true, ...result, remaining };
+    return { swept: true, ...result, remaining, ...withAvatars };
   } catch (error) {
     console.error(
       '[media] تعثّرت دورة حفظ الصور:',

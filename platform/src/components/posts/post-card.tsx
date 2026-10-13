@@ -34,7 +34,15 @@ import {
   AUTHOR_STANCE,
   sortLabels,
 } from '@/lib/domain/constants';
-import { cn, formatCompactNumber, formatDateTime, formatNumber, truncate } from '@/lib/utils';
+import {
+  cn,
+  formatCompactNumber,
+  formatDateTime,
+  formatNumber,
+  formatPublishedAt,
+  truncate,
+} from '@/lib/utils';
+import { splitUnit } from '@/components/ui/stat-card';
 import { parseSearchTerms } from '@/lib/domain/search-terms';
 import { highlightSegments } from '@/lib/domain/search-highlight';
 
@@ -62,7 +70,7 @@ export interface PostListItemView {
   hashtags: string[];
   detectedKeywords: string[];
   isHidden: boolean;
-  account: { id: string; name: string; avatarUrl: string | null };
+  account: { id: string; name: string; avatarUrl: string | null; avatarKey?: string | null };
   platform: { id: string; name: string; code: string };
   topic: { id: string; name: string } | null;
   /**
@@ -318,7 +326,16 @@ function PostSnippet({
   );
 }
 
-/** مقياس تفاعل مصغّر يظهر في البطاقة والجدول */
+/**
+ * مقياس تفاعل مصغّر يظهر في البطاقة والجدول.
+ *
+ * ★ الرقم ووحدته سطرٌ واحد، والوحدة بعد الرقم في القراءة العربية.
+ *
+ *   كان «1.8 مليون» كلّه داخل عزلٍ لاتيني (`.num`)، فأمران وقعا معاً:
+ *   الوحدة تظهر يمين الرقم — أي قبله في القراءة — والسطر يلتفّ في
+ *   البطاقة الضيّقة فتسقط «مليون» تحت «1.8». فالعزل على الرقم وحده،
+ *   والوحدة خارجه، والسطر لا يلتفّ.
+ */
 function EngagementStat({
   icon: Icon,
   value,
@@ -328,10 +345,15 @@ function EngagementStat({
   value: number;
   label: string;
 }) {
+  const { amount, unit } = splitUnit(formatCompactNumber(value));
   return (
-    <span className="flex items-center gap-1 text-xs text-muted-foreground" title={label}>
-      <Icon className="h-3.5 w-3.5" aria-hidden />
-      <span className="num">{formatCompactNumber(value)}</span>
+    <span
+      className="flex min-w-0 items-center gap-1 whitespace-nowrap text-xs text-muted-foreground"
+      title={`${label}: ${formatNumber(value)}`}
+    >
+      <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden />
+      <span className="num font-medium text-foreground">{amount}</span>
+      {unit && <span>{unit}</span>}
       <span className="sr-only">{label}</span>
     </span>
   );
@@ -421,7 +443,11 @@ export function PostCard({
         قائله. والحذف معزول في الطرف الآخر لأنه لا رجعة فيه.
       */}
       <header className="flex items-center gap-3">
-        <AccountAvatar name={post.account.name} src={post.account.avatarUrl} />
+        <AccountAvatar
+          name={post.account.name}
+          src={post.account.avatarUrl}
+          mediaKey={post.account.avatarKey}
+        />
 
         <div className="min-w-0 flex-1">
           <AccountName
@@ -429,7 +455,46 @@ export function PostCard({
             name={post.account.name}
             className="block truncate text-sm font-semibold text-foreground hover:text-primary-text @[15rem]:text-[0.95rem]"
           />
-          <p className="truncate text-xs text-muted-foreground">{platformLabel(post.platform)}</p>
+          {/*
+            متى نُشر، ثمّ أين — في سطرٍ واحد تحت الاسم.
+
+            ★ الوقت أوّلاً ولا يُقصّ، والمنصّة بعده وتُقصّ إن ضاق السطر.
+
+              في لوحة رصد «متى» هو السؤال الأوّل بعد «من»: منشورٌ عمره
+              ساعة غيرُ منشورٍ عمره أسبوع وإن تطابق نصّاهما. فالوقت لا
+              يتنازل عن مكانه، والمنصّة تُعرف أيضاً من رابط «عرض المنشور»
+              ومن الاسم كاملاً في التلميح.
+
+            و`<time>` بقيمته الآلية كاملةً، والوقت الكامل في `title`: البطاقة
+            تختصر («قبل ٣ ساعات»)، ومن أراد الدقيقة مرّر المؤشّر.
+          */}
+          <p className="flex min-w-0 items-center gap-1.5 text-xs text-muted-foreground">
+            {post.publishedAt && (
+              <>
+                <Clock className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                <time
+                  dateTime={post.publishedAt}
+                  title={formatDateTime(post.publishedAt)}
+                  className="shrink-0 whitespace-nowrap"
+                >
+                  {formatPublishedAt(post.publishedAt)}
+                </time>
+                <span aria-hidden className="shrink-0">
+                  ·
+                </span>
+              </>
+            )}
+            {/*
+              الاسم العربي وحده هنا، والاسمان معاً في التلميح.
+
+              «إنستغرام (Instagram)» في سطرٍ يتقاسمه مع الوقت يُقصّ من
+              طرفه اللاتيني، فيظهر «...ram) إنستغرام» — نصفُ كلمةٍ وقوسٌ
+              معكوس. والاسم العربي قصيرٌ يتّسع، ومن أراد الآخر مرّر المؤشّر.
+            */}
+            <span className="truncate" title={platformLabel(post.platform)}>
+              {post.platform.name}
+            </span>
+          </p>
         </div>
 
         {onDelete && (
@@ -554,7 +619,12 @@ export function PostCard({
         أربعة أرقام متجاورة تُقرأ رقماً واحداً طويلاً؛ وتوزيعها يجعل لكلٍّ
         موضعاً ثابتاً في كل بطاقة، فتُقارَن البطاقات عمودياً بلمحة.
       */}
-      <footer className="flex items-center justify-between border-t border-border pt-3">
+      {/*
+        أربعة أعمدة متساوية لا مسافاتٌ موزّعة: العمود الثابت يجعل «الإعجابات»
+        في الموضع نفسه في كلّ بطاقة، فتُقارَن البطاقات عمودياً بلمحة. وفي
+        البطاقة الأضيق من 19rem يصير المربّع اثنين في اثنين بدل أن تتلاصق.
+      */}
+      <footer className="grid grid-cols-2 gap-x-3 gap-y-2 border-t border-border pt-3 @[19rem]:grid-cols-4">
         <EngagementStat icon={ThumbsUp} value={post.likes} label="إعجابات" />
         <EngagementStat icon={MessageSquare} value={post.comments} label="تعليقات" />
         <EngagementStat icon={Share2} value={post.shares} label="مشاركات" />

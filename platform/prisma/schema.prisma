@@ -333,9 +333,16 @@ model Account {
   actorIdOverride    String?
   actorInputOverride Json?
 
-  followersCount Int?
-  avatarUrl      String?
-  notes          String?
+  followersCount  Int?
+  avatarUrl       String?
+  /// مفتاح الصورة الشخصية المحفوظة عندنا — كمصغّرات المنشورات.
+  /// روابط صور المنصات موقّعة تنتهي صلاحيتها بعد أيام، فالرابط وحده
+  /// يعني حرفاً مكان كلّ صورة بعد أسبوع. والمفتاح بصمة الرابط المجرَّد.
+  avatarKey       String?
+  /// آخر محاولةٍ نهائية لحفظ الصورة — تُصفَّر حين يصل رابطٌ جديد.
+  /// بلا هذا تعود المكنسة إلى الرابط الميّت في كلّ دورة إلى الأبد.
+  avatarCheckedAt DateTime?
+  notes           String?
 
   lastExtractedAt     DateTime?
   lastSuccessfulRunAt DateTime?

@@ -216,6 +216,73 @@ const TRAVERSAL = [
   'x'.repeat(41),
 ];
 
+// ══════════════ الصور الشخصية للحسابات ══════════════
+
+/*
+ * ★ الصورة الشخصية تُحفظ عندنا كما تُحفظ المصغّرات — وهذه أربع حلقات
+ *   إن انقطعت واحدةٌ منها عادت البطاقات حروفاً بلا خطأٍ في سجلّ.
+ */
+const pruneCode = readCode('src/lib/media/prune.ts');
+check(
+  'التقليم يعدّ الصور الشخصية حيّة',
+  /prisma\.account\.findMany\(\{\s*where: \{ avatarKey: \{ not: null \} \}/.test(pruneCode) &&
+    /row\.avatarKey/.test(pruneCode),
+  'بدونه تحذف أوّلُ دورة تقليم كلَّ صورةٍ شخصية بوصفها يتيمة',
+);
+check(
+  'والصورة المُخرَجة لضيق المخزن تعود معلّقة',
+  /prisma\.account[\s\S]{0,80}updateMany\(\{\s*where: \{ avatarKey: \{ in: evictedKeys \} \},\s*data: \{ avatarKey: null, avatarCheckedAt: null \}/.test(
+    pruneCode,
+  ),
+  'مفتاحٌ يشير إلى ملفٍّ محذوف يُظهر صورةً مكسورة بدل الحرف',
+);
+check(
+  'الاستخراج يحفظ الصورة لحظة وصولها',
+  /storeAccountAvatar\(run\.accountId, imported\.authorAvatarUrl\)/.test(
+    readCode('src/lib/extraction/service.ts'),
+  ) && !/avatarUrl: imported\.authorAvatarUrl/.test(readCode('src/lib/extraction/service.ts')),
+  'كتابة الرابط وحده تعني صورةً تموت بعد أيام',
+);
+check(
+  'والمكنسة تمرّ على الصور الشخصية قبل أيّ خروجٍ مبكر',
+  /const avatars = await cacheAccountAvatars\(\);[\s\S]{0,400}?const before = await pendingMediaCount/.test(
+    readCode('src/lib/media/sweep.ts'),
+  ),
+  'خروجٌ عند «كلّ المصغّرات محفوظة» قبلها يتركها بلا دورةٍ أبداً',
+);
+
+/*
+ * والعرض يقرأ المفتاح — وإلّا فالصورة محفوظةٌ ولا يراها أحد.
+ */
+const avatarSites = [
+  'src/components/posts/post-card.tsx',
+  'src/components/sections/top-accounts-section.tsx',
+  'src/app/(app)/accounts/[id]/page.tsx',
+  'src/app/(app)/accounts/accounts-view-client.tsx',
+  'src/app/(admin)/admin/accounts/accounts-client.tsx',
+];
+for (const site of avatarSites) {
+  const code = readCode(site);
+  const tags = [...code.matchAll(/<AccountAvatar\b[\s\S]*?\/>/g)].map((match) => match[0]);
+  check(
+    `صورة الحساب تقرأ المفتاح المحفوظ في ${site.split('/').slice(-2).join('/')}`,
+    tags.length > 0 && tags.every((tag) => /mediaKey=\{[^}]*avatarKey\}/.test(tag)),
+  );
+}
+check(
+  'وقائمة المنشورات تحمل المفتاح',
+  /account: \{ select: \{[^}]*avatarKey: true/.test(readCode('src/lib/queries/posts.ts')),
+);
+check(
+  'وأبرز الحسابات تحمله',
+  /avatarKey: true/.test(readCode('src/lib/queries/stats.ts')) &&
+    /avatarKey: account\?\.avatarKey/.test(readCode('src/lib/queries/stats.ts')),
+);
+check(
+  'وقائمة الحسابات تحمله',
+  /avatarUrl: true,\s*avatarKey: true/.test(readCode('src/app/api/accounts/route.ts')),
+);
+
 async function main() {
   for (const bad of TRAVERSAL) {
     const result = await readThumbnail(bad);

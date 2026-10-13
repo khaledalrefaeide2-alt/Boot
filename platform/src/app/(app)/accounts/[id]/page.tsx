@@ -88,7 +88,14 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
   return (
     <>
       <PageHeader
-        leading={<AccountAvatar name={account.name} src={account.avatarUrl} size="lg" />}
+        leading={
+          <AccountAvatar
+            name={account.name}
+            src={account.avatarUrl}
+            mediaKey={account.avatarKey}
+            size="lg"
+          />
+        }
         title={account.name}
         description={`${account.platform.name} — ${ACCOUNT_TYPE_LABELS[account.type]}`}
         action={

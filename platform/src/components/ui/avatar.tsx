@@ -20,11 +20,19 @@ const SIZES = {
 export function AccountAvatar({
   name,
   src,
+  mediaKey,
   size = 'lg',
   className,
 }: {
   name: string;
   src: string | null | undefined;
+  /**
+   * مفتاح الصورة المحفوظة عندنا — يُقرأ أوّلاً، والرابط بعده.
+   *
+   * رابط المنصة يموت بعد أيام، والنسخة المحفوظة لا تموت. فمن مرّر المفتاح
+   * رأى الصورة بعد شهر كما رآها يوم استُخرجت.
+   */
+  mediaKey?: string | null;
   size?: keyof typeof SIZES;
   className?: string;
 }) {
@@ -40,8 +48,13 @@ export function AccountAvatar({
       )}
     >
       <span aria-hidden>{name.trim().charAt(0) || '؟'}</span>
-      {trimmed && (
-        <RemoteMedia src={trimmed} fallback="hide" className="absolute inset-0 h-full w-full" />
+      {(trimmed || mediaKey) && (
+        <RemoteMedia
+          src={trimmed ?? ''}
+          mediaKey={mediaKey}
+          fallback="hide"
+          className="absolute inset-0 h-full w-full"
+        />
       )}
       <span className="sr-only">{name}</span>
     </span>

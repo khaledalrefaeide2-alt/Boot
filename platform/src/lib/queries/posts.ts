@@ -243,7 +243,7 @@ export const POST_LIST_SELECT = {
   isHidden: true,
   createdAt: true,
   mediaKey: true,
-  account: { select: { id: true, name: true, url: true, avatarUrl: true } },
+  account: { select: { id: true, name: true, url: true, avatarUrl: true, avatarKey: true } },
   platform: { select: { id: true, name: true, code: true, color: true } },
   topic: { select: { id: true, name: true, color: true } },
   /*

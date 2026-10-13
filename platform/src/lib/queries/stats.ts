@@ -366,6 +366,7 @@ export async function getTopAccounts(
       name: true,
       followersCount: true,
       avatarUrl: true,
+      avatarKey: true,
       platform: { select: { name: true, code: true, color: true } },
     },
   });
@@ -382,6 +383,7 @@ export async function getTopAccounts(
       platformCode: account?.platform.code ?? '',
       followersCount: account?.followersCount ?? null,
       avatarUrl: account?.avatarUrl ?? null,
+      avatarKey: account?.avatarKey ?? null,
       posts,
       engagement,
       likes: row._sum.likes ?? 0,

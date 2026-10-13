@@ -78,6 +78,14 @@ export async function PATCH(request: NextRequest, { params }: Params) {
       where: { id },
       data: {
         ...Object.fromEntries(Object.entries(rest).filter(([, value]) => value !== undefined)),
+        /*
+         * رابط الصورة حين يُكتب يدوياً يعود معلّقاً للمكنسة فتحفظه عندنا —
+         * وإن كان هو نفسه المحفوظ أجابت المكنسة من المخزن بلا طلب. وحين
+         * يُمسح تُمسح الصورة المحفوظة معه: من حذف الصورة لا يريدها باقيةً.
+         */
+        ...(rest.avatarUrl !== undefined
+          ? { avatarCheckedAt: null, ...(rest.avatarUrl === null ? { avatarKey: null } : {}) }
+          : {}),
         ...(keywordIds
           ? {
               keywords: {

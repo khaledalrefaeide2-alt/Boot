@@ -396,7 +396,12 @@ export function AccountsAdminClient({
                           href={`/accounts/${account.id}`}
                           className="flex min-w-0 max-w-72 items-center gap-2.5"
                         >
-                          <AccountAvatar name={account.name} src={account.avatarUrl} size="sm" />
+                          <AccountAvatar
+                            name={account.name}
+                            src={account.avatarUrl}
+                            mediaKey={account.avatarKey}
+                            size="sm"
+                          />
                           <span className="min-w-0">
                             <span className="block truncate font-medium hover:text-primary-text">
                               {account.name}

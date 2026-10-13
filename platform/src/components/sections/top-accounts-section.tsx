@@ -42,6 +42,7 @@ interface TopAccount {
   platformCode: string;
   followersCount: number | null;
   avatarUrl: string | null;
+  avatarKey: string | null;
   posts: number;
   engagement: number;
   likes: number;
@@ -161,7 +162,7 @@ export function TopAccountsSection({
               className="@container card-interactive flex flex-col gap-3 rounded-card border border-border bg-surface p-4 shadow-elev-2 print-avoid-break"
             >
               <header className="flex items-center gap-3">
-                <AccountAvatar name={account.name} src={account.avatarUrl} />
+                <AccountAvatar name={account.name} src={account.avatarUrl} mediaKey={account.avatarKey} />
                 <div className="min-w-0 flex-1">
                   {canBrowse ? (
                     <Link

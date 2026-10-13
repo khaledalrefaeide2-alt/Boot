@@ -143,7 +143,11 @@ async function main() {
   let saved = 0;
   for (const entry of found) {
     await prisma.account
-      .update({ where: { id: entry.id }, data: { avatarUrl: entry.url } })
+      .update({
+        where: { id: entry.id },
+        // والرابط الجديد معلّقٌ للمكنسة: تحفظه عندنا في دورتها التالية
+        data: { avatarUrl: entry.url, avatarCheckedAt: null },
+      })
       .then(() => {
         saved += 1;
       })

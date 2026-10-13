@@ -99,6 +99,55 @@ export function formatRelativeTime(value: Date | string | null | undefined): str
   return rtf.format(Math.round(diffSeconds / 31536000), 'year');
 }
 
+const sameYearFormatter = new Intl.DateTimeFormat(AR_LOCALE, {
+  month: 'short',
+  day: 'numeric',
+  hour: 'numeric',
+  minute: '2-digit',
+});
+
+const otherYearFormatter = new Intl.DateTimeFormat(AR_LOCALE, {
+  year: 'numeric',
+  month: 'short',
+  day: 'numeric',
+});
+
+/**
+ * وقت نشر المنشور كما يُقرأ في بطاقة — قصيرٌ ودقيق معاً.
+ *
+ * ★ نسبيٌّ لما مضى عليه أقلّ من يوم، ومطلقٌ لما بعده.
+ *
+ *   «قبل ٣ ساعات» تُقرأ في لمحة وتقول ما يحتاجه الرصد الحيّ: هل هذا
+ *   جديد؟ أمّا «قبل ١٧ يوماً» فلا يُبنى عليها شيء — من يكتب تقريراً
+ *   يحتاج «١٠ أكتوبر، ٢:٠٥ م». والسنة تُحذف في السنة الجارية وحدها،
+ *   والساعة تُحذف فيما قبلها: منشورٌ من العام الماضي يُسأل عن يومه.
+ *
+ * والوقت بتوقيت جهاز القارئ — البطاقة تُرسم في متصفّحه. والوقت الكامل
+ * يوضع في `title` و`dateTime` بجانب هذا، فلا يضيع شيءٌ بالاختصار.
+ *
+ * دالّة خالصة بمعامل «الآن» — تُفحص وحدها.
+ */
+export function formatPublishedAt(
+  value: Date | string | null | undefined,
+  now: Date = new Date(),
+): string {
+  if (!value) return '—';
+  const date = typeof value === 'string' ? new Date(value) : value;
+  if (Number.isNaN(date.getTime())) return '—';
+
+  const ageMs = now.getTime() - date.getTime();
+  if (ageMs < 60_000 && ageMs > -60_000) return 'الآن';
+  if (ageMs > 0 && ageMs < 86_400_000) {
+    const rtf = new Intl.RelativeTimeFormat(AR_LOCALE, { numeric: 'auto' });
+    return ageMs < 3_600_000
+      ? rtf.format(-Math.round(ageMs / 60_000), 'minute')
+      : rtf.format(-Math.round(ageMs / 3_600_000), 'hour');
+  }
+  return date.getFullYear() === now.getFullYear()
+    ? sameYearFormatter.format(date)
+    : otherYearFormatter.format(date);
+}
+
 /** مدة بالميلي ثانية إلى صيغة عربية مقروءة */
 export function formatDuration(ms: number | null | undefined): string {
   if (ms === null || ms === undefined || ms < 0) return '—';

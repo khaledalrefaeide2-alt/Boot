@@ -50,7 +50,8 @@
     "verify:labels": "tsx --conditions=react-server scripts/verify-labels.ts",
     "verify:classify": "tsx --conditions=react-server scripts/verify-classify.ts",
     "verify:queue": "tsx --conditions=react-server scripts/verify-queue.ts",
-    "verify:security": "tsx --conditions=react-server scripts/verify-security.ts"
+    "verify:security": "tsx --conditions=react-server scripts/verify-security.ts",
+    "verify:avatars": "tsx --conditions=react-server scripts/verify-avatars.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

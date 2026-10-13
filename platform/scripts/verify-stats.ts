@@ -7,6 +7,7 @@
  */
 import { readFileSync, readdirSync, statSync } from 'node:fs';
 import path from 'node:path';
+import { formatPublishedAt } from '../src/lib/utils';
 
 const root = process.cwd();
 const SOURCE = readFileSync(path.join(root, 'src/components/ui/stat-card.tsx'), 'utf8');
@@ -217,6 +218,61 @@ check(
 check(
   'الوحدة خارج عزل الرقم',
   /<span className="num">\{amount\}<\/span>\s*\{unit && <span className="ms-1\.5/.test(SOURCE),
+);
+
+// ══════════════ بطاقة المنشور: الوقت والمقاييس ══════════════
+
+/*
+ * وقت النشر — دالّةٌ خالصة بمعامل «الآن»، فتُفحص بأوقاتٍ ثابتة.
+ */
+const NOW = new Date('2026-10-13T12:00:00Z');
+const ago = (ms: number) => new Date(NOW.getTime() - ms).toISOString();
+check('وقت النشر: «الآن» لأقلّ من دقيقة', formatPublishedAt(ago(20_000), NOW) === 'الآن');
+check(
+  'ونسبيٌّ بالدقائق ثم بالساعات لما دون اليوم',
+  /دقيقة|دقائق/.test(formatPublishedAt(ago(25 * 60_000), NOW)) &&
+    /ساعة|ساعات|ساعتين/.test(formatPublishedAt(ago(3 * 3_600_000), NOW)),
+  `${formatPublishedAt(ago(25 * 60_000), NOW)} · ${formatPublishedAt(ago(3 * 3_600_000), NOW)}`,
+);
+check(
+  'ومطلقٌ بيومه وساعته لما بعده في السنة الجارية',
+  /أكتوبر/.test(formatPublishedAt('2026-10-10T14:05:00Z', NOW)) &&
+    /\d{1,2}:\d{2}/.test(formatPublishedAt('2026-10-10T14:05:00Z', NOW)) &&
+    !/2026/.test(formatPublishedAt('2026-10-10T14:05:00Z', NOW)),
+  formatPublishedAt('2026-10-10T14:05:00Z', NOW),
+);
+check(
+  'وبسنته بلا ساعة لما قبلها',
+  /2025/.test(formatPublishedAt('2025-03-02T14:05:00Z', NOW)) &&
+    !/\d{1,2}:\d{2}/.test(formatPublishedAt('2025-03-02T14:05:00Z', NOW)),
+  formatPublishedAt('2025-03-02T14:05:00Z', NOW),
+);
+check('ولا شيء بلا تاريخ', formatPublishedAt(null, NOW) === '—');
+
+const CARD = readFileSync(path.join(root, 'src/components/posts/post-card.tsx'), 'utf8');
+check(
+  'البطاقة تعرض وقت النشر بعنصر `time` ووقته الكامل في التلميح',
+  /<time\s+dateTime=\{post\.publishedAt\}\s+title=\{formatDateTime\(post\.publishedAt\)\}/.test(CARD) &&
+    /formatPublishedAt\(post\.publishedAt\)/.test(CARD),
+);
+check(
+  'والوقت لا يُقصّ والمنصّة بعده تُقصّ',
+  /<time[\s\S]{0,160}shrink-0 whitespace-nowrap/.test(CARD) && /className="truncate" title=\{platformLabel/.test(CARD),
+);
+/*
+ * المقياس: الرقم معزولٌ وحده والوحدة بعده، والسطر لا يلتفّ.
+ * كان «1.8 مليون» كلّه في عزلٍ لاتيني: الوحدة قبل الرقم في القراءة،
+ * و«مليون» تسقط تحت «1.8» في البطاقة الضيّقة — وكانا على الشاشة.
+ */
+check(
+  'مقياس البطاقة: الوحدة خارج عزل الرقم والسطر لا يلتفّ',
+  /splitUnit\(formatCompactNumber\(value\)\)/.test(CARD) &&
+    /<span className="num[^"]*">\{amount\}<\/span>\s*\{unit && <span>\{unit\}<\/span>\}/.test(CARD) &&
+    /whitespace-nowrap text-xs text-muted-foreground/.test(CARD),
+);
+check(
+  'وأعمدة المقاييس ثابتة تنقسم في البطاقة الضيّقة',
+  /<footer className="grid grid-cols-2[^"]*@\[19rem\]:grid-cols-4">/.test(CARD),
 );
 
 console.log('\n>> فحص شريط المقاييس\n');

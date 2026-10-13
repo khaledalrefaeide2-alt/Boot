@@ -73,6 +73,7 @@ export async function GET(request: NextRequest) {
           isActive: true,
           followersCount: true,
           avatarUrl: true,
+          avatarKey: true,
           extractionWindowDays: true,
           extractionIntervalMinutes: true,
           maxItemsPerRun: true,

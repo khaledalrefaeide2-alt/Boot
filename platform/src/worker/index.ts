@@ -200,6 +200,12 @@ const mediaCacheTimer = setInterval(() => {
           `[worker] حفظ الصور: ${outcome.stored} مصغّرة · ${outcome.gone} رابطاً ميتاً · ${outcome.retry} تُعاد — بقي ${outcome.remaining}`,
         );
       }
+      if (outcome?.avatars) {
+        const a = outcome.avatars;
+        console.log(
+          `[worker] صور الحسابات: ${a.stored} حُفظت · ${a.gone} رابطاً ميتاً · ${a.retry} تُعاد`,
+        );
+      }
     })
     .catch(() => undefined);
 }, MEDIA_SWEEP_INTERVAL_MS);

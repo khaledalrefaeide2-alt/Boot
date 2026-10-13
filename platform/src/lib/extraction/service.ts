@@ -14,6 +14,7 @@ import { mapApifyItems } from '@/lib/apify/mappers';
 import { importPosts } from './import';
 import { refreshStatsAfterImport } from '@/lib/stats';
 import { cacheRunThumbnails } from '@/lib/media/cache-posts';
+import { storeAccountAvatar } from '@/lib/media/cache-avatars';
 import { notifyOperators } from '@/lib/notifications';
 import { auditSystem, AUDIT_ACTIONS } from '@/lib/audit';
 import { getExcludeReplies, getMediaSettings, getOperationalSettings } from '@/lib/settings';
@@ -306,19 +307,25 @@ export async function executeExtractionRun(runId: string): Promise<void> {
       accountUsername: run.account?.username ?? null,
     });
 
-    // تحديث عدد المتابعين وصورة الحساب إن أرجعهما الـ Actor
-    if (imported.followersCount !== null || imported.authorAvatarUrl) {
+    // تحديث عدد المتابعين إن أرجعه الـ Actor
+    if (imported.followersCount !== null) {
       await prisma.account
         .update({
           where: { id: run.accountId },
-          data: {
-            ...(imported.followersCount !== null
-              ? { followersCount: imported.followersCount }
-              : {}),
-            ...(imported.authorAvatarUrl ? { avatarUrl: imported.authorAvatarUrl } : {}),
-          },
+          data: { followersCount: imported.followersCount },
         })
         .catch(() => undefined);
+    }
+
+    /*
+     * وصورة الحساب تُحفظ عندنا الآن لا رابطاً يموت بعد أيام.
+     *
+     * الرابط الذي وصل للتوّ هو الوحيد الحيّ بيقين: رابطُ أمسِ قد انتهى
+     * توقيعه. فيُجلب ويُحفظ هنا، ويُكتب مع نتيجته في تحديثٍ واحد —
+     * انظر `storeAccountAvatar`. ولا يرمي: صورةٌ لا تُفشل استخراجاً.
+     */
+    if (imported.authorAvatarUrl) {
+      await storeAccountAvatar(run.accountId, imported.authorAvatarUrl);
     }
 
     /*

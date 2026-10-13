@@ -94,14 +94,29 @@ export async function pruneStore(
    * المفاتيح المستعمَلة تُقرأ مرّة واحدة.
    *
    * خمسون ألف مفتاح بأربعين حرفاً نحو مليونَي بايت في الذاكرة — أرخص
-   * بكثير من استعلامٍ لكلّ ملف. و`posts.mediaKey` وحده يشير إلى هذا
-   * المخزن: صور الحسابات تُخزَّن روابطَ لا ملفات.
+   * بكثير من استعلامٍ لكلّ ملف.
+   *
+   * ★ ومصدران يشيران إلى هذا المخزن لا مصدرٌ واحد.
+   *
+   *   `posts.mediaKey` للمصغّرات، و`accounts.avatarKey` للصور الشخصية.
+   *   وكان التعليق هنا يقول «صور الحسابات تُخزَّن روابطَ لا ملفات» —
+   *   فلمّا صارت ملفّات، كان ترك هذا السطر كما هو يعني أنّ أوّل دورة
+   *   تقليم تحذف كلّ صورة شخصية بوصفها يتيمة، وتعود البطاقات حروفاً.
    */
-  const rows = await prisma.post.findMany({
-    where: { mediaKey: { not: null } },
-    select: { mediaKey: true },
-  });
-  const live = new Set(rows.flatMap((row) => (row.mediaKey ? [row.mediaKey] : [])));
+  const [postRows, accountRows] = await Promise.all([
+    prisma.post.findMany({
+      where: { mediaKey: { not: null } },
+      select: { mediaKey: true },
+    }),
+    prisma.account.findMany({
+      where: { avatarKey: { not: null } },
+      select: { avatarKey: true },
+    }),
+  ]);
+  const live = new Set([
+    ...postRows.flatMap((row) => (row.mediaKey ? [row.mediaKey] : [])),
+    ...accountRows.flatMap((row) => (row.avatarKey ? [row.avatarKey] : [])),
+  ]);
 
   let remaining = files.reduce((sum, file) => sum + file.size, 0);
   let orphans = 0;
@@ -153,6 +168,17 @@ export async function pruneStore(
       .updateMany({
         where: { mediaKey: { in: evictedKeys } },
         data: { mediaKey: null, mediaAttempts: maxAttempts },
+      })
+      .catch(() => undefined);
+    /*
+     * والحساب الذي أُخرجت صورته يعود معلّقاً: إن كان رابطه حيّاً أعادته
+     * المكنسة، وإن مات حُسم في المحاولة الأولى. ومفتاحٌ يشير إلى ملفٍّ
+     * محذوف يُظهر صورةً مكسورة بدل الحرف.
+     */
+    await prisma.account
+      .updateMany({
+        where: { avatarKey: { in: evictedKeys } },
+        data: { avatarKey: null, avatarCheckedAt: null },
       })
       .catch(() => undefined);
   }

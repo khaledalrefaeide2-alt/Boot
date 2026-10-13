@@ -32,6 +32,7 @@ interface AccountRow {
   isActive: boolean;
   followersCount: number | null;
   avatarUrl: string | null;
+  avatarKey?: string | null;
   lastExtractedAt: string | null;
   platform: { id: string; name: string };
   _count: { posts: number };
@@ -143,7 +144,12 @@ export function AccountsViewClient({ canManage }: { canManage: boolean }) {
                           href={`/accounts/${account.id}`}
                           className="flex max-w-72 items-center gap-2.5"
                         >
-                          <AccountAvatar name={account.name} src={account.avatarUrl} size="sm" />
+                          <AccountAvatar
+                            name={account.name}
+                            src={account.avatarUrl}
+                            mediaKey={account.avatarKey}
+                            size="sm"
+                          />
                           <span className="truncate font-medium hover:text-primary-text hover:underline">
                             {account.name}
                           </span>
