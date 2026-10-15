@@ -1,6 +1,7 @@
 import 'server-only';
 import OpenAI from 'openai';
-import { getAssistantConfig } from '@/lib/assistant/config';
+import { getAssistantConfig, type AssistantConfig } from '@/lib/assistant/config';
+import { chatCompletionParams, requestTimeoutMs } from '@/lib/assistant/model-params';
 import { lexiconHintBlock, matchedTerms, matchLexicons } from './lexicons';
 import { toAssistantError } from '@/lib/assistant/openai';
 
@@ -560,6 +561,31 @@ function client(): OpenAI {
 }
 
 /**
+ * معاملات طلب التصنيف.
+ *
+ * ★ حرارة صفر للنموذج القديم، وعمقُ تفكيرٍ للجديد — لا الاثنان.
+ *
+ *   الحرارة صفرٌ لأنّ التصنيف قرارٌ يجب أن يتكرّر على النصّ نفسه لا أن
+ *   يتنوّع. ونموذج الاستدلال يرفض الحرارة أصلاً، وثباتُ حكمه يأتي من
+ *   تفكيره في السياسة قبل أن يكتب — وهو ما يُضبط بالعمق.
+ *
+ * و`prompt_cache_key` يجمع طلبات التصنيف على مفتاحٍ واحد. السياسة نفسها
+ * (أحد عشر ألف حرف) تتصدّر كلّ طلب، والمزوّد يحتسب البادئة المتكرّرة
+ * بجزءٍ من ثمنها حين يجدها في ذاكرته — والمفتاح المشترك يرفع احتمال وجودها.
+ */
+function analysisParams(config: AssistantConfig) {
+  return {
+    ...chatCompletionParams({ model: config.chatModel, effort: config.analysisEffort, temperature: 0 }),
+    prompt_cache_key: 'post-analysis',
+  };
+}
+
+/** مهلة طلب التصنيف — الأربعون ثانية للقديم، وأطول بحسب العمق للجديد */
+function analysisTimeout(config: AssistantConfig) {
+  return { timeout: requestTimeoutMs(config.chatModel, config.analysisEffort, 40_000) };
+}
+
+/**
  * تسوية ما أعاده النموذج — وهي الحارس الأخير قبل الكتابة.
  *
  * ★ والمخطّط الصارم يضمن الشكل لا المعنى.
@@ -795,35 +821,38 @@ export async function analyzePostImage(
   const dataUrl = `data:image/jpeg;base64,${image.toString('base64')}`;
 
   try {
-    const completion = await client().chat.completions.create({
-      model: config.chatModel,
-      temperature: 0,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        {
-          role: 'user',
-          content: [
-            {
-              type: 'text',
-              text:
-                'هذا منشور صورته هي محتواه. اقرأ ما في الصورة من نصّ ومشهد، وصنّفه بالسياسة نفسها.' +
-                (caption ? `\n\nوما كُتب معه: ${caption.slice(0, 500)}` : '') +
-                '\n\nوإن لم تجد في الصورة ما يدلّ على موقف تجاه الجهات أو الخدمات، فالتصنيف NEUTRAL لا UNKNOWN — الصورة وصلتك وقرأتها.' +
-                '\n\nوالدليل (evidence) اقتبسه حرفياً من النصّ الظاهر في الصورة، أو اتركه null إن لم يكن فيها نصّ.',
-            },
-            { type: 'image_url', image_url: { url: dataUrl, detail: 'low' } },
-          ],
-        },
-      ],
-      response_format: {
-        type: 'json_schema',
-        json_schema: {
-          name: 'post_analysis',
-          strict: true,
-          schema: SCHEMA as unknown as Record<string, unknown>,
+    const completion = await client().chat.completions.create(
+      {
+        model: config.chatModel,
+        ...analysisParams(config),
+        messages: [
+          { role: 'system', content: systemPrompt },
+          {
+            role: 'user',
+            content: [
+              {
+                type: 'text',
+                text:
+                  'هذا منشور صورته هي محتواه. اقرأ ما في الصورة من نصّ ومشهد، وصنّفه بالسياسة نفسها.' +
+                  (caption ? `\n\nوما كُتب معه: ${caption.slice(0, 500)}` : '') +
+                  '\n\nوإن لم تجد في الصورة ما يدلّ على موقف تجاه الجهات أو الخدمات، فالتصنيف NEUTRAL لا UNKNOWN — الصورة وصلتك وقرأتها.' +
+                  '\n\nوالدليل (evidence) اقتبسه حرفياً من النصّ الظاهر في الصورة، أو اتركه null إن لم يكن فيها نصّ.',
+              },
+              { type: 'image_url', image_url: { url: dataUrl, detail: 'low' } },
+            ],
+          },
+        ],
+        response_format: {
+          type: 'json_schema',
+          json_schema: {
+            name: 'post_analysis',
+            strict: true,
+            schema: SCHEMA as unknown as Record<string, unknown>,
+          },
         },
       },
-    });
+      analysisTimeout(config),
+    );
 
     const raw = completion.choices[0]?.message?.content;
     if (!raw) throw new Error('رد فارغ');
@@ -864,30 +893,32 @@ export async function analyzePostText(
   const hintBlock = lexiconHintBlock(matchLexicons(trimmed));
 
   try {
-    const completion = await client().chat.completions.create({
-      model: config.chatModel,
-      // حرارة صفر: التصنيف قرارٌ يجب أن يتكرّر على النصّ نفسه لا أن يتنوّع
-      temperature: 0,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        {
-          role: 'user',
-          /*
-           * كتلة الألفاظ تُرفَق بالنصّ لا تُدمج فيه.
-           *
-           * وتُصاغ أمراً بالفحص لا حكماً مسبقاً. والفرق ليس أدباً: نموذجٌ
-           * يُعطى حكماً يبني عليه، ونموذجٌ يُعطى سؤالاً يقرأ النصّ ليجيب.
-           */
-          content: hintBlock
-            ? `صنّف هذا المنشور:\n\n---\n${trimmed}\n---\n\n${hintBlock}`
-            : `صنّف هذا المنشور:\n\n---\n${trimmed}\n---`,
+    const completion = await client().chat.completions.create(
+      {
+        model: config.chatModel,
+        ...analysisParams(config),
+        messages: [
+          { role: 'system', content: systemPrompt },
+          {
+            role: 'user',
+            /*
+             * كتلة الألفاظ تُرفَق بالنصّ لا تُدمج فيه.
+             *
+             * وتُصاغ أمراً بالفحص لا حكماً مسبقاً. والفرق ليس أدباً: نموذجٌ
+             * يُعطى حكماً يبني عليه، ونموذجٌ يُعطى سؤالاً يقرأ النصّ ليجيب.
+             */
+            content: hintBlock
+              ? `صنّف هذا المنشور:\n\n---\n${trimmed}\n---\n\n${hintBlock}`
+              : `صنّف هذا المنشور:\n\n---\n${trimmed}\n---`,
+          },
+        ],
+        response_format: {
+          type: 'json_schema',
+          json_schema: { name: 'post_analysis', strict: true, schema: SCHEMA as unknown as Record<string, unknown> },
         },
-      ],
-      response_format: {
-        type: 'json_schema',
-        json_schema: { name: 'post_analysis', strict: true, schema: SCHEMA as unknown as Record<string, unknown> },
       },
-    });
+      analysisTimeout(config),
+    );
 
     const raw = completion.choices[0]?.message?.content;
     if (!raw) throw new Error('رد فارغ');

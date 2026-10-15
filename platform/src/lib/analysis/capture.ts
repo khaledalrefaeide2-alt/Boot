@@ -2,6 +2,7 @@ import 'server-only';
 import OpenAI from 'openai';
 import { prisma } from '@/lib/db';
 import { getAssistantConfig } from '@/lib/assistant/config';
+import { chatCompletionParams, requestTimeoutMs } from '@/lib/assistant/model-params';
 import { auditSystem, AUDIT_ACTIONS } from '@/lib/audit';
 import {
   looksLikeDirective,
@@ -95,22 +96,30 @@ function client(): OpenAI {
 export async function extractGuidance(message: string): Promise<ExtractedGuidance[]> {
   const config = getAssistantConfig();
 
-  const completion = await client().chat.completions.create({
-    model: config.chatModel,
-    temperature: 0,
-    messages: [
-      { role: 'system', content: EXTRACTION_PROMPT },
-      { role: 'user', content: message.trim().slice(0, 2000) },
-    ],
-    response_format: {
-      type: 'json_schema',
-      json_schema: {
-        name: 'captured_guidance',
-        strict: true,
-        schema: EXTRACTION_SCHEMA as unknown as Record<string, unknown>,
+  const completion = await client().chat.completions.create(
+    {
+      model: config.chatModel,
+      ...chatCompletionParams({
+        model: config.chatModel,
+        // استخراج قاعدةٍ من جملة لا يحتاج تفكيراً عميقاً
+        effort: 'low',
+        temperature: 0,
+      }),
+      messages: [
+        { role: 'system', content: EXTRACTION_PROMPT },
+        { role: 'user', content: message.trim().slice(0, 2000) },
+      ],
+      response_format: {
+        type: 'json_schema',
+        json_schema: {
+          name: 'captured_guidance',
+          strict: true,
+          schema: EXTRACTION_SCHEMA as unknown as Record<string, unknown>,
+        },
       },
     },
-  });
+    { timeout: requestTimeoutMs(config.chatModel, 'low', 20_000) },
+  );
 
   const raw = completion.choices[0]?.message?.content;
   if (!raw) return [];

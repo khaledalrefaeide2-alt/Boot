@@ -5,7 +5,14 @@ import {
   AssistantConfigError,
   getAssistantConfig,
   MISSING_KEY_MESSAGE,
+  type AssistantConfig,
 } from './config';
+import {
+  chatCompletionParams,
+  requestTimeoutMs,
+  responsesParams,
+  type ReasoningEffort,
+} from './model-params';
 import type { ChatMessage } from './types';
 
 /*
@@ -44,6 +51,11 @@ function client(): OpenAI {
     cachedKey = config.openaiApiKey;
   }
   return cached;
+}
+
+/** مهلة طلبٍ واحد من طلبات المساعد — تطول لنموذج الاستدلال بحسب عمقه */
+function assistantTimeout(config: AssistantConfig, effort: ReasoningEffort = config.assistantEffort) {
+  return { timeout: requestTimeoutMs(config.chatModel, effort, ASSISTANT_LIMITS.requestTimeoutMs) };
 }
 
 /**
@@ -89,7 +101,22 @@ export function toAssistantError(error: unknown): AssistantError {
     if (status === 404) {
       return new AssistantError(
         'model_not_found',
-        'النموذج المحدد غير متاح في حسابك. جرّب gpt-4o-mini.',
+        'النموذج المحدد غير متاح في حسابك، أو أن اسمه غير صحيح. راجع OPENAI_CHAT_MODEL في ملف البيئة.',
+        502,
+      );
+    }
+    /*
+     * معاملٌ رفضه المزوّد يُسمّى — اسمه وحده لا نصّ الخطأ.
+     *
+     * هذا ما يقع حين يُبدَّل النموذج إلى آخر لا يقبل ما يُرسَل إليه، أو
+     * يُضبط عمق تفكيرٍ لا يدعمه. و«تعذّر تنفيذ الطلب» وحدها تترك المدير
+     * بلا خيط. واسم المعامل معرّفٌ تقنيّ قصير لا سرّ فيه، ويُقبل بشكله
+     * المعروف وحده؛ وما سواه يسقط إلى الرسالة العامة.
+     */
+    if (status === 400 && typeof error.param === 'string' && /^[a-z0-9_.[\]]{1,60}$/i.test(error.param)) {
+      return new AssistantError(
+        'bad_param',
+        `رفض OpenAI المعامل «${error.param}» لهذا النموذج. راجع النموذج وعمق التفكير في ملف البيئة.`,
         502,
       );
     }
@@ -188,14 +215,21 @@ export async function generateWithWebSearch(
   const { instructions, input } = splitMessages(messages);
 
   try {
-    const response = await client().responses.create({
-      model: config.chatModel,
-      instructions,
-      input,
-      tools: [WEB_SEARCH_TOOL],
-      temperature: 0.2,
-      max_output_tokens: 1800,
-    });
+    const response = await client().responses.create(
+      {
+        model: config.chatModel,
+        instructions,
+        input,
+        tools: [WEB_SEARCH_TOOL],
+        ...responsesParams({
+          model: config.chatModel,
+          effort: config.assistantEffort,
+          temperature: 0.2,
+          maxOutputTokens: 1800,
+        }),
+      },
+      assistantTimeout(config),
+    );
 
     const content = responseText(response);
     if (!content) {
@@ -226,15 +260,22 @@ export async function* streamWithWebSearch(
   const { instructions, input } = splitMessages(messages);
 
   try {
-    const stream = await client().responses.create({
-      model: config.chatModel,
-      instructions,
-      input,
-      tools: [WEB_SEARCH_TOOL],
-      temperature: 0.2,
-      max_output_tokens: 1800,
-      stream: true,
-    });
+    const stream = await client().responses.create(
+      {
+        model: config.chatModel,
+        instructions,
+        input,
+        tools: [WEB_SEARCH_TOOL],
+        ...responsesParams({
+          model: config.chatModel,
+          effort: config.assistantEffort,
+          temperature: 0.2,
+          maxOutputTokens: 1800,
+        }),
+        stream: true,
+      },
+      assistantTimeout(config),
+    );
 
     for await (const event of stream) {
       if (event.type === 'response.output_text.delta' && event.delta) {
@@ -298,15 +339,22 @@ export async function* runAssistantAgent(
 
   try {
     for (let round = 0; round < MAX_TOOL_ROUNDS; round += 1) {
-      const stream = await client().responses.create({
-        model: config.chatModel,
-        instructions,
-        input: conversation as never,
-        tools: tools as never,
-        temperature: 0.2,
-        max_output_tokens: 2400,
-        stream: true,
-      });
+      const stream = await client().responses.create(
+        {
+          model: config.chatModel,
+          instructions,
+          input: conversation as never,
+          tools: tools as never,
+          ...responsesParams({
+            model: config.chatModel,
+            effort: config.assistantEffort,
+            temperature: 0.2,
+            maxOutputTokens: 2400,
+          }),
+          stream: true,
+        },
+        assistantTimeout(config),
+      );
 
       let completed: { output?: unknown[] } | null = null;
 
@@ -371,18 +419,37 @@ export async function* runAssistantAgent(
   }
 }
 
+interface GenerateOptions {
+  /**
+   * عمقٌ يُفرض على هذا الطلب بدل عمق المساعد.
+   *
+   * لمهامّ خدمية قصيرة يُنتظر جوابها في مسارٍ آخر — كتوسيع سطر البحث —
+   * حيث التفكير الطويل تأخيرٌ بلا مقابل.
+   */
+  effort?: ReasoningEffort;
+}
+
 /** استدعاء المحادثة — يُعيد النصّ كاملاً */
 export async function generateAssistantResponse(
   messages: ChatMessage[],
+  options: GenerateOptions = {},
 ): Promise<{ content: string; model: string; promptTokens?: number; completionTokens?: number }> {
   const config = getAssistantConfig();
+  const effort = options.effort ?? config.assistantEffort;
   try {
-    const completion = await client().chat.completions.create({
-      model: config.chatModel,
-      messages,
-      temperature: 0.2,
-      max_tokens: 1400,
-    });
+    const completion = await client().chat.completions.create(
+      {
+        model: config.chatModel,
+        messages,
+        ...chatCompletionParams({
+          model: config.chatModel,
+          effort,
+          temperature: 0.2,
+          maxOutputTokens: 1400,
+        }),
+      },
+      assistantTimeout(config, effort),
+    );
 
     const content = completion.choices[0]?.message?.content?.trim();
     if (!content) {
@@ -406,13 +473,20 @@ export async function* streamAssistantResponse(
 ): AsyncGenerator<string, void, undefined> {
   const config = getAssistantConfig();
   try {
-    const stream = await client().chat.completions.create({
-      model: config.chatModel,
-      messages,
-      temperature: 0.2,
-      max_tokens: 1400,
-      stream: true,
-    });
+    const stream = await client().chat.completions.create(
+      {
+        model: config.chatModel,
+        messages,
+        ...chatCompletionParams({
+          model: config.chatModel,
+          effort: config.assistantEffort,
+          temperature: 0.2,
+          maxOutputTokens: 1400,
+        }),
+        stream: true,
+      },
+      assistantTimeout(config),
+    );
 
     for await (const chunk of stream) {
       const delta = chunk.choices[0]?.delta?.content;
@@ -462,17 +536,57 @@ export async function generateEmbeddings(texts: string[]): Promise<number[][]> {
   }
 }
 
-/** اختبار اتصال خفيف — للمدير وحده، ولا يُعيد أي جزء من المفتاح */
-export async function pingOpenAI(): Promise<{ chatModel: string; embedModel: string }> {
+/**
+ * اختبار اتصال خفيف — للمدير وحده، ولا يُعيد أي جزء من المفتاح.
+ *
+ * ★ ويختبر الإعداد كما سيُستعمل لا اتصالاً مجرّداً.
+ *
+ *   سؤال «هل المفتاح يعمل؟» وحده يُجيب بنعم ثمّ يفشل التصنيف كلّه: نموذجٌ
+ *   متاحٌ للحساب قد يرفض عمق التفكير المضبوط، أو يقبل Chat Completions
+ *   ويرفض Responses. فيُرسَل طلبان صغيران بالمعاملات نفسها التي يرسلها
+ *   مسارا العمل: التصنيف (Chat Completions بعمق التحليل) والمساعد
+ *   (Responses بعمق المساعد). وما رُفض منهما يُسمّى معامله.
+ */
+export async function pingOpenAI(): Promise<{
+  chatModel: string;
+  embedModel: string;
+  analysisEffort: ReasoningEffort;
+  assistantEffort: ReasoningEffort;
+}> {
   const config = getAssistantConfig();
   try {
-    await client().chat.completions.create({
-      model: config.chatModel,
-      messages: [{ role: 'user', content: 'رد بكلمة: جاهز' }],
-      max_tokens: 5,
-    });
+    await client().chat.completions.create(
+      {
+        model: config.chatModel,
+        messages: [{ role: 'user', content: 'رد بكلمة: جاهز' }],
+        ...chatCompletionParams({
+          model: config.chatModel,
+          effort: config.analysisEffort,
+          maxOutputTokens: 16,
+        }),
+      },
+      assistantTimeout(config, config.analysisEffort),
+    );
+    await client().responses.create(
+      {
+        model: config.chatModel,
+        input: 'رد بكلمة: جاهز',
+        ...responsesParams({
+          model: config.chatModel,
+          effort: config.assistantEffort,
+          // الحدّ الأدنى الذي تقبله Responses
+          maxOutputTokens: 16,
+        }),
+      },
+      assistantTimeout(config),
+    );
     await client().embeddings.create({ model: config.embedModel, input: 'اختبار' });
-    return { chatModel: config.chatModel, embedModel: config.embedModel };
+    return {
+      chatModel: config.chatModel,
+      embedModel: config.embedModel,
+      analysisEffort: config.analysisEffort,
+      assistantEffort: config.assistantEffort,
+    };
   } catch (error) {
     throw toAssistantError(error);
   }

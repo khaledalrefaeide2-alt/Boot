@@ -79,8 +79,10 @@ services:
       # وحده، ولا يصل إلى داخل الحاوية إلا ما يُذكر هنا. وغياب هذا السطر
       # كان يجعل المفتاح موجوداً في .env وغائباً عن التطبيق تماماً.
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
+      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-6.1-sol}
       OPENAI_EMBED_MODEL: ${OPENAI_EMBED_MODEL:-text-embedding-3-small}
+      OPENAI_ANALYSIS_EFFORT: ${OPENAI_ANALYSIS_EFFORT:-medium}
+      OPENAI_ASSISTANT_EFFORT: ${OPENAI_ASSISTANT_EFFORT:-low}
       NODE_ENV: production
     healthcheck:
       # الفحص من داخل الحاوية بأدوات Node — لا curl في الصورة ولا حاجة لإضافته
@@ -133,8 +135,10 @@ services:
       # وحده، ولا يصل إلى داخل الحاوية إلا ما يُذكر هنا. وغياب هذا السطر
       # كان يجعل المفتاح موجوداً في .env وغائباً عن التطبيق تماماً.
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
+      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-6.1-sol}
       OPENAI_EMBED_MODEL: ${OPENAI_EMBED_MODEL:-text-embedding-3-small}
+      OPENAI_ANALYSIS_EFFORT: ${OPENAI_ANALYSIS_EFFORT:-medium}
+      OPENAI_ASSISTANT_EFFORT: ${OPENAI_ASSISTANT_EFFORT:-low}
       NODE_ENV: production
     depends_on:
       postgres:

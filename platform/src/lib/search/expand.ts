@@ -291,10 +291,14 @@ async function askModel(parsed: ParsedSearch): Promise<string[][]> {
       .map((group, index) => `${index + 1}) ${describeGroup(group)}`)
       .join('\n');
 
-    const { content } = await generateAssistantResponse([
-      { role: 'system', content: PROMPT },
-      { role: 'user', content: listing },
-    ]);
+    // أدنى عمق: الموظّف ينتظر نتائج بحثه، والمطلوب قائمة مرادفات لا استدلال
+    const { content } = await generateAssistantResponse(
+      [
+        { role: 'system', content: PROMPT },
+        { role: 'user', content: listing },
+      ],
+      { effort: 'low' },
+    );
 
     const parsedJson: unknown = JSON.parse(stripFence(content));
     const result = schema.safeParse(parsedJson);

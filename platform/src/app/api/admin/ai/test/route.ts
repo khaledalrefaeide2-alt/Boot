@@ -28,6 +28,8 @@ export async function POST() {
       success: true,
       chatModel: result.chatModel,
       embedModel: result.embedModel,
+      analysisEffort: result.analysisEffort,
+      assistantEffort: result.assistantEffort,
       message: 'تم الاتصال بـ OpenAI بنجاح',
     });
   } catch (error) {

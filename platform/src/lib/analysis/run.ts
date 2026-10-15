@@ -57,6 +57,16 @@ const BATCH_SIZE = 25;
 const FLUSH_EVERY = 5;
 
 /**
+ * ونبضةٌ بالوقت إلى جانب نبضة العدد.
+ *
+ * خمسة منشورات كانت دقائق معدودة مع نموذجٍ يجيب في ثانيتين. ونموذج
+ * الاستدلال بعمقٍ عالٍ قد يقضي دقائق في المنشور الواحد، فتصير الخمسة
+ * أطول من مهلة الصمت كلّها — وتُغلق الجولة ميتةً وهي تعمل. فتُكتب
+ * العدّادات أيضاً متى مرّت دقيقة على آخر كتابة، أيّاً كان العدد.
+ */
+const FLUSH_INTERVAL_MS = 60_000;
+
+/**
  * سقف الفشل المتتالي.
  *
  * منشورٌ يفشل تحليله وحده حالةٌ عادية — نصّ غريب أو ردّ مشوَّه من النموذج.
@@ -73,8 +83,9 @@ const CONSECUTIVE_FAILURE_LIMIT = 8;
  * جولة بعده (لا نسمح بجولتين معاً). فتُقرأ الجولة الصامتة فشلاً صريحاً،
  * ويبقى الباب مفتوحاً لإعادة المحاولة.
  *
- * والمدّة أربعةُ أضعاف أسوأ صمتٍ ممكن بين نبضتين (خمسة منشورات × مهلة
- * أربعين ثانية × محاولتين ≈ سبع دقائق)، فلا تُقتل جولةٌ بطيئة بحكمٍ
+ * وأسوأ صمتٍ ممكن بين نبضتين منشورٌ واحد بمحاولتيه: النبضة الزمنية
+ * تُكتب بعد كلّ منشورٍ تجاوز دقيقتها. وأطول مهلةٍ لنموذج الاستدلال خمس
+ * دقائق، فالمحاولتان عشر — نصف هذه المدّة. فلا تُقتل جولةٌ بطيئة بحكمٍ
  * عجول.
  */
 const STALE_AFTER_MS = 20 * 60 * 1000;
@@ -542,6 +553,7 @@ export async function executeAnalysisRun(runId: string): Promise<void> {
   const failedIds = new Set<string>();
   let stopReason: string | null = null;
   let cancelled = false;
+  let lastFlushAt = Date.now();
 
   try {
     for (;;) {
@@ -625,12 +637,17 @@ export async function executeAnalysisRun(runId: string): Promise<void> {
           }
         }
 
-        if ((counters.done + counters.failed) % FLUSH_EVERY === 0) {
+        if (
+          (counters.done + counters.failed) % FLUSH_EVERY === 0 ||
+          Date.now() - lastFlushAt >= FLUSH_INTERVAL_MS
+        ) {
           await flush(runId, counters);
+          lastFlushAt = Date.now();
         }
       }
 
       await flush(runId, counters);
+      lastFlushAt = Date.now();
       if (stopReason) break;
     }
 

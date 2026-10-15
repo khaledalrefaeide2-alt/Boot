@@ -14,6 +14,7 @@ import { prisma } from '../src/lib/db';
 import { analyzeAndSave } from '../src/lib/analysis/persist';
 import { NEWEST_FIRST } from '../src/lib/queries/post-order';
 import { MISSING_KEY_MESSAGE, getAssistantConfig } from '../src/lib/assistant/config';
+import { isReasoningModel } from '../src/lib/assistant/model-params';
 
 function arg(name: string): string | undefined {
   const i = process.argv.indexOf(`--${name}`);
@@ -33,7 +34,10 @@ async function main() {
   const since = days > 0 ? new Date(Date.now() - days * 24 * 60 * 60 * 1000) : undefined;
 
   console.log('\n>> تحليل المنشورات');
-  console.log(`   النموذج: ${config.chatModel}`);
+  console.log(
+    `   النموذج: ${config.chatModel}` +
+      (isReasoningModel(config.chatModel) ? ` (عمق التفكير: ${config.analysisEffort})` : ''),
+  );
   console.log(`   الوضع: ${all ? 'إعادة الكلّ' : 'غير المحلَّلة فقط'}`);
 
   let done = 0;
