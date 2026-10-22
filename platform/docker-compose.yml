@@ -79,9 +79,9 @@ services:
       # يُمرَّر صراحةً كبقيّة الأسرار: ملف .env يُقرأ للاستبدال النصّي وحده،
       # ولا يصل إلى داخل الحاوية إلا ما يُذكر هنا.
       OPENAI_API_KEY: ${OPENAI_API_KEY:-}
-      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-6.1-sol}
+      OPENAI_CHAT_MODEL: ${OPENAI_CHAT_MODEL:-gpt-4o-mini}
       OPENAI_EMBED_MODEL: ${OPENAI_EMBED_MODEL:-text-embedding-3-small}
-      OPENAI_ANALYSIS_EFFORT: ${OPENAI_ANALYSIS_EFFORT:-medium}
+      OPENAI_ANALYSIS_EFFORT: ${OPENAI_ANALYSIS_EFFORT:-low}
       OPENAI_ASSISTANT_EFFORT: ${OPENAI_ASSISTANT_EFFORT:-low}
       NODE_ENV: production
     ports:

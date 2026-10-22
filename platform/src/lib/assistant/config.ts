@@ -11,15 +11,22 @@ import { REASONING_EFFORTS, type ReasoningEffort } from './model-params';
  * هذا المشروع مع Redis من قبل. فالقراءة مؤجَّلة إلى أول طلب حقيقي.
  */
 
-/** النموذج الافتراضي حين لا يُضبط `OPENAI_CHAT_MODEL` */
-export const DEFAULT_CHAT_MODEL = 'gpt-6.1-sol';
+/**
+ * النموذج الافتراضي حين لا يُضبط `OPENAI_CHAT_MODEL`.
+ *
+ * الأخفّ كلفةً عن قصد: الافتراضي هو ما يسري حين يُنسى السطر في ملف
+ * البيئة، والنسيان لا يجوز أن يُشغّل نموذجاً بعشرين ضعف الثمن. ومن أراد
+ * نموذج استدلال كتبه صراحةً.
+ */
+export const DEFAULT_CHAT_MODEL = 'gpt-4o-mini';
 
 /*
  * عمق التفكير — يسري على نماذج الاستدلال وحدها، ويُتجاهَل لغيرها.
  *
  * وهو إعدادان لا إعداد واحد لأنّ المهمّتين مختلفتان في ثمن الانتظار:
- * تصنيف المنشور يجري في الخلفية ولا ينتظره أحد، فيستحقّ تفكيراً أعمق.
- * والمساعد يُسأل وصاحبه ينظر إلى الشاشة، وكلّ ثانية تفكير يراها صمتاً.
+ * تصنيف المنشور يجري في الخلفية ولا ينتظره أحد، فيحتمل تفكيراً أعمق إن
+ * قُبلت كلفته. والمساعد يُسأل وصاحبه ينظر إلى الشاشة، وكلّ ثانية تفكير
+ * يراها صمتاً.
  */
 const effort = (fallback: ReasoningEffort) =>
   z
@@ -33,7 +40,8 @@ const schema = z.object({
   OPENAI_API_KEY: z.string().trim().min(1),
   OPENAI_CHAT_MODEL: z.string().trim().min(1).default(DEFAULT_CHAT_MODEL),
   OPENAI_EMBED_MODEL: z.string().trim().min(1).default('text-embedding-3-small'),
-  OPENAI_ANALYSIS_EFFORT: effort('medium'),
+  // أدنى عمق افتراضاً للمهمّتين: رموز التفكير تُحتسب مخرجات، ومن أراد أعمق رفعه بنفسه
+  OPENAI_ANALYSIS_EFFORT: effort('low'),
   OPENAI_ASSISTANT_EFFORT: effort('low'),
 });
 

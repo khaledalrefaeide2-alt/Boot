@@ -365,15 +365,18 @@ async function main() {
   // ══════════════ الإعداد ══════════════
 
   const defaults = getAssistantConfig();
-  check('النموذج الافتراضي gpt-6.1-sol', defaults.chatModel === 'gpt-6.1-sol' && DEFAULT_CHAT_MODEL === 'gpt-6.1-sol');
-  check('عمق التصنيف الافتراضي medium', defaults.analysisEffort === 'medium');
+  check(
+    'النموذج الافتراضي gpt-4o-mini — الأخفّ كلفةً',
+    defaults.chatModel === 'gpt-4o-mini' && DEFAULT_CHAT_MODEL === 'gpt-4o-mini',
+  );
+  check('عمق التصنيف الافتراضي low', defaults.analysisEffort === 'low');
   check('عمق المساعد الافتراضي low', defaults.assistantEffort === 'low');
   check('نموذج المتّجهات لم يتغيّر', defaults.embedModel === 'text-embedding-3-small');
 
   process.env.OPENAI_ANALYSIS_EFFORT = '  HIGH ';
   check('العمق يُقبل بأيّ حالة أحرف ومسافات', getAssistantConfig().analysisEffort === 'high');
   process.env.OPENAI_ANALYSIS_EFFORT = '';
-  check('العمق الفارغ يعني الافتراضي', getAssistantConfig().analysisEffort === 'medium');
+  check('العمق الفارغ يعني الافتراضي', getAssistantConfig().analysisEffort === 'low');
   process.env.OPENAI_ANALYSIS_EFFORT = 'meduim';
   let effortError: unknown = null;
   try {
@@ -643,15 +646,33 @@ async function main() {
     check(
       `${file}: متغيّرا العمق يصلان إلى كلّ خدمةٍ تحمل النموذج`,
       models > 0 &&
-        (compose.match(/OPENAI_ANALYSIS_EFFORT: \$\{OPENAI_ANALYSIS_EFFORT:-medium\}/g) ?? []).length === models &&
+        (compose.match(/OPENAI_ANALYSIS_EFFORT: \$\{OPENAI_ANALYSIS_EFFORT:-low\}/g) ?? []).length === models &&
         (compose.match(/OPENAI_ASSISTANT_EFFORT: \$\{OPENAI_ASSISTANT_EFFORT:-low\}/g) ?? []).length === models,
     );
-    check(`${file}: النموذج الافتراضي gpt-6.1-sol`, !compose.includes('OPENAI_CHAT_MODEL:-gpt-4o-mini'));
+    /*
+     * الافتراضي واحدٌ في كلّ موضع.
+     *
+     * compose يملأ الفراغ بقيمته قبل أن تصل البيئةُ إلى الشيفرة، فافتراضيُّ
+     * الشيفرة لا يسري على الخادم أصلاً. وافتراضيّان مختلفان يعنيان أنّ سطراً
+     * منسيّاً في ملف البيئة يُشغّل غير ما يظنّه المدير — وقد يكون الأغلى.
+     */
+    const defaultLines = compose.match(/OPENAI_CHAT_MODEL: \$\{OPENAI_CHAT_MODEL:-([^}]+)\}/g) ?? [];
+    check(
+      `${file}: الافتراضي ${DEFAULT_CHAT_MODEL} كافتراضيّ الشيفرة`,
+      defaultLines.length === models &&
+        defaultLines.every((line) => line.endsWith(`:-${DEFAULT_CHAT_MODEL}}`)),
+      defaultLines.join(' | '),
+    );
   }
   const prodExample = read('.env.production.example');
   check(
     '.env.production.example يشرح متغيّرَي العمق',
-    /^OPENAI_ANALYSIS_EFFORT="medium"$/m.test(prodExample) && /^OPENAI_ASSISTANT_EFFORT="low"$/m.test(prodExample),
+    /^OPENAI_ANALYSIS_EFFORT="low"$/m.test(prodExample) && /^OPENAI_ASSISTANT_EFFORT="low"$/m.test(prodExample),
+  );
+  check(
+    'قالبا البيئة على الافتراضي نفسه',
+    new RegExp(`^OPENAI_CHAT_MODEL="${DEFAULT_CHAT_MODEL}"$`, 'm').test(prodExample) &&
+      new RegExp(`^OPENAI_CHAT_MODEL=${DEFAULT_CHAT_MODEL}$`, 'm').test(read('.env.example')),
   );
   check(
     'لا متغيّر NEXT_PUBLIC_ للنموذج أو المفتاح',

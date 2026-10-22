@@ -30,9 +30,9 @@ nano .env.production
 
 ```env
 OPENAI_API_KEY=sk-...
-OPENAI_CHAT_MODEL=gpt-6.1-sol
+OPENAI_CHAT_MODEL=gpt-4o-mini
 OPENAI_EMBED_MODEL=text-embedding-3-small
-OPENAI_ANALYSIS_EFFORT=medium
+OPENAI_ANALYSIS_EFFORT=low
 OPENAI_ASSISTANT_EFFORT=low
 ```
 
@@ -62,9 +62,9 @@ OPENAI_ASSISTANT_EFFORT=low
 | المتغيّر | إلزامي | الافتراضي | ملاحظات |
 |---|---|---|---|
 | `OPENAI_API_KEY` | نعم | — | خادميّ بحت |
-| `OPENAI_CHAT_MODEL` | لا | `gpt-6.1-sol` | يُغيَّر بلا تعديل شيفرة — والقديم `gpt-4o-mini` ما زال يعمل |
+| `OPENAI_CHAT_MODEL` | لا | `gpt-4o-mini` | الأخفّ كلفةً. يُغيَّر بلا تعديل شيفرة — ونماذج الاستدلال (`gpt-6.1-sol`) تعمل أيضاً بأضعاف الكلفة |
 | `OPENAI_EMBED_MODEL` | لا | `text-embedding-3-small` | تغييره يستلزم إعادة فهرسة |
-| `OPENAI_ANALYSIS_EFFORT` | لا | `medium` | عمق التفكير في تصنيف المنشورات: `low` · `medium` · `high` · `xhigh` · `max` |
+| `OPENAI_ANALYSIS_EFFORT` | لا | `low` | عمق التفكير في تصنيف المنشورات: `low` · `medium` · `high` · `xhigh` · `max` |
 | `OPENAI_ASSISTANT_EFFORT` | لا | `low` | عمق التفكير في إجابات المساعد — بالقيم نفسها |
 
 ### نماذج الاستدلال ونماذج المحادثة
@@ -79,7 +79,7 @@ OPENAI_ASSISTANT_EFFORT=low
 | عمق التفكير | لا يُرسَل | من متغيّرَي العمق أعلاه |
 | المهلة | ٤٠–٤٥ ثانية كما كانت | تطول بالعمق حتى خمس دقائق |
 
-فالرجوع إلى `gpt-4o-mini` تعديلُ سطرٍ واحد في ملف البيئة، بلا تعديل شيفرة.
+فالتبديل بين النوعين تعديلُ سطرٍ واحد في ملف البيئة، بلا تعديل شيفرة.
 
 عمقٌ أعلى أدقّ وأبطأ وأغلى: رموز التفكير تُحتسب بسعر المخرجات ولا تظهر في
 الجواب. والتصنيف يمرّ على المنشورات واحداً واحداً، فالعمق يحدّد أيضاً كم
@@ -136,9 +136,9 @@ curl -X POST https://<النطاق>/api/admin/ai/test \
 ```json
 {
   "success": true,
-  "chatModel": "gpt-6.1-sol",
+  "chatModel": "gpt-4o-mini",
   "embedModel": "text-embedding-3-small",
-  "analysisEffort": "medium",
+  "analysisEffort": "low",
   "assistantEffort": "low",
   "message": "تم الاتصال بـ OpenAI بنجاح"
 }
