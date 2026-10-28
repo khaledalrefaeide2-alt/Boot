@@ -76,7 +76,7 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
         description={`${post.account.name} — ${post.platform.name}`}
         action={
           <>
-            <LinkButton href={`/posts?accountId=${post.account.id}&range=all`} variant="secondary">منشورات الحساب</LinkButton>
+            <LinkButton href={`/platforms/accounts/${post.account.id}`} variant="secondary">منشورات الحساب</LinkButton>
             {post.url && (
               <LinkButton href={post.url} target="_blank" rel="noopener noreferrer" as="a">
                 <ExternalLink className="h-4 w-4" aria-hidden />

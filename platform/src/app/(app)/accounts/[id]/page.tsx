@@ -104,7 +104,7 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
               <ExternalLink className="h-4 w-4" aria-hidden />
               فتح الحساب
             </LinkButton>
-            <LinkButton href={`/posts?accountId=${account.id}&range=all`}>كل المنشورات</LinkButton>
+            <LinkButton href={`/platforms/accounts/${account.id}`}>كل المنشورات</LinkButton>
           </>
         }
       />
@@ -185,7 +185,7 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
           <CardHeader
             title="أحدث المنشورات"
             action={
-              <LinkButton href={`/posts?accountId=${account.id}&range=all`} variant="ghost" size="sm">
+              <LinkButton href={`/platforms/accounts/${account.id}`} variant="ghost" size="sm">
                 عرض الكل
               </LinkButton>
             }

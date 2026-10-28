@@ -65,7 +65,7 @@ export default async function ExtractionDetailPage({
           <>
             <LinkButton href="/admin/extractions" variant="secondary">العودة إلى السجل</LinkButton>
             {run.account && (
-              <LinkButton href={`/posts?accountId=${run.account.id}&range=all`}>عرض منشورات الحساب</LinkButton>
+              <LinkButton href={`/platforms/accounts/${run.account.id}`}>عرض منشورات الحساب</LinkButton>
             )}
           </>
         }

@@ -89,6 +89,10 @@ export function TopAccountsSection({
   const [metric, setMetric] = useState<Metric>('posts');
   const [scope, setScope] = useState<SectionScope>(EMPTY_SCOPE);
   const canBrowse = useCan(PERMISSIONS.ACCOUNTS_VIEW);
+  // خطّافان مستقلّان لا `&&` بينهما: الخطّاف لا يُستدعى بشرط
+  const canSeePlatforms = useCan(PERMISSIONS.PLATFORMS_VIEW);
+  const canSeePosts = useCan(PERMISSIONS.POSTS_VIEW);
+  const canOpenPosts = canSeePlatforms && canSeePosts;
 
   const effective = scopeParams(params, scope);
 
@@ -205,12 +209,18 @@ export function TopAccountsSection({
                 )}
               </div>
 
-              <Link
-                href={`/posts?accountId=${account.id}&range=all`}
-                className="w-fit text-xs font-medium text-primary-text hover:underline @[15rem]:text-sm"
-              >
-                عرض منشورات الحساب
-              </Link>
+              {/*
+                إلى منشورات الحساب في «المنصات» لا إلى شاشة المنشورات: تلك
+                لا تقرأ الحساب من الرابط، فكان الرابط يفتح منشورات الجميع.
+              */}
+              {canOpenPosts && (
+                <Link
+                  href={`/platforms/accounts/${account.id}`}
+                  className="w-fit text-xs font-medium text-primary-text hover:underline @[15rem]:text-sm"
+                >
+                  عرض منشورات الحساب
+                </Link>
+              )}
 
               <footer className="flex items-center justify-between border-t border-border pt-3">
                 <Stat icon={METRIC_ICONS.posts} value={account.posts} label="منشورات" />

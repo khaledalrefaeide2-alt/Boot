@@ -41,10 +41,13 @@ const SORT_OPTIONS = [
 ];
 
 export function PostsClient({
+  initialFilters = {},
   canReview,
   canExport,
   canDelete,
 }: {
+  /** ما جاء في الرابط — منصةٌ أو حسابٌ أو فترة — فوق الفلاتر الفارغة */
+  initialFilters?: Partial<PostFilterState>;
   canReview: boolean;
   canExport: boolean;
   canDelete: boolean;
@@ -52,7 +55,7 @@ export function PostsClient({
   const toast = useToast();
   const queryClient = useQueryClient();
   const [deleteTarget, setDeleteTarget] = useState<PostListItemView | null>(null);
-  const [filters, setFilters] = useState<PostFilterState>(EMPTY_FILTERS);
+  const [filters, setFilters] = useState<PostFilterState>(() => ({ ...EMPTY_FILTERS, ...initialFilters }));
   const [sort, setSort] = useState('publishedAt');
   const [view, setView] = useState<'cards' | 'table'>('cards');
 

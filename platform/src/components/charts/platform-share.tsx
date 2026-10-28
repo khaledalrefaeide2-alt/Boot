@@ -2,7 +2,7 @@
 
 import { Globe, ChartPie } from 'lucide-react';
 import { ChartFrame } from './chart-kit';
-import { formatNumber, formatPercent } from '@/lib/utils';
+import { cn, formatNumber, formatPercent } from '@/lib/utils';
 
 /*
  * علامات المنصّات — مرسومةٌ بأشكالٍ بسيطة لا منسوخةٌ من شعاراتها.
@@ -61,15 +61,19 @@ export function PlatformMark({ code, className }: { code: string; className?: st
   if (!mark) {
     return (
       <span
-        className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-control bg-surface-2 ${className ?? ''}`}
+        className={cn(
+          'flex h-8 w-8 shrink-0 items-center justify-center rounded-control bg-surface-2 [&_svg]:h-1/2 [&_svg]:w-1/2',
+          className,
+        )}
         aria-hidden
       >
-        <Globe className="h-4 w-4 text-subtle-foreground" />
+        <Globe className="text-subtle-foreground" />
       </span>
     );
   }
   return (
-    <svg viewBox="0 0 24 24" className={`h-8 w-8 shrink-0 ${className ?? ''}`} aria-hidden>
+    // `cn` لا ضمّ نصّي: الحجم الممرَّر يحلّ محلّ الافتراضي ولا يجاوره فيتنازعان
+    <svg viewBox="0 0 24 24" className={cn('h-8 w-8 shrink-0', className)} aria-hidden>
       <rect width="24" height="24" rx="6" fill={mark.color} />
       {mark.glyph}
     </svg>

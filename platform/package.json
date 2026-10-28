@@ -52,7 +52,8 @@
     "verify:queue": "tsx --conditions=react-server scripts/verify-queue.ts",
     "verify:security": "tsx --conditions=react-server scripts/verify-security.ts",
     "verify:avatars": "tsx --conditions=react-server scripts/verify-avatars.ts",
-    "verify:models": "tsx --conditions=react-server scripts/verify-models.ts"
+    "verify:models": "tsx --conditions=react-server scripts/verify-models.ts",
+    "verify:directory": "tsx --conditions=react-server scripts/verify-directory.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",
