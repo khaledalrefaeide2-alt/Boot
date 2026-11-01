@@ -84,7 +84,8 @@ export function ChartFrame({
   icon?: LucideIcon;
   isEmpty?: boolean;
   emptyMessage?: string;
-  height?: number;
+  /** ارتفاع منطقة الرسم — أو `auto` لرسمٍ من HTML يأخذ ارتفاع محتواه */
+  height?: number | 'auto';
   children: React.ReactNode;
   className?: string;
   footer?: React.ReactNode;
@@ -121,7 +122,7 @@ export function ChartFrame({
            */
           <div
             className="flex flex-col items-center justify-center gap-3 text-center"
-            style={{ height }}
+            style={{ height: height === 'auto' ? 160 : height }}
           >
             <span className="flex h-11 w-11 items-center justify-center rounded-full bg-surface-2">
               <ChartNoAxesColumn className="h-5 w-5 text-subtle-foreground" aria-hidden />
@@ -129,7 +130,7 @@ export function ChartFrame({
             <p className="text-sm text-muted-foreground">{emptyMessage}</p>
           </div>
         ) : (
-          <div style={{ height }}>{children}</div>
+          <div style={height === 'auto' ? undefined : { height }}>{children}</div>
         )}
       </div>
 
