@@ -42,6 +42,7 @@ const MIN_TEXT_LENGTH = 10;
 function emptyResult(reason: string): PostAnalysisResult & { needsReview: boolean } {
   const raw = {
     sentiment: 'UNKNOWN' as const,
+    targetScope: 'NONE' as const,
     target: null,
     subject: '',
     rationale: reason,
@@ -67,7 +68,7 @@ function emptyResult(reason: string): PostAnalysisResult & { needsReview: boolea
     isDestructive: false,
     coordinatedSuspected: false,
   };
-  return { ...raw, stance: deriveStance(raw), matchedKeywords: [], needsReview: true };
+  return { ...raw, stance: deriveStance(raw), negativeBasis: null, matchedKeywords: [], needsReview: true };
 }
 
 /**
@@ -196,6 +197,8 @@ export async function analyzeAndSave(postId: string, text: string) {
         isConstructive: result.isConstructive,
         isDestructive: result.isDestructive,
         coordinatedSuspected: result.coordinatedSuspected,
+        targetScope: result.targetScope,
+        negativeBasis: result.negativeBasis,
         needsReview,
         model: config.chatModel,
       },
@@ -225,6 +228,8 @@ export async function analyzeAndSave(postId: string, text: string) {
         isConstructive: result.isConstructive,
         isDestructive: result.isDestructive,
         coordinatedSuspected: result.coordinatedSuspected,
+        targetScope: result.targetScope,
+        negativeBasis: result.negativeBasis,
         needsReview,
         model: config.chatModel,
       },
@@ -234,7 +239,8 @@ export async function analyzeAndSave(postId: string, text: string) {
      * المؤشّر يُحدَّث والمصدر يُوسم AI.
      *
      * والحقل اسمه `sentiment` في القاعدة لسببٍ تاريخي، ومعناه اليوم ما
-     * تقوله السياسة: موقف المنشور تجاه الجهات والخدمات الحكومية. أُبقي
+     * تقوله السياسة: موقف المنشور تجاه الدولة السورية الجديدة، أو مخالفته
+     * معايير ميتا وحقوق الإنسان. أُبقي
      * الاسم لأن تغييره يمسّ عشرات الاستعلامات والفهارس والتقارير بلا أن
      * يُضيف للقارئ شيئاً — والقارئ يرى التسمية العربية لا اسم العمود.
      *

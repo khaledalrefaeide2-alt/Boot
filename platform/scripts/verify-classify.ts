@@ -31,6 +31,8 @@ function check(name: string, ok: boolean, detail?: string) {
 function model(over: Partial<RawAnalysis> = {}): RawAnalysis {
   return {
     sentiment: 'NEUTRAL',
+    // الفحوص هنا عن تسوية الوسوم والخطورة؛ والجهة الدولة كي لا تتدخّل القاعدة الحاكمة
+    targetScope: 'NEW_STATE',
     target: null,
     subject: 'موضوع',
     rationale: 'تعليل',
@@ -117,7 +119,8 @@ const TEXT = 'نصّ المنشور للاختبار';
 
 /* الخطورة خارج المدى تُقصّ ولا تُمرَّر */
 {
-  const out = normalizeAnalysis(model({ severityLevel: 9 }), TEXT);
+  // سلبيٌّ تجاه الدولة: المحايد بلا وسوم تُنزَل خطورته إلى صفر بالقاعدة الحاكمة
+  const out = normalizeAnalysis(model({ sentiment: 'NEGATIVE', severityLevel: 9 }), TEXT);
   check('والخطورة خارج المدى تُقصّ إلى ٥', out.severityLevel === 5, String(out.severityLevel));
 }
 
@@ -163,7 +166,7 @@ const TEXT = 'نصّ المنشور للاختبار';
   const plain = normalizeAnalysis(model({ isSarcasm: true, severityLevel: 0 }), TEXT);
   check('السخرية وحدها لا تُحال', !requiresReview(plain) && plain.labels.includes('SARCASM'));
 
-  const loaded = normalizeAnalysis(model({ isSarcasm: true, severityLevel: 2 }), TEXT);
+  const loaded = normalizeAnalysis(model({ sentiment: 'NEGATIVE', isSarcasm: true, severityLevel: 2 }), TEXT);
   check(
     'والسخرية فوقها خطورة تُحال',
     requiresReview(loaded),

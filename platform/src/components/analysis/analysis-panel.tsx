@@ -9,6 +9,8 @@ import { useToast } from '@/components/ui/toast';
 import { api, ApiClientError } from '@/lib/api-client';
 import {
   AUTHOR_STANCE,
+  NEGATIVE_BASIS_LABELS,
+  TARGET_SCOPE_LABELS,
   CONTENT_LABELS,
   RUMOR_STATUS,
   SENTIMENT_LABELS,
@@ -50,6 +52,9 @@ export interface PostAnalysisView {
   isConstructive?: boolean;
   isDestructive?: boolean;
   coordinatedSuspected?: boolean;
+  /** إلى من يتّجه المنشور وسبب سلبيته — فارغان في تحليلات ما قبل السياسة الحالية */
+  targetScope?: string | null;
+  negativeBasis?: string | null;
 }
 
 const STANCE: Record<string, { label: string; tone: 'success' | 'danger' | 'neutral' | 'warning' }> = {
@@ -322,8 +327,27 @@ export function AnalysisPanel({
               </div>
             )}
 
-            {(current.target || current.subject) && (
+            {/*
+              لماذا هو سلبي؟ — السؤال الأول لمن يراجع.
+
+              السياسة تقول إنّ السلبي اثنان لا ثالث لهما، فيُقال أيّهما هذا
+              صراحةً. ومراجعٌ يرى «مخالفة معايير ميتا» على منشورٍ يعرف أنّه
+              نقلٌ لا تبنٍّ يصحّحه في مكانه.
+            */}
+            {current.sentiment === 'NEGATIVE' && current.negativeBasis && (
+              <p className="rounded-md border border-danger/25 bg-danger-soft px-3 py-2 text-xs font-semibold text-danger">
+                سبب السلبية: {NEGATIVE_BASIS_LABELS[current.negativeBasis] ?? current.negativeBasis}
+              </p>
+            )}
+
+            {(current.target || current.subject || current.targetScope) && (
               <dl className="grid gap-x-4 gap-y-1.5 text-sm sm:grid-cols-[auto_1fr]">
+                {current.targetScope && (
+                  <>
+                    <dt className="text-xs font-medium text-muted-foreground">اتّجاه المنشور</dt>
+                    <dd className="text-foreground">{TARGET_SCOPE_LABELS[current.targetScope] ?? current.targetScope}</dd>
+                  </>
+                )}
                 {current.target && (
                   <>
                     <dt className="text-xs font-medium text-muted-foreground">الجهة المستهدفة</dt>

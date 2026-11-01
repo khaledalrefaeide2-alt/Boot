@@ -32,6 +32,7 @@
     "verify:contrast": "tsx scripts/verify-contrast.ts",
     "reindex:embeddings": "tsx --conditions=react-server scripts/reindex-embeddings.ts",
     "analyze:posts": "tsx --conditions=react-server scripts/analyze-posts.ts",
+    "eval:analysis": "tsx --conditions=react-server scripts/eval-analysis.ts",
     "verify:learning": "tsx --conditions=react-server scripts/verify-learning-guard.ts",
     "verify:window": "tsx --conditions=react-server scripts/verify-extraction-window.ts",
     "verify:chunks": "tsx scripts/verify-backfill-chunks.ts",
@@ -54,7 +55,8 @@
     "verify:avatars": "tsx --conditions=react-server scripts/verify-avatars.ts",
     "verify:models": "tsx --conditions=react-server scripts/verify-models.ts",
     "verify:directory": "tsx --conditions=react-server scripts/verify-directory.ts",
-    "verify:ops": "tsx --conditions=react-server scripts/verify-ops.ts"
+    "verify:ops": "tsx --conditions=react-server scripts/verify-ops.ts",
+    "verify:policy": "tsx --conditions=react-server scripts/verify-policy.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",

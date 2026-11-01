@@ -499,7 +499,7 @@ async function raiseNegativeAlert(runId: string, counters: Counters): Promise<vo
     await notifyOperators({
       type: 'NEGATIVE_SENTIMENT_SPIKE',
       severity: 'WARNING',
-      title: 'ارتفاع في المنشورات السلبية تجاه الجهات والخدمات',
+      title: 'ارتفاع في المنشورات السلبية',
       body: `${counters.negative} من ${counters.done} منشوراً صُنّفت سلبيةً في هذه الجولة (${Math.round(ratio * 100)}%).`,
       link: '/admin/analysis',
       entityType: 'analysis_run',

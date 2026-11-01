@@ -253,6 +253,8 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
                   isConstructive: post.analysis.isConstructive,
                   isDestructive: post.analysis.isDestructive,
                   coordinatedSuspected: post.analysis.coordinatedSuspected,
+                  targetScope: post.analysis.targetScope,
+                  negativeBasis: post.analysis.negativeBasis,
                   model: post.analysis.model,
                   createdAt: post.analysis.createdAt.toISOString(),
                 }

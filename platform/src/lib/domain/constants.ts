@@ -107,14 +107,14 @@ export const POST_TYPE_LABELS: Record<PostType, string> = {
  */
 export const STANCE_METRIC = {
   /** الاسم الكامل — في التقارير وعناوين الأقسام */
-  full: 'موقف المنشورات تجاه الجهات والخدمات الحكومية',
+  full: 'موقف المنشورات تجاه الدولة السورية الجديدة',
   /** المختصر — حيث لا يتّسع الكامل */
-  short: 'الموقف من الجهات والخدمات',
+  short: 'الموقف من الدولة',
   /** الأقصر — رؤوس الجداول والفلاتر والمحاور */
   compact: 'الموقف',
   /** التحفّظ الذي يرافق كل عرض موسَّع */
   caveat:
-    'يصف موقف المحتوى تجاه الجهات والخدمات الحكومية، ولا يُقرأ قياساً للرأي العام ولا للولاء السياسي.',
+    'السلبي: نقدُ الدولة السورية الجديدة أو مخالفةُ معايير ميتا وحقوق الإنسان. ونقدُ الجهات غير الحكومية ليس سلبياً. ولا يُقرأ قياساً للرأي العام ولا للولاء السياسي.',
 } as const;
 
 export const SENTIMENT_LABELS: Record<Sentiment, string> = {
@@ -161,7 +161,7 @@ export const NOTIFICATION_TYPE_LABELS: Record<NotificationType, string> = {
   EXTRACTION_SUCCEEDED: 'نجاح عملية استخراج',
   EXTRACTION_NO_RESULTS: 'عملية استخراج بلا نتائج',
   HIGH_ENGAGEMENT_POST: 'منشور مرتفع التفاعل',
-  NEGATIVE_SENTIMENT_SPIKE: 'ارتفاع في المنشورات السلبية تجاه الجهات والخدمات',
+  NEGATIVE_SENTIMENT_SPIKE: 'ارتفاع في المنشورات السلبية',
   KEYWORD_HIT: 'ظهور كلمة مفتاحية مهمة',
   USER_PENDING_APPROVAL: 'مستخدم بانتظار الموافقة',
   SYSTEM: 'إشعار نظام',
@@ -292,6 +292,13 @@ export const CONTENT_LABELS: Record<string, { label: string; tone: LabelTone }> 
   SARCASM: { label: 'سخرية', tone: 'neutral' },
   SPAM: { label: 'محتوى مكرّر', tone: 'neutral' },
   COORDINATED_CONTENT_SUSPECTED: { label: 'اشتباه تنسيق', tone: 'warning' },
+
+  // مخالفات معايير ميتا وحقوق الإنسان — تجعل المنشور سلبياً أيّاً كان المستهدف
+  DANGEROUS_ORGANIZATIONS: { label: 'تمجيد منظمات إرهابية', tone: 'danger' },
+  GRAPHIC_VIOLENCE: { label: 'عنف صادم', tone: 'danger' },
+  PRIVACY_VIOLATION: { label: 'انتهاك الخصوصية', tone: 'danger' },
+  SEXUAL_EXPLOITATION: { label: 'استغلال جنسي', tone: 'danger' },
+  DISCRIMINATION: { label: 'دعوة إلى التمييز', tone: 'danger' },
 };
 
 /** ترتيب العرض: الأخطر أوّلاً، فما يُرى أوّلاً هو ما يُتصرَّف فيه */
@@ -316,6 +323,22 @@ export const RUMOR_STATUS: Record<string, { label: string; tone: LabelTone }> = 
   UNVERIFIED_CLAIM: { label: 'ادّعاء غير موثّق', tone: 'warning' },
   SUSPECTED_RUMOR: { label: 'صياغة شائعة', tone: 'warning' },
   VERIFIED_MISINFORMATION: { label: 'تضليل مثبت', tone: 'danger' },
+};
+
+/** إلى من يتّجه المنشور — عليه يقوم الحكم بالسلبية */
+export const TARGET_SCOPE_LABELS: Record<string, string> = {
+  NEW_STATE: 'الدولة السورية الجديدة',
+  FORMER_REGIME: 'النظام السابق',
+  NON_STATE: 'جهة غير حكومية',
+  MIXED: 'الدولة وجهة غيرها',
+  NONE: 'لا جهة مستهدفة',
+};
+
+/** لماذا صُنّف المنشور سلبياً */
+export const NEGATIVE_BASIS_LABELS: Record<string, string> = {
+  STATE_CRITICISM: 'نقد الدولة السورية الجديدة',
+  POLICY_VIOLATION: 'مخالفة معايير ميتا وحقوق الإنسان',
+  BOTH: 'نقد الدولة ومخالفة معايير ميتا وحقوق الإنسان',
 };
 
 /** موقف الكاتب ممّا ينقل — غير موقف المنشور من الجهات */

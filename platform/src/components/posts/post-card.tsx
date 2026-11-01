@@ -159,7 +159,7 @@ export function ClassificationBadge({
       size={size}
       title={
         sentiment === 'UNKNOWN'
-          ? 'صُنِّف وأُحيل إلى المراجعة — لم يتبيّن موقفه من الجهات والخدمات، إمّا لأن معناه يتوقّف على صورة أو فيديو غير متاح، وإمّا لأنه لا يتناول هذه الجهات أصلاً'
+          ? 'صُنِّف وأُحيل إلى المراجعة — لم يتبيّن موقفه من الدولة السورية الجديدة، إمّا لأن معناه يتوقّف على صورة أو فيديو غير متاح، وإمّا لأنه غامض'
           : `${STANCE_METRIC.compact}: ${SENTIMENT_LABELS[sentiment as keyof typeof SENTIMENT_LABELS] ?? sentiment}`
       }
     >
