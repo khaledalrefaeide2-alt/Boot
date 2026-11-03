@@ -79,6 +79,9 @@ export const SESSION_EXPIRED_PARAM = 'expired';
  */
 export const PAGE_PATH_HEADER = 'x-mm-page-path';
 
+/** رمز سياسة المحتوى للطلب الحالي — يكتبه الوسيط، ويقرؤه التخطيط الجذري */
+export const NONCE_HEADER = 'x-nonce';
+
 /** رمز الخطأ حين تمنع كلمةُ المرور المؤقتة الطلب — تقرؤه الواجهة فتحوّل */
 export const PASSWORD_CHANGE_REQUIRED = 'PASSWORD_CHANGE_REQUIRED';
 

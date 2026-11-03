@@ -1,6 +1,7 @@
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { NextConfig } from 'next';
+import { API_CONTENT_SECURITY_POLICY } from './src/lib/security/csp';
 
 const projectRoot = path.dirname(fileURLToPath(import.meta.url));
 
@@ -75,44 +76,18 @@ const nextConfig: NextConfig = {
           { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
           { key: 'X-DNS-Prefetch-Control', value: 'off' },
           { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=()' },
-          /*
-           * سياسة محتوى صارمة.
-           *
-           * React يهرّب ما يعرضه، ولا `dangerouslySetInnerHTML` في
-           * المشروع — فالسياسة طبقةٌ ثانية لا أولى. وقيمتها أنّها تمنع
-           * ما لا يمنعه التهريب: نصٌّ حُقن في منشور وبلغ موضعاً غير
-           * مهرَّب يوماً لا يستطيع أن يستدعي نصّاً من خارج، ولا أن
-           * يُرسل ما قرأه إلى خادمٍ بعيد.
-           *
-           * و`'unsafe-inline'` في الأنماط ضرورةٌ لا تساهل: Tailwind
-           * وNext يكتبان أنماطاً سطرية. أمّا النصوص البرمجية فلا
-           * `unsafe-eval` فيها.
-           *
-           * ★ و`'unsafe-inline'` في `script-src` ضرورةُ Next كذلك:
-           *   التصيير الخادمي يبثّ حالة الصفحة في وسوم سطرية. وإسقاطُها
-           *   يُعطّل التطبيق كلّه، وسياسةٌ تُعطّل الموقع تُحذف بعد يوم.
-           *   فالقيمة في بقيّة التوجيهات: `connect-src` و`frame-ancestors`
-           *   و`base-uri` و`form-action` — وهي ما يمنع التسريب فعلاً.
-           */
-          {
-            key: 'Content-Security-Policy',
-            value: [
-              "default-src 'self'",
-              "script-src 'self' 'unsafe-inline'",
-              "style-src 'self' 'unsafe-inline'",
-              // الخطّ مستضافٌ في public/fonts — فلا مصدر خارجي البتّة
-              "font-src 'self'",
-              // الصور من المنصة نفسها وحدها — الوسائط تُقدَّم من /api/media
-              "img-src 'self' data: blob:",
-              "connect-src 'self'",
-              "object-src 'none'",
-              "base-uri 'self'",
-              "form-action 'self'",
-              "frame-ancestors 'none'",
-              'upgrade-insecure-requests',
-            ].join('; '),
-          },
         ],
+      },
+      {
+        /*
+         * سياسة المحتوى لردود API وحدها.
+         *
+         * سياسة الصفحات يكتبها الوسيط (`src/proxy.ts`) برمزٍ لكلّ طلب — انظر
+         * `src/lib/security/csp.ts`. ولو كُتبت هنا على كلّ المسارات لوصلت
+         * الصفحةَ سياستان، والمتصفّح يفرضهما معاً.
+         */
+        source: '/api/:path*',
+        headers: [{ key: 'Content-Security-Policy', value: API_CONTENT_SECURITY_POLICY }],
       },
       {
         // النظام داخلي — لا يُفهرس إطلاقاً

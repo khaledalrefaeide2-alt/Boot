@@ -18,6 +18,10 @@ case "$1" in
     # وتعثّر البذر مرةً لا يستحق منع الخادم من العمل. أما على App Platform
     # فالبذر مهمة نشر مستقلة (deploy:bootstrap) تفشل صراحةً عند الخطأ.
     npx tsx prisma/seed.ts || echo "⚠️  تخطّي التهيئة الأولية"
+    # كلمة مرور المالك الأولى لا يحتاجها التطبيق بعد البذر — فلا تبقى في
+    # بيئة العملية التي تخدم الطلبات، ولا تُقرأ من /proc/self/environ إن
+    # بلغ أحدٌ يوماً قراءة ملفاتها. (تبقى في ملف البيئة حتى يحذفها المشغّل.)
+    unset SEED_OWNER_PASSWORD SEED_OWNER_EMAIL SEED_OWNER_NAME
     echo "🚀 تشغيل تطبيق الويب"
     exec npm run start:prod
     ;;

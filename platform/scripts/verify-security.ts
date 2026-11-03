@@ -143,10 +143,32 @@ for (const [header, why] of [
  * وسياسةٌ تسمح بمصدرٍ خارجي تنقضه بصمت، وتفتح قناةً يُسرَّب منها ما
  * قُرئ لو بلغ حقنٌ موضعاً غير مهرَّب.
  */
+/*
+ * سياسة الصفحات في وحدتها لا في next.config: الوسيط يكتبها برمزٍ عشوائيّ
+ * لكلّ طلب، فتُفحص الدالّة نفسها بناتجها لا بنصّها.
+ */
+const cspCode = readCode('src/lib/security/csp.ts');
+const { contentSecurityPolicy: buildPolicy } = require('../src/lib/security/csp') as typeof import('../src/lib/security/csp');
+const pagePolicy = buildPolicy('TESTNONCE', { dev: false });
+const scriptSrc = pagePolicy.split(';').map((d) => d.trim()).find((d) => d.startsWith('script-src')) ?? '';
 check(
   'ولا مضيف خارجي في سياسة المحتوى',
-  !/https:\/\//.test(nextConfig.slice(nextConfig.indexOf('Content-Security-Policy'), nextConfig.indexOf('upgrade-insecure-requests'))),
+  !/https?:\/\//.test(pagePolicy),
   'الخطّ مستضاف محلياً، فأيّ مضيف خارجي في السياسة قناةٌ بلا مقابل',
+);
+check(
+  'والنصوص السطرية لا تُنفَّذ إلا برمز الطلب',
+  /'nonce-TESTNONCE'/.test(scriptSrc) && !/unsafe-inline/.test(scriptSrc),
+  'unsafe-inline في script-src يُنفّذ أيّ حقنٍ بلغ موضعاً غير مهرَّب',
+);
+check(
+  'والوسيط يكتب السياسة في الطلب (ليقرأ Next الرمز) وفي الردّ',
+  /requestHeaders\.set\('content-security-policy', policy\)/.test(readCode('src/proxy.ts')) &&
+    /response\.headers\.set\('Content-Security-Policy', policy\)/.test(readCode('src/proxy.ts')),
+);
+check(
+  'ومكتبة السمة تأخذ الرمز — وإلا رُفض نصّها السطري',
+  /nonce=\{nonce\}/.test(readCode('src/app/layout.tsx')),
 );
 
 for (const directive of [
@@ -157,11 +179,11 @@ for (const directive of [
   "frame-ancestors 'none'",
   "connect-src 'self'",
 ]) {
-  check(`وسياسة المحتوى تحوي: ${directive}`, nextConfig.includes(directive));
+  check(`وسياسة المحتوى تحوي: ${directive}`, pagePolicy.includes(directive));
 }
 check(
-  'ولا unsafe-eval في النصوص البرمجية',
-  !/unsafe-eval/.test(nextConfig),
+  'ولا unsafe-eval في النصوص البرمجية في الإنتاج',
+  !/unsafe-eval/.test(pagePolicy) && !/unsafe-eval/.test(nextConfig) && cspCode.length > 0,
   'هو ما يحوّل نصّاً مسروقاً إلى شيفرة تعمل',
 );
 

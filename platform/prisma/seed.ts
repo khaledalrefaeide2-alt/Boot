@@ -288,6 +288,12 @@ async function seedOwner(): Promise<void> {
   if (existing) {
     console.log(`>> Owner already exists: ${email} (password unchanged)`);
     console.log('   المالك موجود مسبقاً ولم تُغيَّر كلمة مروره.');
+    console.log('');
+    console.log('⚠️  SEED_OWNER_PASSWORD still set in the environment file — remove it.');
+    console.log('   ما زالت SEED_OWNER_PASSWORD في ملف البيئة ولا حاجة إليها بعد اليوم.');
+    console.log('   احذف قيمتها من .env.production: كلمة مرورٍ مكتوبةٌ نصّاً في ملفٍ على');
+    console.log('   الخادم يقرؤها كلّ من قرأه، وهي غالباً كلمة المالك الحالية.');
+    console.log('');
     console.log('   لتغييرها شغّل الأمر التالي وحده:');
     console.log('       npm run owner:reset -- "MyNewPassword123"');
     return;

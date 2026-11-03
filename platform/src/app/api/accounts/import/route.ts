@@ -15,6 +15,8 @@ import { ImportError, parseAccountsWorkbook, MAX_IMPORT_ROWS } from '@/lib/accou
 
 /** حدّ حجم الملف — أوسع بكثير من ٥٠٠ صف نصّي، ويمنع رفع ملف ضخم بالخطأ */
 const MAX_FILE_BYTES = 5 * 1024 * 1024;
+/** حدود النموذج متعدّد الأجزاء وحقل الوضع — بضع مئات من البايتات تكفي */
+const MULTIPART_OVERHEAD_BYTES = 64 * 1024;
 
 /**
  * استيراد الحسابات من ملف Excel، بوضعين على المسار نفسه.
@@ -31,6 +33,21 @@ export async function POST(request: NextRequest) {
     const actor = await requirePermission(PERMISSIONS.ACCOUNTS_MANAGE);
     await requireCsrf();
     await guardMutationRate(actor.id);
+
+    /*
+     * الحجم يُفحص من الترويسة قبل قراءة الجسم.
+     *
+     * `formData()` يقرأ الجسم كلّه إلى الذاكرة، ثمّ كان الحجم يُفحص بعده —
+     * أي بعد أن دُفع ثمنه. والمتصفّح يرسل `Content-Length` مع كلّ رفع، وطلبٌ
+     * بلا طول (مجزّأ) لا يأتي من شاشة الاستيراد.
+     */
+    const declared = Number(request.headers.get('content-length') ?? '');
+    if (!Number.isFinite(declared) || declared <= 0) {
+      throw errors.badRequest('لم يصل أي ملف');
+    }
+    if (declared > MAX_FILE_BYTES + MULTIPART_OVERHEAD_BYTES) {
+      throw errors.badRequest('حجم الملف يتجاوز 5 ميغابايت');
+    }
 
     const form = await request.formData().catch(() => null);
     if (!form) throw errors.badRequest('لم يصل أي ملف');

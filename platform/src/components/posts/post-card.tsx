@@ -40,6 +40,7 @@ import {
   formatDateTime,
   formatNumber,
   formatPublishedAt,
+  safeExternalUrl,
   truncate,
 } from '@/lib/utils';
 import { splitUnit } from '@/components/ui/stat-card';
@@ -601,9 +602,9 @@ export function PostCard({
 
       {showAnalysis && <AnalysisSummary post={post} />}
 
-      {post.url && (
+      {safeExternalUrl(post.url) && (
         <a
-          href={post.url}
+          href={safeExternalUrl(post.url) ?? undefined}
           target="_blank"
           rel="noopener noreferrer"
           className="inline-flex w-fit items-center gap-1.5 text-xs font-medium text-primary-text hover:underline @[15rem]:text-sm"

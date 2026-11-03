@@ -18,7 +18,7 @@ import {
   STANCE_METRIC,
   languageLabel,
 } from '@/lib/domain/constants';
-import { formatDateTime, formatNumber } from '@/lib/utils';
+import { formatDateTime, formatNumber, safeExternalUrl } from '@/lib/utils';
 import { MediaGallery } from '@/components/posts/media-gallery';
 import { ClassificationBadge } from '@/components/posts/post-card';
 import { getAccountScope, scopeAllows } from '@/lib/auth/account-scope';
@@ -77,8 +77,8 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
         action={
           <>
             <LinkButton href={`/platforms/accounts/${post.account.id}`} variant="secondary">منشورات الحساب</LinkButton>
-            {post.url && (
-              <LinkButton href={post.url} target="_blank" rel="noopener noreferrer" as="a">
+            {safeExternalUrl(post.url) && (
+              <LinkButton href={safeExternalUrl(post.url)!} target="_blank" rel="noopener noreferrer" as="a">
                 <ExternalLink className="h-4 w-4" aria-hidden />
                 فتح في المنصة
               </LinkButton>
@@ -133,9 +133,9 @@ export default async function PostDetailPage({ params }: { params: Promise<{ id:
                 }))}
             />
 
-            {post.videoUrl && (
+            {safeExternalUrl(post.videoUrl) && (
               <a
-                href={post.videoUrl}
+                href={safeExternalUrl(post.videoUrl)!}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="mt-4 inline-flex items-center gap-2 text-sm text-primary-text hover:underline"

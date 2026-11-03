@@ -161,6 +161,35 @@ export function formatDuration(ms: number | null | undefined): string {
 }
 
 /** اقتطاع النص مع الحفاظ على الكلمات */
+/**
+ * رابطٌ خارجيّ آمنٌ للعرض — http أو https وحدهما، وإلا null.
+ *
+ * ★ رابط المنشور يأتي من المشغّل كما كتبه مصدره، ويُرسم `href`.
+ *
+ *   ورابطٌ بـ`javascript:` أو `data:` في `href` شيفرةٌ تنتظر نقرة.
+ *   React 19 يحجب `javascript:` اليوم، والمتصفّحات تحجب `data:` في
+ *   التنقّل — فهو غير قابل للاستغلال الآن. ولكنّ الحماية هنا لا تتّكئ
+ *   على سلوك مكتبةٍ قد يتغيّر: يُرفض الرابط عند الاستيراد، ويُفحص عند
+ *   العرض لما خُزّن قبل ذلك.
+ *
+ * دالّة خالصة — تُستعمل في الخادم والواجهة معاً.
+ */
+export function safeExternalUrl(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const trimmed = value.trim();
+  try {
+    const { protocol } = new URL(trimmed);
+    /*
+     * يُعاد النصّ كما ورد لا `URL.toString()`: الرابط يدخل في مفتاح منع
+     * التكرار، وتطبيعه (شرطةٌ مائلة أخيرة، ترميز الحروف) يغيّر مفتاح منشورٍ
+     * مخزَّن فيُستورد ثانيةً نسخةً مكرّرة عند الاستخراج التالي.
+     */
+    return protocol === 'https:' || protocol === 'http:' ? trimmed : null;
+  } catch {
+    return null;
+  }
+}
+
 export function truncate(text: string | null | undefined, maxLength = 160): string {
   if (!text) return '';
   if (text.length <= maxLength) return text;

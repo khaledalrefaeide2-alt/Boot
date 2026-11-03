@@ -2,6 +2,7 @@ import 'server-only';
 import ExcelJS from 'exceljs';
 import { prisma } from '@/lib/db';
 import { urlSchema } from '@/lib/validation/common';
+import { inspectZip } from './zip-guard';
 import {
   ACCOUNT_OWNERSHIP_LABELS,
   ACCOUNT_TYPE_LABELS,
@@ -184,6 +185,12 @@ function readHeader(sheet: ExcelJS.Worksheet): Map<string, number> {
  * كل صف. فالمعاينة والتنفيذ يستدعيان الدالة نفسها ويريان النتيجة نفسها.
  */
 export async function parseAccountsWorkbook(buffer: ArrayBuffer): Promise<ImportReport> {
+  // يُفكّ بسقفٍ قبل ExcelJS — الذي يفكّه كلّه في الذاكرة بلا سقف
+  const verdict = inspectZip(buffer);
+  if (!verdict.ok) {
+    throw new ImportError(`تعذّرت قراءة الملف — ${verdict.reason}. تأكد أنه بصيغة Excel ‏(.xlsx)`);
+  }
+
   const workbook = new ExcelJS.Workbook();
   try {
     await workbook.xlsx.load(buffer);

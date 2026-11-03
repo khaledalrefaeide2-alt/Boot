@@ -4,8 +4,10 @@ import {
   SESSION_COOKIE,
   SESSION_EXPIRED_PARAM,
   PAGE_PATH_HEADER,
+  NONCE_HEADER,
   cookieDeletion,
 } from '@/lib/auth/cookies';
+import { contentSecurityPolicy, generateNonce } from '@/lib/security/csp';
 
 /**
  * الوسيط (proxy) يوجّه الزوار بسرعة فقط — التحقق الحقيقي من الجلسة والصلاحيات
@@ -41,7 +43,7 @@ export default function proxy(request: NextRequest) {
      *   الكوكيان وتُعرض صفحة الدخول — وهو ما كان يجب أن يراه من البداية.
      */
     if (request.nextUrl.searchParams.get(SESSION_EXPIRED_PARAM) === '1') {
-      const response = NextResponse.next();
+      const response = renderPage(request, pathname);
       response.cookies.delete(cookieDeletion(SESSION_COOKIE));
       response.cookies.delete(cookieDeletion(CSRF_COOKIE));
       return response;
@@ -49,10 +51,32 @@ export default function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  // مسار الصفحة لـ`getSession` — يُكتب فوق أيّ قيمة جاء بها العميل
+  return renderPage(request, pathname);
+}
+
+/**
+ * متابعة الطلب إلى الصفحة — بمسارها ورمز سياستها.
+ *
+ * كلّ صفحةٍ تمرّ من هنا لا من `NextResponse.next()` مباشرة: صفحةٌ بلا رمز
+ * تُرفض نصوصها كلّها تحت السياسة الجديدة، فتظهر بيضاء بلا تفاعل.
+ *
+ * - المسار لـ`getSession` (كلمة المرور المؤقتة) — يُكتب فوق ما أرسله العميل.
+ * - والسياسة تُكتب في **الطلب** ليقرأ Next الرمز منها ويضعه على وسومه،
+ *   وفي **الردّ** ليفرضها المتصفّح. و`x-nonce` للتخطيط الجذري، يمرّره
+ *   إلى مكتبة السمة التي تكتب نصّها السطري.
+ */
+function renderPage(request: NextRequest, pathname: string): NextResponse {
+  const nonce = generateNonce();
+  const policy = contentSecurityPolicy(nonce, { dev: process.env.NODE_ENV === 'development' });
+
   const requestHeaders = new Headers(request.headers);
   requestHeaders.set(PAGE_PATH_HEADER, pathname);
-  return NextResponse.next({ request: { headers: requestHeaders } });
+  requestHeaders.set(NONCE_HEADER, nonce);
+  requestHeaders.set('content-security-policy', policy);
+
+  const response = NextResponse.next({ request: { headers: requestHeaders } });
+  response.headers.set('Content-Security-Policy', policy);
+  return response;
 }
 
 export const config = {

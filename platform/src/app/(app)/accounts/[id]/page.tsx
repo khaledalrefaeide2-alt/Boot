@@ -21,7 +21,7 @@ import {
   EXTRACTION_STATUS_TONE,
   languageLabel,
 } from '@/lib/domain/constants';
-import { formatCompactNumber, formatDateTime, formatNumber, truncate } from '@/lib/utils';
+import { formatCompactNumber, formatDateTime, formatNumber, safeExternalUrl, truncate } from '@/lib/utils';
 import { getAccountScope, scopeAllows } from '@/lib/auth/account-scope';
 import { LinkButton } from '@/components/ui/link-button';
 
@@ -100,10 +100,13 @@ export default async function AccountDetailPage({ params }: { params: Promise<{ 
         description={`${account.platform.name} — ${ACCOUNT_TYPE_LABELS[account.type]}`}
         action={
           <>
-            <LinkButton href={account.url} target="_blank" rel="noopener noreferrer" variant="secondary" as="a">
-              <ExternalLink className="h-4 w-4" aria-hidden />
-              فتح الحساب
-            </LinkButton>
+            {/* الرابط يُفحص عند الإدخال، ويُفحص هنا ثانيةً: `href` لا يُرسم إلا لـhttp(s) */}
+            {safeExternalUrl(account.url) && (
+              <LinkButton href={safeExternalUrl(account.url)!} target="_blank" rel="noopener noreferrer" variant="secondary" as="a">
+                <ExternalLink className="h-4 w-4" aria-hidden />
+                فتح الحساب
+              </LinkButton>
+            )}
             <LinkButton href={`/platforms/accounts/${account.id}`}>كل المنشورات</LinkButton>
           </>
         }

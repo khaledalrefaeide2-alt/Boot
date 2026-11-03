@@ -2,6 +2,7 @@ import 'server-only';
 import { createHash } from 'node:crypto';
 import type { PostType } from '@/generated/prisma';
 import { detectLanguage, extractHashtags } from '@/lib/analysis/text';
+import { safeExternalUrl } from '@/lib/utils';
 
 /**
  * تحويل عناصر Apify الخام إلى حقول المنشور عندنا.
@@ -398,7 +399,8 @@ export function mapApifyItem(raw: unknown, platformCode: string): MappedPost | n
     'title',
   ]);
 
-  const url = pickString(source, [
+  // رابط المنشور يُرسم `href` — فلا يُقبل منه إلا http(s)
+  const url = safeExternalUrl(pickString(source, [
     'url',
     'postUrl',
     'link',
@@ -406,7 +408,7 @@ export function mapApifyItem(raw: unknown, platformCode: string): MappedPost | n
     'twitterUrl',
     'displayUrl',
     'post_url',
-  ]);
+  ]));
 
   const externalId = pickString(source, [
     'id',

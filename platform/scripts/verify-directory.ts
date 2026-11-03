@@ -236,7 +236,10 @@ check(
 check('منشورات الحساب: الحساب خارج النطاق 404', /if \(!scopeAllows\(scope, id\)\) notFound\(\)/.test(accountPage));
 check('منشورات الحساب: المعرّف يُفحص شكله قبل القاعدة', /if \(!ID_SHAPE\.test\(id\)\) notFound\(\)/.test(accountPage));
 check('منشورات الحساب: الأرقام بلا المخفي', /isHidden: false/.test(accountPage));
-check('منشورات الحساب: الرابط الخارجي لـhttp(s) وحده', /\^https\?:/.test(accountPage));
+check(
+  'منشورات الحساب: الرابط الخارجي لـhttp(s) وحده',
+  /safeExternalUrl\(account\.url\) &&/.test(accountPage) && /href=\{safeExternalUrl\(account\.url\)!\}/.test(accountPage),
+);
 
 const query = stripComments(read('src/lib/queries/platform-directory.ts'));
 check('الاستعلام محصورٌ بالنطاق', /id: \{ in: scope \}/.test(query));

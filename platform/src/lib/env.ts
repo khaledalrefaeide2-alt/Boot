@@ -50,9 +50,11 @@ const envSchema = z.object({
   APIFY_MAX_ITEMS_HARD_CAP: z.coerce.number().int().positive().default(1000),
   APIFY_RUN_TIMEOUT_SECONDS: z.coerce.number().int().positive().default(900),
 
-  SEED_OWNER_EMAIL: z.string().email().optional(),
-  SEED_OWNER_NAME: z.string().optional(),
-  SEED_OWNER_PASSWORD: z.string().optional(),
+  /*
+   * ولا `SEED_OWNER_*` هنا: يقرؤها البذر من `process.env` مباشرةً مرّةً
+   * واحدة. والتطبيق لا يحتاجها، فلا يحمل كلمة مرور المالك الأولى في كائن
+   * إعداداته طوال عمره.
+   */
 
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
 });

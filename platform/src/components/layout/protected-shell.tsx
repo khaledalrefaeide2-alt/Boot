@@ -1,20 +1,25 @@
 import { redirect } from 'next/navigation';
 import { prisma } from '@/lib/db';
-import { getSession } from '@/lib/auth/session';
+import { getSession, type SessionUser } from '@/lib/auth/session';
+import { getAccountScope } from '@/lib/auth/account-scope';
+import { notificationAudience } from '@/lib/notifications';
 import { SESSION_EXPIRED_PARAM } from '@/lib/auth/cookies';
 import { can, PERMISSIONS } from '@/lib/auth/rbac';
 import { getAppName } from '@/lib/settings';
 import { ADMIN_NAV, VIEWER_NAV, filterNav } from '@/lib/domain/navigation';
 import { AppShell } from './app-shell';
 
-/** عدد التنبيهات غير المقروءة الموجّهة للمستخدم أو لدوره */
-async function unreadNotificationCount(userId: string, role: string): Promise<number> {
+/**
+ * عدد التنبيهات غير المقروءة — بجمهور قائمة التنبيهات نفسه.
+ *
+ * كان العدّ يجمع تنبيهات الدور لكلّ أحد، والقائمة تحجبها عن المقيَّد
+ * بحسابات بعينها (عناوينها تحمل أسماء حساباتٍ خارج نطاقه). فكان الجرس
+ * يُظهر عدداً لا تُظهره القائمة، ويُخبر المقيَّد بحجم ما يجري خارج نطاقه.
+ */
+async function unreadNotificationCount(user: SessionUser): Promise<number> {
   try {
     return await prisma.notification.count({
-      where: {
-        isRead: false,
-        OR: [{ userId }, { role: role as never }],
-      },
+      where: { isRead: false, ...notificationAudience(user.id, user.role, await getAccountScope()) },
     });
   } catch {
     return 0;
@@ -48,7 +53,7 @@ export async function ProtectedShell({
 
   const [appName, unreadCount] = await Promise.all([
     getAppName(),
-    unreadNotificationCount(user.id, user.role),
+    unreadNotificationCount(user),
   ]);
 
   const sections = filterNav(area === 'admin' ? ADMIN_NAV : VIEWER_NAV, user.permissions);

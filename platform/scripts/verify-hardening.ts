@@ -12,6 +12,13 @@
  *   ٧) تخمين «كلمة المرور الحالية» بلا حدّ.
  *   ٨) عدّادٌ قد يبقى بلا مهلة فيحجب صاحبه إلى الأبد.
  *
+ *   والدفعة الثانية — ما كان منخفض الخطورة، وسُدّ كي لا يكبر:
+ *   ٩)  `unsafe-inline` في سياسة النصوص — صار رمزاً عشوائياً لكلّ طلب.
+ *   ١٠) روابط منشوراتٍ مستخرجة تُرسم `href` بلا فحص بروتوكول.
+ *   ١١) ملف استيراد يُقرأ كلّه قبل فحص حجمه، ويُفكّ بلا سقف.
+ *   ١٢) كلمة مرور المالك الأولى باقية في بيئة عملية الخادم.
+ *   ١٣) جرس التنبيهات يعدّ للمقيَّد ما لا تعرضه له القائمة.
+ *
  *   والتحقّق الحيّ (طلباتٌ فعلية على خادمٍ محلّي) جرى عند الإصلاح. وما
  *   هنا يُشغَّل بلا خادم ولا قاعدة: الدوالّ الخالصة تُختبر بمدخلاتها،
  *   وما لا يُختبر إلا حيّاً يُحرس بشكل الشيفرة.
@@ -335,6 +342,135 @@ async function main() {
     'والزيادة والمهلة جملةٌ واحدة لا أمران',
     /\.eval\(INCR_WITH_TTL/.test(limiter) && !/redis\.incr\(/.test(limiter) && !/\.expire\(redisKey/.test(limiter),
     'مفتاحٌ بلا مهلة عدّادٌ لا يُمحى — حجبٌ أبديّ',
+  );
+
+  // ══════════════ الدفعة الثانية: ما كان منخفض الخطورة ══════════════
+
+  // ٨) سياسة المحتوى برمزٍ لكلّ طلب
+  const { contentSecurityPolicy, generateNonce } = await import('../src/lib/security/csp');
+  const nonceA = generateNonce();
+  const prodPolicy = contentSecurityPolicy(nonceA, { dev: false });
+  const prodScript = prodPolicy.split(';').map((d) => d.trim()).find((d) => d.startsWith('script-src')) ?? '';
+  check(
+    'النصوص السطرية لا تُنفَّذ إلا برمز الطلب',
+    prodScript.includes(`'nonce-${nonceA}'`) && prodScript.includes("'strict-dynamic'") && !prodScript.includes('unsafe-inline'),
+    prodScript,
+  );
+  check(
+    'والرمز عشوائيّ لكلّ طلب وبصيغةٍ يقرؤها Next',
+    nonceA !== generateNonce() && /^[A-Za-z0-9+/]+={0,2}$/.test(nonceA) && nonceA.length >= 24,
+  );
+  check(
+    'وeval للتطوير وحده',
+    !prodPolicy.includes('unsafe-eval') && contentSecurityPolicy('x', { dev: true }).includes('unsafe-eval'),
+  );
+  const proxy = readCode('src/proxy.ts');
+  check(
+    'وكلّ صفحةٍ تمرّ من الوسيط تحمل الرمز — لا NextResponse.next() بلا سياسة',
+    !/NextResponse\.next\(\s*\)/.test(proxy) && (proxy.match(/renderPage\(request, pathname\)/g) ?? []).length === 2,
+  );
+  const nextConfigCode = readCode('next.config.ts');
+  check(
+    'وnext.config لا يكتب سياسةً ثانية على الصفحات (السياستان تُفرضان معاً)',
+    /source: '\/api\/:path\*',\s*headers: \[\{ key: 'Content-Security-Policy'/.test(nextConfigCode) &&
+      (nextConfigCode.match(/Content-Security-Policy/g) ?? []).length === 1,
+  );
+
+  // ٩) روابط المنشورات
+  const { safeExternalUrl } = await import('../src/lib/utils');
+  for (const bad of ['javascript:alert(1)', ' JavaScript:alert(1)', 'data:text/html,<b>x</b>', 'vbscript:x', 'file:///etc/passwd', '/relative/path', '']) {
+    check(`رابطٌ لا يُرسم: ${bad || '(فارغ)'}`, safeExternalUrl(bad) === null);
+  }
+  check(
+    'والرابط الصالح يعود كما ورد حرفاً بحرف (مفتاح منع التكرار يقوم عليه)',
+    safeExternalUrl('https://www.facebook.com/x/posts/1?__cft__=a') === 'https://www.facebook.com/x/posts/1?__cft__=a' &&
+      safeExternalUrl('https://facebook.com') === 'https://facebook.com',
+  );
+  check('والمستورِد يرفض غيره', /const url = safeExternalUrl\(pickString\(source/.test(readCode('src/lib/apify/mappers.ts')));
+  const rawHrefs = srcFiles.filter((file) =>
+    /href=\{(?:post|account)\.(?:url|videoUrl)\}/.test(readFileSync(file, 'utf8')),
+  );
+  check(
+    'ولا رابط خارجيّ يُرسم بلا فحص',
+    rawHrefs.length === 0,
+    rawHrefs.map((f) => f.slice(root.length + 1)).join('، '),
+  );
+
+  // ١١) ملف الاستيراد
+  const { inspectZip } = await import('../src/lib/accounts/zip-guard');
+  const { deflateRawSync, crc32 } = await import('node:zlib');
+  const zipOf = (files: { name: string; data: Buffer; declared?: number }[]) => {
+    const parts: Buffer[] = [];
+    const central: Buffer[] = [];
+    let offset = 0;
+    for (const f of files) {
+      const comp = deflateRawSync(f.data, { level: 9 });
+      const name = Buffer.from(f.name);
+      const local = Buffer.alloc(30);
+      local.writeUInt32LE(0x04034b50, 0);
+      local.writeUInt16LE(8, 8);
+      local.writeUInt32LE(crc32(f.data), 14);
+      local.writeUInt32LE(comp.length, 18);
+      local.writeUInt32LE(f.declared ?? f.data.length, 22);
+      local.writeUInt16LE(name.length, 26);
+      const entry = Buffer.alloc(46);
+      entry.writeUInt32LE(0x02014b50, 0);
+      entry.writeUInt16LE(8, 10);
+      entry.writeUInt32LE(crc32(f.data), 16);
+      entry.writeUInt32LE(comp.length, 20);
+      entry.writeUInt32LE(f.declared ?? f.data.length, 24);
+      entry.writeUInt16LE(name.length, 28);
+      entry.writeUInt32LE(offset, 42);
+      parts.push(local, name, comp);
+      central.push(entry, name);
+      offset += 30 + name.length + comp.length;
+    }
+    const dir = Buffer.concat(central);
+    const end = Buffer.alloc(22);
+    end.writeUInt32LE(0x06054b50, 0);
+    end.writeUInt16LE(files.length, 8);
+    end.writeUInt16LE(files.length, 10);
+    end.writeUInt32LE(dir.length, 12);
+    end.writeUInt32LE(offset, 16);
+    return Buffer.concat([...parts, dir, end]);
+  };
+  const ExcelJS = (await import('exceljs')).default;
+  const workbook = new ExcelJS.Workbook();
+  const sheet = workbook.addWorksheet('الحسابات');
+  for (let i = 0; i < 500; i += 1) sheet.addRow([`حساب ${i}`, `https://facebook.com/p${i}`]);
+  const realXlsx = Buffer.from(await workbook.xlsx.writeBuffer());
+  check('ملف Excel حقيقيّ بخمسمئة صف يمرّ', inspectZip(realXlsx).ok);
+  const bomb = zipOf([{ name: 'xl/worksheets/sheet1.xml', data: Buffer.alloc(200 * 1024 * 1024) }]);
+  check(`وقنبلةٌ مضغوطة (${Math.round(bomb.length / 1024)}KB → 200MB) تُردّ`, !inspectZip(bomb).ok);
+  const liar = zipOf([{ name: 'xl/worksheets/sheet1.xml', data: Buffer.alloc(200 * 1024 * 1024), declared: 100 }]);
+  check('ولو كذب فهرسها في الحجم — الحارس يفكّ فعلاً ولا يقرأ الفهرس', !inspectZip(liar).ok);
+  check(
+    'والتالف وما ليس أرشيفاً يُردّ',
+    !inspectZip(Buffer.from('not a zip at all, plain text here')).ok && !inspectZip(realXlsx.subarray(0, realXlsx.length - 30)).ok,
+  );
+  check('والحارس قبل ExcelJS', /inspectZip\(buffer\)[\s\S]*xlsx\.load\(buffer\)/.test(readCode('src/lib/accounts/import.ts')));
+  const importRoute = readCode('src/app/api/accounts/import/route.ts');
+  check(
+    'والحجم يُفحص من الترويسة قبل قراءة الجسم',
+    importRoute.indexOf("headers.get('content-length')") > 0 &&
+      importRoute.indexOf("headers.get('content-length')") < importRoute.indexOf('request.formData()'),
+  );
+
+  // ١٢) كلمة مرور المالك الأولى
+  const entrypoint = read('docker-entrypoint.sh');
+  check(
+    'كلمة مرور البذر لا تبقى في بيئة عملية الخادم',
+    /unset SEED_OWNER_PASSWORD[\s\S]*exec npm run start:prod/.test(entrypoint) &&
+      entrypoint.indexOf('prisma/seed.ts') < entrypoint.indexOf('unset SEED_OWNER_PASSWORD'),
+  );
+  check('ولا يحملها كائن إعدادات التطبيق', !/SEED_OWNER/.test(readCode('src/lib/env.ts')));
+
+  // والجرس يعدّ ما تعرضه القائمة
+  check(
+    'وعدد التنبيهات بجمهور القائمة نفسه (لا يكشف للمقيَّد ما خارج نطاقه)',
+    /notificationAudience\(user\.id, user\.role, await getAccountScope\(\)\)/.test(
+      readCode('src/components/layout/protected-shell.tsx'),
+    ),
   );
 
   // ══════════════ النتيجة ══════════════

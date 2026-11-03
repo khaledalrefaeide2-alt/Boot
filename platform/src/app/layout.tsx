@@ -1,4 +1,6 @@
 import type { Metadata, Viewport } from 'next';
+import { headers } from 'next/headers';
+import { NONCE_HEADER } from '@/lib/auth/cookies';
 import { ThemeProvider } from '@/components/theme-provider';
 import { QueryProvider } from '@/components/query-provider';
 import { ToastProvider } from '@/components/ui/toast';
@@ -23,7 +25,16 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  /*
+   * رمز سياسة المحتوى لهذا الطلب.
+   *
+   * Next يضعه على وسومه وحده، ومكتبة السمة تكتب نصّاً سطرياً يمنع وميض
+   * الوضع الفاتح قبل الداكن — فيُمرَّر إليها، وإلا رفضته السياسة.
+   * وقراءة الترويسة تجعل كلّ صفحة تُصيَّر عند الطلب، وهو شرط الرمز.
+   */
+  const nonce = (await headers()).get(NONCE_HEADER) ?? undefined;
+
   return (
     <html lang="ar" dir="rtl" suppressHydrationWarning>
       <head>
@@ -51,7 +62,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className="min-h-dvh antialiased">
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+        <ThemeProvider
+          attribute="class"
+          defaultTheme="system"
+          enableSystem
+          disableTransitionOnChange
+          nonce={nonce}
+        >
           <QueryProvider>
             <ToastProvider>{children}</ToastProvider>
           </QueryProvider>

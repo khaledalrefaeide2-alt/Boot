@@ -10,7 +10,7 @@ import { PageHeader } from '@/components/layout/page-header';
 import { AccountAvatar } from '@/components/ui/avatar';
 import { LinkButton } from '@/components/ui/link-button';
 import { METRIC_ICONS, StatCard, StatGrid } from '@/components/ui/stat-card';
-import { formatCompactNumber, formatDate } from '@/lib/utils';
+import { formatCompactNumber, formatDate, safeExternalUrl } from '@/lib/utils';
 import { AccountPostsClient } from './account-posts-client';
 
 export const metadata: Metadata = { title: 'منشورات الحساب' };
@@ -124,8 +124,8 @@ export default async function PlatformAccountPage({ params }: { params: Promise<
         action={
           <>
             {/* الرابط يُفحص عند الإدخال، ويُفحص هنا ثانيةً: `href` لا يُرسم إلا لـhttp(s) */}
-            {/^https?:\/\//i.test(account.url) && (
-              <LinkButton href={account.url} as="a" target="_blank" rel="noopener noreferrer" variant="secondary">
+            {safeExternalUrl(account.url) && (
+              <LinkButton href={safeExternalUrl(account.url)!} as="a" target="_blank" rel="noopener noreferrer" variant="secondary">
                 <ExternalLink aria-hidden />
                 فتح الحساب الأصلي
               </LinkButton>
