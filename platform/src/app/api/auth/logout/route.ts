@@ -17,9 +17,12 @@ export async function POST() {
      *   والرمز متاحٌ هنا بلا كلفة: العميل يُرسله مع كلّ طلبٍ غير GET،
      *   والكوكيان قائمتان لحظةَ الخروج.
      */
-    await requireCsrf();
-
     const user = await getSession();
+    /*
+     * والجلسة الميّتة تُخرَج بلا رمز: الرمز صار مربوطاً بالجلسة في القاعدة،
+     * فلا رمز صالحاً لجلسةٍ انتهت. ومحوُ كوكيز جلسةٍ لا تعمل لا يضرّ أحداً.
+     */
+    if (user) await requireCsrf();
     await destroySession();
     if (user) {
       await audit(user, { action: AUDIT_ACTIONS.LOGOUT, entityType: 'auth', entityId: user.id });

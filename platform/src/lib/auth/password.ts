@@ -5,16 +5,31 @@ import { env } from '@/lib/env';
 
 const BCRYPT_ROUNDS = 12;
 
+/**
+ * بصمةٌ صالحة بالكلفة نفسها لكلمة مرورٍ عشوائية أُتلفت لحظة توليدها.
+ *
+ * ★ كانت البصمة الوهمية نصّاً بطول 65 محرفاً، والبصمة الصالحة 60.
+ *
+ *   وbcryptjs يردّ «لا» فوراً على بصمةٍ بطولٍ غير صالح دون أن يجزّئ
+ *   شيئاً. فكان البريد غير المسجّل يُجاب في نحو 14ms، والمسجّل في نحو
+ *   400ms — فرقٌ يقرؤه أيّ أحد بساعة يده، فيعرف أيّ بريد موظّفٍ مسجّل
+ *   ثمّ يركّز التخمين عليه. والتعليق فوق المقارنة كان يقول العكس.
+ *
+ * ليست سرّاً: لا أحد يعرف ما جُزّئ فيها، ووجودها في الشيفرة لا يُعطي شيئاً.
+ * وتُفحص في `verify:hardening`: طولها، وأنّ زمنها كزمن بصمةٍ حقيقية.
+ */
+export const DUMMY_PASSWORD_HASH = '$2b$12$rZ4gTlgEGQMyx791IpwJ6e5D2YzNmBNzubbGv/fJpDKf0V1odFILe';
+
 /** تشفير كلمة المرور */
 export async function hashPassword(plain: string): Promise<string> {
   return bcrypt.hash(plain, BCRYPT_ROUNDS);
 }
 
-/** التحقق من كلمة المرور — يعمل بزمن ثابت نسبياً عبر bcrypt */
+/** التحقق من كلمة المرور — بزمنٍ واحد وُجد المستخدم أم لم يوجد */
 export async function verifyPassword(plain: string, hash: string | null): Promise<boolean> {
   if (!hash) {
-    // نُنفّذ مقارنة وهمية حتى لا يكشف الفارق الزمني وجود المستخدم من عدمه
-    await bcrypt.compare(plain, '$2a$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvalidin');
+    // مقارنةٌ حقيقية الكلفة حتى لا يكشف الفارق الزمني وجود المستخدم من عدمه
+    await bcrypt.compare(plain, DUMMY_PASSWORD_HASH);
     return false;
   }
   return bcrypt.compare(plain, hash);

@@ -4,7 +4,8 @@ import { errors, jsonError, jsonOk, parseBody, requireTrustedOrigin } from '@/li
 import { resetPasswordSchema } from '@/lib/validation/auth';
 import { hashPassword, hashToken } from '@/lib/auth/password';
 import { revokeAllSessions } from '@/lib/auth/session';
-import { rateLimit, resetRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
+import { clearLoginLocks } from '@/lib/auth/login-guard';
 import { audit, AUDIT_ACTIONS, requestMeta } from '@/lib/audit';
 
 export async function POST(request: NextRequest) {
@@ -62,7 +63,7 @@ export async function POST(request: NextRequest) {
     await revokeAllSessions(record.user.id);
 
     // رفع أي حجب على محاولات الدخول حتى يدخل المستخدم فوراً بكلمته الجديدة
-    await resetRateLimit(`login:email:${record.user.email}`);
+    await clearLoginLocks(record.user.email);
 
     await audit(
       { id: record.user.id, email: record.user.email, role: record.user.role },

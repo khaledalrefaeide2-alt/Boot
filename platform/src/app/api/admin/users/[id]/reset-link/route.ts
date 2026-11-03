@@ -3,7 +3,7 @@ import { prisma } from '@/lib/db';
 import { errors, guardMutationRate, jsonError, jsonOk, requireCsrf, requirePermission } from '@/lib/api';
 import { PERMISSIONS, canManageUserWithRole } from '@/lib/auth/rbac';
 import { generateToken, hashToken } from '@/lib/auth/password';
-import { resetRateLimit } from '@/lib/rate-limit';
+import { clearLoginLocks } from '@/lib/auth/login-guard';
 import { audit, AUDIT_ACTIONS } from '@/lib/audit';
 
 type Params = { params: Promise<{ id: string }> };
@@ -51,7 +51,7 @@ export async function POST(_request: NextRequest, { params }: Params) {
     ]);
 
     // رفع الحجب المؤقت أيضاً — الرابط بلا فائدة إن بقي الدخول محجوباً
-    await resetRateLimit(`login:email:${target.email}`);
+    await clearLoginLocks(target.email);
 
     await audit(actor, {
       action: AUDIT_ACTIONS.USER_PASSWORD_RESET_BY_ADMIN,

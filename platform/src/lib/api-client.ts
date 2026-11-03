@@ -1,9 +1,17 @@
 'use client';
 
+import { CSRF_COOKIE, PASSWORD_CHANGE_PAGE, PASSWORD_CHANGE_REQUIRED } from '@/lib/auth/cookies';
+
+/*
+ * الاسم من `cookies.ts` لا حرفياً: في الإنتاج يحمل بادئة `__Host-`، والنمط
+ * الحرفي `(^|;)mm_csrf=` لا يطابقها — فيُرسل كلّ طلبٍ مغيّر بلا رمز ويُردّ.
+ */
+const CSRF_PATTERN = new RegExp(`(?:^|;\\s*)${CSRF_COOKIE}=([^;]*)`);
+
 /** قراءة رمز الحماية من الكوكي — نمط الإرسال المزدوج ضد CSRF */
 export function readCsrfToken(): string {
   if (typeof document === 'undefined') return '';
-  const match = document.cookie.match(/(?:^|;\s*)mm_csrf=([^;]*)/);
+  const match = document.cookie.match(CSRF_PATTERN);
   return match?.[1] ? decodeURIComponent(match[1]) : '';
 }
 
@@ -59,6 +67,16 @@ async function request<T>(
     payload = (await response.json()) as ApiResponse<T>;
   } catch {
     throw new ApiClientError(response.status, 'تعذّر قراءة رد الخادم');
+  }
+
+  // كلمة مرور مؤقتة لم تُغيَّر — الخادم يردّ كل شيء حتى تُغيَّر، فنذهب إليها
+  if (
+    response.status === 403 &&
+    typeof window !== 'undefined' &&
+    payload.details?.code === PASSWORD_CHANGE_REQUIRED &&
+    window.location.pathname !== PASSWORD_CHANGE_PAGE
+  ) {
+    window.location.href = `${PASSWORD_CHANGE_PAGE}?change-password=1`;
   }
 
   if (!response.ok || !payload.ok) {

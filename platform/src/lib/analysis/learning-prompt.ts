@@ -7,6 +7,28 @@
  * `tsc` ولا فشل البناء. ووحدةٌ بلا استيراد خادمي تُشغَّل في فحص مستقل.
  */
 
+import { detectClassifierInstructions } from './injection';
+
+/**
+ * مقتطف المثال كما يُكتب في الدليل.
+ *
+ * ★ المقتطف نصُّ منشورٍ كتبه من نرصده، ويُكتب في **رسالة النظام** نفسها.
+ *
+ *   فمنشورٌ صحّح مراجعٌ تصنيفه يصير مثالاً يقرؤه النموذج مع كلّ تحليلٍ
+ *   مشابه بعده. فإن حمل «» ثمّ سطراً جديداً وتعليمات، خرج من علامتَي
+ *   الاقتباس وصار في الدليل قاعدةً لم يكتبها أحد من الإدارة.
+ *
+ *   فتُمحى علامات الاقتباس وفواصل الأسطر وعلامات الحدّ منه، ويُقصّ.
+ */
+export function exampleExcerpt(excerpt: string): string {
+  return excerpt
+    .replace(/[«»"\r\n\u2028\u2029]+/g, ' ')
+    .replace(/<<<|>>>/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, 300);
+}
+
 export interface CorrectionExample {
   excerpt: string;
   stance: string | null;
@@ -39,8 +61,15 @@ const STANCE_LABEL: Record<string, string> = {
 /** صياغة التوجيهات والأمثلة كتلةً تُضاف إلى الدليل */
 export function buildLearningBlock(
   guidance: { scope: string; instruction: string }[],
-  examples: CorrectionExample[],
+  allExamples: CorrectionExample[],
 ): string {
+  /*
+   * ومثالٌ يخاطب المصنّف لا يُتعلَّم منه أصلاً.
+   *
+   * تصحيحُ المراجع صحيح، ولكنّ النصّ نفسه محاولةٌ لتوجيه النموذج — ولا
+   * يُعطى مكاناً في رسالة النظام ولو مقتبَساً.
+   */
+  const examples = allExamples.filter((ex) => !detectClassifierInstructions(ex.excerpt));
   if (guidance.length === 0 && examples.length === 0) return '';
 
   const parts: string[] = [];
@@ -64,7 +93,7 @@ ${guidance.map((g) => `- [${SCOPE_LABEL[g.scope] ?? g.scope}] ${g.instruction}`)
 
 ${examples
   .map((ex, i) => {
-    const lines = [`مثال ${i + 1}: «${ex.excerpt.slice(0, 300)}»`];
+    const lines = [`مثال ${i + 1}: «${exampleExcerpt(ex.excerpt)}»`];
     if (ex.stance) lines.push(`  الموقف الصحيح: ${STANCE_LABEL[ex.stance] ?? ex.stance}`);
     if (ex.riskFlags.length > 0) lines.push(`  إشارات: ${ex.riskFlags.join('، ')}`);
     else if (ex.stance) lines.push('  إشارات: لا شيء');

@@ -128,7 +128,7 @@ nano .env.production            # أضف OPENAI_API_KEY
 
 ```bash
 curl -X POST https://<النطاق>/api/admin/ai/test \
-  -H "x-csrf-token: <الرمز>" --cookie "mm_session=<الجلسة>"
+  -H "x-csrf-token: <الرمز>" --cookie "__Host-mm_session=<الجلسة>; __Host-mm_csrf=<الرمز>"
 ```
 
 النجاح:

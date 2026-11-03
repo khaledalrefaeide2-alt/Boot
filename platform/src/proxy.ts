@@ -1,5 +1,11 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { CSRF_COOKIE, SESSION_COOKIE, SESSION_EXPIRED_PARAM } from '@/lib/auth/cookies';
+import {
+  CSRF_COOKIE,
+  SESSION_COOKIE,
+  SESSION_EXPIRED_PARAM,
+  PAGE_PATH_HEADER,
+  cookieDeletion,
+} from '@/lib/auth/cookies';
 
 /**
  * الوسيط (proxy) يوجّه الزوار بسرعة فقط — التحقق الحقيقي من الجلسة والصلاحيات
@@ -36,14 +42,17 @@ export default function proxy(request: NextRequest) {
      */
     if (request.nextUrl.searchParams.get(SESSION_EXPIRED_PARAM) === '1') {
       const response = NextResponse.next();
-      response.cookies.delete(SESSION_COOKIE);
-      response.cookies.delete(CSRF_COOKIE);
+      response.cookies.delete(cookieDeletion(SESSION_COOKIE));
+      response.cookies.delete(cookieDeletion(CSRF_COOKIE));
       return response;
     }
     return NextResponse.redirect(new URL('/', request.url));
   }
 
-  return NextResponse.next();
+  // مسار الصفحة لـ`getSession` — يُكتب فوق أيّ قيمة جاء بها العميل
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(PAGE_PATH_HEADER, pathname);
+  return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
 export const config = {

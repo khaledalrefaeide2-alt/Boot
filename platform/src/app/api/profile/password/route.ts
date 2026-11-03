@@ -5,12 +5,24 @@ import { changePasswordSchema } from '@/lib/validation/auth';
 import { hashPassword, verifyPassword } from '@/lib/auth/password';
 import { revokeAllSessions, createSession } from '@/lib/auth/session';
 import { audit, AUDIT_ACTIONS, requestMeta } from '@/lib/audit';
+import { checkRateLimit, recordFailedAttempt, resetRateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 /** تغيير كلمة المرور — يُبطل كل الجلسات الأخرى ويُنشئ جلسة جديدة للمستخدم */
 export async function POST(request: NextRequest) {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth({ allowPendingPasswordChange: true });
     await requireCsrf();
+
+    /*
+     * ★ فحصُ «كلمة المرور الحالية» كان بلا حدّ.
+     *
+     *   فمن سرق جلسةً مفتوحة — حاسوبٌ تُرك بلا قفل، أو كوكي تسرّبت —
+     *   كان يستطيع أن يخمّن الكلمة نفسها بلا عدد، فيأخذ ما يصلح لحسابات
+     *   الموظّف الأخرى، ثمّ يغيّرها فيُخرجه من حسابه.
+     */
+    const limitKey = `password-change:${user.id}`;
+    const limit = await checkRateLimit(limitKey, RATE_LIMITS.PASSWORD_CHANGE.limit);
+    if (!limit.allowed) throw errors.tooMany('محاولات كثيرة، حاول بعد ربع ساعة');
 
     const input = await parseBody(request, changePasswordSchema);
 
@@ -20,7 +32,11 @@ export async function POST(request: NextRequest) {
     });
 
     const valid = await verifyPassword(input.currentPassword, record?.passwordHash ?? null);
-    if (!valid) throw errors.badRequest('كلمة المرور الحالية غير صحيحة');
+    if (!valid) {
+      await recordFailedAttempt(limitKey, RATE_LIMITS.PASSWORD_CHANGE.window);
+      throw errors.badRequest('كلمة المرور الحالية غير صحيحة');
+    }
+    await resetRateLimit(limitKey);
 
     await prisma.user.update({
       where: { id: user.id },

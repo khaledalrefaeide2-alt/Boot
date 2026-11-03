@@ -12,7 +12,7 @@ import {
 import { PERMISSIONS, assignableRoles, canManageUserWithRole } from '@/lib/auth/rbac';
 import { updateUserSchema } from '@/lib/validation/users';
 import { revokeAllSessions } from '@/lib/auth/session';
-import { resetRateLimit } from '@/lib/rate-limit';
+import { clearLoginLocks } from '@/lib/auth/login-guard';
 import { audit, AUDIT_ACTIONS } from '@/lib/audit';
 
 type Params = { params: Promise<{ id: string }> };
@@ -115,7 +115,7 @@ export async function PATCH(request: NextRequest, { params }: Params) {
     if (input.status === 'DISABLED') await revokeAllSessions(id);
 
     // تفعيل الحساب يرفع عدّاد المحاولات الفاشلة كذلك، وإلا بقي محجوباً بعد التفعيل
-    if (input.status === 'ACTIVE') await resetRateLimit(`login:email:${target.email}`);
+    if (input.status === 'ACTIVE') await clearLoginLocks(target.email);
 
     if (input.role && input.role !== target.role) {
       await audit(actor, {

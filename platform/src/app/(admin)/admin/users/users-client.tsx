@@ -66,6 +66,7 @@ export function UsersClient({
   canScope,
   assignable,
   currentUserId,
+  initialSearch = '',
 }: {
   canCreate: boolean;
   canUpdate: boolean;
@@ -73,13 +74,14 @@ export function UsersClient({
   canScope: boolean;
   assignable: Role[];
   currentUserId: string;
+  initialSearch?: string;
 }) {
   const toast = useToast();
   const queryClient = useQueryClient();
 
   const [page, setPage] = useState(1);
-  const [search, setSearch] = useState('');
-  const [searchInput, setSearchInput] = useState('');
+  const [search, setSearch] = useState(initialSearch);
+  const [searchInput, setSearchInput] = useState(initialSearch);
   const [roleFilter, setRoleFilter] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
 

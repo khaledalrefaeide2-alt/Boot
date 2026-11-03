@@ -5,7 +5,7 @@ import { updateProfileSchema } from '@/lib/validation/auth';
 
 export async function GET() {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth({ allowPendingPasswordChange: true });
     const profile = await prisma.user.findUnique({
       where: { id: user.id },
       select: {
@@ -28,7 +28,7 @@ export async function GET() {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const user = await requireAuth();
+    const user = await requireAuth({ allowPendingPasswordChange: true });
     await requireCsrf();
     const input = await parseBody(request, updateProfileSchema);
 

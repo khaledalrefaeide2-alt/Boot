@@ -56,7 +56,8 @@
     "verify:models": "tsx --conditions=react-server scripts/verify-models.ts",
     "verify:directory": "tsx --conditions=react-server scripts/verify-directory.ts",
     "verify:ops": "tsx --conditions=react-server scripts/verify-ops.ts",
-    "verify:policy": "tsx --conditions=react-server scripts/verify-policy.ts"
+    "verify:policy": "tsx --conditions=react-server scripts/verify-policy.ts",
+    "verify:hardening": "tsx --conditions=react-server scripts/verify-hardening.ts"
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.1",

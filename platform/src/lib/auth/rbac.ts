@@ -179,6 +179,27 @@ export function canManageUserWithRole(actorRole: Role, targetRole: Role): boolea
   return ROLE_RANK[actorRole] > ROLE_RANK[targetRole];
 }
 
+/**
+ * مَن يُبلَّغ بطلب استعادة كلمة مرور صاحب هذا الدور.
+ *
+ * ★ الطلب يصل لمن يستطيع أن يُجيبه فقط — لا لمن يطّلع عليه.
+ *
+ *   طلبُ المالك كان يصل للمدراء ومعه الرابط، فصار طريقاً إلى حسابٍ أعلى
+ *   رتبة. والقاعدة هنا هي قاعدة التعديل نفسها: دورٌ يملك تعديل المستخدمين
+ *   ويستطيع إدارة رتبة صاحب الطلب. فطلب المالك أو المدير يصل للمالك وحده،
+ *   وطلب المشرف أو المستخدم العادي يصل للمالك والمدير.
+ *
+ * دالّة خالصة — تُفحص وحدها.
+ */
+export function resetRequestAudience(targetRole: Role): Role[] {
+  const all: Role[] = ['OWNER', 'ADMIN', 'SUPERVISOR', 'VIEWER'];
+  return all.filter(
+    (role) =>
+      ROLE_PERMISSIONS[role].includes(PERMISSIONS.USERS_UPDATE) &&
+      canManageUserWithRole(role, targetRole),
+  );
+}
+
 /** الأدوار التي يجوز للمنفّذ إسنادها */
 export function assignableRoles(actorRole: Role): Role[] {
   const all: Role[] = ['OWNER', 'ADMIN', 'SUPERVISOR', 'VIEWER'];

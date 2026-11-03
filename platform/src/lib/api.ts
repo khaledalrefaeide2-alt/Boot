@@ -5,6 +5,7 @@ import { getSession, verifyCsrf, verifyRequestOrigin, type SessionUser } from '@
 import { can, type Permission } from '@/lib/auth/rbac';
 import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 import { requestMeta } from '@/lib/audit';
+import { PASSWORD_CHANGE_REQUIRED } from '@/lib/auth/cookies';
 
 /** خطأ معالَج بعناية — يحمل رمز حالة ورسالة عربية آمنة للعرض */
 export class ApiError extends Error {
@@ -27,6 +28,10 @@ export const errors = {
   conflict: (msg = 'يوجد تعارض مع بيانات موجودة مسبقاً') => new ApiError(409, msg),
   tooMany: (msg = 'محاولات كثيرة جداً، حاول لاحقاً') => new ApiError(429, msg),
   server: (msg = 'حدث خطأ غير متوقع في الخادم') => new ApiError(500, msg),
+  passwordChangeRequired: () =>
+    new ApiError(403, 'يجب تغيير كلمة المرور المؤقتة قبل المتابعة', {
+      code: PASSWORD_CHANGE_REQUIRED,
+    }),
 };
 
 export function jsonOk<T>(data: T, init?: ResponseInit): NextResponse {
@@ -58,10 +63,26 @@ export function jsonError(error: unknown): NextResponse {
   );
 }
 
-/** يتطلب جلسة فعّالة */
-export async function requireAuth(): Promise<SessionUser> {
+/**
+ * يتطلب جلسة فعّالة.
+ *
+ * ★ وكلمة مرورٍ غير مؤقتة — إلا لمسارات تغييرها.
+ *
+ *   «يجب تغيير كلمة المرور» كانت تحويلاً في الواجهة وحده. فمن أنشأ له
+ *   المدير حساباً بكلمةٍ مؤقتة يعرفها المدير، كان يتجاهل التحويل ويستعمل
+ *   المنصة كلّها بها إلى الأبد — والكلمة المؤقتة في يد غيره.
+ *
+ *   فالمسارات كلّها تردّ 403 حتى تُغيَّر، عدا ما يحتاجه التغيير نفسه
+ *   (`allowPendingPasswordChange`). والصفحات تُحوَّل في `getSession`.
+ */
+export async function requireAuth(
+  options: { allowPendingPasswordChange?: boolean } = {},
+): Promise<SessionUser> {
   const user = await getSession();
   if (!user) throw errors.unauthorized();
+  if (user.mustChangePassword && !options.allowPendingPasswordChange) {
+    throw errors.passwordChangeRequired();
+  }
   return user;
 }
 

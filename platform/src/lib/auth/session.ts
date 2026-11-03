@@ -4,7 +4,14 @@ import { cookies, headers } from 'next/headers';
 import { timingSafeEqual } from 'node:crypto';
 import { prisma } from '@/lib/db';
 import { env, isProduction } from '@/lib/env';
-import { SESSION_COOKIE, CSRF_COOKIE } from './cookies';
+import {
+  SESSION_COOKIE,
+  CSRF_COOKIE,
+  LEGACY_COOKIES,
+  PAGE_PATH_HEADER,
+  PASSWORD_CHANGE_PAGE,
+  cookieDeletion,
+} from './cookies';
 import { generateToken, hashToken } from './password';
 import { effectivePermissions, type Permission } from './rbac';
 import type { AccountAccess, Role, UserStatus } from '@/generated/prisma';
@@ -71,6 +78,8 @@ export async function createSession(
     path: '/',
     maxAge: sessionMaxAgeSeconds(),
   });
+  // كوكيز ما قبل البادئة لا يقرؤها أحد بعد اليوم — فلا تبقى في المتصفّح
+  for (const legacy of LEGACY_COOKIES) cookieStore.delete(cookieDeletion(legacy));
 }
 
 /** إنهاء الجلسة الحالية */
@@ -85,8 +94,8 @@ export async function destroySession(): Promise<void> {
       })
       .catch(() => undefined);
   }
-  cookieStore.delete(SESSION_COOKIE);
-  cookieStore.delete(CSRF_COOKIE);
+  cookieStore.delete(cookieDeletion(SESSION_COOKIE));
+  cookieStore.delete(cookieDeletion(CSRF_COOKIE));
 }
 
 /** إبطال كل جلسات مستخدم — يُستدعى عند التعطيل أو تغيير كلمة المرور */
@@ -132,6 +141,26 @@ export const getSession = cache(async (): Promise<SessionUser | null> => {
   if (!session || session.revokedAt || session.expiresAt.getTime() < Date.now()) return null;
   // المستخدم المعطل أو المعلّق لا يملك جلسة فعّالة مهما كان الكوكي
   if (session.user.status !== 'ACTIVE') return null;
+
+  /*
+   * صاحب كلمة المرور المؤقتة لا يرى صفحةً غير صفحة تغييرها.
+   *
+   * المسار يكتبه الوسيط للصفحات وحدها؛ ومسارات API لا تحمله، وتُمنع
+   * هناك في `requireAuth`. والفحص هنا لا في التخطيط لأنّ التخطيط لا يُعاد
+   * تنفيذه حين يتنقّل المستخدم داخل الموقع — والصفحة تُعاد دائماً.
+   */
+  if (session.user.mustChangePassword) {
+    const pagePath = (await headers()).get(PAGE_PATH_HEADER);
+    if (pagePath && pagePath !== PASSWORD_CHANGE_PAGE) {
+      /*
+       * استيرادٌ عند الحاجة: `next/navigation` يجرّ سياقات React الخاصّة
+       * بالواجهة، والعامل الخلفي وفحوص `scripts/` تستورد هذا الملف خارج
+       * Next — فيسقط تحميلها كلّها لو استُورد في رأسه.
+       */
+      const { redirect } = await import('next/navigation');
+      redirect(`${PASSWORD_CHANGE_PAGE}?change-password=1`);
+    }
+  }
 
   return {
     id: session.user.id,
@@ -210,7 +239,33 @@ export async function verifyRequestOrigin(): Promise<string | null> {
 }
 
 /**
- * التحقق من CSRF للطلبات المغيِّرة: فحص المصدر + رمز الإرسال المزدوج.
+ * سرّ CSRF المخزَّن مع الجلسة الحالية — أو null إن لم تكن جلسةٌ صالحة.
+ *
+ * لا يُحمل في `SessionUser`: ذاك يُمرَّر إلى مكوّنات الواجهة، وهذا لا
+ * يحتاجه إلا الفحص هنا.
+ */
+const sessionCsrfSecret = cache(async (): Promise<string | null> => {
+  const token = (await cookies()).get(SESSION_COOKIE)?.value;
+  if (!token) return null;
+  const session = await prisma.session.findUnique({
+    where: { tokenHash: hashToken(token) },
+    select: { csrfSecret: true, revokedAt: true, expiresAt: true },
+  });
+  if (!session || session.revokedAt || session.expiresAt.getTime() < Date.now()) return null;
+  return session.csrfSecret;
+});
+
+/**
+ * التحقق من CSRF للطلبات المغيِّرة: فحص المصدر + رمز الإرسال المزدوج
+ * مربوطاً بالجلسة.
+ *
+ * ★ كان الرمز يُقارَن بالكوكي وحدها، والجلسة تحفظ سرّها ولا يسألها أحد.
+ *
+ *   والإرسال المزدوج بلا ربطٍ يصمد ما دام الخصم لا يكتب كوكيز على نطاقنا.
+ *   وعلى نطاقٍ مشترك مثل `hstgr.cloud` يستطيع جارٌ أن يكتبها. فالمقارنة
+ *   الآن بالسرّ المخزَّن مع الجلسة نفسها في القاعدة: رمزٌ لم تُصدره هذه
+ *   الجلسة لا يمرّ، أيّاً كان ما في الكوكي.
+ *
  * يُعيد رسالة الخطأ عند الفشل، أو null عند النجاح.
  */
 export async function verifyCsrf(): Promise<string | null> {
@@ -224,6 +279,9 @@ export async function verifyCsrf(): Promise<string | null> {
   const headerToken = headerStore.get(CSRF_HEADER);
   if (!cookieToken || !headerToken) return 'رمز الحماية مفقود';
   if (!safeEqual(cookieToken, headerToken)) return 'رمز الحماية غير صالح';
+
+  const expected = await sessionCsrfSecret();
+  if (!expected || !safeEqual(headerToken, expected)) return 'رمز الحماية غير صالح';
 
   return null;
 }

@@ -138,7 +138,8 @@ check(
 );
 check(
   'ويمسح الكوكيَّين معاً',
-  /cookies\.delete\(SESSION_COOKIE\)/.test(proxy) && /cookies\.delete\(CSRF_COOKIE\)/.test(proxy),
+  /cookies\.delete\(cookieDeletion\(SESSION_COOKIE\)\)/.test(proxy) &&
+    /cookies\.delete\(cookieDeletion\(CSRF_COOKIE\)\)/.test(proxy),
   'كوكي CSRF الباقية تخصّ جلسةً لا وجود لها',
 );
 
