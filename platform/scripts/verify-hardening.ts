@@ -43,6 +43,23 @@ function check(name: string, ok: boolean, detail?: string) {
 }
 
 async function main() {
+  /*
+   * خادمٌ يحاكي ردود مزوّد الاستخراج — يُقام قبل أيّ استيراد، لأنّ إعدادات
+   * البيئة تُقرأ مرّةً عند أوّل استيراد، وعنوان النظام منها.
+   */
+  const { createServer } = await import('node:http');
+  let apifyReply: [number, unknown] = [200, { data: { username: 'verify' } }];
+  let apifySawToken = '';
+  const apifyMock = createServer((req, res) => {
+    apifySawToken = req.headers.authorization ?? '';
+    res.writeHead(apifyReply[0], { 'content-type': 'application/json' });
+    res.end(JSON.stringify(apifyReply[1]));
+  });
+  await new Promise<void>((resolve) => apifyMock.listen(0, '127.0.0.1', resolve));
+  const apifyPort = (apifyMock.address() as { port: number }).port;
+  process.env.APIFY_API_BASE = `http://127.0.0.1:${apifyPort}/v2`;
+  process.env.APIFY_TOKEN = 'apify_api_VERIFYTOKEN0123456789';
+
   const { resetRequestAudience } = await import('../src/lib/auth/rbac');
   const { DUMMY_PASSWORD_HASH } = await import('../src/lib/auth/password');
   const { issueDeviceToken, verifyDeviceToken } = await import('../src/lib/auth/device-token');
@@ -472,6 +489,41 @@ async function main() {
       readCode('src/components/layout/protected-shell.tsx'),
     ),
   );
+
+  // ══════════════ رفض مزوّد الاستخراج: السبب لا الشكّ ══════════════
+
+  const { verifyApifyToken } = await import('../src/lib/apify/client');
+  const probe = async (reply: [number, unknown]) => {
+    apifyReply = reply;
+    return verifyApifyToken();
+  };
+  const ok = await probe([200, { data: { username: 'verify' } }]);
+  check('الرمز السليم يُقبل', ok.ok && ok.username === 'verify', ok.message);
+  check('والرمز يُرسل في الترويسة وحدها', apifySawToken === 'Bearer apify_api_VERIFYTOKEN0123456789');
+
+  const invalid = await probe([401, { error: { type: 'token-not-valid', message: 'Authentication token is not valid: apify_api_LEAKED999' } }]);
+  check(
+    '401: رمزٌ مرفوض — يُستبدل، ويُذكر نوع الخطأ',
+    !invalid.ok && /غير صحيح أو أُلغي/.test(invalid.message) && /token-not-valid/.test(invalid.message),
+    invalid.message,
+  );
+  check('ولا يظهر في الرسالة ما يشبه رمزاً', !/apify_api_/.test(invalid.message));
+
+  const scoped = await probe([403, { error: { type: 'insufficient-permissions', message: 'Insufficient permissions for the resource' } }]);
+  check(
+    '403 بصلاحياتٍ ناقصة: رمزٌ صالح مقيَّد — لا يُطلب استبداله',
+    !scoped.ok && /مقيَّد/.test(scoped.message) && !/أُلغي/.test(scoped.message),
+    scoped.message,
+  );
+
+  const billing = await probe([402, { error: { type: 'not-enough-usage-to-run-paid-actor', message: 'You have exceeded your monthly usage limit' } }]);
+  check('402: رصيدٌ أو حدٌّ شهري — الرمز سليم', !billing.ok && /رصيد/.test(billing.message) && /الرمز سليم/.test(billing.message), billing.message);
+  const billing403 = await probe([403, { error: { type: 'platform-feature-disabled', message: 'Monthly usage limit exceeded' } }]);
+  check('وكذلك 403 بسبب الحدّ الشهري', /رصيد/.test(billing403.message), billing403.message);
+
+  const bare = await probe([403, 'not json']);
+  check('وردٌّ بلا تفاصيل يبقى مفهوماً', !bare.ok && /HTTP 403/.test(bare.message), bare.message);
+  apifyMock.close();
 
   // ══════════════ النتيجة ══════════════
 

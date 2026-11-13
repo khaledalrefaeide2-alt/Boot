@@ -40,6 +40,67 @@ export interface ApifyRun {
   exitCode?: number | null;
 }
 
+/** ما يقوله Apify عن سبب الرفض — نوعٌ ثابت ورسالة */
+export interface ApifyErrorDetail {
+  type: string | null;
+  message: string | null;
+}
+
+/** يمحو ما يشبه رمزاً من نصٍّ قبل حفظه أو عرضه — احتياطاً لا أكثر */
+function scrubTokens(text: string): string {
+  return text.replace(/apify_api_[A-Za-z0-9]+/g, '[token]');
+}
+
+async function readApifyError(response: Response): Promise<ApifyErrorDetail | null> {
+  try {
+    const json = (await response.json()) as { error?: { type?: unknown; message?: unknown } };
+    const type = typeof json.error?.type === 'string' ? scrubTokens(json.error.type).slice(0, 80) : null;
+    const message =
+      typeof json.error?.message === 'string' ? scrubTokens(json.error.message).slice(0, 300) : null;
+    return type || message ? { type, message } : null;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * سبب رفض النظام للطلب، بالعربية وبما يُفعل له.
+ *
+ * ★ كانت 401 و403 رسالةً واحدة: «رمز النظام غير صالح أو لا يملك صلاحية».
+ *
+ *   وهي ثلاث مشكلات لكلٍّ منها علاجٌ مختلف: رمزٌ خاطئ أو أُلغي (يُستبدل)،
+ *   ورمزٌ صالح مقيَّد الصلاحيات (يُوسَّع أو يُستعمل غيره)، وحسابٌ نفد رصيده
+ *   أو تجاوز حدّه الشهري (يُشحن — والرمز سليم). ورسالةٌ واحدة للثلاث
+ *   تُرسل المشغّل إلى تبديل رمزٍ سليم بينما المشكلة في الفوترة.
+ *
+ *   والردّ من النظام يحمل نوع الخطأ (`error.type`) فيُقرأ ويُذكر: هو
+ *   ما يُبحث عنه في وثائقه، ولا يحمل سرّاً.
+ *
+ * دالّة خالصة — تُفحص في `verify:hardening`.
+ */
+export function describeApifyRejection(status: number, detail: ApifyErrorDetail | null): string {
+  const text = `${detail?.type ?? ''} ${detail?.message ?? ''}`.toLowerCase();
+  const code = detail?.type ? ` (رمز الخطأ: ${detail.type})` : ` (HTTP ${status})`;
+
+  const billing = /usage|limit|exceed|credit|payment|plan|subscription|billing|insufficient-funds|not-enough/.test(text);
+  const permission = /permission|scope|forbidden|not-allowed|unauthori[sz]ed-actor/.test(text);
+  const disabled = /disabled|suspend|blocked|banned/.test(text);
+
+  if (status === 402 || (status === 403 && billing)) {
+    return `حساب النظام لا يملك رصيداً كافياً أو تجاوز حدّ الاستخدام الشهري — الرمز سليم، والحلّ في الفوترة لدى مزوّد الاستخراج${code}`;
+  }
+  if (status === 401) {
+    return `رمز النظام مرفوض: غير صحيح أو أُلغي أو انتهت صلاحيته. أنشئ رمزاً جديداً، وضعه في APIFY_TOKEN بملف البيئة، ثم أعد إنشاء حاويتي التطبيق والعامل${code}`;
+  }
+  if (disabled) {
+    return `حساب النظام معطّل أو موقوف لدى المزوّد — راجع حالة الحساب${code}`;
+  }
+  if (permission) {
+    return `رمز النظام صالح لكنه مقيَّد ولا يملك صلاحية هذه العملية — استعمل رمزاً بلا قيود، أو امنحه صلاحية تشغيل المشغّلات وقراءة مجموعات البيانات${code}`;
+  }
+  return `النظام رفض الطلب: الرمز غير صالح أو لا يملك صلاحية هذه العملية${code}`;
+}
+
 /** هل الرمز مُعرَّف؟ تُستخدم لإظهار تحذير في الواجهة دون كشف قيمته */
 export function isApifyConfigured(): boolean {
   return env.APIFY_TOKEN.trim().length > 0;
@@ -90,8 +151,14 @@ async function apifyFetch<T>(path: string, options: FetchOptions = {}): Promise<
 
       clearTimeout(timer);
 
-      if (response.status === 401 || response.status === 403) {
-        throw new ApifyError('رمز النظام غير صالح أو لا يملك صلاحية هذه العملية', response.status);
+      if (response.status === 401 || response.status === 402 || response.status === 403) {
+        const detail = await readApifyError(response);
+        // السبب الكامل في سجلّ الخادم للمشغّل؛ والرمز نفسه لا يُطبع أبداً
+        console.error(
+          `[apify] رُفض الطلب ${method} ${path.split('?')[0]}: ${response.status}`,
+          detail ? `${detail.type ?? '-'} — ${detail.message ?? '-'}` : '',
+        );
+        throw new ApifyError(describeApifyRejection(response.status, detail), response.status, detail);
       }
       if (response.status === 404) {
         throw new ApifyError('المورد المطلوب غير موجود في النظام — تحقق من معرّف المشغّل', 404);
